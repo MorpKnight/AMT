@@ -19,3 +19,6 @@ build/
 # Secrets / local config
 .env
 .env.*
+
+# Agent
+AGENTS.md
