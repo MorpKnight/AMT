@@ -13,6 +13,8 @@ struct DashboardView: View {
     @State private var searchText = ""
     @State private var activeDocument: DashboardDocument?
 
+    let suggestionService: QwenSuggestionService
+
     private var filteredDocuments: [DashboardDocument] {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return storageManager.documents
@@ -53,7 +55,8 @@ struct DashboardView: View {
                                 activeDocument = doc
                             }
                         }
-                    }
+                    },
+                    suggestionService: suggestionService
                 )
             } else {
                 // Main Dashboard Split View
@@ -142,5 +145,5 @@ struct DashboardView: View {
 }
 
 #Preview {
-    DashboardView()
+    DashboardView(suggestionService: QwenSuggestionService())
 }

@@ -8,11 +8,13 @@
 import SwiftUI
 
 struct ContentView: View {
+    let suggestionService: QwenSuggestionService
+
     var body: some View {
-        DashboardView()
+        DashboardView(suggestionService: suggestionService)
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(suggestionService: QwenSuggestionService())
 }

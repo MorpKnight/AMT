@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct AMTApp: App {
+    private let qwenSuggestionService = QwenSuggestionService()
+
     var body: some Scene {
         WindowGroup {
-            DashboardView()
+            ContentView(suggestionService: qwenSuggestionService)
                 .navigationTitle("")
         }
         .windowToolbarStyle(.unified(showsTitle: false))
