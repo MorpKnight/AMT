@@ -11,7 +11,7 @@ struct ContentView: View {
     @Binding var document: AMTDocument
 
     var body: some View {
-        TextEditor(text: $document.text)
+        DocumentEditorView(document: $document)
     }
 }
 
