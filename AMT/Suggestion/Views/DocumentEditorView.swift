@@ -8,34 +8,67 @@
 import SwiftUI
 
 struct DocumentEditorView: View {
-    @Binding var document: AMTDocument
+    let documents: [DashboardDocument]
+    @Binding var activeDocument: DashboardDocument
+    let onBackToDashboard: () -> Void
+    let onCreateNewDocument: () -> Void
 
-    @State private var selectedSidebarItem: SidebarItem? = .dictionary
-    @State private var documentTitle = "Untitled"
+    @State private var selectedDocumentID: UUID?
+
+    init(
+        documents: [DashboardDocument],
+        activeDocument: Binding<DashboardDocument>,
+        onBackToDashboard: @escaping () -> Void,
+        onCreateNewDocument: @escaping () -> Void
+    ) {
+        self.documents = documents
+        self._activeDocument = activeDocument
+        self.onBackToDashboard = onBackToDashboard
+        self.onCreateNewDocument = onCreateNewDocument
+        self._selectedDocumentID = State(initialValue: activeDocument.wrappedValue.id)
+    }
 
     var body: some View {
         NavigationSplitView {
-            EditorSidebar(selection: $selectedSidebarItem)
+            EditorSidebar(
+                documents: documents,
+                selectedDocumentID: $selectedDocumentID,
+                onBackToDashboard: onBackToDashboard,
+                onCreateNewDocument: onCreateNewDocument
+            )
+            .navigationTitle("")
         } detail: {
             VStack(spacing: 0) {
-                if selectedSidebarItem == .suggestion || selectedSidebarItem == nil {
-                    EditorToolbar(documentTitle: $documentTitle)
-                    Divider()
-                }
+                EditorToolbar(documentTitle: $activeDocument.title)
+                Divider()
 
-                switch selectedSidebarItem {
-                case .dictionary:
-                    DictionaryView()
-                case .suggestion, .none:
-                    TextEditor(text: $document.text)
-                        .font(.body)
-                        .scrollContentBackground(.visible)
-                }
+                TextEditor(text: $activeDocument.content)
+                    .font(.body)
+                    .padding(16)
+                    .scrollContentBackground(.visible)
+            }
+            .navigationTitle("")
+        }
+        .navigationTitle("")
+        .onChange(of: selectedDocumentID) { _, newID in
+            if let newID = newID,
+               let doc = documents.first(where: { $0.id == newID }) {
+                activeDocument = doc
+            }
+        }
+        .onChange(of: activeDocument.id) { _, newID in
+            if selectedDocumentID != newID {
+                selectedDocumentID = newID
             }
         }
     }
 }
 
 #Preview {
-    DocumentEditorView(document: .constant(AMTDocument()))
+    DocumentEditorView(
+        documents: [DashboardDocument(title: "Untitled", content: "Sample")],
+        activeDocument: .constant(DashboardDocument(title: "Untitled", content: "Sample")),
+        onBackToDashboard: {},
+        onCreateNewDocument: {}
+    )
 }

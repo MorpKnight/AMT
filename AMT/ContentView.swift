@@ -8,13 +8,11 @@
 import SwiftUI
 
 struct ContentView: View {
-    @Binding var document: AMTDocument
-
     var body: some View {
-        DocumentEditorView(document: $document)
+        DashboardView()
     }
 }
 
 #Preview {
-    ContentView(document: .constant(AMTDocument()))
+    ContentView()
 }

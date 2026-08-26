@@ -10,8 +10,10 @@ import SwiftUI
 @main
 struct AMTApp: App {
     var body: some Scene {
-        DocumentGroup(newDocument: AMTDocument()) { file in
-            ContentView(document: file.$document)
+        WindowGroup {
+            DashboardView()
+                .navigationTitle("")
         }
+        .windowToolbarStyle(.unified(showsTitle: false))
     }
 }
