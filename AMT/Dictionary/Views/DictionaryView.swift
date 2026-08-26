@@ -13,18 +13,18 @@ struct DictionaryView: View {
     @State private var definition: String = ""
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("Dictionary")
-                    .font(Font.title.bold())
-                Spacer()
+        VStack(spacing: 24) {
+            Spacer()
+
+            VStack(spacing: 8) {
+                Image(systemName: "book")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.secondary)
+
+                Text("Lawtionary")
+                    .font(.system(size: 28, weight: .medium))
             }
-            .padding()
 
-            Divider()
-
-            // Search bar
             HStack {
                 TextField("Cari kata...", text: $searchText)
                     .textFieldStyle(.plain)
@@ -39,20 +39,23 @@ struct DictionaryView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(16)
-            .glassEffect()
-            .padding()
+            .padding(14)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .frame(maxWidth: 480)
 
-            // Hasil definisi
-            ScrollView {
-                Text(definition)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
+            if !definition.isEmpty {
+                ScrollView {
+                    Text(definition)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                }
+                .frame(maxHeight: .infinity)
+            } else {
+                Spacer()
             }
-
-            Spacer()
         }
-        .frame(minWidth: 500, minHeight: 400)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
