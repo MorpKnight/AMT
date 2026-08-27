@@ -55,13 +55,11 @@ struct DocumentEditorView: View {
                     .padding(16)
                     .scrollContentBackground(.visible)
 
-                #if DEBUG
                 Divider()
                 AIConnectorDebugPanel(
                     documentText: activeDocument.content,
                     viewModel: aiConnectorViewModel
                 )
-                #endif
             }
             .navigationTitle("")
         }

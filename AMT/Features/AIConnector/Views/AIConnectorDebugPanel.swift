@@ -6,8 +6,16 @@ struct AIConnectorDebugPanel: View {
     @Bindable var viewModel: AIConnectorViewModel
 
     var body: some View {
-        GroupBox("Qwen MLX Debug") {
+        GroupBox("Suggestion — Eksperimental") {
             VStack(alignment: .leading, spacing: 10) {
+                Text("Hasil model hanya saran awal dan bukan nasihat hukum. Jangan masukkan dokumen rahasia.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text("Model diunduh saat pertama kali dijalankan dan disimpan di cache lokal.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 HStack(alignment: .top, spacing: 12) {
                     Picker("Input", selection: $viewModel.inputSource) {
                         ForEach(AIConnectorInputSource.allCases) { source in
@@ -24,7 +32,7 @@ struct AIConnectorDebugPanel: View {
                         }
                         .frame(maxWidth: 280)
                     } else {
-                        Text("\(documentText.count) characters in document")
+                        Text("\(documentText.count) karakter di dokumen")
                             .foregroundStyle(.secondary)
                     }
 
@@ -41,13 +49,21 @@ struct AIConnectorDebugPanel: View {
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                if viewModel.isInputTruncated(documentText: documentText) {
+                if viewModel.inputWasTruncated {
                     Label(
-                        "Hanya 4.000 karakter pertama yang dikirim ke model.",
+                        "Teks input dipotong ke 4.096 token sebelum dikirim ke model.",
                         systemImage: "exclamationmark.triangle"
                     )
                     .font(.caption)
                     .foregroundStyle(.orange)
+                } else if let inputTokenCount = viewModel.inputTokenCount {
+                    Text("Input terukur: \(inputTokenCount) token. Batas: 4.096 token.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Batas teks dokumen: 4.096 token, dihitung dengan tokenizer Qwen.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 HStack(spacing: 8) {
@@ -98,5 +114,14 @@ struct AIConnectorDebugPanel: View {
         }
         .padding(8)
         .onDisappear(perform: viewModel.cancel)
+        .onChange(of: viewModel.inputSource) { _, _ in
+            viewModel.resetInputMetadata()
+        }
+        .onChange(of: viewModel.selectedSampleID) { _, _ in
+            viewModel.resetInputMetadata()
+        }
+        .onChange(of: documentText) { _, _ in
+            viewModel.resetInputMetadata()
+        }
     }
 }

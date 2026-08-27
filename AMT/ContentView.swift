@@ -9,12 +9,19 @@ import SwiftUI
 
 struct ContentView: View {
     let suggestionService: QwenSuggestionService
+    let dictionaryStore: LegalDictionaryStore
 
     var body: some View {
-        DashboardView(suggestionService: suggestionService)
+        DashboardView(
+            suggestionService: suggestionService,
+            dictionaryStore: dictionaryStore
+        )
     }
 }
 
 #Preview {
-    ContentView(suggestionService: QwenSuggestionService())
+    ContentView(
+        suggestionService: QwenSuggestionService(),
+        dictionaryStore: LegalDictionaryStore(entries: LegalDictionaryEntry.previewEntries)
+    )
 }
