@@ -6,8 +6,16 @@ struct AIConnectorDebugPanel: View {
     @Bindable var viewModel: AIConnectorViewModel
 
     var body: some View {
-        GroupBox("Qwen MLX Debug") {
+        GroupBox("Suggestion — Eksperimental") {
             VStack(alignment: .leading, spacing: 10) {
+                Text("Hasil model hanya saran awal dan bukan nasihat hukum. Jangan masukkan dokumen rahasia.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text("Model diunduh saat pertama kali dijalankan dan disimpan di cache lokal.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 HStack(alignment: .top, spacing: 12) {
                     Picker("Input", selection: $viewModel.inputSource) {
                         ForEach(AIConnectorInputSource.allCases) { source in
