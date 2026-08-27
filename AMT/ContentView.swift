@@ -8,13 +8,13 @@
 import SwiftUI
 
 struct ContentView: View {
-    @Binding var document: AMTDocument
+    let suggestionService: QwenSuggestionService
 
     var body: some View {
-        DocumentEditorView(document: $document)
+        DashboardView(suggestionService: suggestionService)
     }
 }
 
 #Preview {
-    ContentView(document: .constant(AMTDocument()))
+    ContentView(suggestionService: QwenSuggestionService())
 }
