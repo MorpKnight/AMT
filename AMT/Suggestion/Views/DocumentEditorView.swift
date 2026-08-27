@@ -47,7 +47,15 @@ struct DocumentEditorView: View {
             .navigationTitle("")
         } detail: {
             VStack(spacing: 0) {
-                EditorToolbar(documentTitle: $activeDocument.title)
+                EditorToolbar(
+                    documentTitle: $activeDocument.title,
+                    onExport: {
+                        DocumentExporter.exportAsDocx(
+                            title: activeDocument.title,
+                            content: activeDocument.content
+                        )
+                    }
+                )
                 Divider()
 
                 TextEditor(text: $activeDocument.content)

@@ -33,6 +33,7 @@ enum TextAlignment: String, CaseIterable, Identifiable {
 
 struct EditorToolbar: View {
     @Binding var documentTitle: String
+    var onExport: (() -> Void)? = nil
 
     @State private var selectedTextStyle: TextStyle = .body
     @State private var isBold = false
@@ -178,12 +179,14 @@ struct EditorToolbar: View {
 
     private var trailingControls: some View {
         HStack(spacing: 8) {
-            Button(action: {}) {
+            Button(action: {
+                onExport?()
+            }) {
                 Image(systemName: "square.and.arrow.up")
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .help("Share")
+            .help("Ekspor Dokumen (.docx)")
 
             Button(action: {}) {
                 Image(systemName: "ellipsis.circle")
