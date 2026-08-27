@@ -63,7 +63,7 @@ final class DocumentStorageManager: ObservableObject {
         }
     }
 
-    // MARK: - Import Word Document from Finder
+    // MARK: - Import Document from Finder (.docx, .doc, .rtf, .md, .txt)
 
     func importWordDocumentFromFinder(completion: @escaping (DashboardDocument?) -> Void) {
         let panel = NSOpenPanel()
@@ -71,11 +71,13 @@ final class DocumentStorageManager: ObservableObject {
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.prompt = "Impor Dokumen"
-        panel.message = "Pilih file Word (.docx, .doc, .rtf, .txt)"
+        panel.message = "Pilih file dokumen (.docx, .doc, .rtf, .md, .txt)"
 
         var types: [UTType] = [.plainText, .rtf]
         if let docx = UTType(filenameExtension: "docx") { types.append(docx) }
         if let doc = UTType(filenameExtension: "doc") { types.append(doc) }
+        if let md = UTType(filenameExtension: "md") { types.append(md) }
+        if let markdown = UTType(filenameExtension: "markdown") { types.append(markdown) }
         panel.allowedContentTypes = types
 
         panel.begin { response in
@@ -87,10 +89,13 @@ final class DocumentStorageManager: ObservableObject {
             let title = url.deletingPathExtension().lastPathComponent
             var textContent = ""
 
-            if let attributedString = try? NSAttributedString(url: url, options: [:], documentAttributes: nil) {
-                textContent = attributedString.string
-            } else if let rawString = try? String(contentsOf: url, encoding: .utf8) {
-                textContent = rawString
+            do {
+                textContent = try DocxToMarkdownConverter.convert(fileURL: url)
+            } catch {
+                print("Error converting document to Markdown: \(error.localizedDescription)")
+                if let rawString = try? String(contentsOf: url, encoding: .utf8) {
+                    textContent = rawString
+                }
             }
 
             let newDoc = DashboardDocument(
