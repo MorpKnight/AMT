@@ -4,7 +4,7 @@ import Observation
 @MainActor
 @Observable
 final class AIConnectorViewModel {
-    private static let maxInputCharacters = 4_000
+    private static let previewCharacters = 2_000
 
     var inputSource: AIConnectorInputSource = .currentDocument
     var selectedSampleID = "redundant-wajib-untuk"
@@ -14,6 +14,8 @@ final class AIConnectorViewModel {
     private(set) var output = ""
     private(set) var errorMessage: String?
     private(set) var downloadProgress = 0.0
+    private(set) var inputTokenCount: Int?
+    private(set) var inputWasTruncated = false
 
     private let service: QwenSuggestionService
     private var task: Task<Void, Never>?
@@ -33,11 +35,10 @@ final class AIConnectorViewModel {
     }
 
     func inputPreview(documentText: String) -> String {
-        String(sourceText(documentText: documentText).prefix(Self.maxInputCharacters))
-    }
-
-    func isInputTruncated(documentText: String) -> Bool {
-        sourceText(documentText: documentText).count > Self.maxInputCharacters
+        let preview = String(sourceText(documentText: documentText).prefix(Self.previewCharacters))
+        return sourceText(documentText: documentText).count > Self.previewCharacters
+            ? preview + "…"
+            : preview
     }
 
     private func sourceText(documentText: String) -> String {
@@ -51,12 +52,14 @@ final class AIConnectorViewModel {
 
     func canRun(documentText: String) -> Bool {
         guard !isRunning else { return false }
-        return !inputPreview(documentText: documentText)
+        return !sourceText(documentText: documentText)
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .isEmpty
     }
 
     func run(documentText: String) {
+        resetInputMetadata()
+
         guard canRun(documentText: documentText) else {
             errorMessage = "Pilih atau masukkan teks sebelum menjalankan model."
             state = .failed(errorMessage ?? "Input tidak tersedia.")
@@ -64,7 +67,6 @@ final class AIConnectorViewModel {
         }
 
         let sourceText = sourceText(documentText: documentText)
-        let limitedText = String(sourceText.prefix(Self.maxInputCharacters))
         let operationID = UUID()
 
         task?.cancel()
@@ -79,7 +81,7 @@ final class AIConnectorViewModel {
 
             do {
                 let result = try await service.review(
-                    text: limitedText,
+                    text: sourceText,
                     thinkingEnabled: thinkingEnabled,
                     downloadProgress: { [weak self] progress in
                         Task { @MainActor [weak self] in
@@ -87,6 +89,11 @@ final class AIConnectorViewModel {
                             self.downloadProgress = progress
                             self.state = .downloading(progress)
                         }
+                    },
+                    onInputPrepared: { [weak self] tokenCount, wasTruncated in
+                        guard let self, self.activeOperationID == operationID else { return }
+                        self.inputTokenCount = tokenCount
+                        self.inputWasTruncated = wasTruncated
                     },
                     onVisibleChunk: { [weak self] chunk in
                         guard let self, self.activeOperationID == operationID else { return }
@@ -110,6 +117,11 @@ final class AIConnectorViewModel {
                 task = nil
             }
         }
+    }
+
+    func resetInputMetadata() {
+        inputTokenCount = nil
+        inputWasTruncated = false
     }
 
     func cancel() {
