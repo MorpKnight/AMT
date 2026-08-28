@@ -45,9 +45,7 @@ struct AIConnectorOutputParser: Sendable {
             .replacingOccurrences(of: "\r", with: "\n")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard !normalizedOutput.contains("<think>"),
-              !normalizedOutput.contains("</think>"),
-              !normalizedOutput.contains("<|im_end|>") else {
+        guard !AIConnectorGenerationDiagnostics.containsReasoningMarkers(in: normalizedOutput) else {
             throw AIConnectorOutputParserError.reasoningOrTemplateToken
         }
 

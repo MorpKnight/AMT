@@ -35,7 +35,7 @@ struct AIConnectorDebugPanel: View {
                                 }
                             }
                             .pickerStyle(.menu)
-                            Text("Unduhan pertama \(viewModel.modelVariant.downloadEstimate).")
+                            Text("\(viewModel.modelVariant.downloadEstimate) • rev \(viewModel.modelVariant.shortRevision)")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
@@ -285,8 +285,14 @@ struct AIConnectorDebugPanel: View {
                     AIConnectorFixtureEvaluationView(evaluation: evaluation)
                 }
 
-                if let benchmarkSummary = viewModel.benchmarkSummary {
+                if let benchmarkReport = viewModel.benchmarkReport {
+                    AIConnectorBenchmarkReportView(report: benchmarkReport)
+                } else if let benchmarkSummary = viewModel.benchmarkSummary {
                     AIConnectorBenchmarkSummaryView(summary: benchmarkSummary)
+                }
+
+                if let metrics = viewModel.latestGenerationMetrics {
+                    AIConnectorGenerationMetricsView(metrics: metrics)
                 }
 
                 if !viewModel.validatedReviews.isEmpty {
@@ -680,6 +686,209 @@ private struct AIConnectorBenchmarkSummaryView: View {
 
         let replacement = evaluation.actualReplacement.map { " → \($0)" } ?? ""
         return "Actual: \(status.displayTitle)\(replacement)"
+    }
+}
+
+private struct AIConnectorBenchmarkReportView: View {
+    let report: AIConnectorBenchmarkReport
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                AIConnectorSectionHeader(
+                    title: "Quality gate P0.9",
+                    subtitle: "\(report.reviewMode.title) • \(report.modelVariant.title)",
+                    systemImage: "checkmark.shield"
+                )
+                Spacer(minLength: 0)
+                Text(report.qualityGate.decision.rawValue)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(report.qualityGate.passed ? .green : .orange)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        (report.qualityGate.passed ? Color.green : Color.orange).opacity(0.12),
+                        in: Capsule()
+                    )
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(report.passedCount)/\(report.totalCount)")
+                    .font(.title3.monospacedDigit().weight(.bold))
+                Text("fixture sesuai expected signal")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                Text(String(format: "%.2f dtk", report.duration))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 112), spacing: 8)],
+                spacing: 8
+            ) {
+                AIConnectorMetricTile(
+                    value: "\(report.qualityGate.languagePassCount)/\(report.qualityGate.languageTotal)",
+                    label: "Bahasa",
+                    tint: .blue
+                )
+                AIConnectorMetricTile(
+                    value: "\(report.qualityGate.neutralSafetyPassCount)/\(report.qualityGate.neutralSafetyTotal)",
+                    label: "Neutral/safety",
+                    tint: .green
+                )
+                AIConnectorMetricTile(
+                    value: "\(report.qualityGate.truncatedCount)",
+                    label: "Token limit",
+                    tint: .orange
+                )
+                AIConnectorMetricTile(
+                    value: "\(report.qualityGate.repetitionCount)",
+                    label: "Repetition ≥ 0,2",
+                    tint: .orange
+                )
+                AIConnectorMetricTile(
+                    value: "\(report.qualityGate.reasoningLeakCount)",
+                    label: "Reasoning leak",
+                    tint: .red
+                )
+                AIConnectorMetricTile(
+                    value: "\(totalPromptTokens)",
+                    label: "Prompt token",
+                    tint: .purple
+                )
+                AIConnectorMetricTile(
+                    value: "\(totalGenerationTokens)",
+                    label: "Generation token",
+                    tint: .purple
+                )
+            }
+
+            VStack(alignment: .leading, spacing: 7) {
+                ForEach(report.records) { record in
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: record.expectedSignalPassed
+                            ? "checkmark.circle.fill"
+                            : "xmark.circle.fill")
+                            .foregroundStyle(record.expectedSignalPassed ? .green : .red)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(record.sampleTitle)
+                                .font(.caption.weight(.semibold))
+                            Text(actualSummary(for: record))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            if let rejectionReason = record.rejectionReason {
+                                Text(rejectionReason)
+                                    .font(.caption2)
+                                    .foregroundStyle(.orange)
+                            }
+                            if let validatedReason = record.validatedReason {
+                                Text(validatedReason)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            if let ratio = record.repeatedSixGramRatio, ratio > 0 {
+                                Text(String(format: "Repeated 6-gram ratio %.3f", ratio))
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            #if DEBUG
+                            if record.outputWasRejected, let diagnosticOutput = record.diagnosticOutput {
+                                DisclosureGroup("Diagnostic output (Debug)") {
+                                    Text(diagnosticOutput)
+                                        .font(.caption2.monospaced())
+                                        .textSelection(.enabled)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.top, 3)
+                                }
+                            }
+                            #endif
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+
+            Text("Quality gate: minimal 2/3 kasus bahasa, seluruh neutral/safety, tanpa truncation, repetition, reasoning leak, atau sumber buatan.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
+    }
+
+    private var totalPromptTokens: Int {
+        report.records.compactMap(\.promptTokenCount).reduce(0, +)
+    }
+
+    private var totalGenerationTokens: Int {
+        report.records.compactMap(\.generationTokenCount).reduce(0, +)
+    }
+
+    private func actualSummary(for record: AIConnectorBenchmarkRecord) -> String {
+        let status = record.validatedStatus.flatMap(AIReviewStatus.init(rawValue:))?.displayTitle
+            ?? (record.skipped ? "Dilewati" : "Output ditolak")
+        let origin = record.origin.map { " • \($0)" } ?? ""
+        let replacement: String
+        if record.validatedStatus == AIReviewStatus.suggestion.rawValue,
+           let validatedReplacement = record.validatedReplacement {
+            replacement = " → \(validatedReplacement)"
+        } else {
+            replacement = ""
+        }
+        return "Actual: \(status)\(origin)\(replacement)"
+    }
+}
+
+private struct AIConnectorGenerationMetricsView: View {
+    let metrics: AIConnectorGenerationMetrics
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            AIConnectorSectionHeader(
+                title: "Metrik generation terakhir",
+                subtitle: "Diambil dari completion info MLX; progress live tetap berupa karakter.",
+                systemImage: "speedometer"
+            )
+
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 115), spacing: 8)],
+                spacing: 8
+            ) {
+                AIConnectorMetricTile(
+                    value: "\(metrics.promptTokenCount)",
+                    label: "Prompt token",
+                    tint: .purple
+                )
+                AIConnectorMetricTile(
+                    value: "\(metrics.generationTokenCount)",
+                    label: "Generation token",
+                    tint: .purple
+                )
+                AIConnectorMetricTile(
+                    value: String(format: "%.2f dtk", metrics.promptDuration),
+                    label: "Prompt duration",
+                    tint: .blue
+                )
+                AIConnectorMetricTile(
+                    value: String(format: "%.2f dtk", metrics.generationDuration),
+                    label: "Generation duration",
+                    tint: .blue
+                )
+                AIConnectorMetricTile(
+                    value: metrics.stopReason.rawValue,
+                    label: "Stop reason",
+                    tint: metrics.stopReason == .stop ? .green : .orange
+                )
+            }
+        }
+        .padding(12)
+        .background(.quaternary.opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
     }
 }
 
