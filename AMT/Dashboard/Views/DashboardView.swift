@@ -14,6 +14,7 @@ struct DashboardView: View {
     @State private var activeDocument: DashboardDocument?
 
     let suggestionService: QwenSuggestionService
+    let dictionaryStore: LegalDictionaryStore
 
     private var filteredDocuments: [DashboardDocument] {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -68,7 +69,7 @@ struct DashboardView: View {
                     case .document, .none:
                         documentDashboardContent
                     case .dictionary:
-                        DictionaryView()
+                        DictionaryView(dictionaryStore: dictionaryStore)
                     }
                 }
                 .navigationTitle("")
@@ -145,5 +146,8 @@ struct DashboardView: View {
 }
 
 #Preview {
-    DashboardView(suggestionService: QwenSuggestionService())
+    DashboardView(
+        suggestionService: QwenSuggestionService(),
+        dictionaryStore: LegalDictionaryStore(entries: LegalDictionaryEntry.previewEntries)
+    )
 }

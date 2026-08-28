@@ -47,7 +47,15 @@ struct DocumentEditorView: View {
             .navigationTitle("")
         } detail: {
             VStack(spacing: 0) {
-                EditorToolbar(documentTitle: $activeDocument.title)
+                EditorToolbar(
+                    documentTitle: $activeDocument.title,
+                    onExport: {
+                        DocumentExporter.exportAsDocx(
+                            title: activeDocument.title,
+                            content: activeDocument.content
+                        )
+                    }
+                )
                 Divider()
 
                 TextEditor(text: $activeDocument.content)
@@ -55,13 +63,11 @@ struct DocumentEditorView: View {
                     .padding(16)
                     .scrollContentBackground(.visible)
 
-                #if DEBUG
                 Divider()
                 AIConnectorDebugPanel(
                     documentText: activeDocument.content,
                     viewModel: aiConnectorViewModel
                 )
-                #endif
             }
             .navigationTitle("")
         }

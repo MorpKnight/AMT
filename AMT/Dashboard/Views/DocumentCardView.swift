@@ -45,6 +45,11 @@ struct DocumentCardView: View {
                 Button(action: onSelect) {
                     Label("Buka Dokumen", systemImage: "doc.text.fill")
                 }
+                Button(action: {
+                    DocumentExporter.exportAsDocx(title: document.title, content: document.content)
+                }) {
+                    Label("Ekspor ke Word (.docx)", systemImage: "square.and.arrow.up")
+                }
                 Divider()
                 Button(role: .destructive, action: onDelete) {
                     Label("Hapus Dokumen", systemImage: "trash")
