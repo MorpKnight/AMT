@@ -16,7 +16,7 @@ struct AITextSegmentationResult: Hashable, Sendable {
     let omittedSegmentCount: Int
 }
 
-enum AIReviewStatus: String, CaseIterable, Hashable, Sendable {
+enum AIReviewStatus: String, CaseIterable, Codable, Hashable, Sendable {
     case noSuggestion = "NO_SUGGESTION"
     case suggestion = "SUGGESTION"
     case needsReview = "NEEDS_REVIEW"
@@ -33,7 +33,7 @@ enum AIReviewStatus: String, CaseIterable, Hashable, Sendable {
     }
 }
 
-enum AIReviewCategory: String, CaseIterable, Hashable, Sendable {
+enum AIReviewCategory: String, CaseIterable, Codable, Hashable, Sendable {
     case none = "NONE"
     case spelling = "SPELLING"
     case grammar = "GRAMMAR"
@@ -56,7 +56,7 @@ enum AIReviewCategory: String, CaseIterable, Hashable, Sendable {
     }
 }
 
-enum AIReviewOrigin: String, Hashable, Sendable {
+enum AIReviewOrigin: String, Codable, Hashable, Sendable {
     case qwen = "Qwen"
     case deterministic = "Deterministic rules"
     case deterministicFallback = "Deterministic fallback"
@@ -73,7 +73,7 @@ enum AIReviewOrigin: String, Hashable, Sendable {
     }
 }
 
-enum AIConnectorReviewMode: String, CaseIterable, Identifiable, Hashable, Sendable {
+enum AIConnectorReviewMode: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case deterministic = "deterministic"
     case hybrid = "hybrid"
     case modelOnly = "modelOnly"
@@ -107,9 +107,9 @@ enum AIConnectorReviewMode: String, CaseIterable, Identifiable, Hashable, Sendab
     }
 }
 
-enum AIConnectorModelVariant: String, CaseIterable, Identifiable, Hashable, Sendable {
+enum AIConnectorModelVariant: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case qwen35_2b = "qwen35-2b"
-    case qwen3_4b = "qwen3-4b"
+    case qwen35Legal4B = "qwen35-legal-4b"
 
     var id: Self { self }
 
@@ -117,8 +117,8 @@ enum AIConnectorModelVariant: String, CaseIterable, Identifiable, Hashable, Send
         switch self {
         case .qwen35_2b:
             "Qwen3.5 2B (baseline)"
-        case .qwen3_4b:
-            "Qwen3 4B (pembanding)"
+        case .qwen35Legal4B:
+            "Qwen3.5 Legal 4B (utama)"
         }
     }
 
@@ -126,8 +126,8 @@ enum AIConnectorModelVariant: String, CaseIterable, Identifiable, Hashable, Send
         switch self {
         case .qwen35_2b:
             "mlx-community/Qwen3.5-2B-4bit"
-        case .qwen3_4b:
-            "mlx-community/Qwen3-4B-4bit"
+        case .qwen35Legal4B:
+            "morpknight/qwen3.5-4b-indonesian-legal-mlx-4bit"
         }
     }
 
@@ -135,8 +135,8 @@ enum AIConnectorModelVariant: String, CaseIterable, Identifiable, Hashable, Send
         switch self {
         case .qwen35_2b:
             "674aaa7240b91e8012fcad5d791b7dfe5ba90207"
-        case .qwen3_4b:
-            "4dcb3d101c2a062e5c1d4bb173588c54ea6c4d25"
+        case .qwen35Legal4B:
+            "2517cc7962517b85d97aff8988785cdb02c8fea1"
         }
     }
 
@@ -144,10 +144,80 @@ enum AIConnectorModelVariant: String, CaseIterable, Identifiable, Hashable, Send
         switch self {
         case .qwen35_2b:
             "sekitar 1,6 GB"
-        case .qwen3_4b:
-            "sekitar 2,3 GB"
+        case .qwen35Legal4B:
+            "sekitar 2,39 GB"
         }
     }
+
+    var shortRevision: String {
+        String(revision.prefix(12))
+    }
+
+    func generationProfile(thinkingEnabled: Bool) -> AIConnectorGenerationProfile {
+        if thinkingEnabled {
+            return AIConnectorGenerationProfile(
+                maxTokens: 768,
+                temperature: 0.6,
+                topP: 0.95,
+                topK: 20,
+                presencePenalty: 0,
+                seed: 42
+            )
+        }
+
+        if self == .qwen35Legal4B {
+            return AIConnectorGenerationProfile(
+                maxTokens: 256,
+                temperature: 0,
+                topP: 1,
+                topK: 0,
+                presencePenalty: nil,
+                seed: 42
+            )
+        }
+
+        return AIConnectorGenerationProfile(
+            maxTokens: 256,
+            temperature: 0.2,
+            topP: 0.9,
+            topK: 20,
+            presencePenalty: 0,
+            seed: 42
+        )
+    }
+}
+
+struct AIConnectorGenerationProfile: Hashable, Sendable {
+    let maxTokens: Int
+    let temperature: Float
+    let topP: Float
+    let topK: Int
+    let presencePenalty: Float?
+    let seed: UInt64
+
+    var isGreedy: Bool {
+        temperature == 0
+    }
+}
+
+enum AIConnectorGenerationStopReason: String, Codable, Hashable, Sendable {
+    case stop
+    case length
+    case cancelled
+}
+
+struct AIConnectorGenerationMetrics: Codable, Hashable, Sendable {
+    let promptTokenCount: Int
+    let generationTokenCount: Int
+    let promptDuration: TimeInterval
+    let generationDuration: TimeInterval
+    let stopReason: AIConnectorGenerationStopReason
+}
+
+struct QwenReviewResult: Sendable {
+    let output: String
+    let metrics: AIConnectorGenerationMetrics
+    let containsReasoningMarkers: Bool
 }
 
 struct AIParsedReview: Hashable, Sendable {
@@ -199,7 +269,7 @@ struct AIConnectorRunSummary: Hashable, Sendable {
     let skippedSegmentCount: Int
 }
 
-enum AIConnectorFixtureExpectation: Hashable, Sendable {
+enum AIConnectorFixtureExpectation: Codable, Hashable, Sendable {
     case suggestion(
         original: String,
         replacement: String,
@@ -209,7 +279,7 @@ enum AIConnectorFixtureExpectation: Hashable, Sendable {
     case noReplacement
 }
 
-struct AIConnectorFixtureEvaluation: Identifiable, Hashable, Sendable {
+struct AIConnectorFixtureEvaluation: Codable, Identifiable, Hashable, Sendable {
     let sample: AIConnectorSample
     let expectation: AIConnectorFixtureExpectation
     let actualStatus: AIReviewStatus?
@@ -221,7 +291,7 @@ struct AIConnectorFixtureEvaluation: Identifiable, Hashable, Sendable {
     var id: String { sample.id }
 }
 
-struct AIConnectorBenchmarkSummary: Hashable, Sendable {
+struct AIConnectorBenchmarkSummary: Codable, Hashable, Sendable {
     let title: String
     let reviewMode: AIConnectorReviewMode
     let modelVariant: AIConnectorModelVariant
@@ -234,6 +304,144 @@ struct AIConnectorBenchmarkSummary: Hashable, Sendable {
 
     var totalCount: Int {
         evaluations.count
+    }
+}
+
+struct AIConnectorBenchmarkRecord: Codable, Hashable, Identifiable, Sendable {
+    let sampleID: String
+    let sampleTitle: String
+    let expectedSignal: String
+    let mode: String
+    let modelVariant: String
+    let thinkingEnabled: Bool
+    let segmentID: Int?
+    let sourceLocation: Int?
+    let targetText: String?
+    let candidateGlossaryID: String?
+    let candidateGlossaryTerm: String?
+    let diagnosticOutput: String?
+    let parsedStatus: String?
+    let validatedStatus: String?
+    let validatedCategory: String?
+    let validatedOriginal: String?
+    let validatedReplacement: String?
+    let validatedReason: String?
+    let origin: String?
+    let rejectionReason: String?
+    let promptTokenCount: Int?
+    let generationTokenCount: Int?
+    let promptDuration: TimeInterval?
+    let generationDuration: TimeInterval?
+    let stopReason: AIConnectorGenerationStopReason?
+    let repeatedSixGramRatio: Double?
+    let expectedSignalPassed: Bool
+    let wasFallback: Bool
+    let outputWasRejected: Bool
+    let outputWasTruncated: Bool
+    let reasoningMarkerDetected: Bool
+    let sourceClaimDetected: Bool
+    let skipped: Bool
+
+    var id: String { sampleID }
+}
+
+enum AIConnectorQualityGateDecision: String, Codable, Hashable, Sendable {
+    case go = "GO"
+    case noGo = "NO_GO"
+}
+
+struct AIConnectorQualityGate: Codable, Hashable, Sendable {
+    let languagePassCount: Int
+    let languageTotal: Int
+    let neutralSafetyPassCount: Int
+    let neutralSafetyTotal: Int
+    let parserBoundaryPassed: Bool
+    let truncatedCount: Int
+    let repetitionCount: Int
+    let reasoningLeakCount: Int
+    let sourceClaimCount: Int
+    let cancellationPassed: Bool
+    let passed: Bool
+    let decision: AIConnectorQualityGateDecision
+
+    init(
+        records: [AIConnectorBenchmarkRecord],
+        mode: AIConnectorReviewMode,
+        cancellationPassed: Bool = true,
+        repetitionThreshold: Double = 0.2
+    ) {
+        let utilityIDs: Set<String> = [
+            "redundant-wajib-untuk",
+            "spelling-ditanda-tangani",
+            "terminology-data-pribadi"
+        ]
+        let utilityRecords = records.filter { utilityIDs.contains($0.sampleID) }
+        let neutralSafetyRecords = records.filter { !utilityIDs.contains($0.sampleID) }
+
+        languagePassCount = utilityRecords.filter(\.expectedSignalPassed).count
+        languageTotal = utilityRecords.count
+        neutralSafetyPassCount = neutralSafetyRecords.filter(\.expectedSignalPassed).count
+        neutralSafetyTotal = neutralSafetyRecords.count
+        parserBoundaryPassed = records.allSatisfy { record in
+            if record.skipped || record.mode == AIConnectorReviewMode.deterministic.rawValue {
+                return true
+            }
+
+            return record.validatedStatus != nil
+                || (record.outputWasRejected && record.rejectionReason != nil)
+        }
+        truncatedCount = records.filter(\.outputWasTruncated).count
+        repetitionCount = records.filter {
+            ($0.repeatedSixGramRatio ?? 0) >= repetitionThreshold
+        }.count
+        reasoningLeakCount = records.filter(\.reasoningMarkerDetected).count
+        sourceClaimCount = records.filter(\.sourceClaimDetected).count
+        self.cancellationPassed = cancellationPassed
+
+        let modeAllowsQualityGate = mode != .deterministic
+        let gatePassed = modeAllowsQualityGate
+            && languageTotal == 3
+            && languagePassCount >= 2
+            && neutralSafetyTotal == 5
+            && neutralSafetyPassCount == neutralSafetyTotal
+            && parserBoundaryPassed
+            && truncatedCount == 0
+            && repetitionCount == 0
+            && reasoningLeakCount == 0
+            && sourceClaimCount == 0
+            && cancellationPassed
+        passed = gatePassed
+        decision = gatePassed ? .go : .noGo
+    }
+}
+
+struct AIConnectorBenchmarkReport: Codable, Hashable, Sendable {
+    let generatedAt: Date
+    let title: String
+    let reviewMode: AIConnectorReviewMode
+    let modelVariant: AIConnectorModelVariant
+    let thinkingEnabled: Bool
+    let duration: TimeInterval
+    let records: [AIConnectorBenchmarkRecord]
+    let evaluations: [AIConnectorFixtureEvaluation]
+    let qualityGate: AIConnectorQualityGate
+
+    var passedCount: Int {
+        evaluations.filter(\.passed).count
+    }
+
+    var totalCount: Int {
+        evaluations.count
+    }
+
+    var legacySummary: AIConnectorBenchmarkSummary {
+        AIConnectorBenchmarkSummary(
+            title: title,
+            reviewMode: reviewMode,
+            modelVariant: modelVariant,
+            duration: duration,
+            evaluations: evaluations
+        )
     }
 }
 
@@ -253,7 +461,7 @@ enum AIConnectorInputSource: String, CaseIterable, Identifiable {
     }
 }
 
-struct AIConnectorSample: Identifiable, Hashable, Sendable {
+struct AIConnectorSample: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let title: String
     let text: String
