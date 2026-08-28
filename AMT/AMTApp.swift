@@ -9,9 +9,17 @@ import SwiftUI
 
 @main
 struct AMTApp: App {
+    private let qwenSuggestionService = QwenSuggestionService()
+    private let dictionaryStore = LegalDictionaryStore()
+
     var body: some Scene {
-        DocumentGroup(newDocument: AMTDocument()) { file in
-            ContentView(document: file.$document)
+        WindowGroup {
+            ContentView(
+                suggestionService: qwenSuggestionService,
+                dictionaryStore: dictionaryStore
+            )
+                .navigationTitle("")
         }
+        .windowToolbarStyle(.unified(showsTitle: false))
     }
 }

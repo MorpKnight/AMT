@@ -8,34 +8,138 @@
 import SwiftUI
 
 struct DocumentEditorView: View {
-    @Binding var document: AMTDocument
+    let documents: [DashboardDocument]
+    @Binding var activeDocument: DashboardDocument
+    let onBackToDashboard: () -> Void
+    let onCreateNewDocument: () -> Void
 
-    @State private var selectedSidebarItem: SidebarItem? = .dictionary
-    @State private var documentTitle = "Untitled"
+    private let suggestionService: QwenSuggestionService
+
+    @State private var selectedDocumentID: UUID?
+    @State private var aiConnectorViewModel: AIConnectorViewModel
+    @State private var isDebugPanelPresented = false
+
+    init(
+        documents: [DashboardDocument],
+        activeDocument: Binding<DashboardDocument>,
+        onBackToDashboard: @escaping () -> Void,
+        onCreateNewDocument: @escaping () -> Void,
+        suggestionService: QwenSuggestionService,
+        dictionaryStore: LegalDictionaryStore
+    ) {
+        self.documents = documents
+        self._activeDocument = activeDocument
+        self.onBackToDashboard = onBackToDashboard
+        self.onCreateNewDocument = onCreateNewDocument
+        self.suggestionService = suggestionService
+        self._selectedDocumentID = State(initialValue: activeDocument.wrappedValue.id)
+        self._aiConnectorViewModel = State(
+            initialValue: AIConnectorViewModel(
+                service: suggestionService,
+                dictionaryStore: dictionaryStore
+            )
+        )
+    }
 
     var body: some View {
         NavigationSplitView {
-            EditorSidebar(selection: $selectedSidebarItem)
+            EditorSidebar(
+                documents: documents,
+                selectedDocumentID: $selectedDocumentID,
+                onBackToDashboard: onBackToDashboard,
+                onCreateNewDocument: onCreateNewDocument
+            )
+            .navigationTitle("")
         } detail: {
             VStack(spacing: 0) {
-                if selectedSidebarItem == .suggestion || selectedSidebarItem == nil {
-                    EditorToolbar(documentTitle: $documentTitle)
-                    Divider()
-                }
+                EditorToolbar(
+                    documentTitle: $activeDocument.title,
+                    onExport: {
+                        DocumentExporter.exportAsDocx(
+                            title: activeDocument.title,
+                            content: activeDocument.content
+                        )
+                    },
+                    onAnalyze: {
+                        aiConnectorViewModel.run(documentText: activeDocument.content)
+                    },
+                    onCancelAnalysis: {
+                        aiConnectorViewModel.cancel()
+                    },
+                    onShowDebug: {
+                        isDebugPanelPresented = true
+                    },
+                    canAnalyze: aiConnectorViewModel.canRun(
+                        documentText: activeDocument.content
+                    ),
+                    isAnalyzing: aiConnectorViewModel.isRunning,
+                    analysisState: aiConnectorViewModel.state,
+                    analysisDownloadProgress: aiConnectorViewModel.downloadProgress,
+                    analysisGenerationProgress: aiConnectorViewModel.generationProgress,
+                    analysisSummary: aiConnectorViewModel.runSummary,
+                    analysisErrorMessage: aiConnectorViewModel.errorMessage
+                )
+                Divider()
 
-                switch selectedSidebarItem {
-                case .dictionary:
-                    DictionaryView()
-                case .suggestion, .none:
-                    TextEditor(text: $document.text)
-                        .font(.body)
-                        .scrollContentBackground(.visible)
-                }
+                HighlightedDocumentTextEditor(
+                    text: $activeDocument.content,
+                    suggestions: aiConnectorViewModel.editorSuggestions,
+                    selectedSuggestionID: aiConnectorViewModel.selectedSuggestionID,
+                    onSelect: { id in
+                        aiConnectorViewModel.selectSuggestion(id)
+                    },
+                    onTextEdited: {
+                        aiConnectorViewModel.resetInputMetadata()
+                    },
+                    onAccept: { suggestion in
+                        let delta = suggestion.replacement.utf16.count
+                            - suggestion.original.utf16.count
+                        aiConnectorViewModel.reconcileAfterAccept(
+                            suggestion.id,
+                            replacementDelta: delta
+                        )
+                    },
+                    onDismiss: { id in
+                        aiConnectorViewModel.dismissSuggestion(id)
+                    }
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .navigationTitle("")
+        }
+        .navigationTitle("")
+        .onChange(of: selectedDocumentID) { _, newID in
+            aiConnectorViewModel.resetInputMetadata()
+            isDebugPanelPresented = false
+            if let newID = newID,
+               let doc = documents.first(where: { $0.id == newID }) {
+                activeDocument = doc
             }
         }
+        .onChange(of: activeDocument.id) { _, newID in
+            if selectedDocumentID != newID {
+                selectedDocumentID = newID
+            }
+        }
+        #if DEBUG
+        .sheet(isPresented: $isDebugPanelPresented) {
+            AIConnectorDebugPanel(
+                documentText: activeDocument.content,
+                viewModel: aiConnectorViewModel
+            )
+            .frame(minWidth: 760, minHeight: 600)
+        }
+        #endif
     }
 }
 
 #Preview {
-    DocumentEditorView(document: .constant(AMTDocument()))
+    DocumentEditorView(
+        documents: [DashboardDocument(title: "Untitled", content: "Sample")],
+        activeDocument: .constant(DashboardDocument(title: "Untitled", content: "Sample")),
+        onBackToDashboard: {},
+        onCreateNewDocument: {},
+        suggestionService: QwenSuggestionService(),
+        dictionaryStore: LegalDictionaryStore(entries: LegalDictionaryEntry.previewEntries)
+    )
 }
