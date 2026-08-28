@@ -57,7 +57,8 @@ struct DashboardView: View {
                             }
                         }
                     },
-                    suggestionService: suggestionService
+                    suggestionService: suggestionService,
+                    dictionaryStore: dictionaryStore
                 )
             } else {
                 // Main Dashboard Split View

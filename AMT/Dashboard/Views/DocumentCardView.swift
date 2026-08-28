@@ -63,7 +63,11 @@ struct DocumentCardView: View {
                     .foregroundStyle(.primary)
                     .lineLimit(1)
 
-                Text(document.formattedRelativeDate)
+                Text(
+                    AIConnectorDummyDocument.isBuiltIn(document)
+                        ? "Built-in · reset saat dibuka"
+                        : document.formattedRelativeDate
+                )
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

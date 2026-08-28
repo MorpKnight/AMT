@@ -11,6 +11,7 @@
   - Membuat, membuka, mencari, dan menghapus dokumen.
   - Menyimpan dokumen secara lokal di folder `Documents/AMT_Documents` sebagai JSON.
   - Mengimpor `.docx`, `.doc`, `.rtf`, dan `.txt` melalui Finder. Isi file diubah menjadi teks biasa untuk kebutuhan editor saat ini.
+  - Menyediakan dokumen bawaan **AI Connector — Test Document** untuk smoke test. Dokumen ini selalu dibuat ulang saat aplikasi dibuka dan perubahan pada dokumen tersebut tidak disimpan ke disk.
 - **Dictionary / Lawtionary**
   - Memuat `AMT/Dictionary/Resources/kamus_hukum.csv` sebagai resource aplikasi.
   - Mencari berdasarkan istilah atau bagian dari pengertian.
@@ -18,8 +19,14 @@
 - **Suggestion eksperimental**
   - Meninjau teks dokumen menggunakan `mlx-community/Qwen3.5-2B-4bit` melalui MLX Swift.
   - Inferensi berjalan lokal setelah model selesai diunduh dan disimpan di cache Hugging Face.
-  - Mendukung streaming output, Cancel, Retry, dan pilihan thinking mode.
-  - Menyediakan tujuh dummy sample untuk smoke test perilaku awal.
+  - Memproses dokumen per kalimat/klausul, kemudian mengambil maksimal satu kandidat glossary lokal melalui guard BM25 konservatif.
+  - Memvalidasi output model dengan kontrak tagged fields sebelum menampilkannya.
+  - Melindungi angka, tenggat, modalitas, dan defined terms dari perubahan yang tidak sah.
+  - Menyediakan tiga mode Debug: baseline aturan deterministik, Hybrid dengan pemulihan terbatas, dan Qwen langsung untuk pembanding.
+  - Jika output Qwen ditolak pada mode Hybrid, koreksi bahasa berisiko rendah atau no-suggestion yang aman dapat dipulihkan; klausul lain tetap ditahan.
+  - Menyediakan benchmark seluruh fixture untuk membandingkan baseline dengan Qwen3.5 2B atau model pembanding Qwen3 4B.
+  - Mendukung streaming internal, Cancel, Retry, dan pilihan thinking mode.
+  - Menyediakan delapan dummy sample untuk smoke test perilaku awal, termasuk terminologi `Data Pribadi`.
 
 ## Arsitektur ringkas
 
@@ -32,10 +39,19 @@ flowchart LR
     Dictionary --> Store[LegalDictionaryStore]
     Store --> CSV[kamus_hukum.csv]
     Dashboard --> Editor[DocumentEditorView]
-    Editor --> AIView[AIConnectorDebugPanel]
+    Editor --> AIView[AIConnectorDebugPanel<br/>(Debug only)]
     AIView --> VM[AIConnectorViewModel]
-    VM --> Service[QwenSuggestionService]
+    VM --> Retrieval[Local BM25 glossary retrieval]
+    Retrieval --> CSV[kamus_hukum.csv]
+    VM --> Rules[Deterministic bounded rules]
+    VM --> Service[QwenSuggestionService<br/>(Hybrid / Qwen langsung)]
     Service --> MLX[MLX Swift + Qwen]
+    Service --> Parser[Tagged output parser]
+    Parser --> Validator[Safety validator]
+    Rules --> Validator
+    Validator --> AIView
+    VM --> Benchmark[Fixture benchmark + expected signal]
+    Benchmark --> AIView
 ```
 
 `AMTApp` membuat `QwenSuggestionService` dan `LegalDictionaryStore`, lalu meneruskannya secara eksplisit ke view yang membutuhkan. Kode baru dikelompokkan berdasarkan fitur, sedangkan model dokumen dan storage dashboard masih berada pada boundary yang digunakan project saat ini.
@@ -64,19 +80,35 @@ Entry dengan `status` selain `OK` dilewati. Jika resource CSV tidak dapat dimuat
 
 ## Cara kerja Suggestion
 
-Suggestion menggunakan prompt sederhana untuk meninjau ejaan, tata bahasa, kejelasan, dan konsistensi istilah tanpa mengubah makna hukum. Model tidak digunakan sebagai sumber hukum dan output ditampilkan apa adanya setelah reasoning internal disembunyikan.
+Suggestion menggunakan prompt sederhana untuk meninjau ejaan, tata bahasa, kejelasan, dan konsistensi istilah tanpa mengubah makna hukum. Dokumen dipecah per kalimat/klausul. Untuk setiap segmen, aplikasi menjalankan BM25 lokal atas target segmen untuk mencari maksimal satu kandidat yang kuat dan tidak ambigu. Model tidak digunakan sebagai sumber hukum.
+
+Pada panel Debug, strategi **Baseline aman** tidak mengunduh model dan hanya
+menjalankan koreksi deterministik yang sudah dibatasi. Strategi **Hybrid: model
++ guard** mencoba Qwen terlebih dahulu, kemudian hanya memulihkan output yang
+ditolak jika ada koreksi deterministik yang eksplisit dan berisiko rendah.
+Strategi **Qwen langsung** dipakai untuk membandingkan kepatuhan format dan
+kualitas model tanpa pemulihan. Tombol benchmark menjalankan seluruh delapan
+fixture secara berurutan; unit test tidak mengunduh atau menjalankan model.
+
+Model diwajibkan menghasilkan enam tagged fields (`STATUS`, `CATEGORY`, `ORIGINAL`, `REPLACEMENT`, `GLOSSARY_ID`, dan `REASON`). Output ditahan di memori sampai parser dan safety validator memeriksa bahwa bagian asli unik, replacement aman, angka serta istilah terproteksi tetap sama, dan tidak ada klaim sumber hukum baru. Output yang gagal pemeriksaan ditolak dan tidak menjadi saran.
+
+Guard retrieval saat ini bersifat provisional untuk integrasi awal: kandidat non-exact harus memiliki skor BM25 minimal `20`, sedikitnya `4` token definisi yang cocok, dan margin minimal `3` terhadap kandidat berbeda berikutnya. Istilah multi-kata yang muncul langsung di teks dapat lolos sebagai direct term match. Guard ini bukan confidence hukum dan belum menggantikan review sumber resmi.
 
 Konfigurasi penting saat ini:
 
 | Komponen | Nilai |
 | --- | --- |
-| Model | `mlx-community/Qwen3.5-2B-4bit` |
-| Revision | `674aaa7240b91e8012fcad5d791b7dfe5ba90207` |
-| Input dokumen | Maksimal 4.096 token, dihitung dengan tokenizer Qwen |
-| Output non-thinking | Maksimal 4.096 token |
-| Output thinking | Maksimal 2.048 token |
+| Model baseline | `mlx-community/Qwen3.5-2B-4bit` |
+| Revision baseline | `674aaa7240b91e8012fcad5d791b7dfe5ba90207` |
+| Model pembanding Debug | `mlx-community/Qwen3-4B-4bit` |
+| Revision pembanding | `4dcb3d101c2a062e5c1d4bb173588c54ea6c4d25` |
+| Input target | Maksimal 512 token per segmen |
+| Konteks | Satu segmen sebelum dan sesudah, maksimal 128 token masing-masing |
+| Segmen per Run | Maksimal 12 segmen |
+| Output non-thinking | Maksimal 256 token |
+| Output thinking | Maksimal 768 token |
 | Thinking default | Off |
-| Generation | Streaming dan dapat dibatalkan |
+| Generation | Streaming internal, hasil ditahan sampai tervalidasi, dan dapat dibatalkan |
 
 Model tidak dibundel ke repository. Pada penggunaan pertama, aplikasi membutuhkan koneksi internet untuk mengunduh model. Setelah itu, model digunakan dari cache lokal. Teks dokumen tidak dikirim ke API LLM eksternal oleh implementasi ini.
 
@@ -85,7 +117,7 @@ Model tidak dibundel ke repository. Pada penggunaan pertama, aplikasi membutuhka
 - macOS dengan environment Xcode yang mendukung target project `macOS 26.5`.
 - Xcode dan Git.
 - Mac Apple Silicon direkomendasikan untuk menjalankan Suggestion dengan MLX.
-- Koneksi internet pada penggunaan pertama Suggestion untuk mengunduh model.
+- Koneksi internet pada penggunaan pertama Suggestion untuk mengunduh model. Hanya konfigurasi Debug yang mengaktifkan outbound network; Release tetap tanpa izin tersebut.
 
 Dependency Swift yang dipin dan disimpan pada `AMT.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`:
 
@@ -109,9 +141,14 @@ Produk yang digunakan target AMT adalah `MLXLLM`, `MLXLMCommon`, `MLXHuggingFace
 4. Jalankan dengan `⌘R`.
 5. Pilih **Dictionary** pada sidebar untuk mencari istilah atau pengertian.
 6. Pilih dokumen pada dashboard untuk membuka editor.
-7. Pada panel **Suggestion — Eksperimental**, pilih sumber input, opsional pilih dummy sample, lalu tekan **Run**.
+7. Pada panel **Suggestion — Eksperimental** (Debug), pilih sumber input, opsional pilih dummy sample, lalu tekan **Jalankan review** untuk satu dokumen/fixture.
+8. Untuk membandingkan kualitas, pilih strategi dan model, lalu tekan **Uji baseline** atau **Benchmark 8 fixture**. Hasil benchmark hanya evaluasi Debug dan tidak mengubah dokumen.
 
-Pada Run pertama, tunggu proses download dan loading model selesai. Run berikutnya menggunakan cache lokal selama cache masih tersedia.
+Panel menampilkan jumlah segmen, progress kalimat, hasil yang lolos validator, hasil yang memerlukan review manusia, dan output yang ditolak. Current Document dibatasi ke 4.000 karakter pertama dan panel memberi indikator jika terpotong. Tidak ada hasil yang diterapkan otomatis ke dokumen.
+
+Dashboard juga selalu menampilkan **AI Connector — Test Document**. Dokumen ini memuat contoh redundansi, typo, istilah hukum, preservasi angka, tanggal, mata uang, persentase, defined terms, negasi, pengecualian, terminologi campuran, dan klausul sensitif. Isinya sengaja lebih dari batas 12 segmen agar indikator segmen yang dilewati juga dapat diuji. Dokumen dapat diedit untuk pengujian, tetapi akan kembali ke isi awal ketika aplikasi dijalankan ulang.
+
+Pada Run atau benchmark model pertama, tunggu proses download dan loading model selesai. Run berikutnya menggunakan cache lokal selama cache masih tersedia. Model pembanding Qwen3 4B memiliki cache terpisah dan baru diunduh ketika dipilih.
 
 ## Build dari command line
 
@@ -137,7 +174,19 @@ Pemeriksaan whitespace yang tersedia:
 git diff --check
 ```
 
-Repository belum memiliki test target, formatter, linter, atau CI workflow. Karena itu, build Debug/Release dan smoke test manual merupakan validasi utama saat ini.
+Jalankan unit test deterministic dengan target `AMTTests`:
+
+```bash
+xcodebuild \
+  -project AMT.xcodeproj \
+  -scheme AMT \
+  -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath /tmp/amt-tests \
+  CODE_SIGNING_ALLOWED=NO \
+  test
+```
+
+Unit test mencakup segmentasi, retrieval BM25, parser, dan safety validator. Download model dan evaluasi output Qwen tetap merupakan smoke test manual. Repository belum memiliki formatter, linter, atau CI workflow.
 
 ## Struktur project
 
@@ -164,10 +213,10 @@ AMT/
 
 ## Batasan MVP
 
-- Dictionary masih menggunakan lexical search; belum mendukung typo correction, stemming, sinonim, atau semantic retrieval.
-- Dictionary belum terhubung dengan Suggestion untuk mengambil kandidat istilah secara otomatis.
+- Pencarian Dictionary masih menggunakan lexical search; belum mendukung typo correction, stemming, sinonim, atau semantic retrieval. Candidate generation untuk Suggestion sudah memakai BM25 provisional, tetapi belum menjadi ranking final Dictionary.
 - Suggestion belum menghasilkan suggestion cards dengan accept/reject dan belum mengubah isi dokumen.
 - Thinking mode pada model kecil dapat berhenti sebelum jawaban final; aplikasi akan menampilkan error dan menyarankan non-thinking mode.
+- P0.8 memperkuat baseline deterministik dan benchmark Hybrid/Qwen, tetapi belum meluluskan Qwen-only untuk suggestion cards atau TestFlight.
 - Editor saat ini menyimpan teks biasa. Toolbar formatting masih berupa prototype dan belum menyimpan rich-text formatting.
 - Import `.docx`/`.doc` berfokus pada ekstraksi teks; export kembali ke `.docx` belum tersedia.
 - Dataset dan output model belum membuktikan ketepatan hukum. Kasus ambigu atau berdampak pada hak dan kewajiban harus diperlakukan sebagai `needs review` oleh manusia.
@@ -175,10 +224,10 @@ AMT/
 ## Arah pengembangan berikutnya
 
 1. Evaluasi Dictionary dengan query istilah, pengertian, typo, dan paraphrase yang direview manusia.
-2. Tambahkan fuzzy/BM25 retrieval sebelum mempertimbangkan semantic embedding.
-3. Hubungkan retrieval Dictionary dengan Suggestion agar model menerima kandidat istilah beserta sumbernya.
+2. Kalibrasikan kembali guard BM25 dengan source review manusia pada corpus yang lebih luas.
+3. Hubungkan retrieval Dictionary dengan suggestion cards setelah candidate generation lolos decision gate.
 4. Pisahkan hasil grammar, istilah, dan isu substantif dengan status review yang jelas.
-5. Tambahkan test target dan fixture evaluasi untuk preservasi angka, tanggal, defined terms, serta larangan mengarang sumber.
+5. Hasil benchmark Qwen3.5 2B dan Qwen3 4B saat ini tercatat di `docs/p0.8-quality-remediation.md`; lakukan review manusia dan perluas baseline deterministik sebelum suggestion cards atau TestFlight diaktifkan.
 
 ## Referensi teknis
 

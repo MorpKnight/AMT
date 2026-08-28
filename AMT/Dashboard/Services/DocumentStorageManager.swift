@@ -49,17 +49,19 @@ final class DocumentStorageManager: ObservableObject {
 
             for fileURL in fileURLs {
                 if let data = try? Data(contentsOf: fileURL),
-                   let document = try? decoder.decode(DashboardDocument.self, from: data) {
+                   let document = try? decoder.decode(DashboardDocument.self, from: data),
+                   !AIConnectorDummyDocument.isBuiltIn(document) {
                     loadedDocs.append(document)
                 }
             }
 
             // Sort by latest updated first
             loadedDocs.sort { $0.updatedAt > $1.updatedAt }
+            loadedDocs.insert(AIConnectorDummyDocument.document, at: 0)
             self.documents = loadedDocs
         } catch {
             print("Error loading documents via Foundation FileManager: \(error.localizedDescription)")
-            self.documents = []
+            self.documents = [AIConnectorDummyDocument.document]
         }
     }
 
@@ -137,6 +139,13 @@ final class DocumentStorageManager: ObservableObject {
     func saveDocument(_ document: DashboardDocument) {
         var updatedDoc = document
         updatedDoc.updatedAt = Date()
+
+        if AIConnectorDummyDocument.isBuiltIn(updatedDoc) {
+            if let index = documents.firstIndex(where: { $0.id == updatedDoc.id }) {
+                documents[index] = updatedDoc
+            }
+            return
+        }
         
         let encoder = JSONEncoder()
         encoder.outputFormatting = .prettyPrinted
@@ -156,6 +165,8 @@ final class DocumentStorageManager: ObservableObject {
     }
 
     func deleteDocument(_ document: DashboardDocument) {
+        guard !AIConnectorDummyDocument.isBuiltIn(document) else { return }
+
         let fileURL = storageURL.appendingPathComponent("\(document.id.uuidString).json")
         try? fileManager.removeItem(at: fileURL)
         documents.removeAll { $0.id == document.id }
