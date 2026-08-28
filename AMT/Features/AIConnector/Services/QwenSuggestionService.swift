@@ -10,6 +10,7 @@ enum QwenSuggestionError: LocalizedError {
     case segmentTooLong
     case incompleteThinking
     case emptyResponse
+    case unsupportedToolCall
 
     var errorDescription: String? {
         switch self {
@@ -21,6 +22,8 @@ enum QwenSuggestionError: LocalizedError {
             "Thinking mode berhenti sebelum jawaban final terbentuk. Coba matikan thinking mode."
         case .emptyResponse:
             "Model tidak menghasilkan jawaban yang dapat ditampilkan."
+        case .unsupportedToolCall:
+            "Model menghasilkan tool call yang tidak didukung oleh eksperimen ini."
         }
     }
 }
@@ -103,8 +106,8 @@ final class QwenSuggestionService {
         glossaryMatches: [LegalDictionaryMatch],
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
-        modelVariant: AIConnectorModelVariant = .qwen35_2b
-    ) async throws -> String {
+        modelVariant: AIConnectorModelVariant = .qwen35Legal4B
+    ) async throws -> QwenReviewResult {
         guard !segment.targetText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw QwenSuggestionError.emptyInput
         }
@@ -121,11 +124,16 @@ final class QwenSuggestionService {
         let session = ChatSession(
             container,
             instructions: Self.systemPrompt,
-            generateParameters: generationParameters(thinkingEnabled: thinkingEnabled),
+            generateParameters: generationParameters(
+                thinkingEnabled: thinkingEnabled,
+                modelVariant: modelVariant
+            ),
             additionalContext: ["enable_thinking": thinkingEnabled]
         )
 
         var rawOutput = ""
+        var completionInfo: GenerateCompletionInfo?
+        var encounteredToolCall = false
         let prompt = Self.userPrompt(
             targetText: promptInput.targetText,
             previousContext: promptInput.previousContext,
@@ -133,15 +141,26 @@ final class QwenSuggestionService {
             glossaryMatches: glossaryMatches
         )
 
-        for try await chunk in session.streamResponse(to: prompt) {
+        for try await generation in session.streamDetails(to: prompt) {
             try Task.checkCancellation()
-            rawOutput += chunk
-            generationProgress(rawOutput.utf16.count)
+            switch generation {
+            case let .chunk(chunk):
+                rawOutput += chunk
+                generationProgress(rawOutput.utf16.count)
+            case let .info(info):
+                completionInfo = info
+            case .toolCall:
+                encounteredToolCall = true
+            }
         }
 
-        if thinkingEnabled,
-           !rawOutput.contains("<think>") || !rawOutput.contains("</think>") {
-            throw QwenSuggestionError.incompleteThinking
+        // MLX may finish the async stream without yielding a final completion
+        // detail after cancellation. Check the task explicitly before turning
+        // an empty buffer into an application-level empty-response error.
+        try Task.checkCancellation()
+
+        if encounteredToolCall {
+            throw QwenSuggestionError.unsupportedToolCall
         }
 
         let finalResponse = Self.visibleResponse(
@@ -150,11 +169,30 @@ final class QwenSuggestionService {
         )
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard !finalResponse.isEmpty else {
+        let metrics = Self.metrics(from: completionInfo)
+        if metrics.stopReason == .cancelled {
+            throw CancellationError()
+        }
+
+        if thinkingEnabled, !rawOutput.contains("</think>") {
+            throw QwenSuggestionError.incompleteThinking
+        }
+
+        if finalResponse.isEmpty, metrics.stopReason != .length {
             throw QwenSuggestionError.emptyResponse
         }
 
-        return finalResponse
+        let containsReasoningMarkers = AIConnectorGenerationDiagnostics
+            .containsReasoningMarkers(in: finalResponse)
+        let output = containsReasoningMarkers
+            ? AIConnectorGenerationDiagnostics.sanitizedDiagnosticOutput(finalResponse)
+            : finalResponse
+
+        return QwenReviewResult(
+            output: output,
+            metrics: metrics,
+            containsReasoningMarkers: containsReasoningMarkers
+        )
     }
 
     private func preparePromptInput(
@@ -235,25 +273,50 @@ final class QwenSuggestionService {
         }
     }
 
-    private func generationParameters(thinkingEnabled: Bool) -> GenerateParameters {
-        if thinkingEnabled {
-            return GenerateParameters(
-                maxTokens: 768,
-                temperature: 0.6,
-                topP: 0.95,
-                topK: 20,
-                presencePenalty: 0,
-                seed: 42
+    private func generationParameters(
+        thinkingEnabled: Bool,
+        modelVariant: AIConnectorModelVariant
+    ) -> GenerateParameters {
+        let profile = modelVariant.generationProfile(thinkingEnabled: thinkingEnabled)
+        return GenerateParameters(
+            maxTokens: profile.maxTokens,
+            temperature: profile.temperature,
+            topP: profile.topP,
+            topK: profile.topK,
+            presencePenalty: profile.presencePenalty,
+            seed: profile.seed
+        )
+    }
+
+    private static func metrics(
+        from info: GenerateCompletionInfo?
+    ) -> AIConnectorGenerationMetrics {
+        guard let info else {
+            return AIConnectorGenerationMetrics(
+                promptTokenCount: 0,
+                generationTokenCount: 0,
+                promptDuration: 0,
+                generationDuration: 0,
+                stopReason: .stop
             )
         }
 
-        return GenerateParameters(
-            maxTokens: 256,
-            temperature: 0.2,
-            topP: 0.9,
-            topK: 20,
-            presencePenalty: 0,
-            seed: 42
+        let stopReason: AIConnectorGenerationStopReason
+        switch info.stopReason {
+        case .stop:
+            stopReason = .stop
+        case .length:
+            stopReason = .length
+        case .cancelled:
+            stopReason = .cancelled
+        }
+
+        return AIConnectorGenerationMetrics(
+            promptTokenCount: info.promptTokenCount,
+            generationTokenCount: info.generationTokenCount,
+            promptDuration: info.promptTime,
+            generationDuration: info.generateTime,
+            stopReason: stopReason
         )
     }
 

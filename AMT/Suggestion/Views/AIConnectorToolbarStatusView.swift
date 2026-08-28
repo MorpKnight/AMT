@@ -39,7 +39,7 @@ struct AIConnectorToolbarStatusView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     ProgressView()
                         .controlSize(.small)
-                    Text("Token keluaran: " + String(generationProgress))
+                    Text("Karakter keluaran: " + String(generationProgress))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
