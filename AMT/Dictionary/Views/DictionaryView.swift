@@ -5,11 +5,14 @@
 //  Created by Mochammad Athar Humam Ghazanfar on 21/08/26.
 //
 
-import Foundation
 import SwiftUI
 
 struct DictionaryView: View {
-    @State private var viewModel = DictionaryViewModel()
+    @State private var viewModel: DictionaryViewModel
+
+    init(dictionaryStore: LegalDictionaryStore = LegalDictionaryStore()) {
+        _viewModel = State(initialValue: DictionaryViewModel(dictionaryStore: dictionaryStore))
+    }
 
     var body: some View {
         Group {
@@ -126,5 +129,7 @@ private struct PopularTermChip: View {
 }
 
 #Preview {
-    DictionaryView()
+    DictionaryView(
+        dictionaryStore: LegalDictionaryStore(entries: LegalDictionaryEntry.previewEntries)
+    )
 }

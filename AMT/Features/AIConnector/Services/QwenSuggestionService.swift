@@ -24,6 +24,8 @@ enum QwenSuggestionError: LocalizedError {
 
 @MainActor
 final class QwenSuggestionService {
+    static let maxInputTokens = 4_096
+
     private static let modelConfiguration = ModelConfiguration(
         id: "mlx-community/Qwen3.5-2B-4bit",
         revision: "674aaa7240b91e8012fcad5d791b7dfe5ba90207",
@@ -62,6 +64,7 @@ final class QwenSuggestionService {
         text: String,
         thinkingEnabled: Bool,
         downloadProgress: @escaping @Sendable (Double) -> Void,
+        onInputPrepared: @escaping @MainActor @Sendable (Int, Bool) -> Void,
         onVisibleChunk: @escaping @MainActor @Sendable (String) -> Void
     ) async throws -> String {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -70,6 +73,10 @@ final class QwenSuggestionService {
 
         let container = try await loadModel(downloadProgress: downloadProgress)
         try Task.checkCancellation()
+
+        let preparedInput = await prepareInput(text: text, container: container)
+        try Task.checkCancellation()
+        onInputPrepared(preparedInput.tokenCount, preparedInput.wasTruncated)
 
         let session = ChatSession(
             container,
@@ -83,7 +90,7 @@ final class QwenSuggestionService {
         let prompt = """
         Tinjau teks berikut:
         ---
-        \(text)
+        \(preparedInput.text)
         ---
         """
 
@@ -111,6 +118,27 @@ final class QwenSuggestionService {
         }
 
         return finalResponse
+    }
+
+    private func prepareInput(text: String, container: ModelContainer) async -> PreparedInput {
+        let tokenIDs = await container.encode(text)
+
+        guard tokenIDs.count > Self.maxInputTokens else {
+            return PreparedInput(
+                text: text,
+                tokenCount: tokenIDs.count,
+                wasTruncated: false
+            )
+        }
+
+        let limitedTokenIDs = Array(tokenIDs.prefix(Self.maxInputTokens))
+        let limitedText = await container.decode(tokenIds: limitedTokenIDs)
+
+        return PreparedInput(
+            text: limitedText,
+            tokenCount: limitedTokenIDs.count,
+            wasTruncated: true
+        )
     }
 
     private func loadModel(
@@ -159,7 +187,7 @@ final class QwenSuggestionService {
         }
 
         return GenerateParameters(
-            maxTokens: 512,
+            maxTokens: 4_096,
             temperature: 1.0,
             topP: 1.0,
             topK: 20,
@@ -181,5 +209,11 @@ final class QwenSuggestionService {
         response = response.replacingOccurrences(of: "</think>", with: "")
         response = response.replacingOccurrences(of: "<|im_end|>", with: "")
         return response
+    }
+
+    private struct PreparedInput {
+        let text: String
+        let tokenCount: Int
+        let wasTruncated: Bool
     }
 }

@@ -184,6 +184,12 @@ struct DictionaryDetailView: View {
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(lawTitleColor)
 
+                    if let lawTitle = ref.lawTitle {
+                        Text(lawTitle)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+
                     if let institution = ref.institution {
                         Text(institution)
                             .font(.system(size: 12))
@@ -219,6 +225,14 @@ struct DictionaryDetailView: View {
                     }
                     .font(.system(size: 11))
                     .padding(.top, 2)
+
+                    if let sourceURL = ref.sourceURL {
+                        Link(destination: sourceURL) {
+                            Label("Buka sumber", systemImage: "arrow.up.right.square")
+                                .font(.system(size: 11))
+                        }
+                        .padding(.top, 2)
+                    }
                 }
                 .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)

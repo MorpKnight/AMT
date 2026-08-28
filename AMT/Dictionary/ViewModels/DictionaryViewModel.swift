@@ -8,7 +8,6 @@
 import Foundation
 import SwiftUI
 import Observation
-import CoreServices
 
 @MainActor
 @Observable
@@ -26,6 +25,12 @@ final class DictionaryViewModel {
     /// 2. You can inject a suggestion service or async loader method here:
     ///    `func refreshPopularTerms(basedOn context: String? = nil) async { ... }`
     var popularTerms: [PopularTerm] = PopularTerm.defaultPopularTerms
+
+    private let dictionaryStore: LegalDictionaryStore
+
+    init(dictionaryStore: LegalDictionaryStore = LegalDictionaryStore()) {
+        self.dictionaryStore = dictionaryStore
+    }
 
     // MARK: - Search & Lookup Actions
 
@@ -49,52 +54,39 @@ final class DictionaryViewModel {
 
         isLoading = true
 
-        // 1. Check curated Indonesian legal glossary first
-        let key = trimmed.lowercased()
-        if let entry = PopularTerm.sampleGlossaryEntries[key] {
-            self.selectedEntry = entry
-            withAnimation(.easeInOut(duration: 0.2)) {
-                self.isShowingDetail = true
-                self.isLoading = false
-            }
-            return
-        }
-
-        // 2. Lookup via macOS CoreServices DCSCopyTextDefinition (system dictionary fallback)
-        let range = CFRangeMake(0, trimmed.count)
-        if let result = DCSCopyTextDefinition(nil, trimmed as CFString, range) {
-            let definitionString = result.takeRetainedValue() as String
-            self.selectedEntry = LegalGlossaryEntry(
+        if let entry = dictionaryStore.search(trimmed, limit: 1).first {
+            selectedEntry = makeGlossaryEntry(from: entry)
+        } else {
+            selectedEntry = LegalGlossaryEntry(
                 term: trimmed,
-                singleDefinition: definitionString,
-                reference: LegalReference(lawName: "Kamus Sistem macOS", institution: nil)
+                singleDefinition: "Definisi untuk kata \"\(trimmed)\" belum ditemukan dalam glosarium lokal."
             )
-            withAnimation(.easeInOut(duration: 0.2)) {
-                self.isShowingDetail = true
-                self.isLoading = false
-            }
-            return
         }
 
-        // 3. Fallback when term is not found
-        //
-        // TODO: [AI Team]
-        // You can hook into your Qwen / MLX LLM model here to generate on-the-fly legal definition:
-        //
-        // Task {
-        //     let prompt = "Jelaskan definisi hukum singkat untuk istilah: \(trimmed)"
-        //     let generatedDefinition = try await qwenService.review(text: prompt, ...)
-        //     self.selectedEntry = LegalGlossaryEntry(term: trimmed, singleDefinition: generatedDefinition)
-        // }
-        self.selectedEntry = LegalGlossaryEntry(
-            term: trimmed,
-            singleDefinition: "Definisi untuk kata \"\(trimmed)\" belum ditemukan dalam glosarium lokal.",
-            reference: LegalReference(lawName: "Lawtionary", institution: nil)
-        )
         withAnimation(.easeInOut(duration: 0.2)) {
             self.isShowingDetail = true
             self.isLoading = false
         }
+    }
+
+    private func makeGlossaryEntry(from entry: LegalDictionaryEntry) -> LegalGlossaryEntry {
+        let reference: LegalReference? = {
+            guard !entry.regulation.isEmpty || !entry.regulationTitle.isEmpty || entry.sourceURL != nil else {
+                return nil
+            }
+
+            return LegalReference(
+                lawName: entry.regulation.isEmpty ? "Sumber hukum lokal" : entry.regulation,
+                lawTitle: entry.regulationTitle.isEmpty ? nil : entry.regulationTitle,
+                sourceURL: entry.sourceURL
+            )
+        }()
+
+        return LegalGlossaryEntry(
+            term: entry.term,
+            singleDefinition: entry.definition,
+            reference: reference
+        )
     }
 
     /// Navigates back to the main Lawtionary search view.

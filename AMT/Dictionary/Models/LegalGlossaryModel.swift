@@ -12,20 +12,26 @@ import Foundation
 /// Detailed statutory or institutional reference for a legal definition.
 nonisolated struct LegalReference: Hashable, Sendable {
     let lawName: String
+    let lawTitle: String?
     let institution: String?
     let dateEnacted: String?
     let dateEffective: String?
+    let sourceURL: URL?
 
     init(
         lawName: String,
+        lawTitle: String? = nil,
         institution: String? = nil,
         dateEnacted: String? = nil,
-        dateEffective: String? = nil
+        dateEffective: String? = nil,
+        sourceURL: URL? = nil
     ) {
         self.lawName = lawName
+        self.lawTitle = lawTitle
         self.institution = institution
         self.dateEnacted = dateEnacted
         self.dateEffective = dateEffective
+        self.sourceURL = sourceURL
     }
 }
 
@@ -100,7 +106,7 @@ nonisolated struct PopularTerm: Identifiable, Hashable, Sendable {
     // MARK: - Default Mock Data
     // TODO: [AI Team] Connect this list to the AI recommendation / trending legal terms algorithm.
     static let defaultPopularTerms: [PopularTerm] = [
-        PopularTerm(name: "Koporasi"),
+        PopularTerm(name: "Korporasi"),
         PopularTerm(name: "Perusahaan"),
         PopularTerm(name: "Ex Officio"),
         PopularTerm(name: "Pelaku Usaha"),
