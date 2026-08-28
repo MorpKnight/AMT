@@ -34,6 +34,16 @@ enum TextAlignment: String, CaseIterable, Identifiable {
 struct EditorToolbar: View {
     @Binding var documentTitle: String
     var onExport: (() -> Void)? = nil
+    var onAnalyze: (() -> Void)? = nil
+    var onCancelAnalysis: (() -> Void)? = nil
+    var onShowDebug: (() -> Void)? = nil
+    var canAnalyze = false
+    var isAnalyzing = false
+    var analysisState: AIConnectorRunState = .idle
+    var analysisDownloadProgress = 0.0
+    var analysisGenerationProgress = 0
+    var analysisSummary: AIConnectorRunSummary?
+    var analysisErrorMessage: String?
 
     @State private var selectedTextStyle: TextStyle = .body
     @State private var isBold = false
@@ -42,6 +52,7 @@ struct EditorToolbar: View {
     @State private var isStrikethrough = false
     @State private var selectedListStyle: ListStyle?
     @State private var selectedAlignment: TextAlignment = .leading
+    @State private var isAnalysisStatusPresented = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -188,12 +199,68 @@ struct EditorToolbar: View {
             .buttonStyle(.plain)
             .help("Ekspor Dokumen (.docx)")
 
+            #if DEBUG
+            if onAnalyze != nil {
+                Button {
+                    if isAnalyzing {
+                        onCancelAnalysis?()
+                    } else if canAnalyze {
+                        onAnalyze?()
+                        isAnalysisStatusPresented = true
+                    }
+                } label: {
+                    if isAnalyzing {
+                        HStack(spacing: 5) {
+                            ProgressView()
+                                .controlSize(.small)
+                            Image(systemName: "stop.fill")
+                        }
+                    } else {
+                        Image(systemName: "wand.and.sparkles")
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(isAnalyzing ? .red : .secondary)
+                .opacity(canAnalyze || isAnalyzing ? 1 : 0.45)
+                .disabled(!canAnalyze && !isAnalyzing)
+                .help(isAnalyzing ? "Batalkan analisis" : "Analisis dokumen")
+                .popover(isPresented: $isAnalysisStatusPresented, arrowEdge: .bottom) {
+                    AIConnectorToolbarStatusView(
+                        state: analysisState,
+                        downloadProgress: analysisDownloadProgress,
+                        generationProgress: analysisGenerationProgress,
+                        summary: analysisSummary,
+                        errorMessage: analysisErrorMessage,
+                        onRetry: {
+                            onAnalyze?()
+                            isAnalysisStatusPresented = true
+                        }
+                    )
+                }
+            }
+            #endif
+
+            #if DEBUG
+            Menu {
+                Button {
+                    onShowDebug?()
+                } label: {
+                    Label("Buka panel Debug", systemImage: "ladybug")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .foregroundStyle(.secondary)
+            }
+            .menuStyle(.borderlessButton)
+            .help("Opsi lainnya")
+            #else
             Button(action: {}) {
                 Image(systemName: "ellipsis.circle")
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
             .help("More Options")
+            #endif
         }
     }
 }

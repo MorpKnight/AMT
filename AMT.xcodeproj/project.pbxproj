@@ -12,10 +12,23 @@
 		A1C000000000000000001003 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = A1C000000000000000000103 /* MLXHuggingFace */; };
 		A1C000000000000000001004 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = A1C000000000000000000104 /* HuggingFace */; };
 		A1C000000000000000001005 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = A1C000000000000000000105 /* Tokenizers */; };
+		B1C000000000000000001001 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B1C000000000000000000011 /* XCTest.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B1C000000000000000000013 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AFB07B4C3036E689003FF116 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AFB07B533036E689003FF116;
+			remoteInfo = AMT;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		AFB07B543036E689003FF116 /* AMT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AMT.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1C000000000000000000010 /* AMTTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AMTTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1C000000000000000000011 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -37,6 +50,11 @@
 			path = AMT;
 			sourceTree = "<group>";
 		};
+		B1C000000000000000000002 /* AMTTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AMTTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,14 +70,32 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B1C000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1C000000000000000001001 /* XCTest.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		AF520B3930410908005908A5 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				B1C000000000000000000011 /* XCTest.framework */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		AFB07B4B3036E689003FF116 = {
 			isa = PBXGroup;
 			children = (
 				AFB07B563036E689003FF116 /* AMT */,
+				B1C000000000000000000002 /* AMTTests */,
 				AFB07B553036E689003FF116 /* Products */,
+				AF520B3930410908005908A5 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -67,6 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				AFB07B543036E689003FF116 /* AMT.app */,
+				B1C000000000000000000010 /* AMTTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -101,6 +138,27 @@
 			productReference = AFB07B543036E689003FF116 /* AMT.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B1C000000000000000000003 /* AMTTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B1C000000000000000000004 /* Build configuration list for PBXNativeTarget "AMTTests" */;
+			buildPhases = (
+				B1C000000000000000000005 /* Sources */,
+				B1C000000000000000000006 /* Frameworks */,
+				B1C000000000000000000007 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B1C000000000000000000012 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				B1C000000000000000000002 /* AMTTests */,
+			);
+			name = AMTTests;
+			productName = AMTTests;
+			productReference = B1C000000000000000000010 /* AMTTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -113,6 +171,10 @@
 				TargetAttributes = {
 					AFB07B533036E689003FF116 = {
 						CreatedOnToolsVersion = 26.6;
+					};
+					B1C000000000000000000003 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = AFB07B533036E689003FF116;
 					};
 				};
 			};
@@ -136,12 +198,20 @@
 			projectRoot = "";
 			targets = (
 				AFB07B533036E689003FF116 /* AMT */,
+				B1C000000000000000000003 /* AMTTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		AFB07B523036E689003FF116 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B1C000000000000000000007 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -158,7 +228,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B1C000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B1C000000000000000000012 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AFB07B533036E689003FF116 /* AMT */;
+			targetProxy = B1C000000000000000000013 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		AFB07B623036E689003FF116 /* Debug */ = {
@@ -169,7 +254,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = QW3MXN77GK;
+				DEVELOPMENT_TEAM = DP5XP7C2AM;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
@@ -203,9 +288,9 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = QW3MXN77GK;
+				DEVELOPMENT_TEAM = DP5XP7C2AM;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -347,6 +432,52 @@
 			};
 			name = Release;
 		};
+		B1C000000000000000000014 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				PRODUCT_BUNDLE_IDENTIFIER = giovanchristoffel.AMTTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AMT.app/Contents/MacOS/AMT";
+			};
+			name = Debug;
+		};
+		B1C000000000000000000015 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				PRODUCT_BUNDLE_IDENTIFIER = giovanchristoffel.AMTTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AMT.app/Contents/MacOS/AMT";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -364,6 +495,15 @@
 			buildConfigurations = (
 				AFB07B623036E689003FF116 /* Debug */,
 				AFB07B633036E689003FF116 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B1C000000000000000000004 /* Build configuration list for PBXNativeTarget "AMTTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B1C000000000000000000014 /* Debug */,
+				B1C000000000000000000015 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
