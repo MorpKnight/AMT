@@ -16,6 +16,7 @@ final class DictionaryViewModel {
     var selectedEntry: LegalGlossaryEntry? = nil
     var isShowingDetail: Bool = false
     var isLoading: Bool = false
+    var topMatches: [LegalGlossaryEntry] = []
 
     // MARK: - Popular Terms
     /// Array of popular legal terms displayed in the "Istilah Populer" section.
@@ -47,27 +48,45 @@ final class DictionaryViewModel {
         lookupTerm(trimmed)
     }
 
-    /// Executes the legal term lookup with animated transition to Detail View (Option B).
+    /// Executes the legal term lookup with animated transition to Detail View using BAAI/bge-m3 RAG (Top 3 candidates).
     func lookupTerm(_ query: String) {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         isLoading = true
 
-        if let entry = dictionaryStore.search(trimmed, limit: 1).first {
-            selectedEntry = makeGlossaryEntry(from: entry)
-        } else {
-            selectedEntry = LegalGlossaryEntry(
-                term: trimmed,
-                singleDefinition: "Definisi untuk kata \"\(trimmed)\" belum ditemukan dalam glosarium lokal."
-            )
-        }
+        Task { @MainActor in
+            let ragEntries = await self.dictionaryStore.searchRAG(trimmed, limit: 3)
+            let glossaryEntries = ragEntries.map { self.makeGlossaryEntry(from: $0) }
+            self.topMatches = glossaryEntries
 
-        withAnimation(.easeInOut(duration: 0.2)) {
-            self.isShowingDetail = true
-            self.isLoading = false
+            if let first = glossaryEntries.first {
+                self.selectedEntry = first
+            } else if let fallbackEntry = self.dictionaryStore.search(trimmed, limit: 1).first {
+                let entry = self.makeGlossaryEntry(from: fallbackEntry)
+                self.selectedEntry = entry
+                self.topMatches = [entry]
+            } else {
+                self.selectedEntry = LegalGlossaryEntry(
+                    term: trimmed,
+                    singleDefinition: "Definisi untuk kata \"\(trimmed)\" belum ditemukan dalam glosarium lokal."
+                )
+                self.topMatches = []
+            }
+
+            withAnimation(.easeInOut(duration: 0.2)) {
+                self.isShowingDetail = true
+                self.isLoading = false
+            }
         }
     }
+
+    func selectMatch(_ entry: LegalGlossaryEntry) {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            self.selectedEntry = entry
+        }
+    }
+
 
     private func makeGlossaryEntry(from entry: LegalDictionaryEntry) -> LegalGlossaryEntry {
         let reference: LegalReference? = {

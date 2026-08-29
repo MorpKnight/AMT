@@ -98,6 +98,37 @@ struct DictionaryDetailView: View {
                             .foregroundStyle(.primary)
                             .padding(.top, 4)
 
+                        // Top 3 RAG Matches Bar
+                        if !viewModel.topMatches.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(spacing: 10) {
+                                    ForEach(Array(viewModel.topMatches.prefix(3).enumerated()), id: \.offset) { index, match in
+                                        Button(action: {
+                                            viewModel.selectMatch(match)
+                                        }) {
+                                            HStack(spacing: 6) {
+                                                Text("#\(index + 1)")
+                                                    .font(.system(size: 11, weight: .bold))
+                                                    .foregroundStyle(viewModel.selectedEntry?.term == match.term ? Color.white : Color.accentColor)
+                                                Text(match.term)
+                                                    .font(.system(size: 12, weight: .medium))
+                                                    .foregroundStyle(viewModel.selectedEntry?.term == match.term ? Color.white : Color.primary)
+                                            }
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 6)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(viewModel.selectedEntry?.term == match.term ? Color.accentColor : Color.primary.opacity(0.06))
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+
+
                         // Definition Cards (Numbered: 1, 2, ...)
                         ForEach(entry.definitions) { def in
                             definitionCard(def: def)
