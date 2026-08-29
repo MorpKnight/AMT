@@ -7,13 +7,36 @@ struct AIReviewSegment: Hashable, Sendable {
     let targetText: String
     let previousContext: String?
     let nextContext: String?
+    let isTooLong: Bool
+
+    init(
+        id: Int,
+        sourceLocation: Int,
+        sourceLength: Int,
+        targetText: String,
+        previousContext: String?,
+        nextContext: String?,
+        isTooLong: Bool = false
+    ) {
+        self.id = id
+        self.sourceLocation = sourceLocation
+        self.sourceLength = sourceLength
+        self.targetText = targetText
+        self.previousContext = previousContext
+        self.nextContext = nextContext
+        self.isTooLong = isTooLong
+    }
 }
 
 struct AITextSegmentationResult: Hashable, Sendable {
     let segments: [AIReviewSegment]
     let headingCount: Int
     let tooLongSegmentCount: Int
+    /// Retained for report compatibility. Segmentation is now document-wide,
+    /// so this value is always zero; queue limits are reported separately.
     let omittedSegmentCount: Int
+
+    var queuedSegmentCount: Int { segments.count }
 }
 
 enum AIReviewStatus: String, CaseIterable, Codable, Hashable, Sendable {
@@ -58,6 +81,7 @@ enum AIReviewCategory: String, CaseIterable, Codable, Hashable, Sendable {
 
 enum AIReviewOrigin: String, Codable, Hashable, Sendable {
     case qwen = "Qwen"
+    case qwenRepaired = "Qwen (repaired)"
     case deterministic = "Deterministic rules"
     case deterministicFallback = "Deterministic fallback"
 
@@ -65,12 +89,28 @@ enum AIReviewOrigin: String, Codable, Hashable, Sendable {
         switch self {
         case .qwen:
             "Model Qwen"
+        case .qwenRepaired:
+            "Model Qwen (format diperbaiki)"
         case .deterministic:
             "Aturan deterministik"
         case .deterministicFallback:
             "Pemulihan deterministik"
         }
     }
+}
+
+enum AIConnectorRejectionClass: String, Codable, Hashable, Sendable {
+    case unknown
+    case modelFailure
+    case tokenLimit
+    case repetition
+    case reasoningLeak
+    case parserRecoverable
+    case parserNonRecoverable
+    case validator
+    case sourceClaim
+    case segmentTooLong
+    case cancelled
 }
 
 enum AIConnectorReviewMode: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
@@ -102,7 +142,7 @@ enum AIConnectorReviewMode: String, CaseIterable, Codable, Identifiable, Hashabl
         }
     }
 
-    var usesModel: Bool {
+    nonisolated var usesModel: Bool {
         self != .deterministic
     }
 }
@@ -110,6 +150,7 @@ enum AIConnectorReviewMode: String, CaseIterable, Codable, Identifiable, Hashabl
 enum AIConnectorModelVariant: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case qwen35_2b = "qwen35-2b"
     case qwen35Legal4B = "qwen35-legal-4b"
+    case qwen35Base4B = "qwen35-base-4b"
 
     var id: Self { self }
 
@@ -118,42 +159,50 @@ enum AIConnectorModelVariant: String, CaseIterable, Codable, Identifiable, Hasha
         case .qwen35_2b:
             "Qwen3.5 2B (baseline)"
         case .qwen35Legal4B:
-            "Qwen3.5 Legal 4B (utama)"
+            "Qwen3.5 Legal 4B (pembanding domain)"
+        case .qwen35Base4B:
+            "Qwen3.5 4B Base (utama sementara)"
         }
     }
 
-    var modelID: String {
+    nonisolated var modelID: String {
         switch self {
         case .qwen35_2b:
             "mlx-community/Qwen3.5-2B-4bit"
         case .qwen35Legal4B:
             "morpknight/qwen3.5-4b-indonesian-legal-mlx-4bit"
+        case .qwen35Base4B:
+            "mlx-community/Qwen3.5-4B-MLX-4bit"
         }
     }
 
-    var revision: String {
+    nonisolated var revision: String {
         switch self {
         case .qwen35_2b:
             "674aaa7240b91e8012fcad5d791b7dfe5ba90207"
         case .qwen35Legal4B:
             "2517cc7962517b85d97aff8988785cdb02c8fea1"
+        case .qwen35Base4B:
+            "32f3e8ecf65426fc3306969496342d504bfa13f3"
         }
     }
 
-    var downloadEstimate: String {
+    nonisolated var downloadEstimate: String {
         switch self {
         case .qwen35_2b:
             "sekitar 1,6 GB"
         case .qwen35Legal4B:
             "sekitar 2,39 GB"
+        case .qwen35Base4B:
+            "sekitar 3,1 GB"
         }
     }
 
-    var shortRevision: String {
+    nonisolated var shortRevision: String {
         String(revision.prefix(12))
     }
 
-    func generationProfile(thinkingEnabled: Bool) -> AIConnectorGenerationProfile {
+    nonisolated func generationProfile(thinkingEnabled: Bool) -> AIConnectorGenerationProfile {
         if thinkingEnabled {
             return AIConnectorGenerationProfile(
                 maxTokens: 768,
@@ -161,6 +210,17 @@ enum AIConnectorModelVariant: String, CaseIterable, Codable, Identifiable, Hasha
                 topP: 0.95,
                 topK: 20,
                 presencePenalty: 0,
+                seed: 42
+            )
+        }
+
+        if self == .qwen35Base4B {
+            return AIConnectorGenerationProfile(
+                maxTokens: 256,
+                temperature: 0,
+                topP: 1,
+                topK: 0,
+                presencePenalty: nil,
                 seed: 42
             )
         }
@@ -227,9 +287,29 @@ struct AIParsedReview: Hashable, Sendable {
     let replacement: String?
     let glossaryID: String?
     let reason: String
+    let ruleID: String?
+
+    init(
+        status: AIReviewStatus,
+        category: AIReviewCategory,
+        original: String?,
+        replacement: String?,
+        glossaryID: String?,
+        reason: String,
+        ruleID: String? = nil
+    ) {
+        self.status = status
+        self.category = category
+        self.original = original
+        self.replacement = replacement
+        self.glossaryID = glossaryID
+        self.reason = reason
+        self.ruleID = ruleID
+    }
 }
 
 struct AIValidatedReview: Identifiable, Hashable, Sendable {
+    let id: UUID
     let segment: AIReviewSegment
     let status: AIReviewStatus
     let category: AIReviewCategory
@@ -238,8 +318,33 @@ struct AIValidatedReview: Identifiable, Hashable, Sendable {
     let reason: String
     let glossaryMatch: LegalDictionaryMatch?
     let origin: AIReviewOrigin
+    let ruleID: String?
 
-    var id: Int { segment.id }
+    init(
+        id: UUID = UUID(),
+        segment: AIReviewSegment,
+        status: AIReviewStatus,
+        category: AIReviewCategory,
+        original: String?,
+        replacement: String?,
+        reason: String,
+        glossaryMatch: LegalDictionaryMatch?,
+        origin: AIReviewOrigin,
+        ruleID: String? = nil
+    ) {
+        self.id = id
+        self.segment = segment
+        self.status = status
+        self.category = category
+        self.original = original
+        self.replacement = replacement
+        self.reason = reason
+        self.glossaryMatch = glossaryMatch
+        self.origin = origin
+        self.ruleID = ruleID
+    }
+
+    var segmentID: Int { segment.id }
 }
 
 struct AIReviewGlossarySnapshot: Identifiable, Hashable, Sendable {
@@ -250,11 +355,27 @@ struct AIReviewGlossarySnapshot: Identifiable, Hashable, Sendable {
 }
 
 struct AIReviewRejection: Identifiable, Hashable, Sendable {
+    let id: UUID
     let segment: AIReviewSegment
     let rawOutput: String
     let reason: String
+    let classification: AIConnectorRejectionClass
 
-    var id: Int { segment.id }
+    init(
+        id: UUID = UUID(),
+        segment: AIReviewSegment,
+        rawOutput: String,
+        reason: String,
+        classification: AIConnectorRejectionClass = .unknown
+    ) {
+        self.id = id
+        self.segment = segment
+        self.rawOutput = rawOutput
+        self.reason = reason
+        self.classification = classification
+    }
+
+    var segmentID: Int { segment.id }
 }
 
 struct AIConnectorRunSummary: Hashable, Sendable {
@@ -267,6 +388,182 @@ struct AIConnectorRunSummary: Hashable, Sendable {
     let recoveredCount: Int
     let rejectedCount: Int
     let skippedSegmentCount: Int
+    let totalSegmentCount: Int
+    let cacheHitCount: Int
+    let firstPassSuccessCount: Int
+    let repairAttemptCount: Int
+    let fallbackCount: Int
+    let circuitBreakerActivated: Bool
+    let wasPartial: Bool
+
+    nonisolated init(
+        reviewMode: AIConnectorReviewMode,
+        modelVariant: AIConnectorModelVariant,
+        processedSegmentCount: Int,
+        suggestionCount: Int,
+        needsReviewCount: Int,
+        noSuggestionCount: Int,
+        recoveredCount: Int,
+        rejectedCount: Int,
+        skippedSegmentCount: Int,
+        totalSegmentCount: Int? = nil,
+        cacheHitCount: Int = 0,
+        firstPassSuccessCount: Int = 0,
+        repairAttemptCount: Int = 0,
+        fallbackCount: Int = 0,
+        circuitBreakerActivated: Bool = false,
+        wasPartial: Bool = false
+    ) {
+        self.reviewMode = reviewMode
+        self.modelVariant = modelVariant
+        self.processedSegmentCount = processedSegmentCount
+        self.suggestionCount = suggestionCount
+        self.needsReviewCount = needsReviewCount
+        self.noSuggestionCount = noSuggestionCount
+        self.recoveredCount = recoveredCount
+        self.rejectedCount = rejectedCount
+        self.skippedSegmentCount = skippedSegmentCount
+        self.totalSegmentCount = totalSegmentCount ?? processedSegmentCount + skippedSegmentCount
+        self.cacheHitCount = cacheHitCount
+        self.firstPassSuccessCount = firstPassSuccessCount
+        self.repairAttemptCount = repairAttemptCount
+        self.fallbackCount = fallbackCount
+        self.circuitBreakerActivated = circuitBreakerActivated
+        self.wasPartial = wasPartial
+    }
+}
+
+enum AIConnectorQueueState: String, Hashable, Sendable {
+    case pending
+    case preparing
+    case retrieving
+    case generating
+    case parsing
+    case validating
+    case completed
+    case noSuggestion
+    case needsReview
+    case rejected
+    case skipped
+    case failed
+    case cancelled
+}
+
+struct AIConnectorSegmentResult: Sendable {
+    let segment: AIReviewSegment
+    let glossaryMatches: [LegalDictionaryMatch]
+    let reviews: [AIValidatedReview]
+    /// Status/category parsed from the model before validation. It is kept
+    /// separately from validated reviews so diagnostics can distinguish a
+    /// well-formed but unsafe answer from malformed output.
+    let parsedStatus: AIReviewStatus?
+    let parsedCategory: AIReviewCategory?
+    let rejections: [AIReviewRejection]
+    let cacheHit: Bool
+    let modelAttempts: Int
+    let repairAttempted: Bool
+    let usedFallback: Bool
+    let firstPassSucceeded: Bool
+    let skipped: Bool
+    let generationMetrics: AIConnectorGenerationMetrics?
+    let repeatedSixGramRatio: Double?
+    let outputWasTruncated: Bool
+    let reasoningMarkerDetected: Bool
+    let sourceClaimDetected: Bool
+
+    init(
+        segment: AIReviewSegment,
+        glossaryMatches: [LegalDictionaryMatch] = [],
+        reviews: [AIValidatedReview] = [],
+        parsedStatus: AIReviewStatus? = nil,
+        parsedCategory: AIReviewCategory? = nil,
+        rejections: [AIReviewRejection] = [],
+        cacheHit: Bool = false,
+        modelAttempts: Int = 0,
+        repairAttempted: Bool = false,
+        usedFallback: Bool = false,
+        firstPassSucceeded: Bool = false,
+        skipped: Bool = false,
+        generationMetrics: AIConnectorGenerationMetrics? = nil,
+        repeatedSixGramRatio: Double? = nil,
+        outputWasTruncated: Bool = false,
+        reasoningMarkerDetected: Bool = false,
+        sourceClaimDetected: Bool = false
+    ) {
+        self.segment = segment
+        self.glossaryMatches = glossaryMatches
+        self.reviews = reviews
+        self.parsedStatus = parsedStatus
+        self.parsedCategory = parsedCategory
+        self.rejections = rejections
+        self.cacheHit = cacheHit
+        self.modelAttempts = modelAttempts
+        self.repairAttempted = repairAttempted
+        self.usedFallback = usedFallback
+        self.firstPassSucceeded = firstPassSucceeded
+        self.skipped = skipped
+        self.generationMetrics = generationMetrics
+        self.repeatedSixGramRatio = repeatedSixGramRatio
+        self.outputWasTruncated = outputWasTruncated
+        self.reasoningMarkerDetected = reasoningMarkerDetected
+        self.sourceClaimDetected = sourceClaimDetected
+    }
+}
+
+enum AIConnectorWorkQueueEvent: Sendable {
+    case stateChanged(segmentID: Int, state: AIConnectorQueueState)
+    case result(AIConnectorSegmentResult)
+    case progress(completed: Int, total: Int)
+    case circuitBreakerActivated
+    case finished(AIConnectorRunSummary)
+    case failed(String)
+}
+
+struct AIConnectorDocumentProtectionContext: Hashable, Sendable {
+    let definedTerms: Set<String>
+    let partyNames: Set<String>
+    let acronyms: Set<String>
+    let quotedTerms: Set<String>
+    let identifiers: Set<String>
+
+    static let empty = AIConnectorDocumentProtectionContext(
+        definedTerms: [],
+        partyNames: [],
+        acronyms: [],
+        quotedTerms: [],
+        identifiers: []
+    )
+}
+
+enum AIConnectorLocalToolName: String, Codable, CaseIterable, Hashable, Sendable {
+    case searchLegalConcepts
+    case getLegalDefinition
+}
+
+struct AIConnectorLocalToolRequest: Hashable, Sendable {
+    let name: AIConnectorLocalToolName
+    let query: String?
+    let entryID: String?
+    let limit: Int
+}
+
+struct AIConnectorLocalToolResponse: Hashable, Sendable {
+    let name: AIConnectorLocalToolName
+    let payload: String
+    let corpusVersion: String
+    let isAuthoritative: Bool
+}
+
+struct AIConnectorLocalToolBudget: Hashable, Sendable {
+    let maxCalls: Int
+    let maxResultsPerCall: Int
+    let timeout: TimeInterval
+
+    nonisolated static let `default` = AIConnectorLocalToolBudget(
+        maxCalls: 4,
+        maxResultsPerCall: 5,
+        timeout: 1
+    )
 }
 
 enum AIConnectorFixtureExpectation: Codable, Hashable, Sendable {
@@ -341,6 +638,11 @@ struct AIConnectorBenchmarkRecord: Codable, Hashable, Identifiable, Sendable {
     let reasoningMarkerDetected: Bool
     let sourceClaimDetected: Bool
     let skipped: Bool
+    let cacheHit: Bool
+    let modelAttempts: Int
+    let repairAttempted: Bool
+    let firstPassSucceeded: Bool
+    let rejectionClass: AIConnectorRejectionClass?
 
     var id: String { sampleID }
 }
@@ -355,6 +657,19 @@ struct AIConnectorQualityGate: Codable, Hashable, Sendable {
     let languageTotal: Int
     let neutralSafetyPassCount: Int
     let neutralSafetyTotal: Int
+    /// Output that reached the six-field schema after any bounded format
+    /// repair. This is deliberately separate from semantic correctness.
+    let schemaCompliantCount: Int
+    let schemaTotal: Int
+    /// A model answer is contained when it either becomes a validated result
+    /// or is explicitly rejected with a diagnostic reason.
+    let safetyContainedCount: Int
+    let safetyTotal: Int
+    let safetyContainmentPassed: Bool
+    /// Includes validated NO_SUGGESTION decisions. Exact fixture utility is
+    /// represented separately by `exactExpectationPassCount`.
+    let usableValidatedOutputCount: Int
+    let exactExpectationPassCount: Int
     let parserBoundaryPassed: Bool
     let truncatedCount: Int
     let repetitionCount: Int
@@ -382,14 +697,26 @@ struct AIConnectorQualityGate: Codable, Hashable, Sendable {
         languageTotal = utilityRecords.count
         neutralSafetyPassCount = neutralSafetyRecords.filter(\.expectedSignalPassed).count
         neutralSafetyTotal = neutralSafetyRecords.count
-        parserBoundaryPassed = records.allSatisfy { record in
+        let modelAttemptRecords = records.filter { $0.modelAttempts > 0 }
+        schemaCompliantCount = modelAttemptRecords.filter {
+            $0.parsedStatus != nil
+        }.count
+        schemaTotal = modelAttemptRecords.count
+        safetyContainedCount = records.filter { record in
             if record.skipped || record.mode == AIConnectorReviewMode.deterministic.rawValue {
                 return true
             }
 
             return record.validatedStatus != nil
                 || (record.outputWasRejected && record.rejectionReason != nil)
-        }
+        }.count
+        safetyTotal = records.count
+        safetyContainmentPassed = safetyContainedCount == safetyTotal
+        usableValidatedOutputCount = records.filter { $0.validatedStatus != nil }.count
+        exactExpectationPassCount = records.filter(\.expectedSignalPassed).count
+        // Kept for report compatibility. The old name described containment,
+        // not literal parser conformance.
+        parserBoundaryPassed = safetyContainmentPassed
         truncatedCount = records.filter(\.outputWasTruncated).count
         repetitionCount = records.filter {
             ($0.repeatedSixGramRatio ?? 0) >= repetitionThreshold
@@ -404,7 +731,7 @@ struct AIConnectorQualityGate: Codable, Hashable, Sendable {
             && languagePassCount >= 2
             && neutralSafetyTotal == 5
             && neutralSafetyPassCount == neutralSafetyTotal
-            && parserBoundaryPassed
+            && safetyContainmentPassed
             && truncatedCount == 0
             && repetitionCount == 0
             && reasoningLeakCount == 0
@@ -422,6 +749,7 @@ struct AIConnectorBenchmarkReport: Codable, Hashable, Sendable {
     let modelVariant: AIConnectorModelVariant
     let thinkingEnabled: Bool
     let duration: TimeInterval
+    let circuitBreakerActivated: Bool
     let records: [AIConnectorBenchmarkRecord]
     let evaluations: [AIConnectorFixtureEvaluation]
     let qualityGate: AIConnectorQualityGate

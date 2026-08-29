@@ -6,47 +6,44 @@ import Foundation
 /// rewrite a whole clause, or translate defined terms. Glossary replacement is
 /// allowed only when the retrieved definition is present in the target segment.
 struct AIConnectorDeterministicSuggestionEngine: Sendable {
-    func suggestion(
+    private let ruleStore: AIConnectorRuleStore
+
+    init(ruleStore: AIConnectorRuleStore = AIConnectorRuleStore()) {
+        self.ruleStore = ruleStore
+    }
+
+    /// Returns every non-overlapping deterministic candidate that can be
+    /// proven safe locally. The caller remains responsible for validation and
+    /// final conflict resolution.
+    func suggestions(
         for segment: AIReviewSegment,
         glossaryMatches: [LegalDictionaryMatch] = []
-    ) -> AIParsedReview? {
-        let safeRules: [(String, String, AIReviewCategory, String)] = [
-            (
-                "wajib untuk",
-                "wajib",
-                .grammar,
-                "Menghapus kata yang tidak diperlukan tanpa mengubah makna kewajiban."
-            ),
-            (
-                "ditanda tangani",
-                "ditandatangani",
-                .spelling,
-                "Memperbaiki ejaan kata menjadi bentuk baku tanpa mengubah makna hukum."
-            ),
-            (
-                "di simpan",
-                "disimpan",
-                .spelling,
-                "Memperbaiki pemisahan imbuhan tanpa mengubah makna hukum."
-            )
-        ]
+    ) -> [AIParsedReview] {
+        var results: [AIParsedReview] = []
 
-        for (searchTerm, replacement, category, reason) in safeRules {
-            guard let change = replacingFirst(
-                searchTerm,
-                with: replacement,
-                in: segment.targetText
-            ) else {
+        for rule in ruleStore.activeRules {
+            guard rule.matcher == .tokenSequence,
+                  let change = uniqueChange(
+                      searchTerm: rule.value,
+                      replacement: rule.replacement,
+                      in: segment.targetText
+                  ),
+                  !rule.exceptions.contains(where: {
+                      segment.targetText.localizedCaseInsensitiveContains($0)
+                  }) else {
                 continue
             }
 
-            return AIParsedReview(
-                status: .suggestion,
-                category: category,
-                original: change.original,
-                replacement: change.replacement,
-                glossaryID: nil,
-                reason: reason
+            results.append(
+                AIParsedReview(
+                    status: .suggestion,
+                    category: rule.category,
+                    original: change.original,
+                    replacement: change.replacement,
+                    glossaryID: nil,
+                    reason: rule.reason,
+                    ruleID: rule.id
+                )
             )
         }
 
@@ -58,17 +55,28 @@ struct AIConnectorDeterministicSuggestionEngine: Sendable {
                 continue
             }
 
-            return AIParsedReview(
-                status: .suggestion,
-                category: .terminology,
-                original: change.original,
-                replacement: match.entry.term,
-                glossaryID: "G1",
-                reason: "Mengusulkan istilah glossary yang cocok dengan pengertian pada target."
+            results.append(
+                AIParsedReview(
+                    status: .suggestion,
+                    category: .terminology,
+                    original: change.original,
+                    replacement: match.entry.term,
+                    glossaryID: "G1",
+                    reason: "Mengusulkan istilah glossary yang cocok dengan pengertian pada target."
+                )
             )
         }
 
-        return nil
+        return Array(
+            results.prefix(AIConnectorSuggestionConflictResolver.maximumSuggestionsPerSegment)
+        )
+    }
+
+    func suggestion(
+        for segment: AIReviewSegment,
+        glossaryMatches: [LegalDictionaryMatch] = []
+    ) -> AIParsedReview? {
+        suggestions(for: segment, glossaryMatches: glossaryMatches).first
     }
 
     func review(
@@ -90,22 +98,33 @@ struct AIConnectorDeterministicSuggestionEngine: Sendable {
         )
     }
 
-    private func replacingFirst(
-        _ searchTerm: String,
-        with replacement: String,
+    private func uniqueChange(
+        searchTerm: String,
+        replacement: String,
         in text: String
     ) -> TextChange? {
-        guard let range = text.range(
+        guard let firstRange = text.range(
             of: searchTerm,
             options: [.caseInsensitive, .diacriticInsensitive]
         ) else {
             return nil
         }
 
-        return TextChange(
-            original: String(text[range]),
+        let first = TextChange(
+            original: String(text[firstRange]),
             replacement: replacement
         )
+        let afterFirst = text.index(after: firstRange.lowerBound)
+        guard afterFirst < text.endIndex else { return first }
+
+        let remainder = text[afterFirst..<text.endIndex]
+        guard remainder.range(
+            of: searchTerm,
+            options: [.caseInsensitive, .diacriticInsensitive]
+        ) == nil else {
+            return nil
+        }
+        return first
     }
 
     private func replacingDefinition(

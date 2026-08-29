@@ -2,17 +2,18 @@ import Foundation
 import XCTest
 @testable import AMT
 
-/// Opt-in only: this test downloads/loads the pinned Legal 4B model and can
-/// take several minutes. Normal unit-test runs skip it before touching MLX.
+/// Opt-in only: this test downloads/loads the selected pinned model and can
+/// take several minutes. Base 4B is the current default. Normal unit-test
+/// runs skip it before touching MLX.
 @MainActor
 final class AIConnectorModelBenchmarkTests: XCTestCase {
-    func testP09Legal4BModelBenchmark() async throws {
+    func testP010SelectedModelBenchmark() async throws {
         guard ProcessInfo.processInfo.environment["AMT_RUN_P09_MODEL_BENCHMARK"] == "1" else {
             throw XCTSkip("Set TEST_RUNNER_AMT_RUN_P09_MODEL_BENCHMARK=1 to run the model benchmark.")
         }
 
         let reportPath = ProcessInfo.processInfo.environment["AMT_P09_REPORT_PATH"]
-            ?? "/private/tmp/amt-p09-legal-4b.json"
+            ?? "/private/tmp/amt-p010-base-4b.json"
         guard reportPath.hasPrefix("/private/tmp/") else {
             throw XCTSkip("AMT_P09_REPORT_PATH must be under /private/tmp.")
         }
@@ -22,7 +23,16 @@ final class AIConnectorModelBenchmarkTests: XCTestCase {
             service: service,
             dictionaryStore: LegalDictionaryStore()
         )
-        let model = AIConnectorModelVariant.qwen35Legal4B
+        let model: AIConnectorModelVariant
+        if let rawModelVariant = ProcessInfo.processInfo.environment["AMT_P09_MODEL_VARIANT"] {
+            guard let selectedModel = AIConnectorModelVariant(rawValue: rawModelVariant) else {
+                XCTFail("Unknown AMT_P09_MODEL_VARIANT: \(rawModelVariant)")
+                return
+            }
+            model = selectedModel
+        } else {
+            model = .qwen35Base4B
+        }
 
         let baseline = try await runner.run(
             mode: .deterministic,
@@ -34,6 +44,13 @@ final class AIConnectorModelBenchmarkTests: XCTestCase {
             mode: .modelOnly,
             modelVariant: model,
             thinkingEnabled: false,
+            progress: { _, _ in }
+        )
+        let cachedQwenOnly = try await runner.run(
+            mode: .modelOnly,
+            modelVariant: model,
+            thinkingEnabled: false,
+            resetCache: false,
             progress: { _, _ in }
         )
         let hybrid = try await runner.run(
@@ -53,7 +70,7 @@ final class AIConnectorModelBenchmarkTests: XCTestCase {
                 samples: [AIConnectorSample.samples[0]],
                 progress: { _, _ in }
             )
-        } catch let error as QwenSuggestionError {
+        } catch {
             thinkingError = error.localizedDescription
         }
 
@@ -94,6 +111,7 @@ final class AIConnectorModelBenchmarkTests: XCTestCase {
             revision: model.revision,
             baseline: baseline,
             qwenOnly: qwenOnly,
+            cachedQwenOnly: cachedQwenOnly,
             hybrid: hybrid,
             thinking: thinkingReport,
             thinkingError: thinkingError,
@@ -104,6 +122,7 @@ final class AIConnectorModelBenchmarkTests: XCTestCase {
 
         XCTAssertEqual(baseline.passedCount, baseline.totalCount)
         XCTAssertEqual(qwenOnly.records.count, AIConnectorSample.samples.count)
+        XCTAssertTrue(cachedQwenOnly.records.allSatisfy(\.cacheHit))
         XCTAssertEqual(hybrid.records.count, AIConnectorSample.samples.count)
         XCTAssertTrue(qwenOnly.records.allSatisfy { !$0.diagnosticOutput.orEmpty.contains("<think>") })
     }
@@ -115,6 +134,7 @@ private struct AIConnectorP09BenchmarkEnvelope: Codable {
     let revision: String
     let baseline: AIConnectorBenchmarkReport
     let qwenOnly: AIConnectorBenchmarkReport
+    let cachedQwenOnly: AIConnectorBenchmarkReport
     let hybrid: AIConnectorBenchmarkReport
     let thinking: AIConnectorBenchmarkReport?
     let thinkingError: String?

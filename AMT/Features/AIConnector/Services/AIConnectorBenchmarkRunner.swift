@@ -1,26 +1,34 @@
 import Foundation
 
-/// Runs the bounded Debug fixture set with the same parser, validator, and
-/// fallback boundary used by the document review flow.
+/// Runs the Debug fixture set through the same segment processor used by the
+/// document-wide work queue. This keeps benchmark and product decisions on a
+/// single parser, validator, fallback, and cache boundary.
 @MainActor
 final class AIConnectorBenchmarkRunner {
-    private let service: QwenSuggestionService
-    private let dictionaryStore: LegalDictionaryStore
     private let segmenter = LegalTextSegmenter()
-    private let outputParser = AIConnectorOutputParser()
-    private let suggestionValidator = AIConnectorSuggestionValidator()
-    private let deterministicSuggestionEngine = AIConnectorDeterministicSuggestionEngine()
     private let fixtureEvaluator = AIConnectorFixtureEvaluator()
+    private let processor: AIConnectorSegmentProcessor
+    private let workQueue: AIConnectorWorkQueue
 
     var onDownloadProgress: (@MainActor @Sendable (Double) -> Void)?
     var onGenerationProgress: (@MainActor @Sendable (Int) -> Void)?
 
     init(
         service: QwenSuggestionService,
-        dictionaryStore: LegalDictionaryStore
+        dictionaryStore: LegalDictionaryStore,
+        ruleStore: AIConnectorRuleStore? = nil,
+        modelReviewHandler: AIConnectorModelReviewHandler? = nil
     ) {
-        self.service = service
-        self.dictionaryStore = dictionaryStore
+        let cache = AIConnectorSegmentCache()
+        let processor = AIConnectorSegmentProcessor(
+            service: service,
+            dictionaryStore: dictionaryStore,
+            ruleStore: ruleStore ?? AIConnectorRuleStore(),
+            segmentCache: cache,
+            modelReviewHandler: modelReviewHandler
+        )
+        self.processor = processor
+        self.workQueue = AIConnectorWorkQueue(processor: processor)
     }
 
     func run(
@@ -28,132 +36,122 @@ final class AIConnectorBenchmarkRunner {
         modelVariant: AIConnectorModelVariant,
         thinkingEnabled: Bool,
         samples: [AIConnectorSample] = [],
+        resetCache: Bool = true,
         progress: @escaping @MainActor (Int, Int) -> Void
     ) async throws -> AIConnectorBenchmarkReport {
         let startedAt = Date()
         let samples = samples.isEmpty ? AIConnectorSample.samples : samples
-        var records: [AIConnectorBenchmarkRecord] = []
-        var evaluations: [AIConnectorFixtureEvaluation] = []
+        if resetCache {
+            await processor.clearCache()
+        }
 
-        for (index, sample) in samples.enumerated() {
-            try Task.checkCancellation()
-            progress(index + 1, samples.count)
+        var queueSegments: [AIReviewSegment] = []
+        var sampleBySegmentID: [Int: AIConnectorSample] = [:]
+        var skippedSamples: [AIConnectorSample] = []
+        var sourceLocation = 0
 
+        for sample in samples {
             let segmentation = segmenter.segment(documentText: sample.text)
             guard let segment = segmentation.segments.first else {
-                records.append(
-                    makeRecord(
-                        sample: sample,
-                        segment: nil,
-                        matches: [],
-                        mode: mode,
-                        modelVariant: modelVariant,
-                        thinkingEnabled: thinkingEnabled,
-                        expectedSignalPassed: false,
-                        skipped: true
-                    )
-                )
-                evaluations.append(fixtureEvaluator.evaluate(sample: sample, reviews: []))
+                skippedSamples.append(sample)
                 continue
             }
 
-            let matches = dictionaryStore.suggestionCandidates(
-                for: segment.targetText,
-                limit: 1
+            let segmentID = queueSegments.count + 1
+            let queueSegment = AIReviewSegment(
+                id: segmentID,
+                sourceLocation: sourceLocation,
+                sourceLength: segment.sourceLength,
+                targetText: segment.targetText,
+                previousContext: segment.previousContext,
+                nextContext: segment.nextContext,
+                isTooLong: segment.isTooLong
             )
+            queueSegments.append(queueSegment)
+            sampleBySegmentID[segmentID] = sample
+            sourceLocation += sample.text.utf16.count + 2
+        }
 
-            if mode == .deterministic {
-                let review = try deterministicReview(
-                    for: segment,
-                    matches: matches,
-                    origin: .deterministic
-                )
-                let reviews = review.map { [$0] } ?? []
-                evaluations.append(fixtureEvaluator.evaluate(sample: sample, reviews: reviews))
-                records.append(
-                    makeRecord(
-                        sample: sample,
-                        segment: segment,
-                        matches: matches,
-                        mode: mode,
-                        modelVariant: modelVariant,
-                        thinkingEnabled: thinkingEnabled,
-                        review: review,
-                        expectedSignalPassed: evaluations.last?.passed ?? false
-                    )
-                )
-                continue
+        let runID = UUID()
+        let protectionContext = processor.protectionContext(
+            for: samples.map(\.text).joined(separator: "\n\n")
+        )
+        let stream = await workQueue.start(
+            runID: runID,
+            segments: queueSegments,
+            mode: mode,
+            modelVariant: modelVariant,
+            thinkingEnabled: thinkingEnabled,
+            documentProtectionContext: protectionContext,
+            downloadProgress: { [weak self] value in
+                Task { @MainActor [weak self] in
+                    self?.onDownloadProgress?(value)
+                }
+            },
+            generationProgress: { [weak self] characters in
+                self?.onGenerationProgress?(characters)
             }
+        )
 
-            do {
-                let result = try await service.review(
-                    segment: segment,
-                    thinkingEnabled: thinkingEnabled,
-                    glossaryMatches: matches,
-                    downloadProgress: { [weak self] progress in
-                        Task { @MainActor [weak self] in
-                            self?.onDownloadProgress?(progress)
-                        }
-                    },
-                    generationProgress: { [weak self] characters in
-                        self?.onGenerationProgress?(characters)
-                    },
-                    modelVariant: modelVariant
-                )
+        var resultBySegmentID: [Int: AIConnectorSegmentResult] = [:]
+        var circuitBreakerActivated = false
+        var runSummary: AIConnectorRunSummary?
+
+        do {
+            try await withTaskCancellationHandler {
+                for await event in stream {
+                    try Task.checkCancellation()
+                    switch event {
+                    case let .result(result):
+                        resultBySegmentID[result.segment.id] = result
+                        progress(resultBySegmentID.count, samples.count)
+                        await workQueue.acknowledgeResult()
+                    case .circuitBreakerActivated:
+                        circuitBreakerActivated = true
+                    case let .finished(summary):
+                        runSummary = summary
+                    case let .failed(message):
+                        throw AIConnectorBenchmarkRunnerError.queueFailed(message)
+                    case .stateChanged, .progress:
+                        break
+                    }
+                }
                 try Task.checkCancellation()
-
-                if result.metrics.stopReason == .cancelled {
-                    throw CancellationError()
-                }
-
-                let attempt = attempt(
-                    result: result,
-                    segment: segment,
-                    matches: matches
-                )
-                let finalReview = try fallbackIfNeeded(
-                    attempt: attempt,
-                    segment: segment,
-                    matches: matches,
-                    mode: mode
-                )
-                let reviews = finalReview.map { [$0] } ?? []
-                evaluations.append(fixtureEvaluator.evaluate(sample: sample, reviews: reviews))
-                records.append(
-                    makeRecord(
-                        sample: sample,
-                        segment: segment,
-                        matches: matches,
-                        mode: mode,
-                        modelVariant: modelVariant,
-                        thinkingEnabled: thinkingEnabled,
-                        result: result,
-                        attempt: attempt,
-                        review: finalReview,
-                        wasFallback: finalReview?.origin == .deterministicFallback,
-                        expectedSignalPassed: evaluations.last?.passed ?? false
-                    )
-                )
-            } catch let error as QwenSuggestionError {
-                if case .segmentTooLong = error {
-                    evaluations.append(fixtureEvaluator.evaluate(sample: sample, reviews: []))
-                    records.append(
-                        makeRecord(
-                            sample: sample,
-                            segment: segment,
-                            matches: matches,
-                            mode: mode,
-                            modelVariant: modelVariant,
-                            thinkingEnabled: thinkingEnabled,
-                            expectedSignalPassed: false,
-                            rejectionReason: error.localizedDescription,
-                            skipped: true
-                        )
-                    )
-                    continue
-                }
-                throw error
+            } onCancel: { [workQueue] in
+                workQueue.requestCancellation()
             }
+        } catch {
+            await workQueue.cancel()
+            throw error
+        }
+
+        guard let runSummary else {
+            throw AIConnectorBenchmarkRunnerError.missingSummary
+        }
+        circuitBreakerActivated = circuitBreakerActivated
+            || runSummary.circuitBreakerActivated
+
+        var records: [AIConnectorBenchmarkRecord] = []
+        var evaluations: [AIConnectorFixtureEvaluation] = []
+        for sample in samples {
+            let result = sampleBySegmentID.first(where: { $0.value.id == sample.id })
+                .flatMap { resultBySegmentID[$0.key] }
+            let evaluation = fixtureEvaluator.evaluate(
+                sample: sample,
+                reviews: result?.reviews ?? []
+            )
+            evaluations.append(evaluation)
+            records.append(
+                makeRecord(
+                    sample: sample,
+                    result: result,
+                    mode: mode,
+                    modelVariant: modelVariant,
+                    thinkingEnabled: thinkingEnabled,
+                    expectedSignalPassed: evaluation.passed,
+                    skipped: skippedSamples.contains(where: { $0.id == sample.id })
+                )
+            )
         }
 
         return AIConnectorBenchmarkReport(
@@ -163,212 +161,81 @@ final class AIConnectorBenchmarkRunner {
             modelVariant: modelVariant,
             thinkingEnabled: thinkingEnabled,
             duration: Date().timeIntervalSince(startedAt),
+            circuitBreakerActivated: circuitBreakerActivated,
             records: records,
             evaluations: evaluations,
             qualityGate: AIConnectorQualityGate(records: records, mode: mode)
         )
     }
 
-    private func deterministicReview(
-        for segment: AIReviewSegment,
-        matches: [LegalDictionaryMatch],
-        origin: AIReviewOrigin
-    ) throws -> AIValidatedReview? {
-        let parsed = deterministicSuggestionEngine.review(
-            for: segment,
-            glossaryMatches: matches
-        )
-        return try suggestionValidator.validate(
-            parsed,
-            for: segment,
-            glossaryMatches: matches,
-            origin: origin
-        )
-    }
-
-    private func attempt(
-        result: QwenReviewResult,
-        segment: AIReviewSegment,
-        matches: [LegalDictionaryMatch]
-    ) -> ModelAttempt {
-        let diagnosticOutput = AIConnectorGenerationDiagnostics.sanitizedDiagnosticOutput(
-            result.output
-        )
-        let repeatedSixGramRatio = AIConnectorGenerationDiagnostics.repeatedSixGramRatio(
-            in: result.output
-        )
-
-        if result.metrics.stopReason == .length {
-            return ModelAttempt(
-                result: result,
-                diagnosticOutput: diagnosticOutput,
-                repeatedSixGramRatio: repeatedSixGramRatio,
-                rejectionReason: "Model mencapai batas token dan output tidak diproses.",
-                reasoningMarkerDetected: result.containsReasoningMarkers,
-                sourceClaimDetected: false
-            )
-        }
-
-        if result.containsReasoningMarkers {
-            return ModelAttempt(
-                result: result,
-                diagnosticOutput: diagnosticOutput,
-                repeatedSixGramRatio: repeatedSixGramRatio,
-                rejectionReason: "Output mengandung reasoning atau token template; diagnostic di-redact.",
-                reasoningMarkerDetected: true,
-                sourceClaimDetected: false
-            )
-        }
-
-        do {
-            let parsed = try outputParser.parse(result.output)
-            do {
-                let validated = try suggestionValidator.validate(
-                    parsed,
-                    for: segment,
-                    glossaryMatches: matches
-                )
-                return ModelAttempt(
-                    result: result,
-                    diagnosticOutput: diagnosticOutput,
-                    parsed: parsed,
-                    validated: validated,
-                    repeatedSixGramRatio: repeatedSixGramRatio,
-                    reasoningMarkerDetected: false,
-                    sourceClaimDetected: false
-                )
-            } catch let error as AIConnectorValidationError {
-                return ModelAttempt(
-                    result: result,
-                    diagnosticOutput: diagnosticOutput,
-                    parsed: parsed,
-                    repeatedSixGramRatio: repeatedSixGramRatio,
-                    rejectionReason: error.message,
-                    reasoningMarkerDetected: false,
-                    sourceClaimDetected: error == .unsupportedSourceClaim
-                )
-            }
-        } catch let error as AIConnectorOutputParserError {
-            return ModelAttempt(
-                result: result,
-                diagnosticOutput: diagnosticOutput,
-                repeatedSixGramRatio: repeatedSixGramRatio,
-                rejectionReason: error.message,
-                reasoningMarkerDetected: false,
-                sourceClaimDetected: false
-            )
-        } catch {
-            return ModelAttempt(
-                result: result,
-                diagnosticOutput: diagnosticOutput,
-                repeatedSixGramRatio: repeatedSixGramRatio,
-                rejectionReason: error.localizedDescription,
-                reasoningMarkerDetected: false,
-                sourceClaimDetected: false
-            )
-        }
-    }
-
-    private func fallbackIfNeeded(
-        attempt: ModelAttempt,
-        segment: AIReviewSegment,
-        matches: [LegalDictionaryMatch],
-        mode: AIConnectorReviewMode
-    ) throws -> AIValidatedReview? {
-        if let validated = attempt.validated {
-            return validated
-        }
-        guard mode == .hybrid else { return nil }
-
-        return try deterministicReview(
-            for: segment,
-            matches: matches,
-            origin: .deterministicFallback
-        )
-    }
-
     private func makeRecord(
         sample: AIConnectorSample,
-        segment: AIReviewSegment?,
-        matches: [LegalDictionaryMatch],
+        result: AIConnectorSegmentResult?,
         mode: AIConnectorReviewMode,
         modelVariant: AIConnectorModelVariant,
         thinkingEnabled: Bool,
-        result: QwenReviewResult? = nil,
-        attempt: ModelAttempt? = nil,
-        review: AIValidatedReview? = nil,
-        wasFallback: Bool = false,
         expectedSignalPassed: Bool,
-        rejectionReason: String? = nil,
         skipped: Bool = false
     ) -> AIConnectorBenchmarkRecord {
-        AIConnectorBenchmarkRecord(
+        let review = result?.reviews.first(where: { $0.status == .suggestion })
+            ?? result?.reviews.first
+        let rejection = result?.rejections.first
+
+        return AIConnectorBenchmarkRecord(
             sampleID: sample.id,
             sampleTitle: sample.title,
             expectedSignal: sample.expectedSignal,
             mode: mode.rawValue,
             modelVariant: modelVariant.rawValue,
             thinkingEnabled: thinkingEnabled,
-            segmentID: segment?.id,
-            sourceLocation: segment?.sourceLocation,
-            targetText: segment?.targetText,
-            candidateGlossaryID: matches.isEmpty ? nil : "G1",
-            candidateGlossaryTerm: matches.first?.entry.term,
-            diagnosticOutput: result.map {
-                AIConnectorGenerationDiagnostics.sanitizedDiagnosticOutput($0.output)
-            },
-            parsedStatus: attempt?.parsed?.status.rawValue,
+            segmentID: result?.segment.id,
+            sourceLocation: result?.segment.sourceLocation,
+            targetText: result?.segment.targetText,
+            candidateGlossaryID: result?.glossaryMatches.isEmpty == false ? "G1" : nil,
+            candidateGlossaryTerm: result?.glossaryMatches.first?.entry.term,
+            diagnosticOutput: rejection?.rawOutput.isEmpty == false
+                ? rejection?.rawOutput
+                : nil,
+            parsedStatus: result?.parsedStatus?.rawValue,
             validatedStatus: review?.status.rawValue,
             validatedCategory: review?.category.rawValue,
             validatedOriginal: review?.original,
             validatedReplacement: review?.replacement,
             validatedReason: review?.reason,
             origin: review?.origin.rawValue,
-            rejectionReason: rejectionReason ?? attempt?.rejectionReason,
-            promptTokenCount: result?.metrics.promptTokenCount,
-            generationTokenCount: result?.metrics.generationTokenCount,
-            promptDuration: result?.metrics.promptDuration,
-            generationDuration: result?.metrics.generationDuration,
-            stopReason: result?.metrics.stopReason,
-            repeatedSixGramRatio: attempt?.repeatedSixGramRatio,
+            rejectionReason: rejection?.reason,
+            promptTokenCount: result?.generationMetrics?.promptTokenCount,
+            generationTokenCount: result?.generationMetrics?.generationTokenCount,
+            promptDuration: result?.generationMetrics?.promptDuration,
+            generationDuration: result?.generationMetrics?.generationDuration,
+            stopReason: result?.generationMetrics?.stopReason,
+            repeatedSixGramRatio: result?.repeatedSixGramRatio,
             expectedSignalPassed: expectedSignalPassed,
-            wasFallback: wasFallback,
-            outputWasRejected: attempt?.rejectionReason != nil || rejectionReason != nil,
-            outputWasTruncated: result?.metrics.stopReason == .length,
-            reasoningMarkerDetected: attempt?.reasoningMarkerDetected ?? false,
-            sourceClaimDetected: attempt?.sourceClaimDetected ?? false,
-            skipped: skipped
+            wasFallback: result?.usedFallback ?? false,
+            outputWasRejected: !(result?.rejections.isEmpty ?? true),
+            outputWasTruncated: result?.outputWasTruncated ?? false,
+            reasoningMarkerDetected: result?.reasoningMarkerDetected ?? false,
+            sourceClaimDetected: result?.sourceClaimDetected ?? false,
+            skipped: result?.skipped ?? skipped,
+            cacheHit: result?.cacheHit ?? false,
+            modelAttempts: result?.modelAttempts ?? 0,
+            repairAttempted: result?.repairAttempted ?? false,
+            firstPassSucceeded: result?.firstPassSucceeded ?? false,
+            rejectionClass: rejection?.classification
         )
     }
+}
 
-    private struct ModelAttempt {
-        let result: QwenReviewResult
-        let diagnosticOutput: String
-        let parsed: AIParsedReview?
-        let validated: AIValidatedReview?
-        let repeatedSixGramRatio: Double
-        let rejectionReason: String?
-        let reasoningMarkerDetected: Bool
-        let sourceClaimDetected: Bool
+private enum AIConnectorBenchmarkRunnerError: LocalizedError {
+    case queueFailed(String)
+    case missingSummary
 
-        init(
-            result: QwenReviewResult,
-            diagnosticOutput: String,
-            parsed: AIParsedReview? = nil,
-            validated: AIValidatedReview? = nil,
-            repeatedSixGramRatio: Double,
-            rejectionReason: String? = nil,
-            reasoningMarkerDetected: Bool,
-            sourceClaimDetected: Bool
-        ) {
-            self.result = result
-            self.diagnosticOutput = diagnosticOutput
-            self.parsed = parsed
-            self.validated = validated
-            self.repeatedSixGramRatio = repeatedSixGramRatio
-            self.rejectionReason = rejectionReason
-            self.reasoningMarkerDetected = reasoningMarkerDetected
-            self.sourceClaimDetected = sourceClaimDetected
+    var errorDescription: String? {
+        switch self {
+        case let .queueFailed(message):
+            "Work queue benchmark gagal: \(message)"
+        case .missingSummary:
+            "Work queue benchmark selesai tanpa ringkasan run."
         }
     }
 }

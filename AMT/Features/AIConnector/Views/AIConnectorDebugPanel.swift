@@ -89,7 +89,7 @@ struct AIConnectorDebugPanel: View {
 
                 if viewModel.inputWasTruncated(documentText: documentText) {
                     Label(
-                        "Input dibatasi ke 4.000 karakter pertama.",
+                        "Preview dibatasi ke 4.000 karakter pertama; analisis tetap memakai seluruh dokumen.",
                         systemImage: "scissors"
                     )
                     .font(.caption)
@@ -111,10 +111,11 @@ struct AIConnectorDebugPanel: View {
                 if let segmentation = viewModel.segmentationResult {
                     AIConnectorSegmentationSummary(
                         segmentation: segmentation,
-                        skippedSegmentCount: viewModel.skippedSegmentCount
+                        skippedSegmentCount: viewModel.skippedSegmentCount,
+                        batchSizes: viewModel.queueBatchSizes
                     )
                 } else {
-                    Text("Teks akan diproses per kalimat, maksimal 12 segmen per Run.")
+                    Text("Dokumen diproses seluruhnya per kalimat; queue berjalan serial dalam batch 12.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 2)
@@ -281,6 +282,15 @@ struct AIConnectorDebugPanel: View {
                     AIConnectorRunSummaryView(summary: summary)
                 }
 
+                if viewModel.currentQueueState != nil || !viewModel.queueBatchSizes.isEmpty {
+                    AIConnectorQueueDiagnosticsView(
+                        state: viewModel.currentQueueState,
+                        batchIndex: viewModel.currentBatchIndex,
+                        batchSize: viewModel.currentBatchSize,
+                        batchSizes: viewModel.queueBatchSizes
+                    )
+                }
+
                 if let evaluation = viewModel.fixtureEvaluation {
                     AIConnectorFixtureEvaluationView(evaluation: evaluation)
                 }
@@ -308,7 +318,7 @@ struct AIConnectorDebugPanel: View {
                         .frame(maxWidth: .infinity, maxHeight: 240, alignment: .topLeading)
                     } label: {
                         AIConnectorDisclosureHeader(
-                            title: "Hasil tervalidasi",
+                            title: "Hasil pipeline tervalidasi",
                             count: viewModel.validatedReviews.count,
                             systemImage: "checkmark.shield.fill",
                             tint: .green
@@ -451,6 +461,7 @@ private struct AIConnectorSafetyNotice: View {
 private struct AIConnectorSegmentationSummary: View {
     let segmentation: AITextSegmentationResult
     let skippedSegmentCount: Int
+    let batchSizes: [Int]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -485,9 +496,76 @@ private struct AIConnectorSegmentationSummary: View {
                     tint: .secondary
                 )
             }
+
+            Text(batchDescription)
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.secondary)
         }
         .padding(12)
         .background(.quaternary.opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
+    }
+
+    private var batchDescription: String {
+        guard !batchSizes.isEmpty else { return "Batch queue: belum dimulai" }
+        return "Batch queue: " + batchSizes.map(String.init).joined(separator: " / ")
+            + " • serial"
+    }
+}
+
+private struct AIConnectorQueueDiagnosticsView: View {
+    let state: AIConnectorQueueState?
+    let batchIndex: Int?
+    let batchSize: Int?
+    let batchSizes: [Int]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            AIConnectorSectionHeader(
+                title: "Queue diagnostics",
+                subtitle: "Pemrosesan serial; batch hanya mengatur back-pressure.",
+                systemImage: "arrow.trianglehead.2.clockwise"
+            )
+
+            HStack(spacing: 8) {
+                if let state {
+                    AIConnectorDiagnosticPill(
+                        value: state.rawValue,
+                        label: "state",
+                        tint: state == .rejected || state == .failed ? .orange : .blue
+                    )
+                }
+                if let batchIndex, let batchSize {
+                    AIConnectorDiagnosticPill(
+                        value: "\(batchIndex)/\(batchSizes.count)",
+                        label: "batch (\(batchSize))",
+                        tint: .purple
+                    )
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
+    }
+}
+
+private struct AIConnectorDiagnosticPill: View {
+    let value: String
+    let label: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(value)
+                .font(.caption2.monospacedDigit().weight(.semibold))
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 4)
+        .background(tint.opacity(0.11), in: Capsule())
     }
 }
 
@@ -739,6 +817,31 @@ private struct AIConnectorBenchmarkReportView: View {
                     tint: .green
                 )
                 AIConnectorMetricTile(
+                    value: "\(report.qualityGate.schemaCompliantCount)/\(report.qualityGate.schemaTotal)",
+                    label: "Schema valid",
+                    tint: .blue
+                )
+                AIConnectorMetricTile(
+                    value: "\(report.qualityGate.safetyContainedCount)/\(report.qualityGate.safetyTotal)",
+                    label: "Safety contained",
+                    tint: .green
+                )
+                AIConnectorMetricTile(
+                    value: "\(report.qualityGate.usableValidatedOutputCount)",
+                    label: "Output tervalidasi",
+                    tint: .mint
+                )
+                AIConnectorMetricTile(
+                    value: "\(report.qualityGate.exactExpectationPassCount)",
+                    label: "Expected signal",
+                    tint: .purple
+                )
+                AIConnectorMetricTile(
+                    value: report.circuitBreakerActivated ? "Aktif" : "Tidak",
+                    label: "Circuit breaker",
+                    tint: report.circuitBreakerActivated ? .orange : .green
+                )
+                AIConnectorMetricTile(
                     value: "\(report.qualityGate.truncatedCount)",
                     label: "Token limit",
                     tint: .orange
@@ -752,6 +855,26 @@ private struct AIConnectorBenchmarkReportView: View {
                     value: "\(report.qualityGate.reasoningLeakCount)",
                     label: "Reasoning leak",
                     tint: .red
+                )
+                AIConnectorMetricTile(
+                    value: "\(report.records.filter(\.cacheHit).count)",
+                    label: "Cache hit",
+                    tint: .blue
+                )
+                AIConnectorMetricTile(
+                    value: "\(report.records.filter(\.firstPassSucceeded).count)",
+                    label: "First pass",
+                    tint: .green
+                )
+                AIConnectorMetricTile(
+                    value: "\(report.records.filter(\.repairAttempted).count)",
+                    label: "Repair",
+                    tint: .purple
+                )
+                AIConnectorMetricTile(
+                    value: "\(report.records.filter(\.wasFallback).count)",
+                    label: "Fallback",
+                    tint: .orange
                 )
                 AIConnectorMetricTile(
                     value: "\(totalPromptTokens)",
@@ -908,7 +1031,7 @@ private struct AIConnectorRunSummaryView: View {
                 spacing: 8
             ) {
                 AIConnectorMetricTile(
-                    value: "\(summary.processedSegmentCount)",
+                    value: "\(summary.processedSegmentCount)/\(summary.totalSegmentCount)",
                     label: "Diproses",
                     tint: .blue
                 )
@@ -929,7 +1052,7 @@ private struct AIConnectorRunSummaryView: View {
                 )
                 AIConnectorMetricTile(
                     value: "\(summary.recoveredCount)",
-                    label: "Dipulihkan",
+                    label: "Review fallback",
                     tint: .purple
                 )
                 AIConnectorMetricTile(
@@ -942,6 +1065,43 @@ private struct AIConnectorRunSummaryView: View {
                     label: "Dilewati",
                     tint: .secondary
                 )
+                AIConnectorMetricTile(
+                    value: "\(summary.cacheHitCount)",
+                    label: "Cache hit",
+                    tint: .blue
+                )
+                AIConnectorMetricTile(
+                    value: "\(summary.firstPassSuccessCount)",
+                    label: "First pass",
+                    tint: .green
+                )
+                AIConnectorMetricTile(
+                    value: "\(summary.repairAttemptCount)",
+                    label: "Repair",
+                    tint: .purple
+                )
+                AIConnectorMetricTile(
+                    value: "\(summary.fallbackCount)",
+                    label: "Fallback",
+                    tint: .orange
+                )
+            }
+
+            if summary.wasPartial {
+                Label(
+                    "Run dibatalkan; hasil parsial tetap tersedia.",
+                    systemImage: "pause.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            if summary.circuitBreakerActivated {
+                Label(
+                    "Circuit breaker aktif: segmen berikutnya memakai jalur deterministik.",
+                    systemImage: "bolt.shield.fill"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
             }
         }
         .padding(12)
@@ -994,6 +1154,13 @@ private struct AIValidatedReviewRow: View {
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
                                 .background(.quaternary, in: Capsule())
+                        }
+
+                        if let ruleID = review.ruleID {
+                            Text(ruleID)
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
                         }
 
                         Spacer(minLength: 0)
@@ -1086,6 +1253,9 @@ private struct AIReviewRejectionRow: View {
             Label("Segmen \(rejection.segment.id)", systemImage: "exclamationmark.triangle")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.orange)
+            Text("Kelas: \(rejection.classification.rawValue)")
+                .font(.caption2.monospaced())
+                .foregroundStyle(.secondary)
             Text(rejection.reason)
                 .font(.caption)
                 .foregroundStyle(.secondary)

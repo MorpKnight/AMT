@@ -13,10 +13,21 @@ final class AIConnectorP09OfflineTests: XCTestCase {
         XCTAssertEqual(model.downloadEstimate, "sekitar 2,39 GB")
     }
 
-    func testLegalModelUsesGreedyNonThinkingProfileAndBaselineRemainsHistorical() {
+    func testBaseModelMetadataIsPinned() {
+        let model = AIConnectorModelVariant.qwen35Base4B
+
+        XCTAssertEqual(model.modelID, "mlx-community/Qwen3.5-4B-MLX-4bit")
+        XCTAssertEqual(model.revision, "32f3e8ecf65426fc3306969496342d504bfa13f3")
+        XCTAssertEqual(model.shortRevision, "32f3e8ecf654")
+        XCTAssertEqual(model.downloadEstimate, "sekitar 3,1 GB")
+    }
+
+    func testBaseAndLegalModelsUseValidatedGreedyProfileAndBaselineRemainsHistorical() {
         let legalModel = AIConnectorModelVariant.qwen35Legal4B
+        let baseModel = AIConnectorModelVariant.qwen35Base4B
         let legal = legalModel
             .generationProfile(thinkingEnabled: false)
+        let base = baseModel.generationProfile(thinkingEnabled: false)
         let baseline = AIConnectorModelVariant.qwen35_2b
             .generationProfile(thinkingEnabled: false)
         let thinking = legalModel.generationProfile(thinkingEnabled: true)
@@ -27,6 +38,13 @@ final class AIConnectorP09OfflineTests: XCTestCase {
         XCTAssertEqual(legal.topK, 0)
         XCTAssertNil(legal.presencePenalty)
         XCTAssertTrue(legal.isGreedy)
+
+        XCTAssertEqual(base.maxTokens, 256)
+        XCTAssertEqual(base.temperature, 0)
+        XCTAssertEqual(base.topP, 1)
+        XCTAssertEqual(base.topK, 0)
+        XCTAssertNil(base.presencePenalty)
+        XCTAssertTrue(base.isGreedy)
 
         XCTAssertEqual(baseline.maxTokens, 256)
         XCTAssertEqual(baseline.temperature, 0.2)
@@ -41,14 +59,14 @@ final class AIConnectorP09OfflineTests: XCTestCase {
         XCTAssertEqual(thinking.topK, 20)
     }
 
-    func testViewModelDefaultsToHybridLegalModel() {
+    func testViewModelDefaultsToHybridBaseModel() {
         let viewModel = AIConnectorViewModel(
             service: QwenSuggestionService(),
             dictionaryStore: LegalDictionaryStore(entries: [])
         )
 
         XCTAssertEqual(viewModel.reviewMode, .hybrid)
-        XCTAssertEqual(viewModel.modelVariant, .qwen35Legal4B)
+        XCTAssertEqual(viewModel.modelVariant, .qwen35Base4B)
         XCTAssertFalse(viewModel.thinkingEnabled)
     }
 
@@ -80,6 +98,29 @@ final class AIConnectorP09OfflineTests: XCTestCase {
         XCTAssertLessThan(
             AIConnectorGenerationDiagnostics.repeatedSixGramRatio(in: "satu dua tiga"),
             AIConnectorGenerationDiagnostics.repetitionThreshold
+        )
+    }
+
+    func testStructuredRepetitionDoesNotCompareOriginalWithReplacement() {
+        let sentence = "data tentang orang perseorangan yang teridentifikasi melalui sistem elektronik"
+        let review = AIParsedReview(
+            status: .suggestion,
+            category: .clarity,
+            original: sentence,
+            replacement: sentence + " atau nonelektronik",
+            glossaryID: nil,
+            reason: "Memperjelas bentuk penyampaian data."
+        )
+
+        XCTAssertGreaterThanOrEqual(
+            AIConnectorGenerationDiagnostics.repeatedSixGramRatio(
+                in: "ORIGINAL: \(sentence)\nREPLACEMENT: \(sentence) atau nonelektronik"
+            ),
+            AIConnectorGenerationDiagnostics.repetitionThreshold
+        )
+        XCTAssertEqual(
+            AIConnectorGenerationDiagnostics.repeatedSixGramRatio(in: review),
+            0
         )
     }
 
@@ -130,6 +171,18 @@ final class AIConnectorP09OfflineTests: XCTestCase {
             "\(evaluation.sample.id)=\(evaluation.passed):\(evaluation.detail)"
         }.joined(separator: " | ")
         XCTAssertEqual(report.passedCount, report.totalCount, evaluationDetails)
+        XCTAssertFalse(report.circuitBreakerActivated)
+        XCTAssertEqual(report.qualityGate.schemaCompliantCount, 0)
+        XCTAssertEqual(report.qualityGate.schemaTotal, 0)
+        XCTAssertEqual(report.qualityGate.safetyContainedCount, report.records.count)
+        XCTAssertEqual(
+            report.qualityGate.usableValidatedOutputCount,
+            report.records.count
+        )
+        XCTAssertEqual(
+            report.qualityGate.exactExpectationPassCount,
+            report.records.count
+        )
 
         let modelGate = AIConnectorQualityGate(
             records: report.records,

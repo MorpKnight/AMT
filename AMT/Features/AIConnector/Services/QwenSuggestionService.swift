@@ -31,6 +31,8 @@ enum QwenSuggestionError: LocalizedError {
 @MainActor
 final class QwenSuggestionService {
     static let maximumTargetTokens = 512
+    nonisolated static let promptVersion = "p0.10-six-line-v2-minimal-span"
+    nonisolated static let outputSchemaVersion = "six-line-v1"
 
     private static let maximumContextTokens = 128
 
@@ -54,8 +56,8 @@ final class QwenSuggestionService {
     penjelasan, heading, atau baris lain:
     STATUS: NO_SUGGESTION|SUGGESTION|NEEDS_REVIEW
     CATEGORY: NONE|SPELLING|GRAMMAR|CLARITY|TERMINOLOGY
-    ORIGINAL: kutipan persis dari TARGET atau -
-    REPLACEMENT: pengganti atau -
+    ORIGINAL: kutipan terkecil yang berubah, persis dari TARGET, atau -
+    REPLACEMENT: pengganti terkecil untuk ORIGINAL atau -
     GLOSSARY_ID: G1 atau -
     REASON: satu kalimat ringkas tanpa sumber hukum
 
@@ -63,15 +65,18 @@ final class QwenSuggestionService {
     Gunakan SUGGESTION hanya untuk perubahan bahasa yang tidak mengubah makna.
     Gunakan NEEDS_REVIEW untuk perubahan yang menyentuh hak, kewajiban,
     pengecualian, larangan, izin, angka, tanggal, atau tenggat.
+    Untuk SUGGESTION, ORIGINAL dan REPLACEMENT harus berupa span terkecil yang
+    diperlukan. Jangan menyalin seluruh TARGET bila hanya satu atau beberapa
+    kata yang berubah.
 
     Contoh koreksi yang aman:
-    TARGET: Pihak Kedua wajib untuk menyerahkan laporan.
+    TARGET: Lampiran tersebut merupakan merupakan bagian dari Perjanjian.
     STATUS: SUGGESTION
     CATEGORY: GRAMMAR
-    ORIGINAL: Pihak Kedua wajib untuk menyerahkan laporan.
-    REPLACEMENT: Pihak Kedua wajib menyerahkan laporan.
+    ORIGINAL: merupakan merupakan
+    REPLACEMENT: merupakan
     GLOSSARY_ID: -
-    REASON: Menghapus kata yang tidak diperlukan tanpa mengubah makna kewajiban.
+    REASON: Menghapus pengulangan kata tanpa mengubah makna kalimat.
 
     Contoh tanpa saran:
     STATUS: NO_SUGGESTION
@@ -106,7 +111,8 @@ final class QwenSuggestionService {
         glossaryMatches: [LegalDictionaryMatch],
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
-        modelVariant: AIConnectorModelVariant = .qwen35Legal4B
+        modelVariant: AIConnectorModelVariant = .qwen35Base4B,
+        repairInstruction: String? = nil
     ) async throws -> QwenReviewResult {
         guard !segment.targetText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw QwenSuggestionError.emptyInput
@@ -138,7 +144,8 @@ final class QwenSuggestionService {
             targetText: promptInput.targetText,
             previousContext: promptInput.previousContext,
             nextContext: promptInput.nextContext,
-            glossaryMatches: glossaryMatches
+            glossaryMatches: glossaryMatches,
+            repairInstruction: repairInstruction
         )
 
         for try await generation in session.streamDetails(to: prompt) {
@@ -339,7 +346,8 @@ final class QwenSuggestionService {
         targetText: String,
         previousContext: String?,
         nextContext: String?,
-        glossaryMatches: [LegalDictionaryMatch]
+        glossaryMatches: [LegalDictionaryMatch],
+        repairInstruction: String?
     ) -> String {
         let glossaryContext: String
 
@@ -356,6 +364,8 @@ final class QwenSuggestionService {
             }
             .joined(separator: "\n\n")
         }
+
+        let repairSection = repairInstruction.map { "\n\($0)\n" } ?? ""
 
         return """
         <CONTEXT_BEFORE>
@@ -375,6 +385,9 @@ final class QwenSuggestionService {
         dijadikan ORIGINAL. Jangan tulis sumber hukum pada REASON. Jika bagian
         GLOSSARY_CANDIDATES menyatakan tidak ada kandidat, tulis
         `GLOSSARY_ID: -`. Untuk SPELLING, GRAMMAR, atau CLARITY, tulis `-`.
+        Untuk SUGGESTION, salin hanya bagian terkecil dari TARGET yang berubah.
+        Jangan mengulang seluruh TARGET sebagai ORIGINAL dan REPLACEMENT.
+        \(repairSection)
         """
     }
 

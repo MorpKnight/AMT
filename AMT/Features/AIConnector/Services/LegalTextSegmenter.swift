@@ -2,7 +2,14 @@ import Foundation
 import NaturalLanguage
 
 struct LegalTextSegmenter: Sendable {
-    static let maximumSegments = 12
+    /// Queue preparation is bounded in batches, not at segmentation time.
+    nonisolated static let batchSize = 12
+    nonisolated static let maximumTokensPerSegment = 512
+
+    /// Kept as a source-compatibility alias for older diagnostics and tests.
+    /// It is no longer a document-wide processing limit.
+    @available(*, deprecated, message: "Use batchSize; segmentation is document-wide.")
+    static let maximumSegments = batchSize
 
     private static let longSentenceCharacterThreshold = 2_048
 
@@ -68,21 +75,21 @@ struct LegalTextSegmenter: Sendable {
                     let partOffset = NSRange(partRange, in: sentence).location
                     let sourceLocation = paragraphOffset + sentenceOffset + partOffset
                     let sourceLength = part.utf16.count
+                    let isTooLong = Self.tokenCount(in: part) > Self.maximumTokensPerSegment
 
                     rawSegments.append(
                         RawSegment(
                             sourceLocation: sourceLocation,
                             sourceLength: sourceLength,
-                            text: part
+                            text: part,
+                            isTooLong: isTooLong
                         )
                     )
                 }
             }
         }
 
-        let selectedSegments = Array(rawSegments.prefix(Self.maximumSegments))
-        let omittedSegmentCount = max(0, rawSegments.count - selectedSegments.count)
-        let segments = selectedSegments.enumerated().map { offset, rawSegment in
+        let segments = rawSegments.enumerated().map { offset, rawSegment in
             AIReviewSegment(
                 id: offset + 1,
                 sourceLocation: rawSegment.sourceLocation,
@@ -91,15 +98,16 @@ struct LegalTextSegmenter: Sendable {
                 previousContext: offset > 0 ? rawSegments[offset - 1].text : nil,
                 nextContext: offset + 1 < rawSegments.count
                     ? rawSegments[offset + 1].text
-                    : nil
+                    : nil,
+                isTooLong: rawSegment.isTooLong
             )
         }
 
         return AITextSegmentationResult(
             segments: segments,
             headingCount: headingCount,
-            tooLongSegmentCount: 0,
-            omittedSegmentCount: omittedSegmentCount
+            tooLongSegmentCount: segments.filter(\.isTooLong).count,
+            omittedSegmentCount: 0
         )
     }
 
@@ -111,6 +119,19 @@ struct LegalTextSegmenter: Sendable {
 
     private static func shouldSplit(_ sentence: String) -> Bool {
         sentence.utf16.count > longSentenceCharacterThreshold && sentence.contains(";")
+    }
+
+    private static func tokenCount(in text: String) -> Int {
+        let tokenizer = NLTokenizer(unit: .word)
+        tokenizer.string = text
+        tokenizer.setLanguage(.indonesian)
+
+        var count = 0
+        tokenizer.enumerateTokens(in: text.startIndex..<text.endIndex) { _, _ in
+            count += 1
+            return true
+        }
+        return count
     }
 
     private static func semicolonParts(in sentence: String) -> [Range<String.Index>] {
@@ -156,5 +177,6 @@ struct LegalTextSegmenter: Sendable {
         let sourceLocation: Int
         let sourceLength: Int
         let text: String
+        let isTooLong: Bool
     }
 }

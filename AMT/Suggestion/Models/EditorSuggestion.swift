@@ -33,7 +33,7 @@ enum EditorSuggestionMapper {
         documentText: String
     ) -> [EditorSuggestion] {
         var mapped: [EditorSuggestion] = []
-        var mappedSegmentIDs = Set<Int>()
+        var mappedCountBySegment: [Int: Int] = [:]
         let documentLength = documentText.utf16.count
 
         for review in reviews {
@@ -43,7 +43,6 @@ enum EditorSuggestionMapper {
                   !original.isEmpty,
                   !replacement.isEmpty,
                   replacement != original,
-                  !mappedSegmentIDs.contains(review.segment.id),
                   let localRange = uniqueRange(of: original, in: review.segment.targetText)
             else {
                 continue
@@ -55,15 +54,19 @@ enum EditorSuggestionMapper {
             )
 
             guard absoluteRange.location >= 0,
-                  NSMaxRange(absoluteRange) <= documentLength
+                  NSMaxRange(absoluteRange) <= documentLength,
+                  mappedCountBySegment[review.segment.id, default: 0] < 3,
+                  !mapped.contains(where: {
+                      NSIntersectionRange($0.sourceRange, absoluteRange).length > 0
+                  })
             else {
                 continue
             }
 
-            mappedSegmentIDs.insert(review.segment.id)
+            mappedCountBySegment[review.segment.id, default: 0] += 1
             mapped.append(
                 EditorSuggestion(
-                    id: UUID(),
+                    id: review.id,
                     sourceRange: absoluteRange,
                     original: original,
                     replacement: replacement,
