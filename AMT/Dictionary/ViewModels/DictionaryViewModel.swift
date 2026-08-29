@@ -56,7 +56,8 @@ final class DictionaryViewModel {
         isLoading = true
 
         Task { @MainActor in
-            let ragEntries = await self.dictionaryStore.searchRAG(trimmed, limit: 3)
+            let ragEntries = await self.dictionaryStore.searchRAG(trimmed, limit: 5)
+
             let glossaryEntries = ragEntries.map { self.makeGlossaryEntry(from: $0) }
             self.topMatches = glossaryEntries
 
@@ -69,7 +70,8 @@ final class DictionaryViewModel {
             } else {
                 self.selectedEntry = LegalGlossaryEntry(
                     term: trimmed,
-                    singleDefinition: "Definisi untuk kata \"\(trimmed)\" belum ditemukan dalam glosarium lokal."
+                    singleDefinition: "Definisi untuk kata \"\(trimmed)\" belum ditemukan dalam glosarium lokal.",
+                    seeAlso: self.getRandomSeeAlsoTerms(count: 4, excluding: trimmed)
                 )
                 self.topMatches = []
             }
@@ -87,6 +89,31 @@ final class DictionaryViewModel {
         }
     }
 
+    private func getRandomSeeAlsoTerms(count: Int = 4, excluding currentTerm: String) -> [String] {
+        let localRAG = LocalRAG.shared
+        if localRAG.isLoaded && !localRAG.documents.isEmpty {
+            let filtered = localRAG.documents.compactMap { doc -> String? in
+                let term = doc.istilah.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !term.isEmpty, term.lowercased() != currentTerm.lowercased() else { return nil }
+                return term
+            }
+            if !filtered.isEmpty {
+                let uniqueSet = Array(Set(filtered)).shuffled()
+                return Array(uniqueSet.prefix(count))
+            }
+        }
+        let fallbackTerms = [
+            "Jaksa Agung",
+            "Jabatan Fungsional",
+            "Jabatan Struktural",
+            "Jabatan Pimpinan Tinggi",
+            "Pengendali Data Pribadi",
+            "Hak Cipta",
+            "Bursa Efek",
+            "Badan Hukum"
+        ]
+        return Array(fallbackTerms.filter { $0.lowercased() != currentTerm.lowercased() }.shuffled().prefix(count))
+    }
 
     private func makeGlossaryEntry(from entry: LegalDictionaryEntry) -> LegalGlossaryEntry {
         let reference: LegalReference? = {
@@ -101,12 +128,16 @@ final class DictionaryViewModel {
             )
         }()
 
+        let randomSeeAlso = getRandomSeeAlsoTerms(count: 4, excluding: entry.term)
+
         return LegalGlossaryEntry(
             term: entry.term,
             singleDefinition: entry.definition,
-            reference: reference
+            reference: reference,
+            seeAlso: randomSeeAlso
         )
     }
+
 
     /// Navigates back to the main Lawtionary search view.
     func backToHome() {

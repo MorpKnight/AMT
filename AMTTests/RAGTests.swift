@@ -64,7 +64,8 @@ final class RAGTests: XCTestCase {
 
     func testLegalDictionaryStoreRAGSearch() async throws {
         let store = LegalDictionaryStore()
-        let results = await store.searchRAG("Data Pribadi", limit: 3)
+        let results = await store.searchRAG("Data Pribadi", limit: 5)
+
 
         XCTAssertFalse(results.isEmpty, "LegalDictionaryStore searchRAG should return entries")
         XCTAssertEqual(results[0].term, "Data Pribadi")
