@@ -87,7 +87,23 @@ struct LegalDictionaryStore: Sendable {
            !loadedEntries.isEmpty {
             self.init(entries: loadedEntries)
         } else {
-            self.init(entries: LegalDictionaryEntry.previewEntries)
+            let localRAG = LocalRAG.shared
+            localRAG.loadDataIfNeeded(bundle: bundle)
+            if !localRAG.documents.isEmpty {
+                let ragEntries = localRAG.documents.enumerated().map { index, doc in
+                    LegalDictionaryEntry(
+                        id: "rag-\(index)-\(doc.istilah)",
+                        term: doc.istilah,
+                        definition: doc.pengertian,
+                        regulation: doc.undangUndang,
+                        regulationTitle: "",
+                        sourceURL: URL(string: doc.url)
+                    )
+                }
+                self.init(entries: ragEntries)
+            } else {
+                self.init(entries: LegalDictionaryEntry.previewEntries)
+            }
         }
     }
 
@@ -167,6 +183,54 @@ struct LegalDictionaryStore: Sendable {
             .prefix(limit)
             .map(\.entry)
     }
+
+    /// Performs vector similarity search via BAAI/bge-m3 embeddings using LocalRAG engine.
+    func searchRAG(_ query: String, limit: Int = 30) async -> [LegalDictionaryEntry] {
+        let localRAG = LocalRAG.shared
+        if !localRAG.isLoaded {
+            localRAG.loadDataIfNeeded()
+        }
+
+        if localRAG.isLoaded {
+            do {
+                let queryEmbedding = try await BGEEmbedding.shared.generateEmbedding(for: query)
+                let ragResults = localRAG.search(queryEmbedding: queryEmbedding, topK: limit)
+
+                if !ragResults.isEmpty {
+                    return ragResults.map { match in
+                        LegalDictionaryEntry(
+                            id: "rag-\(match.rank)-\(match.document.istilah)",
+                            term: match.document.istilah,
+                            definition: match.document.pengertian,
+                            regulation: match.document.undangUndang,
+                            regulationTitle: "",
+                            sourceURL: URL(string: match.document.url)
+                        )
+                    }
+                }
+            } catch {
+                // Fallback to keyword RAG search
+            }
+
+            let keywordResults = localRAG.searchByKeyword(query: query, topK: limit)
+            if !keywordResults.isEmpty {
+                return keywordResults.map { match in
+                    LegalDictionaryEntry(
+                        id: "rag-kw-\(match.rank)-\(match.document.istilah)",
+                        term: match.document.istilah,
+                        definition: match.document.pengertian,
+                        regulation: match.document.undangUndang,
+                        regulationTitle: "",
+                        sourceURL: URL(string: match.document.url)
+                    )
+                }
+            }
+        }
+
+        // Fallback to standard search if RAG store is unavailable
+        return search(query, limit: limit)
+    }
+
 
     /// Returns only a conservative, source-backed candidate for model context.
     ///

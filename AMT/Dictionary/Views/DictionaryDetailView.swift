@@ -98,6 +98,40 @@ struct DictionaryDetailView: View {
                             .foregroundStyle(.primary)
                             .padding(.top, 4)
 
+                        // Top 5 RAG Matches Bar
+                        if !viewModel.topMatches.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 10) {
+                                        ForEach(Array(viewModel.topMatches.prefix(5).enumerated()), id: \.offset) { index, match in
+                                            Button(action: {
+                                                viewModel.selectMatch(match)
+                                            }) {
+                                                HStack(spacing: 6) {
+                                                    Text("#\(index + 1)")
+                                                        .font(.system(size: 11, weight: .bold))
+                                                        .foregroundStyle(viewModel.selectedEntry?.term == match.term ? Color.white : Color.accentColor)
+                                                    Text(match.term)
+                                                        .font(.system(size: 12, weight: .medium))
+                                                        .foregroundStyle(viewModel.selectedEntry?.term == match.term ? Color.white : Color.primary)
+                                                }
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(viewModel.selectedEntry?.term == match.term ? Color.accentColor : Color.primary.opacity(0.06))
+                                                )
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+
+
+
                         // Definition Cards (Numbered: 1, 2, ...)
                         ForEach(entry.definitions) { def in
                             definitionCard(def: def)
@@ -111,16 +145,19 @@ struct DictionaryDetailView: View {
                                     .foregroundStyle(sectionHeaderColor)
 
                                 // Chips Flow / Row
-                                HStack(spacing: 10) {
-                                    ForEach(entry.seeAlso, id: \.self) { term in
-                                        SeeAlsoChip(term: term) {
-                                            viewModel.lookupTerm(term)
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 10) {
+                                        ForEach(entry.seeAlso, id: \.self) { term in
+                                            SeeAlsoChip(term: term) {
+                                                viewModel.lookupTerm(term)
+                                            }
                                         }
                                     }
                                 }
                             }
-                            .padding(.top, 8)
+                            .padding(.top, 16)
                         }
+
                     }
                     .padding(.horizontal, 40)
                     .padding(.bottom, 48)

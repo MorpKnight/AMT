@@ -16,6 +16,7 @@ final class DictionaryViewModel {
     var selectedEntry: LegalGlossaryEntry? = nil
     var isShowingDetail: Bool = false
     var isLoading: Bool = false
+    var topMatches: [LegalGlossaryEntry] = []
 
     // MARK: - Popular Terms
     /// Array of popular legal terms displayed in the "Istilah Populer" section.
@@ -47,26 +48,71 @@ final class DictionaryViewModel {
         lookupTerm(trimmed)
     }
 
-    /// Executes the legal term lookup with animated transition to Detail View (Option B).
+    /// Executes the legal term lookup with animated transition to Detail View using BAAI/bge-m3 RAG (Top 3 candidates).
     func lookupTerm(_ query: String) {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         isLoading = true
 
-        if let entry = dictionaryStore.search(trimmed, limit: 1).first {
-            selectedEntry = makeGlossaryEntry(from: entry)
-        } else {
-            selectedEntry = LegalGlossaryEntry(
-                term: trimmed,
-                singleDefinition: "Definisi untuk kata \"\(trimmed)\" belum ditemukan dalam glosarium lokal."
-            )
-        }
+        Task { @MainActor in
+            let ragEntries = await self.dictionaryStore.searchRAG(trimmed, limit: 5)
 
-        withAnimation(.easeInOut(duration: 0.2)) {
-            self.isShowingDetail = true
-            self.isLoading = false
+            let glossaryEntries = ragEntries.map { self.makeGlossaryEntry(from: $0) }
+            self.topMatches = glossaryEntries
+
+            if let first = glossaryEntries.first {
+                self.selectedEntry = first
+            } else if let fallbackEntry = self.dictionaryStore.search(trimmed, limit: 1).first {
+                let entry = self.makeGlossaryEntry(from: fallbackEntry)
+                self.selectedEntry = entry
+                self.topMatches = [entry]
+            } else {
+                self.selectedEntry = LegalGlossaryEntry(
+                    term: trimmed,
+                    singleDefinition: "Definisi untuk kata \"\(trimmed)\" belum ditemukan dalam glosarium lokal.",
+                    seeAlso: self.getRandomSeeAlsoTerms(count: 4, excluding: trimmed)
+                )
+                self.topMatches = []
+            }
+
+            withAnimation(.easeInOut(duration: 0.2)) {
+                self.isShowingDetail = true
+                self.isLoading = false
+            }
         }
+    }
+
+    func selectMatch(_ entry: LegalGlossaryEntry) {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            self.selectedEntry = entry
+        }
+    }
+
+    private func getRandomSeeAlsoTerms(count: Int = 4, excluding currentTerm: String) -> [String] {
+        let localRAG = LocalRAG.shared
+        if localRAG.isLoaded && !localRAG.documents.isEmpty {
+            let filtered = localRAG.documents.compactMap { doc -> String? in
+                let term = doc.istilah.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !term.isEmpty, term.lowercased() != currentTerm.lowercased() else { return nil }
+                return term
+            }
+            if !filtered.isEmpty {
+                let uniqueSet = Array(Set(filtered)).shuffled()
+                return Array(uniqueSet.prefix(count))
+            }
+        }
+        let fallbackTerms = [
+            "Jaksa Agung",
+            "Jabatan Fungsional",
+            "Jabatan Struktural",
+            "Jabatan Pimpinan Tinggi",
+            "Pengendali Data Pribadi",
+            "Hak Cipta",
+            "Bursa Efek",
+            "Badan Hukum"
+        ]
+        return Array(fallbackTerms.filter { $0.lowercased() != currentTerm.lowercased() }.shuffled().prefix(count))
     }
 
     private func makeGlossaryEntry(from entry: LegalDictionaryEntry) -> LegalGlossaryEntry {
@@ -82,12 +128,16 @@ final class DictionaryViewModel {
             )
         }()
 
+        let randomSeeAlso = getRandomSeeAlsoTerms(count: 4, excluding: entry.term)
+
         return LegalGlossaryEntry(
             term: entry.term,
             singleDefinition: entry.definition,
-            reference: reference
+            reference: reference,
+            seeAlso: randomSeeAlso
         )
     }
+
 
     /// Navigates back to the main Lawtionary search view.
     func backToHome() {
