@@ -1,5 +1,10 @@
 import Foundation
 
+enum LegalDictionaryEntryAuthority: String, Codable, Hashable, Sendable {
+    case legacy
+    case verified
+}
+
 struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
     let id: String
     let term: String
@@ -7,6 +12,25 @@ struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
     let regulation: String
     let regulationTitle: String
     let sourceURL: URL?
+    let authority: LegalDictionaryEntryAuthority
+
+    init(
+        id: String,
+        term: String,
+        definition: String,
+        regulation: String,
+        regulationTitle: String,
+        sourceURL: URL?,
+        authority: LegalDictionaryEntryAuthority = .verified
+    ) {
+        self.id = id
+        self.term = term
+        self.definition = definition
+        self.regulation = regulation
+        self.regulationTitle = regulationTitle
+        self.sourceURL = sourceURL
+        self.authority = authority
+    }
 
     nonisolated static let previewEntries = [
         LegalDictionaryEntry(
@@ -274,25 +298,36 @@ struct LegalDictionaryStore: Sendable {
         if first.score >= Self.suggestionMinimumScore,
            first.matchedDefinitionTokenCount >= Self.suggestionMinimumMatchedDefinitionTokens,
            (scored.count == 1 || margin >= Self.suggestionMinimumMargin) {
-            return [LegalDictionaryMatch(
-                entry: first.entry,
-                score: first.score,
-                rank: 1,
-                matchedDefinitionTokenCount: first.matchedDefinitionTokenCount,
-                isDirectTermMatch: first.isDirectTermMatch
-            )]
+            return scored
+                .filter {
+                    $0.score >= Self.suggestionMinimumScore
+                        && $0.matchedDefinitionTokenCount
+                            >= Self.suggestionMinimumMatchedDefinitionTokens
+                }
+                .prefix(limit)
+                .enumerated()
+                .map { index, match in
+                    LegalDictionaryMatch(
+                        entry: match.entry,
+                        score: match.score,
+                        rank: index + 1,
+                        matchedDefinitionTokenCount: match.matchedDefinitionTokenCount,
+                        isDirectTermMatch: match.isDirectTermMatch
+                    )
+                }
         }
 
-        guard let directTermIndex = directTermIndices.first else { return [] }
-        return [LegalDictionaryMatch(
-            entry: entries[directTermIndex],
-            score: bm25Score(queryTokens: queryTokens, documentIndex: directTermIndex),
-            rank: 1,
-            matchedDefinitionTokenCount: Set(queryTokens)
-                .intersection(retrievalIndex[directTermIndex].definitionTokenSet)
-                .count,
-            isDirectTermMatch: true
-        )]
+        return directTermIndices.prefix(limit).enumerated().map { rank, index in
+            LegalDictionaryMatch(
+                entry: entries[index],
+                score: bm25Score(queryTokens: queryTokens, documentIndex: index),
+                rank: rank + 1,
+                matchedDefinitionTokenCount: Set(queryTokens)
+                    .intersection(retrievalIndex[index].definitionTokenSet)
+                    .count,
+                isDirectTermMatch: true
+            )
+        }
     }
 
     private func bm25Score(queryTokens: [String], documentIndex: Int) -> Double {
@@ -340,10 +375,17 @@ struct LegalDictionaryStore: Sendable {
                 return nil
             }
 
-            if let status = values["status"],
-               !status.isEmpty,
-               status.caseInsensitiveCompare("OK") != .orderedSame {
-                return nil
+            let authority: LegalDictionaryEntryAuthority
+            if let status = values["status"], !status.isEmpty {
+                if status.caseInsensitiveCompare("VERIFIED") == .orderedSame {
+                    authority = .verified
+                } else if status.caseInsensitiveCompare("OK") == .orderedSame {
+                    authority = .legacy
+                } else {
+                    return nil
+                }
+            } else {
+                authority = .legacy
             }
 
             return LegalDictionaryEntry(
@@ -352,7 +394,8 @@ struct LegalDictionaryStore: Sendable {
                 definition: definition,
                 regulation: values["undang_undang"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
                 regulationTitle: values["uu"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
-                sourceURL: URL(string: values["url"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
+                sourceURL: URL(string: values["url"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""),
+                authority: authority
             )
         }
     }

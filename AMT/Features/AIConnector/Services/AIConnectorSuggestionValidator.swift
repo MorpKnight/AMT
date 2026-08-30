@@ -1,15 +1,19 @@
 import Foundation
 
-enum AIConnectorValidationError: Error, Equatable {
+enum AIConnectorValidationError: Error, Equatable, Sendable {
     case inconsistentFields
     case missingOriginal
     case missingReplacement
     case originalNotUnique
     case replacementUnchanged
     case replacementTooLong
+    case nonMinimalEditSpan
     case protectedContentChanged
+    case legalStructureChanged
+    case overlappingSuggestion
     case invalidGlossaryReference
     case unsupportedSourceClaim
+    case ungroundedReason
 
     var message: String {
         switch self {
@@ -25,17 +29,26 @@ enum AIConnectorValidationError: Error, Equatable {
             "Usulan sama dengan teks asli."
         case .replacementTooLong:
             "Usulan terlalu panjang untuk eksperimen ini."
+        case .nonMinimalEditSpan:
+            "Model menyalin bagian teks yang terlalu luas; gunakan span perubahan terkecil."
         case .protectedContentChanged:
             "Usulan mengubah angka, istilah terproteksi, atau modalitas hukum."
+        case .legalStructureChanged:
+            "Usulan mengubah kondisi, pengecualian, referensi, atau akibat hukum."
+        case .overlappingSuggestion:
+            "Usulan bertabrakan dengan usulan lain pada segmen yang sama."
         case .invalidGlossaryReference:
             "Rujukan glossary tidak tersedia atau tidak sesuai."
         case .unsupportedSourceClaim:
             "Alasan mengandung klaim sumber hukum yang tidak diizinkan."
+        case .ungroundedReason:
+            "Alasan merujuk frasa yang tidak ditemukan pada target atau usulan."
         }
     }
 }
 
 struct AIConnectorSuggestionValidator: Sendable {
+    nonisolated static let version = "validator-v3-locality-grounding"
     private static let legalModalities: Set<String> = [
         "wajib",
         "harus",
@@ -66,10 +79,14 @@ struct AIConnectorSuggestionValidator: Sendable {
         _ parsedReview: AIParsedReview,
         for segment: AIReviewSegment,
         glossaryMatches: [LegalDictionaryMatch],
-        origin: AIReviewOrigin = .qwen
+        origin: AIReviewOrigin = .qwen,
+        protectionContext: AIConnectorDocumentProtectionContext = .empty
     ) throws -> AIValidatedReview {
         guard !containsUnsupportedSourceClaim(in: parsedReview.reason) else {
             throw AIConnectorValidationError.unsupportedSourceClaim
+        }
+        guard reasonIsGrounded(parsedReview, in: segment.targetText) else {
+            throw AIConnectorValidationError.ungroundedReason
         }
 
         let glossaryMatch = try resolveGlossary(
@@ -93,7 +110,8 @@ struct AIConnectorSuggestionValidator: Sendable {
             try validateSuggestionFields(
                 parsedReview,
                 segment: segment,
-                glossaryMatch: glossaryMatch
+                glossaryMatch: glossaryMatch,
+                protectionContext: protectionContext
             )
 
         case .needsReview:
@@ -115,14 +133,16 @@ struct AIConnectorSuggestionValidator: Sendable {
             replacement: parsedReview.replacement,
             reason: parsedReview.reason,
             glossaryMatch: glossaryMatch,
-            origin: origin
+            origin: origin,
+            ruleID: parsedReview.ruleID
         )
     }
 
     private func validateSuggestionFields(
         _ parsedReview: AIParsedReview,
         segment: AIReviewSegment,
-        glossaryMatch: LegalDictionaryMatch?
+        glossaryMatch: LegalDictionaryMatch?,
+        protectionContext: AIConnectorDocumentProtectionContext
     ) throws {
         guard let original = parsedReview.original else {
             throw AIConnectorValidationError.missingOriginal
@@ -139,7 +159,6 @@ struct AIConnectorSuggestionValidator: Sendable {
         guard replacement.count <= min(500, max(1, original.count * 2)) else {
             throw AIConnectorValidationError.replacementTooLong
         }
-
         if parsedReview.category == .terminology {
             guard let glossaryMatch,
                   replacement == glossaryMatch.entry.term else {
@@ -158,9 +177,22 @@ struct AIConnectorSuggestionValidator: Sendable {
         guard preservesProtectedContent(
             from: original,
             to: replacement,
-            allowGlossaryProtectedTermChange: isTrustedGlossaryDefinitionReplacement
+            allowGlossaryProtectedTermChange: isTrustedGlossaryDefinitionReplacement,
+            protectionContext: protectionContext
         ) else {
+            if changesLegalStructure(
+                from: original,
+                to: replacement,
+                protectionContext: protectionContext
+            ) {
+                throw AIConnectorValidationError.legalStructureChanged
+            }
             throw AIConnectorValidationError.protectedContentChanged
+        }
+
+        if parsedReview.category != .terminology,
+           hasNonMinimalEditSpan(original: original, replacement: replacement) {
+            throw AIConnectorValidationError.nonMinimalEditSpan
         }
     }
 
@@ -220,7 +252,8 @@ struct AIConnectorSuggestionValidator: Sendable {
     private func preservesProtectedContent(
         from original: String,
         to replacement: String,
-        allowGlossaryProtectedTermChange: Bool
+        allowGlossaryProtectedTermChange: Bool,
+        protectionContext: AIConnectorDocumentProtectionContext
     ) -> Bool {
         // A canonical glossary term may replace its own complete, retrieved
         // definition. The definition is the trusted source for this narrow
@@ -245,18 +278,30 @@ struct AIConnectorSuggestionValidator: Sendable {
         guard dateMonthTokens(in: original) == dateMonthTokens(in: replacement),
               numericDateMarkers(in: original) == numericDateMarkers(in: replacement),
               percentageMarkers(in: original) == percentageMarkers(in: replacement),
-              currencyMarkers(in: original) == currencyMarkers(in: replacement) else {
+              currencyMarkers(in: original) == currencyMarkers(in: replacement),
+              protectedStructuralMarkers(in: original) == protectedStructuralMarkers(in: replacement) else {
             return false
         }
 
         if !allowGlossaryProtectedTermChange {
-            for term in Self.definedTerms where original.contains(term) {
+            let definedTerms = Set(Self.definedTerms).union(protectionContext.definedTerms)
+            for term in definedTerms where original.contains(term) {
+                guard replacement.contains(term) else { return false }
+            }
+
+            for term in protectionContext.partyNames
+                .union(protectionContext.quotedTerms)
+                .union(protectionContext.identifiers)
+            where original.contains(term) {
                 guard replacement.contains(term) else { return false }
             }
 
             let originalCaseSensitiveTokens = caseSensitiveTokens(in: original)
             let replacementCaseSensitiveTokens = caseSensitiveTokens(in: replacement)
-            for token in originalCaseSensitiveTokens where isAcronym(token) {
+            let protectedAcronyms = Set(
+                originalCaseSensitiveTokens.filter(isAcronym)
+            ).union(protectionContext.acronyms)
+            for token in protectedAcronyms where original.contains(token) {
                 guard replacementCaseSensitiveTokens.contains(token) else { return false }
             }
 
@@ -270,6 +315,59 @@ struct AIConnectorSuggestionValidator: Sendable {
         }
 
         return true
+    }
+
+    private func changesLegalStructure(
+        from original: String,
+        to replacement: String,
+        protectionContext: AIConnectorDocumentProtectionContext
+    ) -> Bool {
+        let originalMarkers = protectedStructuralMarkers(in: original)
+        let replacementMarkers = protectedStructuralMarkers(in: replacement)
+        guard originalMarkers != replacementMarkers else { return false }
+
+        // A changed proposition is safer to reject than to treat as a normal
+        // grammar correction. The caller may present this as NEEDS_REVIEW in a
+        // future model contract, but no replacement is accepted today.
+        _ = protectionContext
+        return true
+    }
+
+    private func protectedStructuralMarkers(in text: String) -> [String] {
+        let tokens = normalizedTokens(text)
+        let structuralTokens: Set<String> = [
+            "jika", "apabila", "kecuali", "sepanjang", "dalam", "hal",
+            "dengan", "syarat", "sebelum", "sesudah", "setelah", "sampai",
+            "sejak", "hingga", "batal", "berakhir", "mengakhiri", "sanksi",
+            "dikenai", "dikenakan", "ganti", "rugi", "pengecualian", "larangan",
+            "izin", "hak", "kewajiban", "pasal", "ayat", "huruf", "angka"
+        ]
+        var markers = tokens.filter(structuralTokens.contains)
+        markers.append(contentsOf: articleReferenceMarkers(in: text))
+        return markers
+    }
+
+    private func articleReferenceMarkers(in text: String) -> [String] {
+        let patterns = [
+            #"(?i)\bpasal\s+[0-9]+(?:\s*ayat\s*\([0-9]+\))?"#,
+            #"(?i)\bayat\s*\([0-9]+\)"#,
+            #"(?i)\bhuruf\s+[a-z]\b"#,
+            #"(?i)\bangka\s+[0-9]+\b"#
+        ]
+        return patterns.flatMap { pattern -> [String] in
+            guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+            let range = NSRange(text.startIndex..<text.endIndex, in: text)
+            return regex.matches(in: text, range: range).compactMap { match in
+                guard let matchRange = Range(match.range, in: text) else { return nil }
+                return normalizeMarker(String(text[matchRange]))
+            }
+        }.sorted()
+    }
+
+    private func normalizeMarker(_ marker: String) -> String {
+        marker.lowercased()
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func protectedModalityTokens(in tokens: [String]) -> [String] {
@@ -411,6 +509,45 @@ struct AIConnectorSuggestionValidator: Sendable {
             searchStart = haystack.index(after: range.lowerBound)
         }
         return count
+    }
+
+    private func hasNonMinimalEditSpan(original: String, replacement: String) -> Bool {
+        guard original.count >= 32, replacement.count >= 20 else { return false }
+
+        let originalCharacters = Array(original)
+        let replacementCharacters = Array(replacement)
+        let sharedLimit = min(originalCharacters.count, replacementCharacters.count)
+
+        var prefixCount = 0
+        while prefixCount < sharedLimit,
+              originalCharacters[prefixCount] == replacementCharacters[prefixCount] {
+            prefixCount += 1
+        }
+
+        var suffixCount = 0
+        while suffixCount < sharedLimit - prefixCount,
+              originalCharacters[originalCharacters.count - 1 - suffixCount]
+                == replacementCharacters[replacementCharacters.count - 1 - suffixCount] {
+            suffixCount += 1
+        }
+
+        let sharedRatio = Double(prefixCount + suffixCount)
+            / Double(max(originalCharacters.count, replacementCharacters.count))
+        return sharedRatio >= 0.6
+    }
+
+    private func reasonIsGrounded(_ review: AIParsedReview, in target: String) -> Bool {
+        let evidence = [target, review.original, review.replacement]
+            .compactMap { $0 }
+            .joined(separator: "\n")
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+
+        return quotedSubstrings(in: review.reason).allSatisfy { quotedText in
+            let normalized = quotedText
+                .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return normalized.isEmpty || evidence.localizedCaseInsensitiveContains(normalized)
+        }
     }
 
     private func containsUnsupportedSourceClaim(in reason: String) -> Bool {

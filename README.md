@@ -17,14 +17,16 @@
   - Mencari berdasarkan istilah atau bagian dari pengertian.
   - Menampilkan pengertian, peraturan, judul peraturan, dan tautan sumber jika tersedia.
 - **Suggestion eksperimental**
-  - Meninjau teks dokumen menggunakan `morpknight/qwen3.5-4b-indonesian-legal-mlx-4bit` melalui MLX Swift.
+  - Meninjau teks dokumen menggunakan `mlx-community/Qwen3.5-4B-MLX-4bit` melalui MLX Swift sebagai model utama Debug. Qwen3.5 Legal 4B dan Qwen3.5 2B tetap tersedia untuk pembanding historis.
   - Inferensi berjalan lokal setelah model selesai diunduh dan disimpan di cache Hugging Face.
-  - Memproses dokumen per kalimat/klausul, kemudian mengambil maksimal satu kandidat glossary lokal melalui guard BM25 konservatif.
-  - Memvalidasi output model dengan kontrak tagged fields sebelum menampilkannya.
-  - Melindungi angka, tenggat, modalitas, dan defined terms dari perubahan yang tidak sah.
-  - Menyediakan tiga mode Debug: baseline aturan deterministik, Hybrid dengan pemulihan terbatas, dan Qwen langsung untuk pembanding. Default Debug adalah Hybrid + Legal 4B.
-  - Jika output Qwen ditolak pada mode Hybrid, koreksi bahasa berisiko rendah atau no-suggestion yang aman dapat dipulihkan; klausul lain tetap ditahan.
-  - Menyediakan benchmark reproducible untuk baseline, Legal 4B Qwen-only, dan Hybrid; Qwen3.5 2B tetap tersedia sebagai baseline historis.
+  - Memproses seluruh dokumen per kalimat/klausul melalui work queue serial dalam batch 12; hasil valid muncul secara incremental.
+  - Menggunakan cache hasil relatif terhadap segmen/kandidat, rule pack deterministik, bounded repair satu kali, challenge terbatas untuk `REJECT`, circuit breaker, dan fallback aman.
+  - Membuat maksimal tiga candidate lokal non-overlap per segmen dari rule engine dan glossary verified. Qwen hanya menilai satu candidate per call dan tidak boleh membuat replacement, sumber, atau candidate baru.
+  - Menggunakan structured tool decision `submit_review(candidate_id, decision)` sebagai jalur utama. Parser enam baris lama dipertahankan hanya untuk kompatibilitas benchmark historis.
+  - Melindungi angka, tenggat, modalitas, kondisi, pengecualian, identifier, dan defined terms dari perubahan yang tidak sah.
+  - Menyediakan tiga mode Debug: baseline aturan deterministik, Hybrid dengan pemulihan terbatas, dan Qwen langsung untuk pembanding. Default Debug sementara adalah Hybrid + Qwen3.5 Base 4B.
+  - Pada Hybrid, Qwen berfungsi sebagai confirmation/diagnostic; kegagalan model dapat dipulihkan melalui rule deterministik berisiko rendah, sedangkan `REJECT` eksplisit tidak diubah menjadi suggestion.
+  - Menyediakan benchmark reproducible melalui work queue produksi untuk baseline, tiga generation profile Base 4B, cache rerun, Hybrid, thinking, dan cancellation.
   - Mendukung streaming internal, Cancel, Retry, dan pilihan thinking mode.
   - Menyediakan delapan dummy sample untuk smoke test perilaku awal, termasuk terminologi `Data Pribadi`.
 
@@ -41,20 +43,38 @@ flowchart LR
     Dashboard --> Editor[DocumentEditorView]
     Editor --> AIView[AIConnectorDebugPanel<br/>(Debug only)]
     AIView --> VM[AIConnectorViewModel]
-    VM --> Retrieval[Local BM25 glossary retrieval]
+    VM --> Queue[Document-wide work queue<br/>batch 12 • serial]
+    Queue --> Processor[Shared segment processor]
+    Processor --> Cache[(In-memory segment cache)]
+    Processor --> Retrieval[Local BM25 glossary retrieval<br/>maks. 3 evidence]
     Retrieval --> CSV[kamus_hukum.csv]
-    VM --> Rules[Deterministic bounded rules]
-    VM --> Service[QwenSuggestionService<br/>(Hybrid / Qwen langsung)]
+    Processor --> Rules[Versioned deterministic rule pack]
+    Rules --> Candidates[Candidate builder<br/>maks. 3 non-overlap]
+    Retrieval --> Candidates
+    Processor --> Candidates
+    Candidates --> Service[QwenSuggestionService<br/>candidate judge]
     Service --> MLX[MLX Swift + Qwen]
-    Service --> Parser[Tagged output parser]
-    Parser --> Validator[Safety validator]
-    Rules --> Validator
-    Validator --> AIView
+    MLX --> ToolParser[submit_review tool parser]
+    ToolParser --> Decision[ACCEPT / REJECT / NEEDS_REVIEW]
+    Decision --> Validator[Expanded safety validator]
+    Candidates --> Validator
+    Rules --> Resolver[Conflict resolver ≤3 non-overlap]
+    Validator --> Resolver
+    Service --> Repair[One bounded format repair]
+    Repair --> ToolParser
+    Service --> Challenge[One REJECT challenge]
+    Challenge --> ToolParser
+    Processor --> Fallback[Deterministic fallback]
+    Fallback --> Resolver
+    Resolver --> VM
+    VM --> AIView
+    VM --> Editor[Inline highlights + popover]
     VM --> Benchmark[Fixture benchmark + expected signal]
-    Benchmark --> AIView
+    Processor -. prepared, not connected .-> Tools[Typed local tools]
+    MLX -. candidate-only; no tool retrieval .-> Tools
 ```
 
-`AMTApp` membuat `QwenSuggestionService` dan `LegalDictionaryStore`, lalu meneruskannya secara eksplisit ke view yang membutuhkan. Kode baru dikelompokkan berdasarkan fitur, sedangkan model dokumen dan storage dashboard masih berada pada boundary yang digunakan project saat ini.
+`AMTApp` membuat `QwenSuggestionService` dan `LegalDictionaryStore`, lalu meneruskannya secara eksplisit ke view yang membutuhkan. ViewModel memiliki satu processor dan queue selama lifecycle editor. Queue menjalankan seluruh segmen secara serial sehingga model container tidak menerima generation bersamaan; hasil tiap segmen dapat langsung dipetakan menjadi highlight. Kode baru dikelompokkan berdasarkan fitur, sedangkan model dokumen dan storage dashboard masih berada pada boundary yang digunakan project saat ini.
 
 ## Cara kerja Dictionary
 
@@ -76,39 +96,58 @@ Format utama CSV yang digunakan:
 istilah,pengertian,undang_undang,uu,url,status
 ```
 
-Entry dengan `status` selain `OK` dilewati. Jika resource CSV tidak dapat dimuat, aplikasi menggunakan beberapa entry preview agar layar Dictionary tetap dapat dibuka.
+Entry dengan `status=VERIFIED` menjadi evidence yang dapat dipakai sebagai candidate terminology. Entry `status=OK` atau status kosong dipertahankan sebagai corpus legacy untuk pencarian/diagnostics, tetapi tidak actionable dan tidak dapat menghasilkan highlight atau Accept. Status lain dilewati. Jika resource CSV tidak dapat dimuat, aplikasi menggunakan beberapa entry preview agar layar Dictionary tetap dapat dibuka; entry preview diperlakukan sebagai verified hanya untuk kebutuhan aplikasi saat ini dan tetap perlu review sumber pada corpus produksi.
 
 ## Cara kerja Suggestion
 
-Suggestion menggunakan prompt sederhana untuk meninjau ejaan, tata bahasa, kejelasan, dan konsistensi istilah tanpa mengubah makna hukum. Dokumen dipecah per kalimat/klausul. Untuk setiap segmen, aplikasi menjalankan BM25 lokal atas target segmen untuk mencari maksimal satu kandidat yang kuat dan tidak ambigu. Model tidak digunakan sebagai sumber hukum.
+Suggestion menggunakan prompt sederhana untuk meninjau ejaan, tata bahasa, kejelasan, dan konsistensi istilah tanpa mengubah makna hukum. Dokumen dipecah per kalimat/klausul, lalu seluruh segmen dimasukkan ke work queue dengan batch persiapan 12 dan eksekusi serial. Untuk setiap segmen, rule engine dan BM25 lokal mengumpulkan evidence, lalu candidate builder memilih paling banyak tiga proposal non-overlap. Candidate berasal sepenuhnya dari aplikasi; model tidak digunakan sebagai sumber hukum dan tidak diberi kewenangan membuat replacement baru.
 
 Pada panel Debug, strategi **Baseline aman** tidak mengunduh model dan hanya
-menjalankan koreksi deterministik yang sudah dibatasi. Strategi **Hybrid: model
-+ guard** mencoba Qwen terlebih dahulu, kemudian hanya memulihkan output yang
-ditolak jika ada koreksi deterministik yang eksplisit dan berisiko rendah.
-Strategi **Qwen langsung** dipakai untuk membandingkan kepatuhan format dan
-kualitas model tanpa pemulihan. Tombol benchmark menjalankan seluruh delapan
-fixture secara berurutan; unit test tidak mengunduh atau menjalankan model.
+menjalankan koreksi dari rule pack serta evidence glossary verified. Strategi
+**Hybrid: model + guard** mengirim satu candidate per generation kepada Qwen.
+Keputusan tool yang malformed dan recoverable mendapat tepat satu repair dengan
+evidence yang sama. `REJECT` yang valid mendapat satu challenge, tetapi reject
+akhir tidak menjadi fallback suggestion. Jika model gagal secara non-recoverable,
+Hybrid hanya memulihkan rule deterministik berisiko rendah; terminology tetap
+memerlukan glossary verified dan keputusan `ACCEPT` dari model. Setelah tiga
+kegagalan dari empat segmen pertama yang memiliki candidate, circuit breaker
+melewati Qwen untuk sisa run.
 
-Model diwajibkan menghasilkan enam tagged fields (`STATUS`, `CATEGORY`, `ORIGINAL`, `REPLACEMENT`, `GLOSSARY_ID`, dan `REASON`). Output ditahan di memori sampai parser dan safety validator memeriksa bahwa bagian asli unik, replacement aman, angka serta istilah terproteksi tetap sama, dan tidak ada klaim sumber hukum baru. Output yang gagal pemeriksaan ditolak dan tidak menjadi saran.
+Strategi **Qwen langsung** dipakai untuk mengukur keputusan model tanpa fallback;
+hanya `ACCEPT` yang dapat menjadi suggestion dan semua candidate tetap divalidasi
+oleh aplikasi. Qwen menerima satu tool `submit_review` dengan dua field:
+`candidate_id` dan `decision` (`ACCEPT`, `REJECT`, atau `NEEDS_REVIEW`). Original,
+replacement, alasan, dan referensi berasal dari candidate/rule/glossary lokal.
+Output biasa, reasoning, template marker, tool call ganda, atau token-limit hit
+tidak menjadi suggestion. Parser enam baris tetap tersedia untuk benchmark lama,
+tetapi bukan jalur utama candidate-first. Unit test tidak mengunduh atau
+menjalankan model.
 
-Guard retrieval saat ini bersifat provisional untuk integrasi awal: kandidat non-exact harus memiliki skor BM25 minimal `20`, sedikitnya `4` token definisi yang cocok, dan margin minimal `3` terhadap kandidat berbeda berikutnya. Istilah multi-kata yang muncul langsung di teks dapat lolos sebagai direct term match. Guard ini bukan confidence hukum dan belum menggantikan review sumber resmi.
+Guard retrieval saat ini bersifat provisional untuk integrasi awal: kandidat non-exact harus memiliki skor BM25 minimal `20`, sedikitnya `4` token definisi yang cocok, dan margin minimal `3` terhadap kandidat berbeda berikutnya. Paling banyak tiga match dikirim ke candidate builder, tetapi hanya entry verified yang dapat menjadi terminology candidate actionable. Istilah multi-kata yang muncul langsung di teks dapat lolos sebagai direct term match untuk pencarian, bukan otomatis menjadi replacement. Guard ini bukan confidence hukum dan belum menggantikan review sumber resmi.
 
 Konfigurasi penting saat ini:
 
 | Komponen | Nilai |
 | --- | --- |
-| Model utama Debug | `morpknight/qwen3.5-4b-indonesian-legal-mlx-4bit` |
-| Revision model utama | `2517cc7962517b85d97aff8988785cdb02c8fea1` |
-| Ukuran download model utama | sekitar 2,39 GB |
-| Model baseline Debug | `mlx-community/Qwen3.5-2B-4bit` |
-| Revision baseline | `674aaa7240b91e8012fcad5d791b7dfe5ba90207` |
+| Model utama Debug | `mlx-community/Qwen3.5-4B-MLX-4bit` |
+| Revision model utama | `32f3e8ecf65426fc3306969496342d504bfa13f3` |
+| Ukuran download model utama | sekitar 3,1 GB |
+| Model pembanding Legal 4B | `morpknight/qwen3.5-4b-indonesian-legal-mlx-4bit` |
+| Revision Legal 4B | `2517cc7962517b85d97aff8988785cdb02c8fea1` |
+| Ukuran download Legal 4B | sekitar 2,39 GB |
+| Model baseline historis | `mlx-community/Qwen3.5-2B-4bit` |
+| Revision baseline historis | `674aaa7240b91e8012fcad5d791b7dfe5ba90207` |
 | Input target | Maksimal 512 token per segmen |
 | Konteks | Satu segmen sebelum dan sesudah, maksimal 128 token masing-masing |
-| Segmen per Run | Maksimal 12 segmen |
-| Output non-thinking Legal 4B | Maksimal 256 token, greedy (`temperature=0`) |
-| Output non-thinking baseline 2B | Maksimal 256 token, `temperature=0.2`, `top-p=0.9`, `top-k=20` |
-| Output thinking | Maksimal 768 token |
+| Segmentasi / queue | Seluruh dokumen; queue disiapkan dalam batch 12 dan dieksekusi serial |
+| Segmen terlalu panjang | >512 token ditandai dan dilewati tanpa dipotong |
+| Rule pack | `rule-pack-v1`, hanya rule berstatus `active` |
+| Cache | In-memory, key SHA-256 mencakup model/prompt/schema/rule/corpus/validator |
+| Candidate per segmen | Maksimal 3 candidate lokal non-overlap; satu candidate per model call |
+| Candidate tool | `submit_review(candidate_id, decision)` |
+| Default non-thinking profile | `greedy`: 128 token, `temperature=0`, `top-p=1`, `top-k=0`, tanpa penalty |
+| Benchmark profile lain | `low-variance` dan `official-instruct` |
+| Output thinking | Maksimal 512 token pada candidate-first; tetap eksperimen |
 | Thinking default | Off |
 | Generation | Streaming internal, hasil ditahan sampai tervalidasi, dan dapat dibatalkan |
 
@@ -143,14 +182,14 @@ Produk yang digunakan target AMT adalah `MLXLLM`, `MLXLMCommon`, `MLXHuggingFace
 4. Jalankan dengan `⌘R`.
 5. Pilih **Dictionary** pada sidebar untuk mencari istilah atau pengertian.
 6. Pilih dokumen pada dashboard untuk membuka editor.
-7. Pada panel **Suggestion — Eksperimental** (Debug), pilih sumber input, opsional pilih dummy sample, lalu tekan **Jalankan review** untuk satu dokumen/fixture.
+7. Pada panel **Suggestion — Eksperimental** (Debug), pilih sumber input, opsional pilih dummy sample, lalu tekan **Jalankan review** untuk seluruh dokumen/fixture. Tombol sparkles pada toolbar juga memulai analisis dokumen aktif; panel Debug tersedia dari menu opsi.
 8. Untuk membandingkan kualitas, pilih strategi dan model, lalu tekan **Benchmark 8 fixture**. Hasil benchmark hanya evaluasi Debug dan tidak mengubah dokumen.
 
-Panel menampilkan jumlah segmen, progress kalimat, hasil yang lolos validator, hasil yang memerlukan review manusia, dan output yang ditolak. Current Document dibatasi ke 4.000 karakter pertama dan panel memberi indikator jika terpotong. Tidak ada hasil yang diterapkan otomatis ke dokumen.
+Panel menampilkan jumlah segmen, batch queue, progress seluruh dokumen, cache, repair, fallback, hasil yang lolos validator, hasil yang memerlukan review manusia, dan output yang ditolak. Preview Current Document dibatasi ke 4.000 karakter pertama, tetapi analisis memakai seluruh isi dokumen dan panel memberi indikator jika preview terpotong. Tidak ada hasil yang diterapkan otomatis ke dokumen; highlight dapat ditinjau melalui popover editor dan Accept tetap merupakan aksi pengguna.
 
-Dashboard juga selalu menampilkan **AI Connector — Test Document**. Dokumen ini memuat contoh redundansi, typo, istilah hukum, preservasi angka, tanggal, mata uang, persentase, defined terms, negasi, pengecualian, terminologi campuran, dan klausul sensitif. Isinya sengaja lebih dari batas 12 segmen agar indikator segmen yang dilewati juga dapat diuji. Dokumen dapat diedit untuk pengujian, tetapi akan kembali ke isi awal ketika aplikasi dijalankan ulang.
+Dashboard juga selalu menampilkan **AI Connector — Test Document**. Dokumen ini memuat contoh redundansi, typo, istilah hukum, preservasi angka, tanggal, mata uang, persentase, defined terms, negasi, pengecualian, terminologi campuran, dan klausul sensitif. Isinya sengaja lebih dari 12 segmen agar pembentukan batch `12/12/...` dan hasil incremental dapat diuji; segmen >512 token diuji terpisah. Dokumen dapat diedit untuk pengujian, tetapi akan kembali ke isi awal ketika aplikasi dijalankan ulang.
 
-Pada Run atau benchmark model pertama, tunggu proses download dan loading Legal 4B selesai. Run berikutnya menggunakan cache Hugging Face lokal selama cache masih tersedia. Cache Qwen3.5 2B tidak dihapus dan tetap terpisah untuk perbandingan historis.
+Pada Run atau benchmark model pertama, tunggu proses download dan loading model selesai. Run berikutnya menggunakan cache Hugging Face lokal selama cache masih tersedia. Cache Qwen3.5 2B, Legal 4B, dan base 4B tetap terpisah untuk perbandingan historis.
 
 ## Build dari command line
 
@@ -190,32 +229,38 @@ xcodebuild \
 
 Unit test mencakup segmentasi, retrieval BM25, parser, safety validator, generation diagnostics, report encoding, dan quality-gate calculation. Download model dan evaluasi output Qwen tetap merupakan benchmark opt-in; test reguler tidak menyentuh model.
 
-Benchmark P0.9 yang mengunduh model Legal 4B dapat dijalankan hanya bila memang
-diinginkan. Pada Xcode 26, `xcodebuild` hanya meneruskan environment ke proses
+Benchmark P0.11 yang mengunduh atau memuat model dapat dijalankan hanya bila
+memang diinginkan. Default-nya Base 4B (`qwen35-base-4b`). Benchmark ini
+membandingkan profile `greedy`, `low-variance`, dan `official-instruct`, lalu
+menjalankan cache rerun, Hybrid, satu thinking run, dan cancellation smoke test.
+Gunakan `AMT_P011_MODEL_VARIANT=qwen35-legal-4b` hanya untuk membandingkan model
+domain. Pada Xcode 26, `xcodebuild` hanya meneruskan environment ke proses
 XCTest jika nama variabel diberi prefix `TEST_RUNNER_`; prefix tersebut dilepas
 oleh test runner sebelum dibaca oleh test:
 
 ```bash
-TEST_RUNNER_AMT_RUN_P09_MODEL_BENCHMARK=1 \
-TEST_RUNNER_AMT_P09_REPORT_PATH=/private/tmp/amt-p09-legal-4b.json \
+TEST_RUNNER_AMT_RUN_P011_MODEL_BENCHMARK=1 \
+TEST_RUNNER_AMT_P011_MODEL_VARIANT=qwen35-base-4b \
+TEST_RUNNER_AMT_P011_REPORT_PATH=/private/tmp/amt-p011-base-4b.json \
 xcodebuild \
   -project AMT.xcodeproj \
   -scheme AMT \
   -configuration Debug \
   -destination 'platform=macOS,arch=arm64' \
-  -derivedDataPath /private/tmp/AMT-P09-DerivedData \
+  -derivedDataPath /private/tmp/AMT-P011-DerivedData \
   CODE_SIGNING_ALLOWED=NO \
   -only-testing:AMTTests/AIConnectorModelBenchmarkTests \
   test
 ```
 
-Report benchmark memuat output diagnosis yang sudah di-redact, candidate
-glossary, status parser/validator, origin fallback, token/durasi, stop reason,
-repetition ratio, dan keputusan quality gate. Model reasoning tidak ditulis ke
-report. Pada runtime Legal 4B saat ini, Qwen-only memperoleh `0/8`, Hybrid
-`7/8` dengan fallback deterministik, dan quality gate tetap `NO_GO` karena
-format output serta repetition; detail evidence ada di
-[`docs/p0.9-legal-model-validation.md`](docs/p0.9-legal-model-validation.md).
+Report benchmark memuat diagnosis per sample dan per candidate: sumber
+candidate, keputusan Qwen, origin final, attempt/repair/challenge, fallback,
+token/durasi, stop reason, repetition ratio, rejection class, dan quality gate.
+Reasoning, source claim, raw tool output, dan output berbahaya tidak ditulis ke
+report. Entry glossary test yang verified dipasang terpisah dari corpus produksi
+agar fixture terminology dapat diuji tanpa menganggap corpus legacy mutakhir.
+Benchmark tidak mengubah dokumen dan hasilnya belum otomatis mengaktifkan
+Release/TestFlight.
 
 ## Struktur project
 
@@ -243,10 +288,12 @@ AMT/
 ## Batasan MVP
 
 - Pencarian Dictionary masih menggunakan lexical search; belum mendukung typo correction, stemming, sinonim, atau semantic retrieval. Candidate generation untuk Suggestion sudah memakai BM25 provisional, tetapi belum menjadi ranking final Dictionary.
-- Suggestion belum menghasilkan suggestion cards dengan accept/reject dan belum mengubah isi dokumen.
+- Suggestion sekarang memiliki highlight inline dan popover dengan Accept/Dismiss; tidak ada auto-rewrite tanpa aksi pengguna.
 - Thinking mode pada model kecil dapat berhenti sebelum jawaban final; aplikasi akan menampilkan error dan menyarankan non-thinking mode.
 - P0.8 memperkuat baseline deterministik dan benchmark Hybrid/Qwen, tetapi belum meluluskan Qwen-only untuk suggestion cards atau TestFlight.
-- P0.9 menguji model Legal 4B dengan metrik generation dan quality gate reproducible. Hasil final berada di `docs/p0.9-legal-model-validation.md`; Release/TestFlight tetap tidak mengaktifkan networking atau tombol analisis pada tahap ini.
+- P0.9 menguji model Legal 4B dengan metrik generation dan quality gate reproducible. Release/TestFlight tetap tidak mengaktifkan networking atau tombol analisis pada tahap ini.
+- P0.10 menambahkan document-wide work queue, cache segment-relative, bounded repair, circuit breaker, rule pack, multi-suggestion internal, conflict resolver, safety protection context, serta typed local-tool boundary yang belum dihubungkan ke model.
+- P0.11 mengubah jalur utama menjadi candidate-first: rule/retrieval lokal membuat maksimal tiga candidate, Qwen memilih melalui structured `submit_review`, lalu safety validator dan conflict resolver menentukan hasil yang dapat ditampilkan. Profile benchmark dan candidate-level diagnostics tersedia, tetapi Qwen-only belum menjadi jalur produksi.
 - Editor saat ini menyimpan teks biasa. Toolbar formatting masih berupa prototype dan belum menyimpan rich-text formatting.
 - Import `.docx`/`.doc` berfokus pada ekstraksi teks; export kembali ke `.docx` belum tersedia.
 - Dataset dan output model belum membuktikan ketepatan hukum. Kasus ambigu atau berdampak pada hak dan kewajiban harus diperlakukan sebagai `needs review` oleh manusia.
@@ -257,8 +304,10 @@ AMT/
 2. Kalibrasikan kembali guard BM25 dengan source review manusia pada corpus yang lebih luas.
 3. Hubungkan retrieval Dictionary dengan suggestion cards setelah candidate generation lolos decision gate.
 4. Pisahkan hasil grammar, istilah, dan isu substantif dengan status review yang jelas.
-5. Hasil benchmark historis Qwen3.5 2B dan Qwen3 4B tercatat di `docs/p0.8-quality-remediation.md`; hasil Legal 4B dicatat di `docs/p0.9-legal-model-validation.md`.
-6. Jika Qwen-only belum memenuhi quality gate, pertahankan Hybrid + fallback deterministik dan evaluasi model/rule engine berikutnya pada fixture yang sama.
+5. Pertahankan catatan benchmark historis Qwen3.5 2B, Qwen3 4B, dan Legal 4B di luar source tree jika diperlukan untuk evaluasi lanjutan.
+6. Uji presisi rule pack pada corpus nyata dan siapkan corpus glossary mutakhir sebelum local tools atau evidence-aware retrieval diberikan kepada model.
+7. Tinjau report P0.11 pada holdout synthetic set dan benchmark Base 4B sebelum memilih profile/prompt final; jangan melakukan tuning terhadap fixture gate yang sama.
+8. Jika Qwen-only belum memenuhi quality gate, pertahankan Hybrid + fallback deterministik dan evaluasi model/rule engine berikutnya pada fixture yang sama.
 
 ## Referensi teknis
 
