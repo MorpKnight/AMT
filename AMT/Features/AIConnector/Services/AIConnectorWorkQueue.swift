@@ -14,6 +14,12 @@ typealias AIConnectorModelReviewHandler = @MainActor @Sendable (
     AIConnectorModelReviewRequest
 ) async throws -> QwenReviewResult
 
+typealias AIConnectorCandidateDecisionHandler = @MainActor @Sendable (
+    AIConnectorCandidateReviewRequest,
+    @escaping @Sendable (Double) -> Void,
+    @escaping @MainActor @Sendable (Int) -> Void
+) async throws -> QwenCandidateDecisionResult
+
 /// A small lock-protected signal lets the UI publish cancellation immediately,
 /// while the queue actor still owns cancellation of its active task.
 final class AIConnectorCancellationSignal: @unchecked Sendable {
@@ -54,17 +60,21 @@ final class AIConnectorSegmentProcessor {
     private let canonicalizer = AIConnectorOutputCanonicalizer()
     private let validator = AIConnectorSuggestionValidator()
     private let deterministicEngine: AIConnectorDeterministicSuggestionEngine
+    private let candidateBuilder: AIConnectorCandidateBuilder
     private let conflictResolver = AIConnectorSuggestionConflictResolver()
     private let protectionContextBuilder = AIConnectorDocumentProtectionContextBuilder()
 
     private let modelReviewHandler: AIConnectorModelReviewHandler
+    private let candidateDecisionHandler: AIConnectorCandidateDecisionHandler
+    private let usesLegacyModelReviewHandler: Bool
 
     init(
         service: QwenSuggestionService,
         dictionaryStore: LegalDictionaryStore,
         ruleStore: AIConnectorRuleStore,
         segmentCache: AIConnectorSegmentCache = AIConnectorSegmentCache(),
-        modelReviewHandler: AIConnectorModelReviewHandler? = nil
+        modelReviewHandler: AIConnectorModelReviewHandler? = nil,
+        candidateDecisionHandler: AIConnectorCandidateDecisionHandler? = nil
     ) {
         self.service = service
         self.dictionaryStore = dictionaryStore
@@ -73,6 +83,8 @@ final class AIConnectorSegmentProcessor {
         self.deterministicEngine = AIConnectorDeterministicSuggestionEngine(
             ruleStore: ruleStore
         )
+        self.candidateBuilder = AIConnectorCandidateBuilder(ruleStore: ruleStore)
+        self.usesLegacyModelReviewHandler = modelReviewHandler != nil
         let defaultHandler: AIConnectorModelReviewHandler = { @MainActor [service] request in
             try await service.review(
                 segment: request.segment,
@@ -85,6 +97,15 @@ final class AIConnectorSegmentProcessor {
             )
         }
         self.modelReviewHandler = modelReviewHandler ?? defaultHandler
+        let defaultCandidateHandler: AIConnectorCandidateDecisionHandler = {
+            @MainActor [service] request, downloadProgress, generationProgress in
+            try await service.reviewCandidate(
+                request: request,
+                downloadProgress: downloadProgress,
+                generationProgress: generationProgress
+            )
+        }
+        self.candidateDecisionHandler = candidateDecisionHandler ?? defaultCandidateHandler
     }
 
     func protectionContext(for documentText: String) -> AIConnectorDocumentProtectionContext {
@@ -96,6 +117,43 @@ final class AIConnectorSegmentProcessor {
     }
 
     func process(
+        segment: AIReviewSegment,
+        documentProtectionContext: AIConnectorDocumentProtectionContext,
+        mode: AIConnectorReviewMode,
+        modelVariant: AIConnectorModelVariant,
+        thinkingEnabled: Bool,
+        forceDeterministic: Bool,
+        downloadProgress: @escaping @Sendable (Double) -> Void,
+        generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
+        generationProfile: AIConnectorGenerationProfile? = nil
+    ) async throws -> AIConnectorSegmentResult {
+        if usesLegacyModelReviewHandler {
+            return try await processLegacy(
+                segment: segment,
+                documentProtectionContext: documentProtectionContext,
+                mode: mode,
+                modelVariant: modelVariant,
+                thinkingEnabled: thinkingEnabled,
+                forceDeterministic: forceDeterministic,
+                downloadProgress: downloadProgress,
+                generationProgress: generationProgress
+            )
+        }
+
+        return try await processCandidateFirst(
+            segment: segment,
+            documentProtectionContext: documentProtectionContext,
+            mode: mode,
+            modelVariant: modelVariant,
+            thinkingEnabled: thinkingEnabled,
+            forceDeterministic: forceDeterministic,
+            downloadProgress: downloadProgress,
+            generationProgress: generationProgress,
+            generationProfile: generationProfile
+        )
+    }
+
+    private func processLegacy(
         segment: AIReviewSegment,
         documentProtectionContext: AIConnectorDocumentProtectionContext,
         mode: AIConnectorReviewMode,
@@ -375,6 +433,832 @@ final class AIConnectorSegmentProcessor {
         }
     }
 
+    private func processCandidateFirst(
+        segment: AIReviewSegment,
+        documentProtectionContext: AIConnectorDocumentProtectionContext,
+        mode: AIConnectorReviewMode,
+        modelVariant: AIConnectorModelVariant,
+        thinkingEnabled: Bool,
+        forceDeterministic: Bool,
+        downloadProgress: @escaping @Sendable (Double) -> Void,
+        generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
+        generationProfile: AIConnectorGenerationProfile? = nil
+    ) async throws -> AIConnectorSegmentResult {
+        let glossaryMatches = dictionaryStore.suggestionCandidates(
+            for: segment.targetText,
+            limit: 3
+        )
+        let actionableGlossaryMatches = glossaryMatches.filter {
+            $0.entry.authority == .verified
+        }
+
+        if segment.isTooLong {
+            return AIConnectorSegmentResult(
+                segment: segment,
+                glossaryMatches: glossaryMatches,
+                rejections: [
+                    AIReviewRejection(
+                        segment: segment,
+                        rawOutput: "",
+                        reason: "Segmen melebihi batas 512 token; dilewati tanpa dipotong.",
+                        classification: .segmentTooLong
+                    )
+                ],
+                skipped: true
+            )
+        }
+
+        let candidates = candidateBuilder.build(
+            for: segment,
+            glossaryMatches: actionableGlossaryMatches
+        )
+        let profile = generationProfile ?? AIConnectorGenerationProfilePreset.greedy.profile(
+            for: modelVariant,
+            thinkingEnabled: thinkingEnabled
+        )
+        let cacheKey = AIConnectorSegmentCache.key(
+            from: AIConnectorCacheKeyComponents(
+                segment: segment,
+                reviewMode: mode,
+                modelVariant: modelVariant,
+                generationProfile: profile,
+                promptVersion: QwenSuggestionService.candidatePromptVersion,
+                rulePackVersion: ruleStore.version,
+                corpusVersion: AIConnectorLocalToolDispatcher.corpusVersion,
+                validatorVersion: AIConnectorSuggestionValidator.version,
+                outputSchemaVersion: QwenSuggestionService.candidateOutputSchemaVersion,
+                protectionContext: documentProtectionContext,
+                candidateFingerprint: Self.candidateFingerprint(candidates)
+            )
+        )
+
+        if let cached = await segmentCache.value(for: cacheKey) {
+            let rejections = cached.rejectionReasons.enumerated().map { index, reason in
+                AIReviewRejection(
+                    segment: segment,
+                    rawOutput: "",
+                    reason: reason,
+                    classification: index < cached.rejectionClasses.count
+                        ? cached.rejectionClasses[index]
+                        : .unknown
+                )
+            }
+            return AIConnectorSegmentResult(
+                segment: segment,
+                glossaryMatches: glossaryMatches,
+                reviews: cached.reviews.map { $0.materialize(for: segment) },
+                parsedStatus: cached.parsedStatus,
+                parsedCategory: cached.parsedCategory,
+                rejections: rejections,
+                cacheHit: true,
+                modelAttempts: cached.modelAttempts,
+                repairAttempted: cached.repairAttempted,
+                usedFallback: cached.usedFallback,
+                firstPassSucceeded: cached.firstPassSucceeded,
+                generationMetrics: cached.generationMetrics,
+                repeatedSixGramRatio: cached.repeatedSixGramRatio,
+                outputWasTruncated: cached.outputWasTruncated,
+                reasoningMarkerDetected: cached.reasoningMarkerDetected,
+                sourceClaimDetected: cached.sourceClaimDetected,
+                candidates: candidates,
+                candidateDecisions: cached.candidateDecisions,
+                modelCallCount: cached.modelCallCount,
+                challengeCount: cached.challengeCount
+            )
+        }
+
+        if !mode.usesModel || forceDeterministic {
+            let reviews = validatedCandidateReviews(
+                candidates,
+                segment: segment,
+                origin: forceDeterministic ? .deterministicFallback : .deterministic,
+                protectionContext: documentProtectionContext
+            )
+            let finalReviews = reviews.isEmpty
+                ? noSuggestionReview(
+                    for: segment,
+                    origin: forceDeterministic ? .deterministicFallback : .deterministic,
+                    protectionContext: documentProtectionContext
+                ).map { [$0] } ?? []
+                : conflictResolver.resolve(reviews)
+            return await cacheAndReturn(
+                segment: segment,
+                glossaryMatches: glossaryMatches,
+                reviews: finalReviews,
+                rejections: [],
+                cacheKey: cacheKey,
+                modelAttempts: 0,
+                repairAttempted: false,
+                usedFallback: forceDeterministic && mode != .deterministic,
+                firstPassSucceeded: true,
+                candidates: candidates
+            )
+        }
+
+        if candidates.isEmpty {
+            let noSuggestion = noSuggestionReview(
+                for: segment,
+                origin: .deterministic,
+                protectionContext: documentProtectionContext
+            )
+            return await cacheAndReturn(
+                segment: segment,
+                glossaryMatches: glossaryMatches,
+                reviews: noSuggestion.map { [$0] } ?? [],
+                rejections: [],
+                cacheKey: cacheKey,
+                modelAttempts: 0,
+                repairAttempted: false,
+                usedFallback: false,
+                firstPassSucceeded: true,
+                candidates: candidates
+            )
+        }
+
+        var reviews: [AIValidatedReview] = []
+        var rejections: [AIReviewRejection] = []
+        var decisions: [AIConnectorCandidateDecisionRecord] = []
+        var totalAttempts = 0
+        var repairAttempted = false
+        var usedFallback = false
+        var firstPassSucceeded = true
+        var latestMetrics: AIConnectorGenerationMetrics?
+        var repeatedSixGramRatio: Double?
+        var outputWasTruncated = false
+        var reasoningMarkerDetected = false
+        var sourceClaimDetected = false
+
+        for candidate in candidates {
+            try Task.checkCancellation()
+            let outcome = try await judgeCandidate(
+                candidate,
+                segment: segment,
+                mode: mode,
+                modelVariant: modelVariant,
+                thinkingEnabled: thinkingEnabled,
+                generationProfile: profile,
+                glossaryMatches: actionableGlossaryMatches,
+                protectionContext: documentProtectionContext,
+                downloadProgress: downloadProgress,
+                generationProgress: generationProgress
+            )
+            totalAttempts += outcome.attemptCount
+            repairAttempted = repairAttempted || outcome.repairAttempted
+            usedFallback = usedFallback || outcome.usedFallback
+            firstPassSucceeded = firstPassSucceeded && outcome.firstPassSucceeded
+            latestMetrics = outcome.generationMetrics ?? latestMetrics
+            repeatedSixGramRatio = Self.maximum(
+                repeatedSixGramRatio,
+                outcome.repeatedSixGramRatio
+            )
+            outputWasTruncated = outputWasTruncated || outcome.outputWasTruncated
+            reasoningMarkerDetected = reasoningMarkerDetected || outcome.reasoningMarkerDetected
+            sourceClaimDetected = sourceClaimDetected || outcome.sourceClaimDetected
+            if let review = outcome.review {
+                reviews.append(review)
+            }
+            if let rejection = outcome.rejection {
+                rejections.append(rejection)
+            }
+            decisions.append(outcome.diagnostic)
+        }
+
+        let resolvedReviews = conflictResolver.resolve(reviews)
+        let outputReviews: [AIValidatedReview]
+        if resolvedReviews.isEmpty, rejections.isEmpty {
+            outputReviews = noSuggestionReview(
+                for: segment,
+                origin: .deterministic,
+                protectionContext: documentProtectionContext
+            ).map { [$0] } ?? []
+        } else {
+            outputReviews = resolvedReviews
+        }
+
+        return await cacheAndReturn(
+            segment: segment,
+            glossaryMatches: glossaryMatches,
+            reviews: outputReviews,
+            parsedStatus: outputReviews.first?.status,
+            parsedCategory: outputReviews.first?.category,
+            rejections: rejections,
+            cacheKey: cacheKey,
+            modelAttempts: totalAttempts,
+            repairAttempted: repairAttempted,
+            usedFallback: usedFallback,
+            firstPassSucceeded: firstPassSucceeded,
+            generationMetrics: latestMetrics,
+            repeatedSixGramRatio: repeatedSixGramRatio,
+            outputWasTruncated: outputWasTruncated,
+            reasoningMarkerDetected: reasoningMarkerDetected,
+            sourceClaimDetected: sourceClaimDetected,
+            candidates: candidates,
+            candidateDecisions: decisions,
+            modelCallCount: totalAttempts,
+            challengeCount: decisions.filter(\.challengeAttempted).count
+        )
+    }
+
+    private func judgeCandidate(
+        _ candidate: AIConnectorReviewCandidate,
+        segment: AIReviewSegment,
+        mode: AIConnectorReviewMode,
+        modelVariant: AIConnectorModelVariant,
+        thinkingEnabled: Bool,
+        generationProfile: AIConnectorGenerationProfile,
+        glossaryMatches: [LegalDictionaryMatch],
+        protectionContext: AIConnectorDocumentProtectionContext,
+        downloadProgress: @escaping @Sendable (Double) -> Void,
+        generationProgress: @escaping @MainActor @Sendable (Int) -> Void
+    ) async throws -> CandidateProcessingOutcome {
+        var attempts = 0
+        var repairAttempted = false
+        var challengeAttempted = false
+        var firstPassSucceeded = true
+        var latestMetrics: AIConnectorGenerationMetrics?
+
+        let firstResult: QwenCandidateDecisionResult
+        do {
+            attempts += 1
+            firstResult = try await invokeCandidate(
+                candidate,
+                segment: segment,
+                thinkingEnabled: thinkingEnabled,
+                modelVariant: modelVariant,
+                generationProfile: generationProfile,
+                retryInstruction: nil,
+                downloadProgress: downloadProgress,
+                generationProgress: generationProgress
+            )
+            latestMetrics = firstResult.metrics
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let failure as AIConnectorCandidateModelFailure {
+            latestMetrics = failure.metrics
+            guard failure.recoverable else {
+                return failureOutcome(
+                    candidate: candidate,
+                    segment: segment,
+                    mode: mode,
+                    failure: failure,
+                    attempts: attempts,
+                    repairAttempted: repairAttempted,
+                    challengeAttempted: challengeAttempted,
+                    protectionContext: protectionContext,
+                    glossaryMatches: glossaryMatches
+                )
+            }
+
+            repairAttempted = true
+            firstPassSucceeded = false
+            attempts += 1
+            do {
+                let repaired = try await invokeCandidate(
+                    candidate,
+                    segment: segment,
+                    thinkingEnabled: thinkingEnabled,
+                    modelVariant: modelVariant,
+                    generationProfile: generationProfile,
+                    retryInstruction: Self.candidateRepairInstruction(failure.message),
+                    downloadProgress: downloadProgress,
+                    generationProgress: generationProgress
+                )
+                latestMetrics = repaired.metrics
+                return try makeCandidateOutcome(
+                    candidate: candidate,
+                    segment: segment,
+                    mode: mode,
+                    decisionResult: repaired,
+                    origin: .qwenRepaired,
+                    attempts: attempts,
+                    repairAttempted: repairAttempted,
+                    challengeAttempted: challengeAttempted,
+                    firstPassSucceeded: firstPassSucceeded,
+                    protectionContext: protectionContext,
+                    glossaryMatches: glossaryMatches
+                )
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch let retryFailure as AIConnectorCandidateModelFailure {
+                latestMetrics = retryFailure.metrics ?? latestMetrics
+                return failureOutcome(
+                    candidate: candidate,
+                    segment: segment,
+                    mode: mode,
+                    failure: retryFailure,
+                    attempts: attempts,
+                    repairAttempted: repairAttempted,
+                    challengeAttempted: challengeAttempted,
+                    protectionContext: protectionContext,
+                    glossaryMatches: glossaryMatches
+                )
+            } catch {
+                return failureOutcome(
+                    candidate: candidate,
+                    segment: segment,
+                    mode: mode,
+                    failure: Self.genericCandidateFailure(from: error),
+                    attempts: attempts,
+                    repairAttempted: repairAttempted,
+                    challengeAttempted: challengeAttempted,
+                    protectionContext: protectionContext,
+                    glossaryMatches: glossaryMatches
+                )
+            }
+        } catch {
+            return failureOutcome(
+                candidate: candidate,
+                segment: segment,
+                mode: mode,
+                failure: Self.genericCandidateFailure(from: error),
+                attempts: attempts,
+                repairAttempted: repairAttempted,
+                challengeAttempted: challengeAttempted,
+                protectionContext: protectionContext,
+                glossaryMatches: glossaryMatches
+            )
+        }
+
+        var finalResult = firstResult
+        let origin: AIReviewOrigin = .qwen
+        if firstResult.decision == .reject {
+            challengeAttempted = true
+            attempts += 1
+            do {
+                let challenge = try await invokeCandidate(
+                    candidate,
+                    segment: segment,
+                    thinkingEnabled: thinkingEnabled,
+                    modelVariant: modelVariant,
+                    generationProfile: generationProfile,
+                    retryInstruction: Self.candidateChallengeInstruction,
+                    downloadProgress: downloadProgress,
+                    generationProgress: generationProgress
+                )
+                guard challenge.candidateID == candidate.id else {
+                    // Keep the valid first-pass REJECT. A malformed recheck
+                    // must not turn an explicit model decision into a
+                    // deterministic fallback suggestion.
+                    return try makeCandidateOutcome(
+                        candidate: candidate,
+                        segment: segment,
+                        mode: mode,
+                        decisionResult: firstResult,
+                        origin: origin,
+                        attempts: attempts,
+                        repairAttempted: repairAttempted,
+                        challengeAttempted: challengeAttempted,
+                        firstPassSucceeded: firstPassSucceeded,
+                        protectionContext: protectionContext,
+                        glossaryMatches: glossaryMatches,
+                        generationMetrics: latestMetrics
+                    )
+                }
+                latestMetrics = challenge.metrics
+                finalResult = challenge
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                // A valid explicit REJECT remains the decision. A failed
+                // recheck must not silently turn it into a suggestion.
+            }
+        }
+
+        return try makeCandidateOutcome(
+            candidate: candidate,
+            segment: segment,
+            mode: mode,
+            decisionResult: finalResult,
+            origin: origin,
+            attempts: attempts,
+            repairAttempted: repairAttempted,
+            challengeAttempted: challengeAttempted,
+            firstPassSucceeded: firstPassSucceeded,
+            protectionContext: protectionContext,
+            glossaryMatches: glossaryMatches,
+            generationMetrics: latestMetrics
+        )
+    }
+
+    private func invokeCandidate(
+        _ candidate: AIConnectorReviewCandidate,
+        segment: AIReviewSegment,
+        thinkingEnabled: Bool,
+        modelVariant: AIConnectorModelVariant,
+        generationProfile: AIConnectorGenerationProfile,
+        retryInstruction: String?,
+        downloadProgress: @escaping @Sendable (Double) -> Void,
+        generationProgress: @escaping @MainActor @Sendable (Int) -> Void
+    ) async throws -> QwenCandidateDecisionResult {
+        try await candidateDecisionHandler(
+            AIConnectorCandidateReviewRequest(
+                segment: segment,
+                candidate: candidate,
+                thinkingEnabled: thinkingEnabled,
+                modelVariant: modelVariant,
+                generationProfile: generationProfile,
+                retryInstruction: retryInstruction
+            ),
+            downloadProgress,
+            generationProgress
+        )
+    }
+
+    private func makeCandidateOutcome(
+        candidate: AIConnectorReviewCandidate,
+        segment: AIReviewSegment,
+        mode: AIConnectorReviewMode,
+        decisionResult: QwenCandidateDecisionResult,
+        origin: AIReviewOrigin,
+        attempts: Int,
+        repairAttempted: Bool,
+        challengeAttempted: Bool,
+        firstPassSucceeded: Bool,
+        protectionContext: AIConnectorDocumentProtectionContext,
+        glossaryMatches: [LegalDictionaryMatch],
+        generationMetrics: AIConnectorGenerationMetrics? = nil
+    ) throws -> CandidateProcessingOutcome {
+        guard decisionResult.candidateID == candidate.id else {
+            let failure = AIConnectorCandidateModelFailure(
+                message: "Model mengembalikan kandidat yang berbeda dari kandidat aktif.",
+                classification: .parserNonRecoverable,
+                recoverable: false,
+                metrics: decisionResult.metrics,
+                reasoningMarkerDetected: decisionResult.containsReasoningMarkers,
+                outputWasTruncated: decisionResult.metrics.stopReason == .length,
+                repeatedSixGramRatio: decisionResult.repeatedSixGramRatio
+            )
+            return failureOutcome(
+                candidate: candidate,
+                segment: segment,
+                mode: mode,
+                failure: failure,
+                attempts: attempts,
+                repairAttempted: repairAttempted,
+                challengeAttempted: challengeAttempted,
+                protectionContext: protectionContext,
+                glossaryMatches: glossaryMatches
+            )
+        }
+
+        switch decisionResult.decision {
+        case .reject:
+            if mode == .hybrid,
+               candidate.confidenceTier == .deterministicRule,
+               (candidate.category == .spelling || candidate.category == .grammar),
+               let deterministicReview = try? validator.validate(
+                   AIParsedReview(
+                       status: .suggestion,
+                       category: candidate.category,
+                       original: candidate.original,
+                       replacement: candidate.replacement,
+                       glossaryID: nil,
+                       reason: candidate.explanation,
+                       ruleID: candidate.ruleID
+                   ),
+                   for: segment,
+                   glossaryMatches: [],
+                   origin: .deterministic,
+                   protectionContext: protectionContext
+               ) {
+                return CandidateProcessingOutcome(
+                    review: deterministicReview,
+                    rejection: nil,
+                    diagnostic: AIConnectorCandidateDecisionRecord(
+                        candidateID: candidate.id,
+                        candidateCategory: candidate.category,
+                        confidenceTier: candidate.confidenceTier,
+                        decision: .reject,
+                        attemptCount: attempts,
+                        repairAttempted: repairAttempted,
+                        challengeAttempted: challengeAttempted,
+                        usedFallback: false,
+                        rejectionClass: nil,
+                        generationMetrics: generationMetrics ?? decisionResult.metrics,
+                        finalOrigin: .deterministic,
+                        repeatedSixGramRatio: decisionResult.repeatedSixGramRatio
+                    ),
+                    attemptCount: attempts,
+                    repairAttempted: repairAttempted,
+                    usedFallback: false,
+                    firstPassSucceeded: firstPassSucceeded,
+                    generationMetrics: generationMetrics ?? decisionResult.metrics,
+                    outputWasTruncated: false,
+                    reasoningMarkerDetected: decisionResult.containsReasoningMarkers,
+                    repeatedSixGramRatio: decisionResult.repeatedSixGramRatio,
+                    sourceClaimDetected: false
+                )
+            }
+
+            return CandidateProcessingOutcome(
+                review: nil,
+                rejection: nil,
+                diagnostic: AIConnectorCandidateDecisionRecord(
+                    candidateID: candidate.id,
+                    candidateCategory: candidate.category,
+                    confidenceTier: candidate.confidenceTier,
+                    decision: .reject,
+                    attemptCount: attempts,
+                    repairAttempted: repairAttempted,
+                    challengeAttempted: challengeAttempted,
+                    usedFallback: false,
+                    rejectionClass: nil,
+                    generationMetrics: generationMetrics ?? decisionResult.metrics,
+                    finalOrigin: origin,
+                    repeatedSixGramRatio: decisionResult.repeatedSixGramRatio
+                ),
+                attemptCount: attempts,
+                repairAttempted: repairAttempted,
+                usedFallback: false,
+                firstPassSucceeded: firstPassSucceeded,
+                generationMetrics: generationMetrics ?? decisionResult.metrics,
+                outputWasTruncated: false,
+                reasoningMarkerDetected: decisionResult.containsReasoningMarkers,
+                repeatedSixGramRatio: decisionResult.repeatedSixGramRatio,
+                sourceClaimDetected: false
+            )
+        case .accept, .needsReview:
+            let parsedReview = AIParsedReview(
+                status: decisionResult.decision == .accept ? .suggestion : .needsReview,
+                category: decisionResult.decision == .accept ? candidate.category : candidate.category,
+                original: decisionResult.decision == .accept ? candidate.original : candidate.original,
+                replacement: decisionResult.decision == .accept ? candidate.replacement : nil,
+                glossaryID: decisionResult.decision == .accept && candidate.glossaryMatch != nil
+                    ? "G1"
+                    : nil,
+                reason: decisionResult.decision == .needsReview
+                    ? "Proposal memerlukan review manusia sebelum digunakan."
+                    : candidate.explanation,
+                ruleID: candidate.ruleID
+            )
+            let validationMatches = candidate.glossaryMatch.map { [$0] } ?? glossaryMatches
+            do {
+                let review = try validator.validate(
+                    parsedReview,
+                    for: segment,
+                    glossaryMatches: validationMatches,
+                    origin: origin,
+                    protectionContext: protectionContext
+                )
+                return CandidateProcessingOutcome(
+                    review: review,
+                    rejection: nil,
+                    diagnostic: AIConnectorCandidateDecisionRecord(
+                        candidateID: candidate.id,
+                        candidateCategory: candidate.category,
+                        confidenceTier: candidate.confidenceTier,
+                        decision: decisionResult.decision,
+                        attemptCount: attempts,
+                        repairAttempted: repairAttempted,
+                        challengeAttempted: challengeAttempted,
+                        usedFallback: false,
+                        rejectionClass: nil,
+                        generationMetrics: generationMetrics ?? decisionResult.metrics,
+                        finalOrigin: origin,
+                        repeatedSixGramRatio: decisionResult.repeatedSixGramRatio
+                    ),
+                    attemptCount: attempts,
+                    repairAttempted: repairAttempted,
+                    usedFallback: false,
+                    firstPassSucceeded: firstPassSucceeded,
+                    generationMetrics: generationMetrics ?? decisionResult.metrics,
+                    outputWasTruncated: false,
+                    reasoningMarkerDetected: decisionResult.containsReasoningMarkers,
+                    repeatedSixGramRatio: decisionResult.repeatedSixGramRatio,
+                    sourceClaimDetected: false
+                )
+            } catch let validationError as AIConnectorValidationError {
+                let failure = AIConnectorCandidateModelFailure(
+                    message: validationError.message,
+                    classification: validationError == .unsupportedSourceClaim
+                        ? .sourceClaim
+                        : .validator,
+                    recoverable: false,
+                    metrics: decisionResult.metrics,
+                    reasoningMarkerDetected: decisionResult.containsReasoningMarkers,
+                    outputWasTruncated: false,
+                    repeatedSixGramRatio: decisionResult.repeatedSixGramRatio
+                )
+                return failureOutcome(
+                    candidate: candidate,
+                    segment: segment,
+                    mode: mode,
+                    failure: failure,
+                    attempts: attempts,
+                    repairAttempted: repairAttempted,
+                    challengeAttempted: challengeAttempted,
+                    protectionContext: protectionContext,
+                    glossaryMatches: glossaryMatches
+                )
+            }
+        }
+    }
+
+    private func failureOutcome(
+        candidate: AIConnectorReviewCandidate,
+        segment: AIReviewSegment,
+        mode: AIConnectorReviewMode,
+        failure: AIConnectorCandidateModelFailure,
+        attempts: Int,
+        repairAttempted: Bool,
+        challengeAttempted: Bool,
+        protectionContext: AIConnectorDocumentProtectionContext,
+        glossaryMatches: [LegalDictionaryMatch]
+    ) -> CandidateProcessingOutcome {
+        let canFallback = mode == .hybrid
+            && candidate.confidenceTier == .deterministicRule
+            && candidate.category != .terminology
+        let fallbackReview: AIValidatedReview?
+        if canFallback {
+            let parsed = AIParsedReview(
+                status: .suggestion,
+                category: candidate.category,
+                original: candidate.original,
+                replacement: candidate.replacement,
+                glossaryID: nil,
+                reason: candidate.explanation,
+                ruleID: candidate.ruleID
+            )
+            fallbackReview = try? validator.validate(
+                parsed,
+                for: segment,
+                glossaryMatches: glossaryMatches,
+                origin: .deterministicFallback,
+                protectionContext: protectionContext
+            )
+        } else {
+            fallbackReview = nil
+        }
+
+        let rejection = AIReviewRejection(
+            segment: segment,
+            rawOutput: "",
+            reason: failure.message,
+            classification: failure.classification
+        )
+        return CandidateProcessingOutcome(
+            review: fallbackReview,
+            rejection: rejection,
+            diagnostic: AIConnectorCandidateDecisionRecord(
+                candidateID: candidate.id,
+                candidateCategory: candidate.category,
+                confidenceTier: candidate.confidenceTier,
+                decision: nil,
+                attemptCount: attempts,
+                repairAttempted: repairAttempted,
+                challengeAttempted: challengeAttempted,
+                usedFallback: fallbackReview != nil,
+                rejectionClass: failure.classification,
+                generationMetrics: failure.metrics,
+                finalOrigin: fallbackReview == nil ? nil : .deterministicFallback,
+                repeatedSixGramRatio: failure.repeatedSixGramRatio
+            ),
+            attemptCount: attempts,
+            repairAttempted: repairAttempted,
+            usedFallback: fallbackReview != nil,
+            firstPassSucceeded: false,
+            generationMetrics: failure.metrics,
+            outputWasTruncated: failure.outputWasTruncated,
+            reasoningMarkerDetected: failure.reasoningMarkerDetected,
+            repeatedSixGramRatio: failure.repeatedSixGramRatio,
+            sourceClaimDetected: failure.classification == .sourceClaim
+        )
+    }
+
+    private func validatedCandidateReviews(
+        _ candidates: [AIConnectorReviewCandidate],
+        segment: AIReviewSegment,
+        origin: AIReviewOrigin,
+        protectionContext: AIConnectorDocumentProtectionContext
+    ) -> [AIValidatedReview] {
+        candidates.compactMap { candidate in
+            let parsed = AIParsedReview(
+                status: .suggestion,
+                category: candidate.category,
+                original: candidate.original,
+                replacement: candidate.replacement,
+                glossaryID: candidate.glossaryMatch == nil ? nil : "G1",
+                reason: candidate.explanation,
+                ruleID: candidate.ruleID
+            )
+            let matches = candidate.glossaryMatch.map { [$0] } ?? []
+            return try? validator.validate(
+                parsed,
+                for: segment,
+                glossaryMatches: matches,
+                origin: origin,
+                protectionContext: protectionContext
+            )
+        }
+    }
+
+    private func noSuggestionReview(
+        for segment: AIReviewSegment,
+        origin: AIReviewOrigin,
+        protectionContext: AIConnectorDocumentProtectionContext
+    ) -> AIValidatedReview? {
+        try? validator.validate(
+            deterministicEngine.noSuggestion(for: segment),
+            for: segment,
+            glossaryMatches: [],
+            origin: origin,
+            protectionContext: protectionContext
+        )
+    }
+
+    private static func candidateFingerprint(
+        _ candidates: [AIConnectorReviewCandidate]
+    ) -> String {
+        candidates.map { candidate in
+            [
+                candidate.id,
+                candidate.original,
+                candidate.replacement,
+                candidate.category.rawValue,
+                String(candidate.priority),
+                candidate.ruleID ?? "-",
+                candidate.glossaryMatch?.entry.id ?? "-",
+                candidate.glossaryMatch?.entry.definition ?? "-",
+                candidate.confidenceTier.rawValue
+            ].joined(separator: "\u{1E}")
+        }
+        .joined(separator: "\u{1D}")
+    }
+
+    private static func maximum(_ lhs: Double?, _ rhs: Double?) -> Double? {
+        switch (lhs, rhs) {
+        case let (left?, right?):
+            return max(left, right)
+        case let (left?, nil):
+            return left
+        case let (nil, right?):
+            return right
+        case (nil, nil):
+            return nil
+        }
+    }
+
+    private static let candidateChallengeInstruction = """
+    RECHECK ONLY: tinjau kembali kandidat yang sama. Jangan membuat kandidat baru. Kirim tepat satu tool submit_review dengan candidate_id yang sama.
+    """
+
+    private static func candidateRepairInstruction(_ message: String) -> String {
+        """
+        FORMAT REPAIR ONLY: respons sebelumnya gagal dengan kode \(message). Jangan mengubah keputusan semantik dan jangan membuat kandidat baru. Kirim tepat satu tool submit_review dengan candidate_id yang sama dan tanpa teks biasa.
+        """
+    }
+
+    private static func genericCandidateFailure(from error: Error) -> AIConnectorCandidateModelFailure {
+        if let qwenError = error as? QwenSuggestionError {
+            switch qwenError {
+            case .incompleteThinking:
+                return AIConnectorCandidateModelFailure(
+                    message: qwenError.localizedDescription,
+                    classification: .reasoningLeak,
+                    recoverable: false,
+                    metrics: nil,
+                    reasoningMarkerDetected: true,
+                    outputWasTruncated: false
+                )
+            case .segmentTooLong:
+                return AIConnectorCandidateModelFailure(
+                    message: qwenError.localizedDescription,
+                    classification: .tokenLimit,
+                    recoverable: false,
+                    metrics: nil,
+                    reasoningMarkerDetected: false,
+                    outputWasTruncated: true
+                )
+            default:
+                break
+            }
+        }
+
+        return AIConnectorCandidateModelFailure(
+            message: error.localizedDescription,
+            classification: .modelFailure,
+            recoverable: false,
+            metrics: nil,
+            reasoningMarkerDetected: false,
+            outputWasTruncated: false
+        )
+    }
+
+    private struct CandidateProcessingOutcome {
+        let review: AIValidatedReview?
+        let rejection: AIReviewRejection?
+        let diagnostic: AIConnectorCandidateDecisionRecord
+        let attemptCount: Int
+        let repairAttempted: Bool
+        let usedFallback: Bool
+        let firstPassSucceeded: Bool
+        let generationMetrics: AIConnectorGenerationMetrics?
+        let outputWasTruncated: Bool
+        let reasoningMarkerDetected: Bool
+        let repeatedSixGramRatio: Double?
+        let sourceClaimDetected: Bool
+    }
+
     private func deterministicResult(
         for segment: AIReviewSegment,
         glossaryMatches: [LegalDictionaryMatch],
@@ -462,7 +1346,11 @@ final class AIConnectorSegmentProcessor {
         repeatedSixGramRatio: Double? = nil,
         outputWasTruncated: Bool = false,
         reasoningMarkerDetected: Bool = false,
-        sourceClaimDetected: Bool = false
+        sourceClaimDetected: Bool = false,
+        candidates: [AIConnectorReviewCandidate] = [],
+        candidateDecisions: [AIConnectorCandidateDecisionRecord] = [],
+        modelCallCount: Int = 0,
+        challengeCount: Int = 0
     ) async -> AIConnectorSegmentResult {
         let result = deterministicResult(
             for: segment,
@@ -506,7 +1394,11 @@ final class AIConnectorSegmentProcessor {
         repeatedSixGramRatio: Double? = nil,
         outputWasTruncated: Bool = false,
         reasoningMarkerDetected: Bool = false,
-        sourceClaimDetected: Bool = false
+        sourceClaimDetected: Bool = false,
+        candidates: [AIConnectorReviewCandidate] = [],
+        candidateDecisions: [AIConnectorCandidateDecisionRecord] = [],
+        modelCallCount: Int = 0,
+        challengeCount: Int = 0
     ) async -> AIConnectorSegmentResult {
         await segmentCache.insert(
             AIConnectorCachedSegmentResult(
@@ -518,7 +1410,15 @@ final class AIConnectorSegmentProcessor {
                 modelAttempts: modelAttempts,
                 repairAttempted: repairAttempted,
                 usedFallback: usedFallback,
-                firstPassSucceeded: firstPassSucceeded
+                firstPassSucceeded: firstPassSucceeded,
+                candidateDecisions: candidateDecisions,
+                generationMetrics: generationMetrics,
+                repeatedSixGramRatio: repeatedSixGramRatio,
+                outputWasTruncated: outputWasTruncated,
+                reasoningMarkerDetected: reasoningMarkerDetected,
+                sourceClaimDetected: sourceClaimDetected,
+                modelCallCount: modelCallCount,
+                challengeCount: challengeCount
             ),
             for: cacheKey
         )
@@ -537,7 +1437,11 @@ final class AIConnectorSegmentProcessor {
             repeatedSixGramRatio: repeatedSixGramRatio,
             outputWasTruncated: outputWasTruncated,
             reasoningMarkerDetected: reasoningMarkerDetected,
-            sourceClaimDetected: sourceClaimDetected
+            sourceClaimDetected: sourceClaimDetected,
+            candidates: candidates,
+            candidateDecisions: candidateDecisions,
+            modelCallCount: modelCallCount,
+            challengeCount: challengeCount
         )
     }
 
@@ -778,7 +1682,8 @@ actor AIConnectorWorkQueue {
         thinkingEnabled: Bool,
         documentProtectionContext: AIConnectorDocumentProtectionContext,
         downloadProgress: @escaping @Sendable (Double) -> Void,
-        generationProgress: @escaping @MainActor @Sendable (Int) -> Void
+        generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
+        generationProfile: AIConnectorGenerationProfile? = nil
     ) -> AsyncStream<AIConnectorWorkQueueEvent> {
         // Finish the previous stream before replacing its run identity. This
         // makes rerun deterministic for consumers that are still draining an
@@ -808,6 +1713,7 @@ actor AIConnectorWorkQueue {
                 documentProtectionContext: documentProtectionContext,
                 downloadProgress: downloadProgress,
                 generationProgress: generationProgress,
+                generationProfile: generationProfile,
                 continuation: continuation
             )
         }
@@ -849,6 +1755,7 @@ actor AIConnectorWorkQueue {
         documentProtectionContext: AIConnectorDocumentProtectionContext,
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
+        generationProfile: AIConnectorGenerationProfile?,
         continuation: AsyncStream<AIConnectorWorkQueueEvent>.Continuation
     ) async {
         var results: [AIConnectorSegmentResult] = []
@@ -913,7 +1820,8 @@ actor AIConnectorWorkQueue {
                         thinkingEnabled: thinkingEnabled,
                         forceDeterministic: useDeterministic && mode != .deterministic,
                         downloadProgress: downloadProgress,
-                        generationProgress: generationProgress
+                        generationProgress: generationProgress,
+                        generationProfile: generationProfile
                     )
                     results.append(result)
 
@@ -945,7 +1853,14 @@ actor AIConnectorWorkQueue {
                         .progress(completed: completedCount, total: segments.count)
                     )
 
-                    if mode.usesModel && !useDeterministic && !result.cacheHit && !result.skipped {
+                    // The P0.11 breaker is evaluated per segment that actually
+                    // had candidate work. Segments without a local proposal
+                    // must not make a healthy model look unreliable. The
+                    // modelAttempts fallback keeps the historical injected
+                    // six-line test path compatible.
+                    let hadModelWork = !result.candidates.isEmpty || result.modelAttempts > 0
+                    if mode.usesModel && !useDeterministic && !result.cacheHit
+                        && !result.skipped && hadModelWork {
                         modelEligibleCount += 1
                         if result.repairAttempted || !result.firstPassSucceeded {
                             modelFailures += 1
@@ -1090,7 +2005,14 @@ actor AIConnectorWorkQueue {
             repairAttemptCount: results.filter(\.repairAttempted).count,
             fallbackCount: results.filter(\.usedFallback).count,
             circuitBreakerActivated: circuitBreakerActivated,
-            wasPartial: wasPartial
+            wasPartial: wasPartial,
+            candidateCount: results.reduce(0) { $0 + $1.candidates.count },
+            acceptedCandidateCount: results
+                .flatMap(\.candidateDecisions)
+                .filter { $0.decision == .accept }
+                .count,
+            modelCallCount: results.reduce(0) { $0 + $1.modelCallCount },
+            challengeCount: results.reduce(0) { $0 + $1.challengeCount }
         )
     }
 }

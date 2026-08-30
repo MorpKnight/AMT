@@ -74,7 +74,7 @@ enum AIReviewCategory: String, CaseIterable, Codable, Hashable, Sendable {
         case .clarity:
             "Kejelasan"
         case .terminology:
-            "Terminologi"
+            "Terminologi hukum"
         }
     }
 }
@@ -260,6 +260,82 @@ struct AIConnectorGenerationProfile: Hashable, Sendable {
     }
 }
 
+enum AIConnectorGenerationProfilePreset: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
+    case greedy
+    case lowVariance = "low-variance"
+    case officialInstruct = "official-instruct"
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .greedy:
+            "Greedy"
+        case .lowVariance:
+            "Low variance"
+        case .officialInstruct:
+            "Official instruct"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .greedy:
+            "Temperature 0; pilihan paling stabil untuk aplikasi."
+        case .lowVariance:
+            "Sampling ringan untuk pembanding benchmark."
+        case .officialInstruct:
+            "Parameter non-thinking dari rekomendasi model card."
+        }
+    }
+
+    func profile(
+        for modelVariant: AIConnectorModelVariant,
+        thinkingEnabled: Bool
+    ) -> AIConnectorGenerationProfile {
+        if thinkingEnabled {
+            return AIConnectorGenerationProfile(
+                maxTokens: 512,
+                temperature: 0.6,
+                topP: 0.95,
+                topK: 20,
+                presencePenalty: 0,
+                seed: 42
+            )
+        }
+
+        switch self {
+        case .greedy:
+            return AIConnectorGenerationProfile(
+                maxTokens: 128,
+                temperature: 0,
+                topP: 1,
+                topK: 0,
+                presencePenalty: nil,
+                seed: 42
+            )
+        case .lowVariance:
+            return AIConnectorGenerationProfile(
+                maxTokens: 128,
+                temperature: 0.2,
+                topP: 0.9,
+                topK: 20,
+                presencePenalty: 0,
+                seed: 42
+            )
+        case .officialInstruct:
+            return AIConnectorGenerationProfile(
+                maxTokens: 128,
+                temperature: 0.7,
+                topP: 0.8,
+                topK: 20,
+                presencePenalty: 1.5,
+                seed: 42
+            )
+        }
+    }
+}
+
 enum AIConnectorGenerationStopReason: String, Codable, Hashable, Sendable {
     case stop
     case length
@@ -278,6 +354,123 @@ struct QwenReviewResult: Sendable {
     let output: String
     let metrics: AIConnectorGenerationMetrics
     let containsReasoningMarkers: Bool
+}
+
+enum AIConnectorCandidateConfidence: String, Codable, Hashable, Sendable {
+    case deterministicRule
+    case verifiedGlossary
+
+    var displayTitle: String {
+        switch self {
+        case .deterministicRule:
+            "rule lokal"
+        case .verifiedGlossary:
+            "glossary verified"
+        }
+    }
+}
+
+/// A proposal created entirely by local rules or verified glossary data.
+/// Qwen receives this value only to judge it; it is never allowed to invent
+/// an original span, replacement, or source.
+struct AIConnectorReviewCandidate: Identifiable, Hashable, Sendable {
+    let id: String
+    let segmentID: Int
+    let original: String
+    let replacement: String
+    let category: AIReviewCategory
+    let priority: Int
+    let ruleID: String?
+    let glossaryMatch: LegalDictionaryMatch?
+    let explanation: String
+    let confidenceTier: AIConnectorCandidateConfidence
+}
+
+enum AIConnectorCandidateDecision: String, Codable, Hashable, Sendable {
+    case accept = "ACCEPT"
+    case reject = "REJECT"
+    case needsReview = "NEEDS_REVIEW"
+}
+
+struct AIConnectorCandidateReviewRequest: Sendable {
+    let segment: AIReviewSegment
+    let candidate: AIConnectorReviewCandidate
+    let thinkingEnabled: Bool
+    let modelVariant: AIConnectorModelVariant
+    let generationProfile: AIConnectorGenerationProfile
+    let retryInstruction: String?
+}
+
+struct QwenCandidateDecisionResult: Sendable {
+    let candidateID: String
+    let decision: AIConnectorCandidateDecision
+    let metrics: AIConnectorGenerationMetrics
+    let containsReasoningMarkers: Bool
+    let repeatedSixGramRatio: Double?
+
+    init(
+        candidateID: String,
+        decision: AIConnectorCandidateDecision,
+        metrics: AIConnectorGenerationMetrics,
+        containsReasoningMarkers: Bool,
+        repeatedSixGramRatio: Double? = nil
+    ) {
+        self.candidateID = candidateID
+        self.decision = decision
+        self.metrics = metrics
+        self.containsReasoningMarkers = containsReasoningMarkers
+        self.repeatedSixGramRatio = repeatedSixGramRatio
+    }
+}
+
+/// A small, dependency-neutral representation used by the candidate tool
+/// parser. The MLX ToolCall is converted to this shape at the service edge.
+struct AIConnectorToolDecisionPayload: Hashable, Sendable {
+    let name: String
+    let arguments: [String: String]
+}
+
+struct AIConnectorCandidateDecisionRecord: Hashable, Sendable {
+    let candidateID: String
+    let candidateCategory: AIReviewCategory
+    let confidenceTier: AIConnectorCandidateConfidence
+    let decision: AIConnectorCandidateDecision?
+    let attemptCount: Int
+    let repairAttempted: Bool
+    let challengeAttempted: Bool
+    let usedFallback: Bool
+    let rejectionClass: AIConnectorRejectionClass?
+    let generationMetrics: AIConnectorGenerationMetrics?
+    let finalOrigin: AIReviewOrigin?
+    let repeatedSixGramRatio: Double?
+
+    init(
+        candidateID: String,
+        candidateCategory: AIReviewCategory,
+        confidenceTier: AIConnectorCandidateConfidence,
+        decision: AIConnectorCandidateDecision?,
+        attemptCount: Int,
+        repairAttempted: Bool,
+        challengeAttempted: Bool,
+        usedFallback: Bool,
+        rejectionClass: AIConnectorRejectionClass?,
+        generationMetrics: AIConnectorGenerationMetrics?,
+        finalOrigin: AIReviewOrigin? = nil,
+        repeatedSixGramRatio: Double? = nil
+    ) {
+        self.candidateID = candidateID
+        self.candidateCategory = candidateCategory
+        self.confidenceTier = confidenceTier
+        self.decision = decision
+        self.attemptCount = attemptCount
+        self.repairAttempted = repairAttempted
+        self.challengeAttempted = challengeAttempted
+        self.usedFallback = usedFallback
+        self.rejectionClass = rejectionClass
+        self.generationMetrics = generationMetrics
+        self.finalOrigin = finalOrigin
+        self.repeatedSixGramRatio = repeatedSixGramRatio
+    }
 }
 
 struct AIParsedReview: Hashable, Sendable {
@@ -395,6 +588,10 @@ struct AIConnectorRunSummary: Hashable, Sendable {
     let fallbackCount: Int
     let circuitBreakerActivated: Bool
     let wasPartial: Bool
+    let candidateCount: Int
+    let acceptedCandidateCount: Int
+    let modelCallCount: Int
+    let challengeCount: Int
 
     nonisolated init(
         reviewMode: AIConnectorReviewMode,
@@ -412,7 +609,11 @@ struct AIConnectorRunSummary: Hashable, Sendable {
         repairAttemptCount: Int = 0,
         fallbackCount: Int = 0,
         circuitBreakerActivated: Bool = false,
-        wasPartial: Bool = false
+        wasPartial: Bool = false,
+        candidateCount: Int = 0,
+        acceptedCandidateCount: Int = 0,
+        modelCallCount: Int = 0,
+        challengeCount: Int = 0
     ) {
         self.reviewMode = reviewMode
         self.modelVariant = modelVariant
@@ -430,6 +631,10 @@ struct AIConnectorRunSummary: Hashable, Sendable {
         self.fallbackCount = fallbackCount
         self.circuitBreakerActivated = circuitBreakerActivated
         self.wasPartial = wasPartial
+        self.candidateCount = candidateCount
+        self.acceptedCandidateCount = acceptedCandidateCount
+        self.modelCallCount = modelCallCount
+        self.challengeCount = challengeCount
     }
 }
 
@@ -470,6 +675,10 @@ struct AIConnectorSegmentResult: Sendable {
     let outputWasTruncated: Bool
     let reasoningMarkerDetected: Bool
     let sourceClaimDetected: Bool
+    let candidates: [AIConnectorReviewCandidate]
+    let candidateDecisions: [AIConnectorCandidateDecisionRecord]
+    let modelCallCount: Int
+    let challengeCount: Int
 
     init(
         segment: AIReviewSegment,
@@ -488,7 +697,11 @@ struct AIConnectorSegmentResult: Sendable {
         repeatedSixGramRatio: Double? = nil,
         outputWasTruncated: Bool = false,
         reasoningMarkerDetected: Bool = false,
-        sourceClaimDetected: Bool = false
+        sourceClaimDetected: Bool = false,
+        candidates: [AIConnectorReviewCandidate] = [],
+        candidateDecisions: [AIConnectorCandidateDecisionRecord] = [],
+        modelCallCount: Int = 0,
+        challengeCount: Int = 0
     ) {
         self.segment = segment
         self.glossaryMatches = glossaryMatches
@@ -507,6 +720,10 @@ struct AIConnectorSegmentResult: Sendable {
         self.outputWasTruncated = outputWasTruncated
         self.reasoningMarkerDetected = reasoningMarkerDetected
         self.sourceClaimDetected = sourceClaimDetected
+        self.candidates = candidates
+        self.candidateDecisions = candidateDecisions
+        self.modelCallCount = modelCallCount
+        self.challengeCount = challengeCount
     }
 }
 
@@ -643,8 +860,48 @@ struct AIConnectorBenchmarkRecord: Codable, Hashable, Identifiable, Sendable {
     let repairAttempted: Bool
     let firstPassSucceeded: Bool
     let rejectionClass: AIConnectorRejectionClass?
+    let generationProfile: String?
+    let candidateID: String?
+    let candidateDecision: AIConnectorCandidateDecision?
+    let candidateSource: AIConnectorCandidateConfidence?
+    let modelCallCount: Int
+    let challengeAttempted: Bool
 
     var id: String { sampleID }
+}
+
+/// Candidate-level benchmark evidence. The existing sample-level record is
+/// retained for backwards-compatible fixture summaries, while this record
+/// keeps every local proposal and every model decision separately diagnosable.
+struct AIConnectorBenchmarkCandidateRecord: Codable, Hashable, Identifiable, Sendable {
+    let sampleID: String
+    let sampleTitle: String
+    let expectedSignal: String
+    let segmentID: Int?
+    let candidateID: String
+    let source: AIConnectorCandidateConfidence
+    let category: AIReviewCategory
+    let ruleID: String?
+    let original: String
+    let replacement: String
+    let decision: AIConnectorCandidateDecision?
+    let finalOrigin: AIReviewOrigin?
+    let attemptCount: Int
+    let repairAttempted: Bool
+    let challengeAttempted: Bool
+    let usedFallback: Bool
+    let rejectionClass: AIConnectorRejectionClass?
+    let promptTokenCount: Int?
+    let generationTokenCount: Int?
+    let promptDuration: TimeInterval?
+    let generationDuration: TimeInterval?
+    let stopReason: AIConnectorGenerationStopReason?
+    let repeatedSixGramRatio: Double?
+
+    var id: String {
+        let segment = segmentID.map(String.init) ?? "-"
+        return sampleID + "#" + segment + "#" + candidateID
+    }
 }
 
 enum AIConnectorQualityGateDecision: String, Codable, Hashable, Sendable {
@@ -753,6 +1010,36 @@ struct AIConnectorBenchmarkReport: Codable, Hashable, Sendable {
     let records: [AIConnectorBenchmarkRecord]
     let evaluations: [AIConnectorFixtureEvaluation]
     let qualityGate: AIConnectorQualityGate
+    let generationProfile: String
+    let candidateRecords: [AIConnectorBenchmarkCandidateRecord]
+
+    init(
+        generatedAt: Date,
+        title: String,
+        reviewMode: AIConnectorReviewMode,
+        modelVariant: AIConnectorModelVariant,
+        thinkingEnabled: Bool,
+        duration: TimeInterval,
+        circuitBreakerActivated: Bool,
+        records: [AIConnectorBenchmarkRecord],
+        evaluations: [AIConnectorFixtureEvaluation],
+        qualityGate: AIConnectorQualityGate,
+        generationProfile: String,
+        candidateRecords: [AIConnectorBenchmarkCandidateRecord] = []
+    ) {
+        self.generatedAt = generatedAt
+        self.title = title
+        self.reviewMode = reviewMode
+        self.modelVariant = modelVariant
+        self.thinkingEnabled = thinkingEnabled
+        self.duration = duration
+        self.circuitBreakerActivated = circuitBreakerActivated
+        self.records = records
+        self.evaluations = evaluations
+        self.qualityGate = qualityGate
+        self.generationProfile = generationProfile
+        self.candidateRecords = candidateRecords
+    }
 
     var passedCount: Int {
         evaluations.filter(\.passed).count

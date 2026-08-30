@@ -12,6 +12,33 @@ struct AIConnectorCacheKeyComponents: Hashable, Sendable {
     let validatorVersion: String
     let outputSchemaVersion: String
     let protectionContext: AIConnectorDocumentProtectionContext
+    let candidateFingerprint: String
+
+    init(
+        segment: AIReviewSegment,
+        reviewMode: AIConnectorReviewMode,
+        modelVariant: AIConnectorModelVariant,
+        generationProfile: AIConnectorGenerationProfile,
+        promptVersion: String,
+        rulePackVersion: String,
+        corpusVersion: String,
+        validatorVersion: String,
+        outputSchemaVersion: String,
+        protectionContext: AIConnectorDocumentProtectionContext,
+        candidateFingerprint: String = ""
+    ) {
+        self.segment = segment
+        self.reviewMode = reviewMode
+        self.modelVariant = modelVariant
+        self.generationProfile = generationProfile
+        self.promptVersion = promptVersion
+        self.rulePackVersion = rulePackVersion
+        self.corpusVersion = corpusVersion
+        self.validatorVersion = validatorVersion
+        self.outputSchemaVersion = outputSchemaVersion
+        self.protectionContext = protectionContext
+        self.candidateFingerprint = candidateFingerprint
+    }
 }
 
 struct AIConnectorCachedReview: Sendable {
@@ -65,6 +92,14 @@ struct AIConnectorCachedSegmentResult: Sendable {
     let repairAttempted: Bool
     let usedFallback: Bool
     let firstPassSucceeded: Bool
+    let candidateDecisions: [AIConnectorCandidateDecisionRecord]
+    let generationMetrics: AIConnectorGenerationMetrics?
+    let repeatedSixGramRatio: Double?
+    let outputWasTruncated: Bool
+    let reasoningMarkerDetected: Bool
+    let sourceClaimDetected: Bool
+    let modelCallCount: Int
+    let challengeCount: Int
 
     init(
         reviews: [AIConnectorCachedReview],
@@ -75,7 +110,15 @@ struct AIConnectorCachedSegmentResult: Sendable {
         modelAttempts: Int,
         repairAttempted: Bool,
         usedFallback: Bool,
-        firstPassSucceeded: Bool
+        firstPassSucceeded: Bool,
+        candidateDecisions: [AIConnectorCandidateDecisionRecord] = [],
+        generationMetrics: AIConnectorGenerationMetrics? = nil,
+        repeatedSixGramRatio: Double? = nil,
+        outputWasTruncated: Bool = false,
+        reasoningMarkerDetected: Bool = false,
+        sourceClaimDetected: Bool = false,
+        modelCallCount: Int = 0,
+        challengeCount: Int = 0
     ) {
         self.reviews = reviews
         self.parsedStatus = parsedStatus
@@ -86,6 +129,14 @@ struct AIConnectorCachedSegmentResult: Sendable {
         self.repairAttempted = repairAttempted
         self.usedFallback = usedFallback
         self.firstPassSucceeded = firstPassSucceeded
+        self.candidateDecisions = candidateDecisions
+        self.generationMetrics = generationMetrics
+        self.repeatedSixGramRatio = repeatedSixGramRatio
+        self.outputWasTruncated = outputWasTruncated
+        self.reasoningMarkerDetected = reasoningMarkerDetected
+        self.sourceClaimDetected = sourceClaimDetected
+        self.modelCallCount = modelCallCount
+        self.challengeCount = challengeCount
     }
 }
 
@@ -121,6 +172,7 @@ actor AIConnectorSegmentCache {
             components.corpusVersion,
             components.validatorVersion,
             components.outputSchemaVersion,
+            components.candidateFingerprint,
             protectionFingerprint(components.protectionContext)
         ].joined(separator: "\u{1F}")
 

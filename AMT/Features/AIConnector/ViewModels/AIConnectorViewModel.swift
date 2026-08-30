@@ -12,6 +12,7 @@ final class AIConnectorViewModel {
     var thinkingEnabled = false
     var reviewMode: AIConnectorReviewMode = .hybrid
     var modelVariant: AIConnectorModelVariant = .qwen35Base4B
+    var generationProfilePreset: AIConnectorGenerationProfilePreset = .greedy
 
     private(set) var state: AIConnectorRunState = .idle
     private(set) var errorMessage: String?
@@ -20,6 +21,8 @@ final class AIConnectorViewModel {
     private(set) var latestGenerationMetrics: AIConnectorGenerationMetrics?
     private(set) var currentSegmentPreview = ""
     private(set) var currentGlossaryMatches: [LegalDictionaryMatch] = []
+    private(set) var currentCandidates: [AIConnectorReviewCandidate] = []
+    private(set) var currentCandidateDecisions: [AIConnectorCandidateDecisionRecord] = []
     private(set) var currentQueueState: AIConnectorQueueState?
     private(set) var currentBatchIndex: Int?
     private(set) var currentBatchSize: Int?
@@ -35,6 +38,10 @@ final class AIConnectorViewModel {
     private(set) var firstPassSuccessCount = 0
     private(set) var repairAttemptCount = 0
     private(set) var fallbackCount = 0
+    private(set) var candidateCount = 0
+    private(set) var acceptedCandidateCount = 0
+    private(set) var modelCallCount = 0
+    private(set) var challengeCount = 0
     private(set) var circuitBreakerActivated = false
     private(set) var output = ""
     private(set) var runSummary: AIConnectorRunSummary?
@@ -169,6 +176,7 @@ final class AIConnectorViewModel {
         let runMode = reviewMode
         let runModelVariant = modelVariant
         let runThinkingEnabled = thinkingEnabled
+        let runGenerationProfilePreset = generationProfilePreset
         let operationID = UUID()
         let samples = AIConnectorSample.samples
         activeOperationID = operationID
@@ -192,6 +200,7 @@ final class AIConnectorViewModel {
                     modelVariant: runModelVariant,
                     thinkingEnabled: runThinkingEnabled,
                     samples: samples,
+                    generationProfilePreset: runGenerationProfilePreset,
                     progress: { [weak self] current, total in
                         guard let self, self.activeOperationID == operationID else { return }
                         self.state = .reviewing(current: current, total: total)
@@ -246,6 +255,7 @@ final class AIConnectorViewModel {
         let runMode = reviewMode
         let runModelVariant = modelVariant
         let runThinkingEnabled = thinkingEnabled
+        let runGenerationProfilePreset = generationProfilePreset
         let operationID = UUID()
         activeOperationID = operationID
         state = .segmenting
@@ -288,7 +298,11 @@ final class AIConnectorViewModel {
                     generationProgress: { [weak self] characters in
                         guard let self, self.activeOperationID == operationID else { return }
                         self.generationProgress = characters
-                    }
+                    },
+                    generationProfile: runGenerationProfilePreset.profile(
+                        for: runModelVariant,
+                        thinkingEnabled: runThinkingEnabled
+                    )
                 )
 
                 for await event in stream {
@@ -439,6 +453,8 @@ final class AIConnectorViewModel {
     private func apply(result: AIConnectorSegmentResult) {
         currentSegmentPreview = result.segment.targetText
         currentGlossaryMatches = result.glossaryMatches
+        currentCandidates = result.candidates
+        currentCandidateDecisions = result.candidateDecisions
         if let generationMetrics = result.generationMetrics {
             latestGenerationMetrics = generationMetrics
         }
@@ -463,6 +479,12 @@ final class AIConnectorViewModel {
         if result.firstPassSucceeded { firstPassSuccessCount += 1 }
         if result.repairAttempted { repairAttemptCount += 1 }
         if result.usedFallback { fallbackCount += 1 }
+        candidateCount += result.candidates.count
+        acceptedCandidateCount += result.candidateDecisions.filter {
+            $0.decision == .accept
+        }.count
+        modelCallCount += result.modelCallCount
+        challengeCount += result.challengeCount
         noSuggestionCount += result.reviews.filter {
             $0.status == .noSuggestion
         }.count
@@ -496,7 +518,11 @@ final class AIConnectorViewModel {
             repairAttemptCount: repairAttemptCount,
             fallbackCount: fallbackCount,
             circuitBreakerActivated: circuitBreakerActivated,
-            wasPartial: true
+            wasPartial: true,
+            candidateCount: candidateCount,
+            acceptedCandidateCount: acceptedCandidateCount,
+            modelCallCount: modelCallCount,
+            challengeCount: challengeCount
         )
     }
 
@@ -508,6 +534,8 @@ final class AIConnectorViewModel {
         latestGenerationMetrics = nil
         currentSegmentPreview = ""
         currentGlossaryMatches = []
+        currentCandidates = []
+        currentCandidateDecisions = []
         currentQueueState = nil
         currentBatchIndex = nil
         currentBatchSize = nil
@@ -523,6 +551,10 @@ final class AIConnectorViewModel {
         firstPassSuccessCount = 0
         repairAttemptCount = 0
         fallbackCount = 0
+        candidateCount = 0
+        acceptedCandidateCount = 0
+        modelCallCount = 0
+        challengeCount = 0
         circuitBreakerActivated = false
         output = ""
         runSummary = nil
@@ -538,9 +570,23 @@ final class AIConnectorViewModel {
         from report: AIConnectorBenchmarkReport
     ) -> AIConnectorRunSummary {
         let records = report.records
+        let candidateRecords = report.candidateRecords
         let statusCount: (AIReviewStatus) -> Int = { status in
             records.filter { $0.validatedStatus == status.rawValue }.count
         }
+
+        let candidateCount = candidateRecords.isEmpty
+            ? records.reduce(0) { $0 + ($1.candidateID == nil ? 0 : 1) }
+            : candidateRecords.count
+        let acceptedCandidateCount = candidateRecords.isEmpty
+            ? records.filter { $0.candidateDecision == .accept }.count
+            : candidateRecords.filter { $0.decision == .accept }.count
+        let modelCallCount = candidateRecords.isEmpty
+            ? records.reduce(0) { $0 + $1.modelCallCount }
+            : candidateRecords.reduce(0) { $0 + $1.attemptCount }
+        let challengeCount = candidateRecords.isEmpty
+            ? records.filter(\.challengeAttempted).count
+            : candidateRecords.filter(\.challengeAttempted).count
 
         return AIConnectorRunSummary(
             reviewMode: report.reviewMode,
@@ -556,7 +602,11 @@ final class AIConnectorViewModel {
             cacheHitCount: records.filter(\.cacheHit).count,
             firstPassSuccessCount: records.filter(\.firstPassSucceeded).count,
             repairAttemptCount: records.filter(\.repairAttempted).count,
-            fallbackCount: records.filter(\.wasFallback).count
+            fallbackCount: records.filter(\.wasFallback).count,
+            candidateCount: candidateCount,
+            acceptedCandidateCount: acceptedCandidateCount,
+            modelCallCount: modelCallCount,
+            challengeCount: challengeCount
         )
     }
 
@@ -583,23 +633,31 @@ final class AIConnectorViewModel {
     }
 
     private func updateOutput() {
-        output = validatedReviews.map { review in
-            let original = review.original ?? review.segment.targetText
-            let replacement = review.replacement ?? "-"
-            let category = review.category.displayTitle.isEmpty
-                ? nil
-                : review.category.displayTitle
-            let heading = category.map {
-                "[\(review.status.displayTitle) • \($0)]"
-            } ?? "[\(review.status.displayTitle)]"
-            return """
-            \(heading)
-            Original: \(original)
-            Replacement: \(replacement)
-            Alasan: \(review.reason)
-            Sumber: \(review.origin.displayTitle)
-            """
-        }
-        .joined(separator: "\n\n")
+        output = validatedReviews
+            .compactMap { review in
+                guard review.status == .suggestion,
+                      let original = review.original,
+                      let replacement = review.replacement,
+                      !original.isEmpty,
+                      !replacement.isEmpty,
+                      original != replacement else {
+                    return nil
+                }
+
+                let category = review.category.displayTitle.isEmpty
+                    ? nil
+                    : review.category.displayTitle
+                let heading = category.map {
+                    "[\(review.status.displayTitle) • \($0)]"
+                } ?? "[\(review.status.displayTitle)]"
+                return """
+                \(heading)
+                Original: \(original)
+                Replacement: \(replacement)
+                Alasan: \(review.reason)
+                Sumber: \(review.origin.displayTitle)
+                """
+            }
+            .joined(separator: "\n\n")
     }
 }

@@ -67,9 +67,11 @@ struct AIConnectorDeterministicSuggestionEngine: Sendable {
             )
         }
 
-        return Array(
-            results.prefix(AIConnectorSuggestionConflictResolver.maximumSuggestionsPerSegment)
-        )
+        // Candidate-first selection applies the segment cap after all local
+        // evidence (rules and verified glossary matches) has been collected.
+        // Keeping every local proposal here prevents a third rule from
+        // accidentally hiding a stronger verified terminology candidate.
+        return results
     }
 
     func suggestion(
