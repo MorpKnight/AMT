@@ -424,7 +424,9 @@ final class AIConnectorP010ProductFoundationTests: XCTestCase {
             definition: "Data tentang orang perseorangan yang teridentifikasi.",
             regulation: "Undang-Undang Nomor 27 Tahun 2022",
             regulationTitle: "Pelindungan Data Pribadi",
-            sourceURL: nil
+            sourceURL: nil,
+            authority: .legacy,
+            corpusVersion: LegalDictionaryCorpusVersion.legacyKamusV1
         )
         let dispatcher = AIConnectorLocalToolDispatcher(
             dictionaryStore: LegalDictionaryStore(entries: [entry]),

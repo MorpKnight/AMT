@@ -49,14 +49,20 @@ struct DictionaryView: View {
                         viewModel.lookupCurrentText()
                     }
 
-                Button(action: {
-                    viewModel.lookupCurrentText()
-                }) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 14))
-                        .foregroundStyle(.secondary)
+                if viewModel.isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel("Mencari istilah hukum")
+                } else {
+                    Button(action: {
+                        viewModel.lookupCurrentText()
+                    }) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)

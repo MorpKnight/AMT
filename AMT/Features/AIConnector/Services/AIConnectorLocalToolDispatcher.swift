@@ -16,7 +16,7 @@ enum AIConnectorLocalToolError: Error, Equatable, Sendable {
 /// The dispatcher is usable by tests and future orchestration, but is not
 /// attached to Qwen until the corpus has current provenance and status data.
 actor AIConnectorLocalToolDispatcher {
-    nonisolated static let corpusVersion = "legacy-kamus-v1"
+    nonisolated static let corpusVersion = LegalDictionaryCorpusVersion.legacyKamusV1
 
     private let dictionaryStore: LegalDictionaryStore
     private let budget: AIConnectorLocalToolBudget
@@ -56,7 +56,7 @@ actor AIConnectorLocalToolDispatcher {
             guard requestedLimit <= budget.maxResultsPerCall else {
                 throw AIConnectorLocalToolError.resultLimitExceeded
             }
-            let entries = await dictionaryStore.search(
+            let entries = dictionaryStore.search(
                 query,
                 limit: min(requestedLimit, budget.maxResultsPerCall)
             )
@@ -64,8 +64,10 @@ actor AIConnectorLocalToolDispatcher {
             return AIConnectorLocalToolResponse(
                 name: request.name,
                 payload: Self.encode(entries: entries),
-                corpusVersion: Self.corpusVersion,
-                isAuthoritative: false
+                corpusVersion: Self.responseCorpusVersion(for: entries),
+                isAuthoritative: !entries.isEmpty && entries.allSatisfy {
+                    $0.authority == .verified
+                }
             )
 
         case .getLegalDefinition:
@@ -80,8 +82,8 @@ actor AIConnectorLocalToolDispatcher {
             return AIConnectorLocalToolResponse(
                 name: request.name,
                 payload: Self.encode(entries: [entry]),
-                corpusVersion: Self.corpusVersion,
-                isAuthoritative: false
+                corpusVersion: entry.corpusVersion,
+                isAuthoritative: entry.authority == .verified
             )
         }
     }
@@ -138,7 +140,9 @@ actor AIConnectorLocalToolDispatcher {
                 definition: $0.definition,
                 regulation: $0.regulation,
                 regulationTitle: $0.regulationTitle,
-                sourceURL: $0.sourceURL?.absoluteString
+                sourceURL: $0.sourceURL?.absoluteString,
+                authority: $0.authority.rawValue,
+                corpusVersion: $0.corpusVersion
             )
         }
         guard let data = try? JSONEncoder().encode(payload),
@@ -148,6 +152,13 @@ actor AIConnectorLocalToolDispatcher {
         return result
     }
 
+    private nonisolated static func responseCorpusVersion(
+        for entries: [LegalDictionaryEntry]
+    ) -> String {
+        let versions = Set(entries.map(\.corpusVersion))
+        return versions.count == 1 ? versions.first ?? Self.corpusVersion : "mixed-corpus"
+    }
+
     private struct ToolEntry: Codable, Sendable {
         let id: String
         let term: String
@@ -155,5 +166,7 @@ actor AIConnectorLocalToolDispatcher {
         let regulation: String
         let regulationTitle: String
         let sourceURL: String?
+        let authority: String
+        let corpusVersion: String
     }
 }

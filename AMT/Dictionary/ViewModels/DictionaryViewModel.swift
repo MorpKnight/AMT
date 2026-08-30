@@ -28,6 +28,8 @@ final class DictionaryViewModel {
     var popularTerms: [PopularTerm] = PopularTerm.defaultPopularTerms
 
     private let dictionaryStore: LegalDictionaryStore
+    @ObservationIgnored private var lookupTask: Task<Void, Never>?
+    @ObservationIgnored private var activeLookupID: UUID?
 
     init(dictionaryStore: LegalDictionaryStore = LegalDictionaryStore()) {
         self.dictionaryStore = dictionaryStore
@@ -48,38 +50,45 @@ final class DictionaryViewModel {
         lookupTerm(trimmed)
     }
 
-    /// Executes the legal term lookup with animated transition to Detail View using BAAI/bge-m3 RAG (Top 3 candidates).
+    /// Executes a bounded lexical lookup across the primary dictionary and
+    /// bundled legacy corpus. Semantic retrieval remains disabled until the
+    /// matching model and tokenizer are available.
     func lookupTerm(_ query: String) {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        lookupTask?.cancel()
+        let lookupID = UUID()
+        activeLookupID = lookupID
         isLoading = true
 
-        Task { @MainActor in
-            let ragEntries = await self.dictionaryStore.searchRAG(trimmed, limit: 5)
+        lookupTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let ragEntries = await dictionaryStore.searchRAG(trimmed, limit: 5)
+            guard !Task.isCancelled, activeLookupID == lookupID else { return }
 
-            let glossaryEntries = ragEntries.map { self.makeGlossaryEntry(from: $0) }
-            self.topMatches = glossaryEntries
+            let glossaryEntries = ragEntries.map(makeGlossaryEntry(from:))
+            topMatches = glossaryEntries
 
             if let first = glossaryEntries.first {
-                self.selectedEntry = first
-            } else if let fallbackEntry = self.dictionaryStore.search(trimmed, limit: 1).first {
-                let entry = self.makeGlossaryEntry(from: fallbackEntry)
-                self.selectedEntry = entry
-                self.topMatches = [entry]
+                selectedEntry = first
             } else {
-                self.selectedEntry = LegalGlossaryEntry(
+                selectedEntry = LegalGlossaryEntry(
                     term: trimmed,
                     singleDefinition: "Definisi untuk kata \"\(trimmed)\" belum ditemukan dalam glosarium lokal.",
-                    seeAlso: self.getRandomSeeAlsoTerms(count: 4, excluding: trimmed)
+                    seeAlso: relatedTerms(count: 4, excluding: trimmed),
+                    authority: .legacy,
+                    corpusVersion: LegalDictionaryCorpusVersion.unspecifiedLegacy
                 )
-                self.topMatches = []
+                topMatches = []
             }
 
             withAnimation(.easeInOut(duration: 0.2)) {
                 self.isShowingDetail = true
                 self.isLoading = false
             }
+            activeLookupID = nil
+            lookupTask = nil
         }
     }
 
@@ -89,19 +98,10 @@ final class DictionaryViewModel {
         }
     }
 
-    private func getRandomSeeAlsoTerms(count: Int = 4, excluding currentTerm: String) -> [String] {
-        let localRAG = LocalRAG.shared
-        if localRAG.isLoaded && !localRAG.documents.isEmpty {
-            let filtered = localRAG.documents.compactMap { doc -> String? in
-                let term = doc.istilah.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !term.isEmpty, term.lowercased() != currentTerm.lowercased() else { return nil }
-                return term
-            }
-            if !filtered.isEmpty {
-                let uniqueSet = Array(Set(filtered)).shuffled()
-                return Array(uniqueSet.prefix(count))
-            }
-        }
+    private func relatedTerms(count: Int = 4, excluding currentTerm: String) -> [String] {
+        let related = dictionaryStore.relatedTerms(excluding: currentTerm, limit: count)
+        if !related.isEmpty { return related }
+
         let fallbackTerms = [
             "Jaksa Agung",
             "Jabatan Fungsional",
@@ -128,19 +128,25 @@ final class DictionaryViewModel {
             )
         }()
 
-        let randomSeeAlso = getRandomSeeAlsoTerms(count: 4, excluding: entry.term)
+        let seeAlso = relatedTerms(count: 4, excluding: entry.term)
 
         return LegalGlossaryEntry(
             term: entry.term,
             singleDefinition: entry.definition,
             reference: reference,
-            seeAlso: randomSeeAlso
+            seeAlso: seeAlso,
+            authority: entry.authority,
+            corpusVersion: entry.corpusVersion
         )
     }
 
 
     /// Navigates back to the main Lawtionary search view.
     func backToHome() {
+        lookupTask?.cancel()
+        lookupTask = nil
+        activeLookupID = nil
+        isLoading = false
         withAnimation(.easeInOut(duration: 0.2)) {
             self.isShowingDetail = false
             self.selectedEntry = nil
@@ -149,6 +155,7 @@ final class DictionaryViewModel {
 
     /// Clears current search and returns to the home view.
     func clearSearch() {
+        lookupTask?.cancel()
         searchText = ""
         backToHome()
     }

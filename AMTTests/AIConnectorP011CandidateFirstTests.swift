@@ -96,10 +96,10 @@ final class AIConnectorP011CandidateFirstTests: XCTestCase {
         }
 
         assertParserError(.missingToolCall) {
-            try parser.parse(toolCalls: [], visibleText: "", expectedCandidateID: candidateID)
+            _ = try parser.parse(toolCalls: [], visibleText: "", expectedCandidateID: candidateID)
         }
         assertParserError(.multipleToolCalls) {
-            try parser.parse(
+            _ = try parser.parse(
                 toolCalls: [
                     payload(decision: AIConnectorCandidateDecision.accept.rawValue),
                     payload(decision: AIConnectorCandidateDecision.reject.rawValue)
@@ -109,7 +109,7 @@ final class AIConnectorP011CandidateFirstTests: XCTestCase {
             )
         }
         assertParserError(.unknownTool) {
-            try parser.parse(
+            _ = try parser.parse(
                 toolCalls: [
                     AIConnectorToolDecisionPayload(
                         name: "other_tool",
@@ -124,7 +124,7 @@ final class AIConnectorP011CandidateFirstTests: XCTestCase {
             )
         }
         assertParserError(.malformedArguments) {
-            try parser.parse(
+            _ = try parser.parse(
                 toolCalls: [
                     AIConnectorToolDecisionPayload(
                         name: AIConnectorCandidateDecisionParser.toolName,
@@ -136,7 +136,7 @@ final class AIConnectorP011CandidateFirstTests: XCTestCase {
             )
         }
         assertParserError(.malformedArguments) {
-            try parser.parse(
+            _ = try parser.parse(
                 toolCalls: [
                     AIConnectorToolDecisionPayload(
                         name: AIConnectorCandidateDecisionParser.toolName,
@@ -151,28 +151,28 @@ final class AIConnectorP011CandidateFirstTests: XCTestCase {
             )
         }
         assertParserError(.candidateIDMismatch) {
-            try parser.parse(
+            _ = try parser.parse(
                 toolCalls: [payload(candidateID: "C2", decision: AIConnectorCandidateDecision.accept.rawValue)],
                 visibleText: "",
                 expectedCandidateID: candidateID
             )
         }
         assertParserError(.invalidDecision) {
-            try parser.parse(
+            _ = try parser.parse(
                 toolCalls: [payload(decision: "MAYBE")],
                 visibleText: "",
                 expectedCandidateID: candidateID
             )
         }
         assertParserError(.unexpectedText) {
-            try parser.parse(
+            _ = try parser.parse(
                 toolCalls: [payload(decision: AIConnectorCandidateDecision.accept.rawValue)],
                 visibleText: "Saya setuju.",
                 expectedCandidateID: candidateID
             )
         }
         assertParserError(.reasoningOrTemplateToken) {
-            try parser.parse(
+            _ = try parser.parse(
                 toolCalls: [payload(decision: AIConnectorCandidateDecision.accept.rawValue)],
                 visibleText: "<think>internal</think>",
                 expectedCandidateID: candidateID
@@ -604,15 +604,81 @@ final class AIConnectorP011CandidateFirstTests: XCTestCase {
         XCTAssertEqual(result.rejections.first?.classification, .tokenLimit)
     }
 
+    func testHybridUtilityCannotBeReportedAsModelGateGO() async throws {
+        let failureHandler: AIConnectorCandidateDecisionHandler = { @MainActor _, _, _ in
+            throw AIConnectorCandidateModelFailure(
+                message: "Model unavailable",
+                classification: .modelFailure,
+                recoverable: false,
+                metrics: self.metrics(),
+                reasoningMarkerDetected: false,
+                outputWasTruncated: false
+            )
+        }
+        let runner = AIConnectorBenchmarkRunner(
+            service: QwenSuggestionService(),
+            dictionaryStore: LegalDictionaryStore(entries: [
+                makeDictionaryEntry(authority: .verified)
+            ]),
+            candidateDecisionHandler: failureHandler
+        )
+
+        let report = try await runner.run(
+            mode: .hybrid,
+            modelVariant: .qwen35Base4B,
+            thinkingEnabled: false,
+            progress: { _, _ in }
+        )
+
+        XCTAssertTrue(report.qualityGate.utilityPassed)
+        XCTAssertGreaterThan(report.qualityGate.fallbackCount, 0)
+        XCTAssertEqual(report.qualityGate.modelOriginResultCount, 0)
+        XCTAssertFalse(report.qualityGate.modelGateEligible)
+        XCTAssertFalse(report.qualityGate.passed)
+        XCTAssertEqual(report.qualityGate.decision, .notApplicable)
+    }
+
+    func testModelOnlyBenchmarkCanEarnModelGateGO() async throws {
+        let acceptHandler: AIConnectorCandidateDecisionHandler = { @MainActor request, _, _ in
+            QwenCandidateDecisionResult(
+                candidateID: request.candidate.id,
+                decision: .accept,
+                metrics: self.metrics(),
+                containsReasoningMarkers: false
+            )
+        }
+        let runner = AIConnectorBenchmarkRunner(
+            service: QwenSuggestionService(),
+            dictionaryStore: LegalDictionaryStore(entries: [
+                makeDictionaryEntry(authority: .verified)
+            ]),
+            candidateDecisionHandler: acceptHandler
+        )
+
+        let report = try await runner.run(
+            mode: .modelOnly,
+            modelVariant: .qwen35Base4B,
+            thinkingEnabled: false,
+            progress: { _, _ in }
+        )
+
+        XCTAssertTrue(report.qualityGate.utilityPassed)
+        XCTAssertTrue(report.qualityGate.modelGateEligible)
+        XCTAssertTrue(report.qualityGate.passed)
+        XCTAssertEqual(report.qualityGate.decision, .go)
+        XCTAssertGreaterThan(report.qualityGate.modelOriginResultCount, 0)
+        XCTAssertEqual(report.qualityGate.fallbackCount, 0)
+    }
+
     private func makeProcessor(
-        ruleStore: AIConnectorRuleStore = AIConnectorRuleStore(),
+        ruleStore: AIConnectorRuleStore? = nil,
         segmentCache: AIConnectorSegmentCache = AIConnectorSegmentCache(),
         candidateDecisionHandler: @escaping AIConnectorCandidateDecisionHandler
     ) -> AIConnectorSegmentProcessor {
         AIConnectorSegmentProcessor(
             service: QwenSuggestionService(),
             dictionaryStore: LegalDictionaryStore(entries: []),
-            ruleStore: ruleStore,
+            ruleStore: ruleStore ?? AIConnectorRuleStore(),
             segmentCache: segmentCache,
             candidateDecisionHandler: candidateDecisionHandler
         )
@@ -688,7 +754,10 @@ final class AIConnectorP011CandidateFirstTests: XCTestCase {
             regulation: "Undang-Undang Nomor 27 Tahun 2022",
             regulationTitle: "Pelindungan Data Pribadi",
             sourceURL: URL(string: "https://example.invalid/data-pribadi"),
-            authority: authority
+            authority: authority,
+            corpusVersion: authority == .verified
+                ? "verified-test-v1"
+                : LegalDictionaryCorpusVersion.legacyKamusV1
         )
     }
 

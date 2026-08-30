@@ -1,11 +1,18 @@
 import Foundation
 
-enum LegalDictionaryEntryAuthority: String, Codable, Hashable, Sendable {
+nonisolated enum LegalDictionaryEntryAuthority: String, Codable, Hashable, Sendable {
     case legacy
     case verified
 }
 
-struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
+nonisolated enum LegalDictionaryCorpusVersion {
+    static let legacyKamusV1 = "legacy-kamus-v1"
+    static let legacyRAGExportV1 = "legacy-rag-export-v1"
+    static let previewV1 = "preview-v1"
+    static let unspecifiedLegacy = "unspecified-legacy"
+}
+
+nonisolated struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
     let id: String
     let term: String
     let definition: String
@@ -13,6 +20,7 @@ struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
     let regulationTitle: String
     let sourceURL: URL?
     let authority: LegalDictionaryEntryAuthority
+    let corpusVersion: String
 
     init(
         id: String,
@@ -21,7 +29,8 @@ struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
         regulation: String,
         regulationTitle: String,
         sourceURL: URL?,
-        authority: LegalDictionaryEntryAuthority = .verified
+        authority: LegalDictionaryEntryAuthority = .legacy,
+        corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy
     ) {
         self.id = id
         self.term = term
@@ -30,6 +39,7 @@ struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
         self.regulationTitle = regulationTitle
         self.sourceURL = sourceURL
         self.authority = authority
+        self.corpusVersion = corpusVersion
     }
 
     nonisolated static let previewEntries = [
@@ -39,7 +49,9 @@ struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
             definition: "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi.",
             regulation: "Undang-Undang Nomor 27 Tahun 2022",
             regulationTitle: "Pelindungan Data Pribadi",
-            sourceURL: nil
+            sourceURL: nil,
+            authority: .legacy,
+            corpusVersion: LegalDictionaryCorpusVersion.previewV1
         ),
         LegalDictionaryEntry(
             id: "preview-hukum-adat",
@@ -47,13 +59,15 @@ struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
             definition: "Aturan atau norma tidak tertulis yang hidup dalam masyarakat hukum adat.",
             regulation: "Undang-Undang Nomor 21 Tahun 2001",
             regulationTitle: "Otonomi Khusus bagi Provinsi Papua",
-            sourceURL: nil
+            sourceURL: nil,
+            authority: .legacy,
+            corpusVersion: LegalDictionaryCorpusVersion.previewV1
         )
     ]
 }
 
 /// A source-backed glossary candidate returned by the local retrieval index.
-struct LegalDictionaryMatch: Identifiable, Hashable, Sendable {
+nonisolated struct LegalDictionaryMatch: Identifiable, Hashable, Sendable {
     let entry: LegalDictionaryEntry
     let score: Double
     let rank: Int
@@ -63,7 +77,7 @@ struct LegalDictionaryMatch: Identifiable, Hashable, Sendable {
     var id: String { entry.id }
 }
 
-struct LegalDictionaryStore: Sendable {
+nonisolated struct LegalDictionaryStore: Sendable {
     private static let suggestionMinimumScore = 20.0
     private static let suggestionMinimumMargin = 3.0
     private static let suggestionMinimumMatchedDefinitionTokens = 4
@@ -76,39 +90,31 @@ struct LegalDictionaryStore: Sendable {
     }
 
     let entries: [LegalDictionaryEntry]
+    private let localRAG: LocalRAG
     private let retrievalIndex: [RetrievalIndexEntry]
     private let inverseDocumentFrequencies: [String: Double]
     private let averageDocumentLength: Double
 
-    nonisolated init(bundle: Bundle = .main) {
+    nonisolated init(
+        bundle: Bundle = .main,
+        localRAG: LocalRAG = .shared
+    ) {
         if let resourceURL = bundle.url(forResource: "kamus_hukum", withExtension: "csv"),
            let data = try? Data(contentsOf: resourceURL),
            let loadedEntries = Self.loadEntries(from: data),
            !loadedEntries.isEmpty {
-            self.init(entries: loadedEntries)
+            self.init(entries: loadedEntries, localRAG: localRAG)
         } else {
-            let localRAG = LocalRAG.shared
-            localRAG.loadDataIfNeeded(bundle: bundle)
-            if !localRAG.documents.isEmpty {
-                let ragEntries = localRAG.documents.enumerated().map { index, doc in
-                    LegalDictionaryEntry(
-                        id: "rag-\(index)-\(doc.istilah)",
-                        term: doc.istilah,
-                        definition: doc.pengertian,
-                        regulation: doc.undangUndang,
-                        regulationTitle: "",
-                        sourceURL: URL(string: doc.url)
-                    )
-                }
-                self.init(entries: ragEntries)
-            } else {
-                self.init(entries: LegalDictionaryEntry.previewEntries)
-            }
+            self.init(entries: LegalDictionaryEntry.previewEntries, localRAG: localRAG)
         }
     }
 
-    nonisolated init(entries: [LegalDictionaryEntry]) {
+    nonisolated init(
+        entries: [LegalDictionaryEntry],
+        localRAG: LocalRAG = .shared
+    ) {
         self.entries = entries
+        self.localRAG = localRAG
 
         let index = entries.map { entry in
             let retrievalDefinition = Self.retrievalDefinition(for: entry)
@@ -143,92 +149,113 @@ struct LegalDictionaryStore: Sendable {
             : Double(index.reduce(0) { $0 + $1.tokenCount }) / documentCount
     }
 
-    func search(_ query: String, limit: Int = 30) -> [LegalDictionaryEntry] {
+    nonisolated func search(_ query: String, limit: Int = 30) -> [LegalDictionaryEntry] {
+        rankedSearch(query, limit: limit).map(\.entry)
+    }
+
+    nonisolated private func rankedSearch(
+        _ query: String,
+        limit: Int
+    ) -> [(entry: LegalDictionaryEntry, score: Double)] {
         let normalizedQuery = Self.normalize(query)
-        guard !normalizedQuery.isEmpty else { return [] }
+        let queryTokens = Array(Set(Self.tokenize(query)))
+        guard limit > 0, !normalizedQuery.isEmpty, !queryTokens.isEmpty else {
+            return []
+        }
 
-        let queryTokens = Set(normalizedQuery.split(separator: " ").map(String.init))
-
-        return entries
-            .compactMap { entry -> (entry: LegalDictionaryEntry, score: Int)? in
+        return entries.indices
+            .compactMap { index -> (entry: LegalDictionaryEntry, score: Double)? in
+                let entry = entries[index]
                 let normalizedTerm = Self.normalize(entry.term)
                 let normalizedDefinition = Self.normalize(entry.definition)
+                var score = bm25Score(queryTokens: queryTokens, documentIndex: index)
 
                 if normalizedTerm == normalizedQuery {
-                    return (entry, 0)
-                }
-
-                if normalizedTerm.hasPrefix(normalizedQuery) {
-                    return (entry, 1)
-                }
-
-                if normalizedTerm.contains(normalizedQuery) {
-                    return (entry, 2)
+                    score += 1_000
+                } else if normalizedTerm.hasPrefix(normalizedQuery) {
+                    score += 300
+                } else if normalizedTerm.contains(normalizedQuery) {
+                    score += 150
                 }
 
                 if normalizedDefinition.contains(normalizedQuery) {
-                    return (entry, 3)
+                    score += 100
                 }
 
-                let termTokens = Set(normalizedTerm.split(separator: " ").map(String.init))
-                let definitionTokens = Set(normalizedDefinition.split(separator: " ").map(String.init))
-                let matches = queryTokens.intersection(termTokens.union(definitionTokens)).count
-
-                return matches > 0 ? (entry, 4) : nil
+                return score > 0 ? (entry, score) : nil
             }
             .sorted { lhs, rhs in
-                if lhs.score != rhs.score { return lhs.score < rhs.score }
+                if lhs.score != rhs.score { return lhs.score > rhs.score }
+                if lhs.entry.authority != rhs.entry.authority {
+                    return lhs.entry.authority == .verified
+                }
+                let lhsCorpusPriority = Self.corpusPriority(lhs.entry.corpusVersion)
+                let rhsCorpusPriority = Self.corpusPriority(rhs.entry.corpusVersion)
+                if lhsCorpusPriority != rhsCorpusPriority {
+                    return lhsCorpusPriority > rhsCorpusPriority
+                }
                 return lhs.entry.term.localizedCaseInsensitiveCompare(rhs.entry.term) == .orderedAscending
             }
             .prefix(limit)
-            .map(\.entry)
+            .map { $0 }
     }
 
-    /// Performs vector similarity search via BAAI/bge-m3 embeddings using LocalRAG engine.
-    func searchRAG(_ query: String, limit: Int = 30) async -> [LegalDictionaryEntry] {
-        let localRAG = LocalRAG.shared
-        if !localRAG.isLoaded {
-            localRAG.loadDataIfNeeded()
+    /// Searches the primary dictionary and the bundled legacy corpus using
+    /// lexical ranking only. Verified entries always win duplicate terms, and
+    /// the primary CSV corpus wins ties between legacy sources.
+    nonisolated func searchRAG(_ query: String, limit: Int = 30) async -> [LegalDictionaryEntry] {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard limit > 0, !trimmedQuery.isEmpty else { return [] }
+
+        let retrievalLimit = max(limit * 6, 30)
+        async let primaryEntries = Task.detached(priority: .userInitiated) {
+            self.search(trimmedQuery, limit: retrievalLimit)
+        }.value
+
+        let legacyMatches = (try? await localRAG.searchByKeyword(
+            query: trimmedQuery,
+            topK: retrievalLimit
+        )) ?? []
+        let primary = await primaryEntries
+        let legacyEntries = legacyMatches.map { match in
+            LegalDictionaryEntry(
+                id: "rag-lexical-\(match.rank)-\(match.document.istilah)",
+                term: match.document.istilah,
+                definition: match.document.pengertian,
+                regulation: match.document.undangUndang,
+                regulationTitle: "",
+                sourceURL: URL(string: match.document.url),
+                authority: .legacy,
+                corpusVersion: LegalDictionaryCorpusVersion.legacyRAGExportV1
+            )
         }
+        let mergedEntries = Self.deduplicatedEntries(primary + legacyEntries)
 
-        if localRAG.isLoaded {
-            do {
-                let queryEmbedding = try await BGEEmbedding.shared.generateEmbedding(for: query)
-                let ragResults = localRAG.search(queryEmbedding: queryEmbedding, topK: limit)
+        return await Task.detached(priority: .userInitiated) {
+            LegalDictionaryStore(entries: mergedEntries, localRAG: self.localRAG)
+                .search(trimmedQuery, limit: limit)
+        }.value
+    }
 
-                if !ragResults.isEmpty {
-                    return ragResults.map { match in
-                        LegalDictionaryEntry(
-                            id: "rag-\(match.rank)-\(match.document.istilah)",
-                            term: match.document.istilah,
-                            definition: match.document.pengertian,
-                            regulation: match.document.undangUndang,
-                            regulationTitle: "",
-                            sourceURL: URL(string: match.document.url)
-                        )
-                    }
-                }
-            } catch {
-                // Fallback to keyword RAG search
+    nonisolated func relatedTerms(
+        excluding currentTerm: String,
+        limit: Int = 4
+    ) -> [String] {
+        guard limit > 0 else { return [] }
+        let excluded = Self.normalize(currentTerm)
+        var seen: Set<String> = []
+
+        return entries.compactMap { entry -> String? in
+            let normalizedTerm = Self.normalize(entry.term)
+            guard !normalizedTerm.isEmpty,
+                  normalizedTerm != excluded,
+                  seen.insert(normalizedTerm).inserted else {
+                return nil
             }
-
-            let keywordResults = localRAG.searchByKeyword(query: query, topK: limit)
-            if !keywordResults.isEmpty {
-                return keywordResults.map { match in
-                    LegalDictionaryEntry(
-                        id: "rag-kw-\(match.rank)-\(match.document.istilah)",
-                        term: match.document.istilah,
-                        definition: match.document.pengertian,
-                        regulation: match.document.undangUndang,
-                        regulationTitle: "",
-                        sourceURL: URL(string: match.document.url)
-                    )
-                }
-            }
+            return entry.term
         }
-
-        // Fallback to standard search if RAG store is unavailable
-        return search(query, limit: limit)
+        .prefix(limit)
+        .map { $0 }
     }
 
 
@@ -239,7 +266,7 @@ struct LegalDictionaryStore: Sendable {
     /// ordinary dictionary search because an unrelated candidate can mislead a
     /// suggestion model. This method returns no candidate when the evidence is
     /// weak or ambiguous.
-    func suggestionCandidates(for text: String, limit: Int = 3) -> [LegalDictionaryMatch] {
+    nonisolated func suggestionCandidates(for text: String, limit: Int = 3) -> [LegalDictionaryMatch] {
         guard limit > 0 else { return [] }
 
         let queryTokens = Self.tokenize(text)
@@ -330,7 +357,7 @@ struct LegalDictionaryStore: Sendable {
         }
     }
 
-    private func bm25Score(queryTokens: [String], documentIndex: Int) -> Double {
+    nonisolated private func bm25Score(queryTokens: [String], documentIndex: Int) -> Double {
         guard !queryTokens.isEmpty,
               let document = retrievalIndex[safe: documentIndex],
               averageDocumentLength > 0 else {
@@ -353,6 +380,59 @@ struct LegalDictionaryStore: Sendable {
         }
 
         return score
+    }
+
+    nonisolated private static func deduplicatedEntries(
+        _ candidates: [LegalDictionaryEntry]
+    ) -> [LegalDictionaryEntry] {
+        var selected: [LegalDictionaryEntry] = []
+        var indexByTerm: [String: Int] = [:]
+
+        for candidate in candidates {
+            let key = normalize(candidate.term)
+            guard !key.isEmpty else { continue }
+
+            if let existingIndex = indexByTerm[key] {
+                if shouldPrefer(candidate, over: selected[existingIndex]) {
+                    selected[existingIndex] = candidate
+                }
+            } else {
+                indexByTerm[key] = selected.count
+                selected.append(candidate)
+            }
+        }
+
+        return selected
+    }
+
+    nonisolated private static func shouldPrefer(
+        _ candidate: LegalDictionaryEntry,
+        over existing: LegalDictionaryEntry
+    ) -> Bool {
+        if candidate.authority != existing.authority {
+            return candidate.authority == .verified
+        }
+
+        let candidatePriority = corpusPriority(candidate.corpusVersion)
+        let existingPriority = corpusPriority(existing.corpusVersion)
+        if candidatePriority != existingPriority {
+            return candidatePriority > existingPriority
+        }
+
+        return existing.sourceURL == nil && candidate.sourceURL != nil
+    }
+
+    nonisolated private static func corpusPriority(_ corpusVersion: String) -> Int {
+        switch corpusVersion {
+        case LegalDictionaryCorpusVersion.legacyKamusV1:
+            3
+        case LegalDictionaryCorpusVersion.legacyRAGExportV1:
+            2
+        case LegalDictionaryCorpusVersion.previewV1:
+            1
+        default:
+            0
+        }
     }
 
     nonisolated private static func loadEntries(from data: Data) -> [LegalDictionaryEntry]? {
@@ -395,7 +475,8 @@ struct LegalDictionaryStore: Sendable {
                 regulation: values["undang_undang"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
                 regulationTitle: values["uu"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
                 sourceURL: URL(string: values["url"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""),
-                authority: authority
+                authority: authority,
+                corpusVersion: LegalDictionaryCorpusVersion.legacyKamusV1
             )
         }
     }
@@ -448,7 +529,7 @@ struct LegalDictionaryStore: Sendable {
 }
 
 private extension Array {
-    subscript(safe index: Index) -> Element? {
+    nonisolated subscript(safe index: Index) -> Element? {
         indices.contains(index) ? self[index] : nil
     }
 }

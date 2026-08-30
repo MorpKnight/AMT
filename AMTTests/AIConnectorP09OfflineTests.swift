@@ -141,7 +141,9 @@ final class AIConnectorP09OfflineTests: XCTestCase {
             definition: "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
             regulation: "Undang-Undang Nomor 27 Tahun 2022",
             regulationTitle: "Pelindungan Data Pribadi",
-            sourceURL: nil
+            sourceURL: nil,
+            authority: .verified,
+            corpusVersion: "verified-test-v1"
         )
         let fillerEntries = (0..<100).map { index in
             LegalDictionaryEntry(
@@ -150,7 +152,9 @@ final class AIConnectorP09OfflineTests: XCTestCase {
                 definition: "kata unik p09 filler \(index)",
                 regulation: "",
                 regulationTitle: "",
-                sourceURL: nil
+                sourceURL: nil,
+                authority: .legacy,
+                corpusVersion: "test-fillers-v1"
             )
         }
         let runner = AIConnectorBenchmarkRunner(
@@ -183,12 +187,17 @@ final class AIConnectorP09OfflineTests: XCTestCase {
             report.qualityGate.exactExpectationPassCount,
             report.records.count
         )
+        XCTAssertTrue(report.qualityGate.utilityPassed)
+        XCTAssertFalse(report.qualityGate.modelGateEligible)
+        XCTAssertEqual(report.qualityGate.decision, .notApplicable)
 
         let modelGate = AIConnectorQualityGate(
             records: report.records,
             mode: .modelOnly
         )
-        XCTAssertTrue(modelGate.passed)
+        XCTAssertFalse(modelGate.passed)
+        XCTAssertFalse(modelGate.modelGateEligible)
+        XCTAssertEqual(modelGate.decision, .notApplicable)
 
         let encoded = try JSONEncoder().encode(report)
         let decoded = try JSONDecoder().decode(AIConnectorBenchmarkReport.self, from: encoded)
