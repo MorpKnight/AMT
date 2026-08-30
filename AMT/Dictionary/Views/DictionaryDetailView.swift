@@ -98,6 +98,8 @@ struct DictionaryDetailView: View {
                             .foregroundStyle(.primary)
                             .padding(.top, 4)
 
+                        provenanceBanner(for: entry)
+
                         // Top 5 RAG Matches Bar
                         if !viewModel.topMatches.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
@@ -171,6 +173,33 @@ struct DictionaryDetailView: View {
     }
 
     // MARK: - Definition Card View
+    @ViewBuilder
+    private func provenanceBanner(for entry: LegalGlossaryEntry) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: entry.authority == .verified
+                ? "checkmark.seal.fill"
+                : "exclamationmark.triangle.fill")
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.authority == .verified
+                    ? "Sumber terverifikasi"
+                    : "Corpus legacy — verifikasi sumber sebelum digunakan")
+                    .font(.caption.weight(.semibold))
+                Text(entry.corpusVersion)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .foregroundStyle(entry.authority == .verified ? .green : .orange)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            (entry.authority == .verified ? Color.green : Color.orange)
+                .opacity(0.08),
+            in: RoundedRectangle(cornerRadius: 10)
+        )
+        .accessibilityElement(children: .combine)
+    }
+
     @ViewBuilder
     private func definitionCard(def: DefinitionItem) -> some View {
         VStack(alignment: .leading, spacing: 14) {

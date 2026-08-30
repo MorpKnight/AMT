@@ -14,8 +14,11 @@
   - Menyediakan dokumen bawaan **AI Connector — Test Document** untuk smoke test. Dokumen ini selalu dibuat ulang saat aplikasi dibuka dan perubahan pada dokumen tersebut tidak disimpan ke disk.
 - **Dictionary / Lawtionary**
   - Memuat `AMT/Dictionary/Resources/kamus_hukum.csv` sebagai resource aplikasi.
-  - Mencari berdasarkan istilah atau bagian dari pengertian.
+  - Mencari berdasarkan istilah atau bagian dari pengertian melalui ranking lexical BM25.
+  - Menggabungkan corpus CSV utama dengan `rag_export/documents.json` secara asynchronous; corpus RAG lama selalu berstatus legacy dan tidak mengalahkan entry verified untuk istilah yang sama.
+  - Menonaktifkan semantic embedding sampai pasangan model dan tokenizer BGE-M3 yang terverifikasi tersedia. Tidak ada pseudo-embedding sebagai fallback.
   - Menampilkan pengertian, peraturan, judul peraturan, dan tautan sumber jika tersedia.
+  - Menampilkan status provenance agar corpus legacy tidak terlihat sebagai sumber terverifikasi.
 - **Suggestion eksperimental**
   - Meninjau teks dokumen menggunakan `mlx-community/Qwen3.5-4B-MLX-4bit` melalui MLX Swift sebagai model utama Debug. Qwen3.5 Legal 4B dan Qwen3.5 2B tetap tersedia untuk pembanding historis.
   - Inferensi berjalan lokal setelah model selesai diunduh dan disimpan di cache Hugging Face.
@@ -40,6 +43,8 @@ flowchart LR
     Dashboard --> Dictionary[DictionaryView]
     Dictionary --> Store[LegalDictionaryStore]
     Store --> CSV[kamus_hukum.csv]
+    Store --> LocalRAG[LocalRAG actor<br/>lexical BM25]
+    LocalRAG --> LegacyCorpus[rag_export documents<br/>legacy]
     Dashboard --> Editor[DocumentEditorView]
     Editor --> AIView[AIConnectorDebugPanel<br/>(Debug only)]
     AIView --> VM[AIConnectorViewModel]
@@ -78,15 +83,15 @@ flowchart LR
 
 ## Cara kerja Dictionary
 
-Dictionary saat ini bukan chatbot, bukan RAG, dan tidak menggunakan embedding. Semua entry CSV dimuat ke memori ketika aplikasi dimulai, kemudian query dinormalisasi dan dicocokkan secara deterministik.
+Dictionary saat ini bukan chatbot dan tidak menggunakan semantic embedding. Entry CSV utama dimuat sebagai index immutable, sedangkan corpus `rag_export` dimuat dan dicari melalui actor `LocalRAG` agar I/O serta ranking corpus tidak memblokir MainActor. Kedua sumber digabungkan menggunakan lexical BM25 dan exact-term boost. File vector lama tidak dibaca sampai AMT memiliki model serta tokenizer BGE-M3 yang kompatibel dan tervalidasi.
 
 Urutan prioritas pencarian adalah:
 
-1. Istilah sama persis.
-2. Istilah diawali query.
-3. Istilah mengandung query.
-4. Pengertian mengandung query.
-5. Ada token query yang cocok dengan istilah atau pengertian.
+1. Istilah sama persis, lalu prefix dan substring istilah.
+2. Kecocokan frasa pada pengertian.
+3. Skor BM25 token istilah dan pengertian.
+4. Entry verified untuk duplicate term.
+5. Corpus CSV utama untuk tie antara dua entry legacy.
 
 Pencarian mengabaikan perbedaan huruf besar-kecil, diakritik, dan spasi berlebih. Hasil dibatasi hingga 30 entry. Regex hanya digunakan untuk merapikan whitespace, bukan sebagai mesin pencarian semantik.
 
@@ -96,7 +101,7 @@ Format utama CSV yang digunakan:
 istilah,pengertian,undang_undang,uu,url,status
 ```
 
-Entry dengan `status=VERIFIED` menjadi evidence yang dapat dipakai sebagai candidate terminology. Entry `status=OK` atau status kosong dipertahankan sebagai corpus legacy untuk pencarian/diagnostics, tetapi tidak actionable dan tidak dapat menghasilkan highlight atau Accept. Status lain dilewati. Jika resource CSV tidak dapat dimuat, aplikasi menggunakan beberapa entry preview agar layar Dictionary tetap dapat dibuka; entry preview diperlakukan sebagai verified hanya untuk kebutuhan aplikasi saat ini dan tetap perlu review sumber pada corpus produksi.
+Entry dengan `status=VERIFIED` menjadi evidence yang dapat dipakai sebagai candidate terminology. Entry `status=OK` atau status kosong dipertahankan sebagai corpus legacy untuk pencarian/diagnostics, tetapi tidak actionable dan tidak dapat menghasilkan highlight atau Accept. Semua entry dari `rag_export` juga diperlakukan sebagai legacy. Status lain dilewati. Jika resource CSV tidak dapat dimuat, aplikasi menggunakan beberapa entry preview agar layar Dictionary tetap dapat dibuka; entry preview tetap legacy dan ditandai perlu verifikasi sumber.
 
 ## Cara kerja Suggestion
 
@@ -259,8 +264,11 @@ token/durasi, stop reason, repetition ratio, rejection class, dan quality gate.
 Reasoning, source claim, raw tool output, dan output berbahaya tidak ditulis ke
 report. Entry glossary test yang verified dipasang terpisah dari corpus produksi
 agar fixture terminology dapat diuji tanpa menganggap corpus legacy mutakhir.
-Benchmark tidak mengubah dokumen dan hasilnya belum otomatis mengaktifkan
-Release/TestFlight.
+Quality gate model hanya berlaku pada run `modelOnly` yang benar-benar berisi
+record `modelOnly`. Run Hybrid dan deterministic tetap melaporkan utility akhir,
+jumlah hasil asal model, serta fallback secara terpisah dan tidak dapat memperoleh
+status GO model. Benchmark tidak mengubah dokumen dan hasilnya belum otomatis
+mengaktifkan Release/TestFlight.
 
 ## Struktur project
 
@@ -287,7 +295,7 @@ AMT/
 
 ## Batasan MVP
 
-- Pencarian Dictionary masih menggunakan lexical search; belum mendukung typo correction, stemming, sinonim, atau semantic retrieval. Candidate generation untuk Suggestion sudah memakai BM25 provisional, tetapi belum menjadi ranking final Dictionary.
+- Pencarian Dictionary menggunakan lexical BM25; belum mendukung typo correction, stemming, sinonim, atau semantic retrieval. Semantic BGE-M3 gagal secara tertutup sampai model dan tokenizer yang cocok tersedia.
 - Suggestion sekarang memiliki highlight inline dan popover dengan Accept/Dismiss; tidak ada auto-rewrite tanpa aksi pengguna.
 - Thinking mode pada model kecil dapat berhenti sebelum jawaban final; aplikasi akan menampilkan error dan menyarankan non-thinking mode.
 - P0.8 memperkuat baseline deterministik dan benchmark Hybrid/Qwen, tetapi belum meluluskan Qwen-only untuk suggestion cards atau TestFlight.

@@ -62,15 +62,21 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
     let term: String
     let definitions: [DefinitionItem]
     let seeAlso: [String]
+    let authority: LegalDictionaryEntryAuthority
+    let corpusVersion: String
 
     init(
         term: String,
         definitions: [DefinitionItem],
-        seeAlso: [String] = []
+        seeAlso: [String] = [],
+        authority: LegalDictionaryEntryAuthority = .legacy,
+        corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy
     ) {
         self.term = term
         self.definitions = definitions
         self.seeAlso = seeAlso
+        self.authority = authority
+        self.corpusVersion = corpusVersion
     }
 
     /// Single-definition convenience initializer
@@ -78,13 +84,17 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
         term: String,
         singleDefinition: String,
         reference: LegalReference? = nil,
-        seeAlso: [String] = []
+        seeAlso: [String] = [],
+        authority: LegalDictionaryEntryAuthority = .legacy,
+        corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy
     ) {
         self.term = term
         self.definitions = [
             DefinitionItem(id: 1, text: singleDefinition, reference: reference)
         ]
         self.seeAlso = seeAlso
+        self.authority = authority
+        self.corpusVersion = corpusVersion
     }
 }
 

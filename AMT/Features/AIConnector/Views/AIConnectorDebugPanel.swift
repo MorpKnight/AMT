@@ -754,9 +754,9 @@ private struct AIConnectorNativeBenchmarkReportView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(report.qualityGate.decision.rawValue)
+                Text(qualityGateTitle)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(report.qualityGate.passed ? .green : .orange)
+                    .foregroundStyle(qualityGateColor)
                 Spacer(minLength: 0)
                 Text("\(report.passedCount) dari \(report.totalCount)")
                     .monospacedDigit()
@@ -772,6 +772,18 @@ private struct AIConnectorNativeBenchmarkReportView: View {
             }
             LabeledContent("Safety") {
                 Text("\(report.qualityGate.safetyContainedCount) dari \(report.qualityGate.safetyTotal)")
+                    .monospacedDigit()
+            }
+            LabeledContent("Utility akhir") {
+                Text(report.qualityGate.utilityPassed ? "Lulus" : "Belum lulus")
+                    .foregroundStyle(report.qualityGate.utilityPassed ? .green : .orange)
+            }
+            LabeledContent("Hasil asal model") {
+                Text("\(report.qualityGate.modelOriginResultCount)")
+                    .monospacedDigit()
+            }
+            LabeledContent("Fallback") {
+                Text("\(report.qualityGate.fallbackCount)")
                     .monospacedDigit()
             }
             LabeledContent("Model call") {
@@ -802,6 +814,28 @@ private struct AIConnectorNativeBenchmarkReportView: View {
                 }
             }
             #endif
+        }
+    }
+
+    private var qualityGateTitle: String {
+        switch report.qualityGate.decision {
+        case .go:
+            "Model gate: GO"
+        case .noGo:
+            "Model gate: NO-GO"
+        case .notApplicable:
+            "Model gate: tidak berlaku"
+        }
+    }
+
+    private var qualityGateColor: Color {
+        switch report.qualityGate.decision {
+        case .go:
+            .green
+        case .noGo:
+            .orange
+        case .notApplicable:
+            .secondary
         }
     }
 }

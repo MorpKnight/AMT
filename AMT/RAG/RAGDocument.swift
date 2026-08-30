@@ -1,6 +1,6 @@
 import Foundation
 
-public struct RAGDocument: Codable, Identifiable, Hashable, Sendable {
+nonisolated public struct RAGDocument: Codable, Identifiable, Hashable, Sendable {
     public let istilah: String
     public let pengertian: String
     public let undangUndang: String
