@@ -8,7 +8,7 @@ struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
     let regulationTitle: String
     let sourceURL: URL?
 
-    static let previewEntries = [
+    nonisolated static let previewEntries = [
         LegalDictionaryEntry(
             id: "preview-data-pribadi",
             term: "Data Pribadi",
@@ -28,22 +28,95 @@ struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
     ]
 }
 
-struct LegalDictionaryStore: Sendable {
-    let entries: [LegalDictionaryEntry]
+/// A source-backed glossary candidate returned by the local retrieval index.
+struct LegalDictionaryMatch: Identifiable, Hashable, Sendable {
+    let entry: LegalDictionaryEntry
+    let score: Double
+    let rank: Int
+    let matchedDefinitionTokenCount: Int
+    let isDirectTermMatch: Bool
 
-    init(bundle: Bundle = .main) {
+    var id: String { entry.id }
+}
+
+struct LegalDictionaryStore: Sendable {
+    private static let suggestionMinimumScore = 20.0
+    private static let suggestionMinimumMargin = 3.0
+    private static let suggestionMinimumMatchedDefinitionTokens = 4
+
+    private struct RetrievalIndexEntry: Sendable {
+        let termTokens: [String]
+        let definitionTokenSet: Set<String>
+        let termFrequencies: [String: Int]
+        let tokenCount: Int
+    }
+
+    let entries: [LegalDictionaryEntry]
+    private let retrievalIndex: [RetrievalIndexEntry]
+    private let inverseDocumentFrequencies: [String: Double]
+    private let averageDocumentLength: Double
+
+    nonisolated init(bundle: Bundle = .main) {
         if let resourceURL = bundle.url(forResource: "kamus_hukum", withExtension: "csv"),
            let data = try? Data(contentsOf: resourceURL),
            let loadedEntries = Self.loadEntries(from: data),
            !loadedEntries.isEmpty {
-            entries = loadedEntries
+            self.init(entries: loadedEntries)
         } else {
-            entries = LegalDictionaryEntry.previewEntries
+            let localRAG = LocalRAG.shared
+            localRAG.loadDataIfNeeded(bundle: bundle)
+            if !localRAG.documents.isEmpty {
+                let ragEntries = localRAG.documents.enumerated().map { index, doc in
+                    LegalDictionaryEntry(
+                        id: "rag-\(index)-\(doc.istilah)",
+                        term: doc.istilah,
+                        definition: doc.pengertian,
+                        regulation: doc.undangUndang,
+                        regulationTitle: "",
+                        sourceURL: URL(string: doc.url)
+                    )
+                }
+                self.init(entries: ragEntries)
+            } else {
+                self.init(entries: LegalDictionaryEntry.previewEntries)
+            }
         }
     }
 
-    init(entries: [LegalDictionaryEntry]) {
+    nonisolated init(entries: [LegalDictionaryEntry]) {
         self.entries = entries
+
+        let index = entries.map { entry in
+            let retrievalDefinition = Self.retrievalDefinition(for: entry)
+            let tokens = Self.tokenize("\(entry.term) \(retrievalDefinition)")
+
+            return RetrievalIndexEntry(
+                termTokens: Self.tokenize(entry.term),
+                definitionTokenSet: Set(Self.tokenize(retrievalDefinition)),
+                termFrequencies: Self.termFrequencies(for: tokens),
+                tokenCount: tokens.count
+            )
+        }
+        retrievalIndex = index
+
+        var documentFrequency: [String: Int] = [:]
+        for document in index {
+            for token in document.termFrequencies.keys {
+                documentFrequency[token, default: 0] += 1
+            }
+        }
+
+        let documentCount = Double(index.count)
+        inverseDocumentFrequencies = Dictionary(uniqueKeysWithValues: documentFrequency.map { token, frequency in
+            let frequency = Double(frequency)
+            return (
+                token,
+                log(1.0 + (documentCount - frequency + 0.5) / (frequency + 0.5))
+            )
+        })
+        averageDocumentLength = index.isEmpty
+            ? 0
+            : Double(index.reduce(0) { $0 + $1.tokenCount }) / documentCount
     }
 
     func search(_ query: String, limit: Int = 30) -> [LegalDictionaryEntry] {
@@ -87,7 +160,167 @@ struct LegalDictionaryStore: Sendable {
             .map(\.entry)
     }
 
-    private static func loadEntries(from data: Data) -> [LegalDictionaryEntry]? {
+    /// Performs vector similarity search via BAAI/bge-m3 embeddings using LocalRAG engine.
+    func searchRAG(_ query: String, limit: Int = 30) async -> [LegalDictionaryEntry] {
+        let localRAG = LocalRAG.shared
+        if !localRAG.isLoaded {
+            localRAG.loadDataIfNeeded()
+        }
+
+        if localRAG.isLoaded {
+            do {
+                let queryEmbedding = try await BGEEmbedding.shared.generateEmbedding(for: query)
+                let ragResults = localRAG.search(queryEmbedding: queryEmbedding, topK: limit)
+
+                if !ragResults.isEmpty {
+                    return ragResults.map { match in
+                        LegalDictionaryEntry(
+                            id: "rag-\(match.rank)-\(match.document.istilah)",
+                            term: match.document.istilah,
+                            definition: match.document.pengertian,
+                            regulation: match.document.undangUndang,
+                            regulationTitle: "",
+                            sourceURL: URL(string: match.document.url)
+                        )
+                    }
+                }
+            } catch {
+                // Fallback to keyword RAG search
+            }
+
+            let keywordResults = localRAG.searchByKeyword(query: query, topK: limit)
+            if !keywordResults.isEmpty {
+                return keywordResults.map { match in
+                    LegalDictionaryEntry(
+                        id: "rag-kw-\(match.rank)-\(match.document.istilah)",
+                        term: match.document.istilah,
+                        definition: match.document.pengertian,
+                        regulation: match.document.undangUndang,
+                        regulationTitle: "",
+                        sourceURL: URL(string: match.document.url)
+                    )
+                }
+            }
+        }
+
+        // Fallback to standard search if RAG store is unavailable
+        return search(query, limit: limit)
+    }
+
+
+    /// Returns only a conservative, source-backed candidate for model context.
+    ///
+    /// The score threshold and margin are calibrated against the current full
+    /// glossary as a provisional guard. They are intentionally stricter than
+    /// ordinary dictionary search because an unrelated candidate can mislead a
+    /// suggestion model. This method returns no candidate when the evidence is
+    /// weak or ambiguous.
+    func suggestionCandidates(for text: String, limit: Int = 3) -> [LegalDictionaryMatch] {
+        guard limit > 0 else { return [] }
+
+        let queryTokens = Self.tokenize(text)
+        guard !queryTokens.isEmpty, !entries.isEmpty else { return [] }
+
+        let uniqueTermIndices = Dictionary(grouping: entries.indices, by: { index in
+            Self.normalize(entries[index].term)
+        })
+            .compactMapValues { indices in
+                indices.max { lhs, rhs in
+                    bm25Score(queryTokens: queryTokens, documentIndex: lhs)
+                        < bm25Score(queryTokens: queryTokens, documentIndex: rhs)
+                }
+            }
+
+        let directTermIndices = uniqueTermIndices.values.filter { index in
+            let termTokens = retrievalIndex[index].termTokens
+            return termTokens.count >= 2
+                && Self.containsTokenSequence(queryTokens, termTokens)
+        }
+        .sorted { lhs, rhs in
+            let lhsTokens = retrievalIndex[lhs].termTokens.count
+            let rhsTokens = retrievalIndex[rhs].termTokens.count
+            if lhsTokens != rhsTokens { return lhsTokens > rhsTokens }
+            return entries[lhs].term.localizedCaseInsensitiveCompare(entries[rhs].term) == .orderedAscending
+        }
+
+        let scored = uniqueTermIndices.values.compactMap { index -> LegalDictionaryMatch? in
+            let score = bm25Score(queryTokens: queryTokens, documentIndex: index)
+            guard score > 0 else { return nil }
+
+            let document = retrievalIndex[index]
+            let matchedDefinitionTokenCount = Set(queryTokens)
+                .intersection(document.definitionTokenSet)
+                .count
+            let isDirectTermMatch = document.termTokens.count >= 2
+                && Self.containsTokenSequence(queryTokens, document.termTokens)
+
+            return LegalDictionaryMatch(
+                entry: entries[index],
+                score: score,
+                rank: 0,
+                matchedDefinitionTokenCount: matchedDefinitionTokenCount,
+                isDirectTermMatch: isDirectTermMatch
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.score != rhs.score { return lhs.score > rhs.score }
+            return lhs.entry.term.localizedCaseInsensitiveCompare(rhs.entry.term) == .orderedAscending
+        }
+
+        guard let first = scored.first else { return [] }
+
+        let secondScore = scored.dropFirst().first?.score ?? 0
+        let margin = first.score - secondScore
+        if first.score >= Self.suggestionMinimumScore,
+           first.matchedDefinitionTokenCount >= Self.suggestionMinimumMatchedDefinitionTokens,
+           (scored.count == 1 || margin >= Self.suggestionMinimumMargin) {
+            return [LegalDictionaryMatch(
+                entry: first.entry,
+                score: first.score,
+                rank: 1,
+                matchedDefinitionTokenCount: first.matchedDefinitionTokenCount,
+                isDirectTermMatch: first.isDirectTermMatch
+            )]
+        }
+
+        guard let directTermIndex = directTermIndices.first else { return [] }
+        return [LegalDictionaryMatch(
+            entry: entries[directTermIndex],
+            score: bm25Score(queryTokens: queryTokens, documentIndex: directTermIndex),
+            rank: 1,
+            matchedDefinitionTokenCount: Set(queryTokens)
+                .intersection(retrievalIndex[directTermIndex].definitionTokenSet)
+                .count,
+            isDirectTermMatch: true
+        )]
+    }
+
+    private func bm25Score(queryTokens: [String], documentIndex: Int) -> Double {
+        guard !queryTokens.isEmpty,
+              let document = retrievalIndex[safe: documentIndex],
+              averageDocumentLength > 0 else {
+            return 0
+        }
+
+        let k1 = 1.5
+        let b = 0.75
+        let documentLength = Double(document.tokenCount)
+        let normalization = 1.0 - b + b * (documentLength / averageDocumentLength)
+        var score = 0.0
+
+        for token in queryTokens {
+            let frequency = Double(document.termFrequencies[token] ?? 0)
+            guard frequency > 0 else { continue }
+
+            let numerator = frequency * (k1 + 1.0)
+            let denominator = frequency + k1 * normalization
+            score += (inverseDocumentFrequencies[token] ?? 0) * numerator / denominator
+        }
+
+        return score
+    }
+
+    nonisolated private static func loadEntries(from data: Data) -> [LegalDictionaryEntry]? {
         guard let text = String(data: data, encoding: .utf8) else { return nil }
         let rows = CSVParser.parse(text)
         guard let headerRow = rows.first else { return nil }
@@ -124,17 +357,61 @@ struct LegalDictionaryStore: Sendable {
         }
     }
 
-    private static func normalize(_ value: String) -> String {
+    nonisolated private static func normalize(_ value: String) -> String {
         value
             .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
     }
+
+    nonisolated private static func tokenize(_ value: String) -> [String] {
+        normalize(value)
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map(String.init)
+    }
+
+    nonisolated private static func termFrequencies(for tokens: [String]) -> [String: Int] {
+        tokens.reduce(into: [:]) { counts, token in
+            counts[token, default: 0] += 1
+        }
+    }
+
+    nonisolated private static func retrievalDefinition(for entry: LegalDictionaryEntry) -> String {
+        let normalizedTerm = normalize(entry.term)
+        let normalizedDefinition = normalize(entry.definition)
+
+        for connector in ["adalah", "ialah", "merupakan"] {
+            let prefix = "\(normalizedTerm) \(connector) "
+            if normalizedDefinition.hasPrefix(prefix) {
+                return String(normalizedDefinition.dropFirst(prefix.count))
+            }
+        }
+
+        return normalizedDefinition
+    }
+
+    nonisolated private static func containsTokenSequence(_ tokens: [String], _ sequence: [String]) -> Bool {
+        guard !sequence.isEmpty, sequence.count <= tokens.count else { return false }
+
+        for start in 0...(tokens.count - sequence.count) {
+            if Array(tokens[start..<(start + sequence.count)]) == sequence {
+                return true
+            }
+        }
+
+        return false
+    }
+}
+
+private extension Array {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
 }
 
 private enum CSVParser {
-    static func parse(_ input: String) -> [[String]] {
+    nonisolated static func parse(_ input: String) -> [[String]] {
         let characters = Array(input)
         var rows: [[String]] = []
         var row: [String] = []

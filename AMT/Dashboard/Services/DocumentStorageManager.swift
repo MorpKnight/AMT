@@ -49,21 +49,23 @@ final class DocumentStorageManager: ObservableObject {
 
             for fileURL in fileURLs {
                 if let data = try? Data(contentsOf: fileURL),
-                   let document = try? decoder.decode(DashboardDocument.self, from: data) {
+                   let document = try? decoder.decode(DashboardDocument.self, from: data),
+                   !AIConnectorDummyDocument.isBuiltIn(document) {
                     loadedDocs.append(document)
                 }
             }
 
             // Sort by latest updated first
             loadedDocs.sort { $0.updatedAt > $1.updatedAt }
+            loadedDocs.insert(AIConnectorDummyDocument.document, at: 0)
             self.documents = loadedDocs
         } catch {
             print("Error loading documents via Foundation FileManager: \(error.localizedDescription)")
-            self.documents = []
+            self.documents = [AIConnectorDummyDocument.document]
         }
     }
 
-    // MARK: - Import Word Document from Finder
+    // MARK: - Import Document from Finder (.docx, .doc, .rtf, .md, .txt)
 
     func importWordDocumentFromFinder(completion: @escaping (DashboardDocument?) -> Void) {
         let panel = NSOpenPanel()
@@ -71,11 +73,13 @@ final class DocumentStorageManager: ObservableObject {
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.prompt = "Impor Dokumen"
-        panel.message = "Pilih file Word (.docx, .doc, .rtf, .txt)"
+        panel.message = "Pilih file dokumen (.docx, .doc, .rtf, .md, .txt)"
 
         var types: [UTType] = [.plainText, .rtf]
         if let docx = UTType(filenameExtension: "docx") { types.append(docx) }
         if let doc = UTType(filenameExtension: "doc") { types.append(doc) }
+        if let md = UTType(filenameExtension: "md") { types.append(md) }
+        if let markdown = UTType(filenameExtension: "markdown") { types.append(markdown) }
         panel.allowedContentTypes = types
 
         panel.begin { response in
@@ -87,10 +91,13 @@ final class DocumentStorageManager: ObservableObject {
             let title = url.deletingPathExtension().lastPathComponent
             var textContent = ""
 
-            if let attributedString = try? NSAttributedString(url: url, options: [:], documentAttributes: nil) {
-                textContent = attributedString.string
-            } else if let rawString = try? String(contentsOf: url, encoding: .utf8) {
-                textContent = rawString
+            do {
+                textContent = try DocxToMarkdownConverter.convert(fileURL: url)
+            } catch {
+                print("Error converting document to Markdown: \(error.localizedDescription)")
+                if let rawString = try? String(contentsOf: url, encoding: .utf8) {
+                    textContent = rawString
+                }
             }
 
             let newDoc = DashboardDocument(
@@ -132,6 +139,13 @@ final class DocumentStorageManager: ObservableObject {
     func saveDocument(_ document: DashboardDocument) {
         var updatedDoc = document
         updatedDoc.updatedAt = Date()
+
+        if AIConnectorDummyDocument.isBuiltIn(updatedDoc) {
+            if let index = documents.firstIndex(where: { $0.id == updatedDoc.id }) {
+                documents[index] = updatedDoc
+            }
+            return
+        }
         
         let encoder = JSONEncoder()
         encoder.outputFormatting = .prettyPrinted
@@ -151,6 +165,8 @@ final class DocumentStorageManager: ObservableObject {
     }
 
     func deleteDocument(_ document: DashboardDocument) {
+        guard !AIConnectorDummyDocument.isBuiltIn(document) else { return }
+
         let fileURL = storageURL.appendingPathComponent("\(document.id.uuidString).json")
         try? fileManager.removeItem(at: fileURL)
         documents.removeAll { $0.id == document.id }

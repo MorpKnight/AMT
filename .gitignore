@@ -13,8 +13,29 @@ build/
 .build/
 .swiftpm/
 
-# Xcode archives
+# Xcode archives & TestFlight / App Store distribution
 *.xcarchive
+*.ipa
+*.app
+*.dSYM.zip
+*.dSYM
+*.pkg
+*.dmg
+*.xcframework
+ExportOptions.plist
+
+# Signing & Provisioning Profiles
+*.mobileprovision
+*.provisionprofile
+*.p12
+*.cer
+*.p8
+
+# Fastlane / CI TestFlight artifacts
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
 
 # Secrets / local config
 .env

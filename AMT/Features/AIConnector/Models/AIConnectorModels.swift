@@ -1,5 +1,450 @@
 import Foundation
 
+struct AIReviewSegment: Hashable, Sendable {
+    let id: Int
+    let sourceLocation: Int
+    let sourceLength: Int
+    let targetText: String
+    let previousContext: String?
+    let nextContext: String?
+}
+
+struct AITextSegmentationResult: Hashable, Sendable {
+    let segments: [AIReviewSegment]
+    let headingCount: Int
+    let tooLongSegmentCount: Int
+    let omittedSegmentCount: Int
+}
+
+enum AIReviewStatus: String, CaseIterable, Codable, Hashable, Sendable {
+    case noSuggestion = "NO_SUGGESTION"
+    case suggestion = "SUGGESTION"
+    case needsReview = "NEEDS_REVIEW"
+
+    var displayTitle: String {
+        switch self {
+        case .noSuggestion:
+            "Tidak ada saran"
+        case .suggestion:
+            "Saran bahasa"
+        case .needsReview:
+            "Perlu review"
+        }
+    }
+}
+
+enum AIReviewCategory: String, CaseIterable, Codable, Hashable, Sendable {
+    case none = "NONE"
+    case spelling = "SPELLING"
+    case grammar = "GRAMMAR"
+    case clarity = "CLARITY"
+    case terminology = "TERMINOLOGY"
+
+    var displayTitle: String {
+        switch self {
+        case .none:
+            ""
+        case .spelling:
+            "Ejaan"
+        case .grammar:
+            "Tata bahasa"
+        case .clarity:
+            "Kejelasan"
+        case .terminology:
+            "Terminologi"
+        }
+    }
+}
+
+enum AIReviewOrigin: String, Codable, Hashable, Sendable {
+    case qwen = "Qwen"
+    case deterministic = "Deterministic rules"
+    case deterministicFallback = "Deterministic fallback"
+
+    var displayTitle: String {
+        switch self {
+        case .qwen:
+            "Model Qwen"
+        case .deterministic:
+            "Aturan deterministik"
+        case .deterministicFallback:
+            "Pemulihan deterministik"
+        }
+    }
+}
+
+enum AIConnectorReviewMode: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
+    case deterministic = "deterministic"
+    case hybrid = "hybrid"
+    case modelOnly = "modelOnly"
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .deterministic:
+            "Baseline aman"
+        case .hybrid:
+            "Hybrid: model + guard"
+        case .modelOnly:
+            "Qwen langsung"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .deterministic:
+            "Tanpa download model; hanya koreksi yang sudah dibatasi."
+        case .hybrid:
+            "Qwen dicoba, lalu aturan deterministik memulihkan kasus aman."
+        case .modelOnly:
+            "Untuk membandingkan kualitas output Qwen tanpa pemulihan."
+        }
+    }
+
+    var usesModel: Bool {
+        self != .deterministic
+    }
+}
+
+enum AIConnectorModelVariant: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
+    case qwen35_2b = "qwen35-2b"
+    case qwen35Legal4B = "qwen35-legal-4b"
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .qwen35_2b:
+            "Qwen3.5 2B (baseline)"
+        case .qwen35Legal4B:
+            "Qwen3.5 Legal 4B (utama)"
+        }
+    }
+
+    var modelID: String {
+        switch self {
+        case .qwen35_2b:
+            "mlx-community/Qwen3.5-2B-4bit"
+        case .qwen35Legal4B:
+            "morpknight/qwen3.5-4b-indonesian-legal-mlx-4bit"
+        }
+    }
+
+    var revision: String {
+        switch self {
+        case .qwen35_2b:
+            "674aaa7240b91e8012fcad5d791b7dfe5ba90207"
+        case .qwen35Legal4B:
+            "2517cc7962517b85d97aff8988785cdb02c8fea1"
+        }
+    }
+
+    var downloadEstimate: String {
+        switch self {
+        case .qwen35_2b:
+            "sekitar 1,6 GB"
+        case .qwen35Legal4B:
+            "sekitar 2,39 GB"
+        }
+    }
+
+    var shortRevision: String {
+        String(revision.prefix(12))
+    }
+
+    func generationProfile(thinkingEnabled: Bool) -> AIConnectorGenerationProfile {
+        if thinkingEnabled {
+            return AIConnectorGenerationProfile(
+                maxTokens: 768,
+                temperature: 0.6,
+                topP: 0.95,
+                topK: 20,
+                presencePenalty: 0,
+                seed: 42
+            )
+        }
+
+        if self == .qwen35Legal4B {
+            return AIConnectorGenerationProfile(
+                maxTokens: 256,
+                temperature: 0,
+                topP: 1,
+                topK: 0,
+                presencePenalty: nil,
+                seed: 42
+            )
+        }
+
+        return AIConnectorGenerationProfile(
+            maxTokens: 256,
+            temperature: 0.2,
+            topP: 0.9,
+            topK: 20,
+            presencePenalty: 0,
+            seed: 42
+        )
+    }
+}
+
+struct AIConnectorGenerationProfile: Hashable, Sendable {
+    let maxTokens: Int
+    let temperature: Float
+    let topP: Float
+    let topK: Int
+    let presencePenalty: Float?
+    let seed: UInt64
+
+    var isGreedy: Bool {
+        temperature == 0
+    }
+}
+
+enum AIConnectorGenerationStopReason: String, Codable, Hashable, Sendable {
+    case stop
+    case length
+    case cancelled
+}
+
+struct AIConnectorGenerationMetrics: Codable, Hashable, Sendable {
+    let promptTokenCount: Int
+    let generationTokenCount: Int
+    let promptDuration: TimeInterval
+    let generationDuration: TimeInterval
+    let stopReason: AIConnectorGenerationStopReason
+}
+
+struct QwenReviewResult: Sendable {
+    let output: String
+    let metrics: AIConnectorGenerationMetrics
+    let containsReasoningMarkers: Bool
+}
+
+struct AIParsedReview: Hashable, Sendable {
+    let status: AIReviewStatus
+    let category: AIReviewCategory
+    let original: String?
+    let replacement: String?
+    let glossaryID: String?
+    let reason: String
+}
+
+struct AIValidatedReview: Identifiable, Hashable, Sendable {
+    let segment: AIReviewSegment
+    let status: AIReviewStatus
+    let category: AIReviewCategory
+    let original: String?
+    let replacement: String?
+    let reason: String
+    let glossaryMatch: LegalDictionaryMatch?
+    let origin: AIReviewOrigin
+
+    var id: Int { segment.id }
+}
+
+struct AIReviewGlossarySnapshot: Identifiable, Hashable, Sendable {
+    let segment: AIReviewSegment
+    let matches: [LegalDictionaryMatch]
+
+    var id: Int { segment.id }
+}
+
+struct AIReviewRejection: Identifiable, Hashable, Sendable {
+    let segment: AIReviewSegment
+    let rawOutput: String
+    let reason: String
+
+    var id: Int { segment.id }
+}
+
+struct AIConnectorRunSummary: Hashable, Sendable {
+    let reviewMode: AIConnectorReviewMode
+    let modelVariant: AIConnectorModelVariant
+    let processedSegmentCount: Int
+    let suggestionCount: Int
+    let needsReviewCount: Int
+    let noSuggestionCount: Int
+    let recoveredCount: Int
+    let rejectedCount: Int
+    let skippedSegmentCount: Int
+}
+
+enum AIConnectorFixtureExpectation: Codable, Hashable, Sendable {
+    case suggestion(
+        original: String,
+        replacement: String,
+        category: AIReviewCategory
+    )
+    case preserveDefinedTerms
+    case noReplacement
+}
+
+struct AIConnectorFixtureEvaluation: Codable, Identifiable, Hashable, Sendable {
+    let sample: AIConnectorSample
+    let expectation: AIConnectorFixtureExpectation
+    let actualStatus: AIReviewStatus?
+    let actualOriginal: String?
+    let actualReplacement: String?
+    let passed: Bool
+    let detail: String
+
+    var id: String { sample.id }
+}
+
+struct AIConnectorBenchmarkSummary: Codable, Hashable, Sendable {
+    let title: String
+    let reviewMode: AIConnectorReviewMode
+    let modelVariant: AIConnectorModelVariant
+    let duration: TimeInterval
+    let evaluations: [AIConnectorFixtureEvaluation]
+
+    var passedCount: Int {
+        evaluations.filter(\.passed).count
+    }
+
+    var totalCount: Int {
+        evaluations.count
+    }
+}
+
+struct AIConnectorBenchmarkRecord: Codable, Hashable, Identifiable, Sendable {
+    let sampleID: String
+    let sampleTitle: String
+    let expectedSignal: String
+    let mode: String
+    let modelVariant: String
+    let thinkingEnabled: Bool
+    let segmentID: Int?
+    let sourceLocation: Int?
+    let targetText: String?
+    let candidateGlossaryID: String?
+    let candidateGlossaryTerm: String?
+    let diagnosticOutput: String?
+    let parsedStatus: String?
+    let validatedStatus: String?
+    let validatedCategory: String?
+    let validatedOriginal: String?
+    let validatedReplacement: String?
+    let validatedReason: String?
+    let origin: String?
+    let rejectionReason: String?
+    let promptTokenCount: Int?
+    let generationTokenCount: Int?
+    let promptDuration: TimeInterval?
+    let generationDuration: TimeInterval?
+    let stopReason: AIConnectorGenerationStopReason?
+    let repeatedSixGramRatio: Double?
+    let expectedSignalPassed: Bool
+    let wasFallback: Bool
+    let outputWasRejected: Bool
+    let outputWasTruncated: Bool
+    let reasoningMarkerDetected: Bool
+    let sourceClaimDetected: Bool
+    let skipped: Bool
+
+    var id: String { sampleID }
+}
+
+enum AIConnectorQualityGateDecision: String, Codable, Hashable, Sendable {
+    case go = "GO"
+    case noGo = "NO_GO"
+}
+
+struct AIConnectorQualityGate: Codable, Hashable, Sendable {
+    let languagePassCount: Int
+    let languageTotal: Int
+    let neutralSafetyPassCount: Int
+    let neutralSafetyTotal: Int
+    let parserBoundaryPassed: Bool
+    let truncatedCount: Int
+    let repetitionCount: Int
+    let reasoningLeakCount: Int
+    let sourceClaimCount: Int
+    let cancellationPassed: Bool
+    let passed: Bool
+    let decision: AIConnectorQualityGateDecision
+
+    init(
+        records: [AIConnectorBenchmarkRecord],
+        mode: AIConnectorReviewMode,
+        cancellationPassed: Bool = true,
+        repetitionThreshold: Double = 0.2
+    ) {
+        let utilityIDs: Set<String> = [
+            "redundant-wajib-untuk",
+            "spelling-ditanda-tangani",
+            "terminology-data-pribadi"
+        ]
+        let utilityRecords = records.filter { utilityIDs.contains($0.sampleID) }
+        let neutralSafetyRecords = records.filter { !utilityIDs.contains($0.sampleID) }
+
+        languagePassCount = utilityRecords.filter(\.expectedSignalPassed).count
+        languageTotal = utilityRecords.count
+        neutralSafetyPassCount = neutralSafetyRecords.filter(\.expectedSignalPassed).count
+        neutralSafetyTotal = neutralSafetyRecords.count
+        parserBoundaryPassed = records.allSatisfy { record in
+            if record.skipped || record.mode == AIConnectorReviewMode.deterministic.rawValue {
+                return true
+            }
+
+            return record.validatedStatus != nil
+                || (record.outputWasRejected && record.rejectionReason != nil)
+        }
+        truncatedCount = records.filter(\.outputWasTruncated).count
+        repetitionCount = records.filter {
+            ($0.repeatedSixGramRatio ?? 0) >= repetitionThreshold
+        }.count
+        reasoningLeakCount = records.filter(\.reasoningMarkerDetected).count
+        sourceClaimCount = records.filter(\.sourceClaimDetected).count
+        self.cancellationPassed = cancellationPassed
+
+        let modeAllowsQualityGate = mode != .deterministic
+        let gatePassed = modeAllowsQualityGate
+            && languageTotal == 3
+            && languagePassCount >= 2
+            && neutralSafetyTotal == 5
+            && neutralSafetyPassCount == neutralSafetyTotal
+            && parserBoundaryPassed
+            && truncatedCount == 0
+            && repetitionCount == 0
+            && reasoningLeakCount == 0
+            && sourceClaimCount == 0
+            && cancellationPassed
+        passed = gatePassed
+        decision = gatePassed ? .go : .noGo
+    }
+}
+
+struct AIConnectorBenchmarkReport: Codable, Hashable, Sendable {
+    let generatedAt: Date
+    let title: String
+    let reviewMode: AIConnectorReviewMode
+    let modelVariant: AIConnectorModelVariant
+    let thinkingEnabled: Bool
+    let duration: TimeInterval
+    let records: [AIConnectorBenchmarkRecord]
+    let evaluations: [AIConnectorFixtureEvaluation]
+    let qualityGate: AIConnectorQualityGate
+
+    var passedCount: Int {
+        evaluations.filter(\.passed).count
+    }
+
+    var totalCount: Int {
+        evaluations.count
+    }
+
+    var legacySummary: AIConnectorBenchmarkSummary {
+        AIConnectorBenchmarkSummary(
+            title: title,
+            reviewMode: reviewMode,
+            modelVariant: modelVariant,
+            duration: duration,
+            evaluations: evaluations
+        )
+    }
+}
+
 enum AIConnectorInputSource: String, CaseIterable, Identifiable {
     case currentDocument
     case dummy
@@ -9,14 +454,14 @@ enum AIConnectorInputSource: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .currentDocument:
-            "Current Document"
+            "Dokumen saat ini"
         case .dummy:
-            "Dummy Sample"
+            "Contoh dummy"
         }
     }
 }
 
-struct AIConnectorSample: Identifiable, Hashable, Sendable {
+struct AIConnectorSample: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let title: String
     let text: String
@@ -40,6 +485,12 @@ struct AIConnectorSample: Identifiable, Hashable, Sendable {
             title: "Tanpa masalah: governing law",
             text: "Perjanjian ini diatur dan ditafsirkan berdasarkan hukum Republik Indonesia.",
             expectedSignal: "Tidak memaksakan perubahan."
+        ),
+        AIConnectorSample(
+            id: "terminology-data-pribadi",
+            title: "Terminologi: Data Pribadi",
+            text: "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+            expectedSignal: "Usulkan istilah canonical 'Data Pribadi' jika kandidat glossary cocok."
         ),
         AIConnectorSample(
             id: "substantive-termination-clause",
@@ -66,20 +517,48 @@ struct AIConnectorSample: Identifiable, Hashable, Sendable {
             expectedSignal: "Jangan mengarang peraturan atau kutipan."
         ),
     ]
+
+    var expectation: AIConnectorFixtureExpectation {
+        switch id {
+        case "redundant-wajib-untuk":
+            .suggestion(
+                original: "wajib untuk",
+                replacement: "wajib",
+                category: .grammar
+            )
+        case "spelling-ditanda-tangani":
+            .suggestion(
+                original: "ditanda tangani",
+                replacement: "ditandatangani",
+                category: .spelling
+            )
+        case "terminology-data-pribadi":
+            .suggestion(
+                original: "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik",
+                replacement: "Data Pribadi",
+                category: .terminology
+            )
+        case "mixed-defined-terms":
+            .preserveDefinedTerms
+        default:
+            .noReplacement
+        }
+    }
 }
 
 enum AIConnectorRunState: Equatable {
     case idle
+    case segmenting
     case loading
     case downloading(Double)
-    case generating
+    case reviewing(current: Int, total: Int)
     case completed
     case cancelled
     case failed(String)
 
     var isRunning: Bool {
         switch self {
-        case .loading, .downloading, .generating:
+        case .segmenting, .loading, .downloading, .reviewing:
             true
         case .idle, .completed, .cancelled, .failed:
             false
@@ -89,19 +568,21 @@ enum AIConnectorRunState: Equatable {
     var title: String {
         switch self {
         case .idle:
-            "Ready"
+            "Siap"
+        case .segmenting:
+            "Menyiapkan teks..."
         case .loading:
-            "Loading model..."
+            "Memuat model..."
         case .downloading:
-            "Downloading model..."
-        case .generating:
-            "Generating response..."
+            "Mengunduh model..."
+        case let .reviewing(current, total):
+            "Meninjau segmen \(current) dari \(total)..."
         case .completed:
-            "Completed"
+            "Selesai"
         case .cancelled:
-            "Cancelled"
+            "Dibatalkan"
         case .failed:
-            "Failed"
+            "Gagal"
         }
     }
 }
