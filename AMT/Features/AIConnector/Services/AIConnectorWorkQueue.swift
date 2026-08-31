@@ -83,7 +83,10 @@ final class AIConnectorSegmentProcessor {
         self.deterministicEngine = AIConnectorDeterministicSuggestionEngine(
             ruleStore: ruleStore
         )
-        self.candidateBuilder = AIConnectorCandidateBuilder(ruleStore: ruleStore)
+        self.candidateBuilder = AIConnectorCandidateBuilder(
+            ruleStore: ruleStore,
+            retrievalConfiguration: dictionaryStore.semanticRetrievalConfiguration
+        )
         self.usesLegacyModelReviewHandler = modelReviewHandler != nil
         let defaultHandler: AIConnectorModelReviewHandler = { @MainActor [service] request in
             try await service.review(
@@ -125,6 +128,8 @@ final class AIConnectorSegmentProcessor {
         forceDeterministic: Bool,
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
+        semanticProgress: @escaping @Sendable (Double) -> Void = { _ in },
+        progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void = { _ in },
         generationProfile: AIConnectorGenerationProfile? = nil
     ) async throws -> AIConnectorSegmentResult {
         if usesLegacyModelReviewHandler {
@@ -136,7 +141,9 @@ final class AIConnectorSegmentProcessor {
                 thinkingEnabled: thinkingEnabled,
                 forceDeterministic: forceDeterministic,
                 downloadProgress: downloadProgress,
-                generationProgress: generationProgress
+                generationProgress: generationProgress,
+                semanticProgress: semanticProgress,
+                progressStage: progressStage
             )
         }
 
@@ -149,6 +156,8 @@ final class AIConnectorSegmentProcessor {
             forceDeterministic: forceDeterministic,
             downloadProgress: downloadProgress,
             generationProgress: generationProgress,
+            semanticProgress: semanticProgress,
+            progressStage: progressStage,
             generationProfile: generationProfile
         )
     }
@@ -161,17 +170,14 @@ final class AIConnectorSegmentProcessor {
         thinkingEnabled: Bool,
         forceDeterministic: Bool,
         downloadProgress: @escaping @Sendable (Double) -> Void,
-        generationProgress: @escaping @MainActor @Sendable (Int) -> Void
+        generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
+        semanticProgress: @escaping @Sendable (Double) -> Void,
+        progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void
     ) async throws -> AIConnectorSegmentResult {
-        let glossaryMatches = dictionaryStore.suggestionCandidates(
-            for: segment.targetText,
-            limit: 1
-        )
-
         if segment.isTooLong {
             return AIConnectorSegmentResult(
                 segment: segment,
-                glossaryMatches: glossaryMatches,
+                glossaryMatches: [],
                 rejections: [
                     AIReviewRejection(
                         segment: segment,
@@ -183,6 +189,23 @@ final class AIConnectorSegmentProcessor {
                 skipped: true
             )
         }
+
+        let glossaryMatches: [LegalDictionaryMatch]
+        if mode.usesModel, !forceDeterministic {
+            glossaryMatches = await dictionaryStore.suggestionCandidatesAsync(
+                for: segment.targetText,
+                limit: 1,
+                semanticProgress: { progress in
+                    semanticProgress(progress)
+                }
+            )
+        } else {
+            glossaryMatches = dictionaryStore.suggestionCandidates(
+                for: segment.targetText,
+                limit: 1
+            )
+        }
+        try Task.checkCancellation()
 
         guard mode.usesModel, !forceDeterministic else {
             return deterministicResult(
@@ -204,7 +227,10 @@ final class AIConnectorSegmentProcessor {
                 ),
                 promptVersion: QwenSuggestionService.promptVersion,
                 rulePackVersion: ruleStore.version,
-                corpusVersion: AIConnectorLocalToolDispatcher.corpusVersion,
+                corpusVersion: dictionaryStore.activeCorpusVersion,
+                semanticModelRevision: dictionaryStore.semanticModelRevision,
+                semanticEmbeddingSchema: dictionaryStore.semanticEmbeddingSchema,
+                semanticRetrievalProfile: dictionaryStore.semanticRetrievalProfile,
                 validatorVersion: AIConnectorSuggestionValidator.version,
                 outputSchemaVersion: QwenSuggestionService.outputSchemaVersion,
                 protectionContext: documentProtectionContext
@@ -237,6 +263,7 @@ final class AIConnectorSegmentProcessor {
             )
         }
 
+        progressStage(.modelLoading)
         var attempts = 0
         var repairAttempted = false
         var rejections: [AIReviewRejection] = []
@@ -442,20 +469,14 @@ final class AIConnectorSegmentProcessor {
         forceDeterministic: Bool,
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
+        semanticProgress: @escaping @Sendable (Double) -> Void,
+        progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void,
         generationProfile: AIConnectorGenerationProfile? = nil
     ) async throws -> AIConnectorSegmentResult {
-        let glossaryMatches = dictionaryStore.suggestionCandidates(
-            for: segment.targetText,
-            limit: 3
-        )
-        let actionableGlossaryMatches = glossaryMatches.filter {
-            $0.entry.authority == .verified
-        }
-
         if segment.isTooLong {
             return AIConnectorSegmentResult(
                 segment: segment,
-                glossaryMatches: glossaryMatches,
+                glossaryMatches: [],
                 rejections: [
                     AIReviewRejection(
                         segment: segment,
@@ -466,6 +487,36 @@ final class AIConnectorSegmentProcessor {
                 ],
                 skipped: true
             )
+        }
+
+        let usesSemanticRetrieval = mode.usesModel
+            && !forceDeterministic
+            && dictionaryStore.corpusStore != nil
+            && dictionaryStore.semanticRetriever != nil
+        let glossaryMatches: [LegalDictionaryMatch]
+        if mode.usesModel, !forceDeterministic {
+            glossaryMatches = await dictionaryStore.suggestionCandidatesAsync(
+                for: segment.targetText,
+                limit: 3,
+                semanticProgress: { progress in
+                    semanticProgress(progress)
+                }
+            )
+        } else {
+            glossaryMatches = dictionaryStore.suggestionCandidates(
+                for: segment.targetText,
+                limit: 3
+            )
+        }
+        try Task.checkCancellation()
+        let semanticRetrievalAvailable: Bool
+        if usesSemanticRetrieval {
+            semanticRetrievalAvailable = await dictionaryStore.isSemanticModelLoaded()
+        } else {
+            semanticRetrievalAvailable = true
+        }
+        let actionableGlossaryMatches = glossaryMatches.filter {
+            $0.entry.authority == .verified
         }
 
         let candidates = candidateBuilder.build(
@@ -484,7 +535,10 @@ final class AIConnectorSegmentProcessor {
                 generationProfile: profile,
                 promptVersion: QwenSuggestionService.candidatePromptVersion,
                 rulePackVersion: ruleStore.version,
-                corpusVersion: AIConnectorLocalToolDispatcher.corpusVersion,
+                corpusVersion: dictionaryStore.activeCorpusVersion,
+                semanticModelRevision: dictionaryStore.semanticModelRevision,
+                semanticEmbeddingSchema: dictionaryStore.semanticEmbeddingSchema,
+                semanticRetrievalProfile: dictionaryStore.semanticRetrievalProfile,
                 validatorVersion: AIConnectorSuggestionValidator.version,
                 outputSchemaVersion: QwenSuggestionService.candidateOutputSchemaVersion,
                 protectionContext: documentProtectionContext,
@@ -492,7 +546,8 @@ final class AIConnectorSegmentProcessor {
             )
         )
 
-        if let cached = await segmentCache.value(for: cacheKey) {
+        if semanticRetrievalAvailable,
+           let cached = await segmentCache.value(for: cacheKey) {
             let rejections = cached.rejectionReasons.enumerated().map { index, reason in
                 AIReviewRejection(
                     segment: segment,
@@ -551,7 +606,8 @@ final class AIConnectorSegmentProcessor {
                 repairAttempted: false,
                 usedFallback: forceDeterministic && mode != .deterministic,
                 firstPassSucceeded: true,
-                candidates: candidates
+                candidates: candidates,
+                shouldCache: semanticRetrievalAvailable
             )
         }
 
@@ -571,10 +627,12 @@ final class AIConnectorSegmentProcessor {
                 repairAttempted: false,
                 usedFallback: false,
                 firstPassSucceeded: true,
-                candidates: candidates
+                candidates: candidates,
+                shouldCache: semanticRetrievalAvailable
             )
         }
 
+        progressStage(.modelLoading)
         var reviews: [AIValidatedReview] = []
         var rejections: [AIReviewRejection] = []
         var decisions: [AIConnectorCandidateDecisionRecord] = []
@@ -781,7 +839,9 @@ final class AIConnectorSegmentProcessor {
 
         var finalResult = firstResult
         let origin: AIReviewOrigin = .qwen
-        if firstResult.decision == .reject {
+        if firstResult.decision == .reject,
+           candidate.confidenceTier == .deterministicRule
+            || candidate.confidenceTier == .verifiedGlossary {
             challengeAttempted = true
             attempts += 1
             do {
@@ -1374,7 +1434,11 @@ final class AIConnectorSegmentProcessor {
             repeatedSixGramRatio: repeatedSixGramRatio,
             outputWasTruncated: outputWasTruncated,
             reasoningMarkerDetected: reasoningMarkerDetected,
-            sourceClaimDetected: sourceClaimDetected
+            sourceClaimDetected: sourceClaimDetected,
+            candidates: candidates,
+            candidateDecisions: candidateDecisions,
+            modelCallCount: modelCallCount,
+            challengeCount: challengeCount
         )
     }
 
@@ -1398,30 +1462,33 @@ final class AIConnectorSegmentProcessor {
         candidates: [AIConnectorReviewCandidate] = [],
         candidateDecisions: [AIConnectorCandidateDecisionRecord] = [],
         modelCallCount: Int = 0,
-        challengeCount: Int = 0
+        challengeCount: Int = 0,
+        shouldCache: Bool = true
     ) async -> AIConnectorSegmentResult {
-        await segmentCache.insert(
-            AIConnectorCachedSegmentResult(
-                reviews: reviews.map(AIConnectorCachedReview.init),
-                parsedStatus: parsedStatus,
-                parsedCategory: parsedCategory,
-                rejectionReasons: rejections.map(\.reason),
-                rejectionClasses: rejections.map(\.classification),
-                modelAttempts: modelAttempts,
-                repairAttempted: repairAttempted,
-                usedFallback: usedFallback,
-                firstPassSucceeded: firstPassSucceeded,
-                candidateDecisions: candidateDecisions,
-                generationMetrics: generationMetrics,
-                repeatedSixGramRatio: repeatedSixGramRatio,
-                outputWasTruncated: outputWasTruncated,
-                reasoningMarkerDetected: reasoningMarkerDetected,
-                sourceClaimDetected: sourceClaimDetected,
-                modelCallCount: modelCallCount,
-                challengeCount: challengeCount
-            ),
-            for: cacheKey
-        )
+        if shouldCache {
+            await segmentCache.insert(
+                AIConnectorCachedSegmentResult(
+                    reviews: reviews.map(AIConnectorCachedReview.init),
+                    parsedStatus: parsedStatus,
+                    parsedCategory: parsedCategory,
+                    rejectionReasons: rejections.map(\.reason),
+                    rejectionClasses: rejections.map(\.classification),
+                    modelAttempts: modelAttempts,
+                    repairAttempted: repairAttempted,
+                    usedFallback: usedFallback,
+                    firstPassSucceeded: firstPassSucceeded,
+                    candidateDecisions: candidateDecisions,
+                    generationMetrics: generationMetrics,
+                    repeatedSixGramRatio: repeatedSixGramRatio,
+                    outputWasTruncated: outputWasTruncated,
+                    reasoningMarkerDetected: reasoningMarkerDetected,
+                    sourceClaimDetected: sourceClaimDetected,
+                    modelCallCount: modelCallCount,
+                    challengeCount: challengeCount
+                ),
+                for: cacheKey
+            )
+        }
         return AIConnectorSegmentResult(
             segment: segment,
             glossaryMatches: glossaryMatches,
@@ -1683,6 +1750,8 @@ actor AIConnectorWorkQueue {
         documentProtectionContext: AIConnectorDocumentProtectionContext,
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
+        semanticProgress: @escaping @Sendable (Double) -> Void = { _ in },
+        progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void = { _ in },
         generationProfile: AIConnectorGenerationProfile? = nil
     ) -> AsyncStream<AIConnectorWorkQueueEvent> {
         // Finish the previous stream before replacing its run identity. This
@@ -1713,6 +1782,8 @@ actor AIConnectorWorkQueue {
                 documentProtectionContext: documentProtectionContext,
                 downloadProgress: downloadProgress,
                 generationProgress: generationProgress,
+                semanticProgress: semanticProgress,
+                progressStage: progressStage,
                 generationProfile: generationProfile,
                 continuation: continuation
             )
@@ -1755,6 +1826,8 @@ actor AIConnectorWorkQueue {
         documentProtectionContext: AIConnectorDocumentProtectionContext,
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
+        semanticProgress: @escaping @Sendable (Double) -> Void,
+        progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void,
         generationProfile: AIConnectorGenerationProfile?,
         continuation: AsyncStream<AIConnectorWorkQueueEvent>.Continuation
     ) async {
@@ -1821,6 +1894,8 @@ actor AIConnectorWorkQueue {
                         forceDeterministic: useDeterministic && mode != .deterministic,
                         downloadProgress: downloadProgress,
                         generationProgress: generationProgress,
+                        semanticProgress: semanticProgress,
+                        progressStage: progressStage,
                         generationProfile: generationProfile
                     )
                     results.append(result)

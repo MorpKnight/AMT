@@ -620,6 +620,34 @@ final class AIConnectorP010ProductFoundationTests: XCTestCase {
                 identifiers: []
             )
         )
+        let embeddingSchemaChanged = AIConnectorCacheKeyComponents(
+            segment: base.segment,
+            reviewMode: base.reviewMode,
+            modelVariant: base.modelVariant,
+            generationProfile: base.generationProfile,
+            promptVersion: base.promptVersion,
+            rulePackVersion: base.rulePackVersion,
+            corpusVersion: base.corpusVersion,
+            semanticEmbeddingSchema: "e5:384:f32:normalized",
+            semanticRetrievalProfile: "rrf:60:top100:threshold:0.60",
+            validatorVersion: base.validatorVersion,
+            outputSchemaVersion: base.outputSchemaVersion,
+            protectionContext: base.protectionContext
+        )
+        let retrievalProfileChanged = AIConnectorCacheKeyComponents(
+            segment: base.segment,
+            reviewMode: base.reviewMode,
+            modelVariant: base.modelVariant,
+            generationProfile: base.generationProfile,
+            promptVersion: base.promptVersion,
+            rulePackVersion: base.rulePackVersion,
+            corpusVersion: base.corpusVersion,
+            semanticEmbeddingSchema: base.semanticEmbeddingSchema,
+            semanticRetrievalProfile: "rrf:60:top100:threshold:0.65",
+            validatorVersion: base.validatorVersion,
+            outputSchemaVersion: base.outputSchemaVersion,
+            protectionContext: base.protectionContext
+        )
 
         XCTAssertNotEqual(
             AIConnectorSegmentCache.key(from: base),
@@ -628,6 +656,14 @@ final class AIConnectorP010ProductFoundationTests: XCTestCase {
         XCTAssertNotEqual(
             AIConnectorSegmentCache.key(from: base),
             AIConnectorSegmentCache.key(from: contextChanged)
+        )
+        XCTAssertNotEqual(
+            AIConnectorSegmentCache.key(from: base),
+            AIConnectorSegmentCache.key(from: embeddingSchemaChanged)
+        )
+        XCTAssertNotEqual(
+            AIConnectorSegmentCache.key(from: base),
+            AIConnectorSegmentCache.key(from: retrievalProfileChanged)
         )
     }
 

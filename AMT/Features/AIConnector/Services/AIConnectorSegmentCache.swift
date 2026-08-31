@@ -9,6 +9,9 @@ struct AIConnectorCacheKeyComponents: Hashable, Sendable {
     let promptVersion: String
     let rulePackVersion: String
     let corpusVersion: String
+    let semanticModelRevision: String
+    let semanticEmbeddingSchema: String
+    let semanticRetrievalProfile: String
     let validatorVersion: String
     let outputSchemaVersion: String
     let protectionContext: AIConnectorDocumentProtectionContext
@@ -22,6 +25,9 @@ struct AIConnectorCacheKeyComponents: Hashable, Sendable {
         promptVersion: String,
         rulePackVersion: String,
         corpusVersion: String,
+        semanticModelRevision: String = "",
+        semanticEmbeddingSchema: String = "",
+        semanticRetrievalProfile: String = "",
         validatorVersion: String,
         outputSchemaVersion: String,
         protectionContext: AIConnectorDocumentProtectionContext,
@@ -34,6 +40,9 @@ struct AIConnectorCacheKeyComponents: Hashable, Sendable {
         self.promptVersion = promptVersion
         self.rulePackVersion = rulePackVersion
         self.corpusVersion = corpusVersion
+        self.semanticModelRevision = semanticModelRevision
+        self.semanticEmbeddingSchema = semanticEmbeddingSchema
+        self.semanticRetrievalProfile = semanticRetrievalProfile
         self.validatorVersion = validatorVersion
         self.outputSchemaVersion = outputSchemaVersion
         self.protectionContext = protectionContext
@@ -170,6 +179,9 @@ actor AIConnectorSegmentCache {
             components.promptVersion,
             components.rulePackVersion,
             components.corpusVersion,
+            components.semanticModelRevision,
+            components.semanticEmbeddingSchema,
+            components.semanticRetrievalProfile,
             components.validatorVersion,
             components.outputSchemaVersion,
             components.candidateFingerprint,

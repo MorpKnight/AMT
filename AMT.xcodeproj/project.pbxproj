@@ -12,6 +12,7 @@
 		A1C000000000000000001003 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = A1C000000000000000000103 /* MLXHuggingFace */; };
 		A1C000000000000000001004 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = A1C000000000000000000104 /* HuggingFace */; };
 		A1C000000000000000001005 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = A1C000000000000000000105 /* Tokenizers */; };
+		A1C000000000000000001006 /* MLXEmbedders in Frameworks */ = {isa = PBXBuildFile; productRef = A1C000000000000000000106 /* MLXEmbedders */; };
 		B1C000000000000000001001 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B1C000000000000000000011 /* XCTest.framework */; };
 /* End PBXBuildFile section */
 
@@ -67,6 +68,7 @@
 				A1C000000000000000001003 /* MLXHuggingFace in Frameworks */,
 				A1C000000000000000001004 /* HuggingFace in Frameworks */,
 				A1C000000000000000001005 /* Tokenizers in Frameworks */,
+				A1C000000000000000001006 /* MLXEmbedders in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -133,6 +135,7 @@
 				A1C000000000000000000103 /* MLXHuggingFace */,
 				A1C000000000000000000104 /* HuggingFace */,
 				A1C000000000000000000105 /* Tokenizers */,
+				A1C000000000000000000106 /* MLXEmbedders */,
 			);
 			productName = AMT;
 			productReference = AFB07B543036E689003FF116 /* AMT.app */;
@@ -290,7 +293,7 @@
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = DP5XP7C2AM;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_OUTGOING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -566,6 +569,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A1C000000000000000000203 /* XCRemoteSwiftPackageReference "swift-transformers" */;
 			productName = Tokenizers;
+		};
+		A1C000000000000000000106 /* MLXEmbedders */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1C000000000000000000201 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXEmbedders;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

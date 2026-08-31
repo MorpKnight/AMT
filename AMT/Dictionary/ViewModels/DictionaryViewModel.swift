@@ -16,6 +16,7 @@ final class DictionaryViewModel {
     var selectedEntry: LegalGlossaryEntry? = nil
     var isShowingDetail: Bool = false
     var isLoading: Bool = false
+    var semanticProgress: Double?
     var topMatches: [LegalGlossaryEntry] = []
 
     // MARK: - Popular Terms
@@ -50,9 +51,8 @@ final class DictionaryViewModel {
         lookupTerm(trimmed)
     }
 
-    /// Executes a bounded lexical lookup across the primary dictionary and
-    /// bundled legacy corpus. Semantic retrieval remains disabled until the
-    /// matching model and tokenizer are available.
+    /// Executes an exact-term lookup or a hybrid reverse lookup. The semantic
+    /// model is loaded lazily only when the query is not an exact/prefix term.
     func lookupTerm(_ query: String) {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -61,13 +61,32 @@ final class DictionaryViewModel {
         let lookupID = UUID()
         activeLookupID = lookupID
         isLoading = true
+        semanticProgress = nil
 
         lookupTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            let ragEntries = await dictionaryStore.searchRAG(trimmed, limit: 5)
+            let ragEntries = await dictionaryStore.searchRAG(
+                trimmed,
+                limit: 5,
+                semanticProgress: { [weak self] progress in
+                    Task { @MainActor [weak self] in
+                        guard let self,
+                              self.activeLookupID == lookupID,
+                              !Task.isCancelled else { return }
+                        self.semanticProgress = min(max(progress, 0), 1)
+                    }
+                }
+            )
             guard !Task.isCancelled, activeLookupID == lookupID else { return }
 
-            let glossaryEntries = ragEntries.map(makeGlossaryEntry(from:))
+            var seenTerms: Set<String> = []
+            let glossaryEntries = ragEntries.compactMap { entry -> LegalGlossaryEntry? in
+                let normalizedTerm = entry.term
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .lowercased()
+                guard seenTerms.insert(normalizedTerm).inserted else { return nil }
+                return self.makeGlossaryEntry(forTerm: entry.term)
+            }
             topMatches = glossaryEntries
 
             if let first = glossaryEntries.first {
@@ -86,6 +105,7 @@ final class DictionaryViewModel {
             withAnimation(.easeInOut(duration: 0.2)) {
                 self.isShowingDetail = true
                 self.isLoading = false
+                self.semanticProgress = nil
             }
             activeLookupID = nil
             lookupTask = nil
@@ -115,28 +135,72 @@ final class DictionaryViewModel {
         return Array(fallbackTerms.filter { $0.lowercased() != currentTerm.lowercased() }.shuffled().prefix(count))
     }
 
-    private func makeGlossaryEntry(from entry: LegalDictionaryEntry) -> LegalGlossaryEntry {
-        let reference: LegalReference? = {
-            guard !entry.regulation.isEmpty || !entry.regulationTitle.isEmpty || entry.sourceURL != nil else {
-                return nil
+    private func makeGlossaryEntry(forTerm term: String) -> LegalGlossaryEntry {
+        let termEntries = dictionaryStore.entries(forTerm: term)
+        let entries = termEntries.isEmpty
+            ? dictionaryStore.search(term, limit: 1)
+            : termEntries
+        let canonicalTerm = entries.first?.term ?? term
+
+        let definitions = entries.enumerated().map { index, entry in
+            DefinitionItem(
+                id: index + 1,
+                text: entry.definition,
+                reference: makeReference(from: entry)
+            )
+        }
+        let authority = entries.contains { $0.authority == .verified }
+            ? LegalDictionaryEntryAuthority.verified
+            : .legacy
+        let applicabilityStatus: LegalCorpusApplicabilityStatus
+        if entries.contains(where: { $0.applicabilityStatus == .inForce }) {
+            applicabilityStatus = .inForce
+        } else if entries.contains(where: { $0.applicabilityStatus == .notInForce }) {
+            applicabilityStatus = .notInForce
+        } else {
+            applicabilityStatus = .unknown
+        }
+        let relations = entries
+            .flatMap(dictionaryStore.regulationRelations(for:))
+            .reduce(into: [LegalRegulationRelation]()) { result, relation in
+                guard !result.contains(where: { $0.relationID == relation.relationID }) else {
+                    return
+                }
+                result.append(relation)
             }
 
-            return LegalReference(
-                lawName: entry.regulation.isEmpty ? "Sumber hukum lokal" : entry.regulation,
-                lawTitle: entry.regulationTitle.isEmpty ? nil : entry.regulationTitle,
-                sourceURL: entry.sourceURL
-            )
-        }()
-
-        let seeAlso = relatedTerms(count: 4, excluding: entry.term)
-
         return LegalGlossaryEntry(
-            term: entry.term,
-            singleDefinition: entry.definition,
-            reference: reference,
-            seeAlso: seeAlso,
-            authority: entry.authority,
-            corpusVersion: entry.corpusVersion
+            term: canonicalTerm,
+            definitions: definitions,
+            seeAlso: relatedTerms(count: 4, excluding: canonicalTerm),
+            authority: authority,
+            corpusVersion: entries.first?.corpusVersion
+                ?? LegalDictionaryCorpusVersion.unspecifiedLegacy,
+            applicabilityStatus: applicabilityStatus,
+            isActionable: entries.contains(where: { $0.isActionable }),
+            regulationRelations: relations
+        )
+    }
+
+    private func makeReference(from entry: LegalDictionaryEntry) -> LegalReference? {
+        guard !entry.regulation.isEmpty
+                || !entry.regulationTitle.isEmpty
+                || entry.sourceURL != nil
+                || entry.officialDocumentURL != nil else {
+            return nil
+        }
+
+        return LegalReference(
+            lawName: entry.regulation.isEmpty ? "Sumber hukum lokal" : entry.regulation,
+            lawTitle: entry.regulationTitle.isEmpty ? nil : entry.regulationTitle,
+            sourceURL: entry.sourceURL,
+            officialDocumentURL: entry.officialDocumentURL,
+            referenceID: entry.referenceID,
+            applicabilityStatus: entry.applicabilityStatus,
+            articleLocator: entry.articleLocator,
+            pageStart: entry.pageStart,
+            pageEnd: entry.pageEnd,
+            sourcePassageID: entry.sourcePassageID
         )
     }
 
@@ -147,6 +211,7 @@ final class DictionaryViewModel {
         lookupTask = nil
         activeLookupID = nil
         isLoading = false
+        semanticProgress = nil
         withAnimation(.easeInOut(duration: 0.2)) {
             self.isShowingDetail = false
             self.selectedEntry = nil

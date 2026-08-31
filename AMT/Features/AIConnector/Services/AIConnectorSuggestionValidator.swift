@@ -227,7 +227,45 @@ struct AIConnectorSuggestionValidator: Sendable {
             }
 
         let normalizedOriginal = normalizeGlossaryPhrase(original)
-        return candidates.contains { normalizeGlossaryPhrase($0) == normalizedOriginal }
+        if candidates.contains(where: { normalizeGlossaryPhrase($0) == normalizedOriginal }) {
+            return true
+        }
+
+        // Semantic retrieval may deliberately select a shorter contiguous
+        // span from a paraphrased definition. Keep this exception narrow: it
+        // still requires a canonical glossary replacement and at least 70%
+        // coverage of the definition's informative keywords. The caller has
+        // already established that the glossary evidence is verified.
+        let stopWords: Set<String> = [
+            "adalah", "ialah", "merupakan", "yang", "dan", "atau", "serta",
+            "dalam", "dengan", "untuk", "dari", "pada", "oleh", "terhadap",
+            "sebagai", "suatu", "sebuah", "dapat", "telah", "akan", "tidak",
+            "secara", "baik", "lebih", "lain", "lainnya", "ini", "itu"
+        ]
+        let definitionKeywords = Set(
+            normalizedTokens(definitionBody(from: definition, term: entry.term))
+                .filter { $0.count > 2 && !stopWords.contains($0) }
+        )
+        let originalKeywords = Set(
+            normalizedTokens(original)
+                .filter { $0.count > 2 && !stopWords.contains($0) }
+        )
+        guard definitionKeywords.count >= 4 else { return false }
+        let coverage = Double(definitionKeywords.intersection(originalKeywords).count)
+            / Double(definitionKeywords.count)
+        return coverage >= 0.70
+    }
+
+    private func definitionBody(from definition: String, term: String) -> String {
+        let normalizedDefinition = normalizeGlossaryPhrase(definition)
+        let normalizedTerm = normalizeGlossaryPhrase(term)
+        for connector in ["adalah", "ialah", "merupakan"] {
+            let prefix = "\(normalizedTerm) \(connector) "
+            if normalizedDefinition.hasPrefix(prefix) {
+                return String(normalizedDefinition.dropFirst(prefix.count))
+            }
+        }
+        return normalizedDefinition
     }
 
     private func normalizeGlossaryPhrase(_ text: String) -> String {

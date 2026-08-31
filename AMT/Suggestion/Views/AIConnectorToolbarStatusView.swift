@@ -7,6 +7,7 @@ import SwiftUI
 
 struct AIConnectorToolbarStatusView: View {
     let state: AIConnectorRunState
+    let progressStage: AIConnectorProgressStage
     let downloadProgress: Double
     let generationProgress: Int
     let summary: AIConnectorRunSummary?
@@ -31,7 +32,7 @@ struct AIConnectorToolbarStatusView: View {
             if case .downloading = state {
                 VStack(alignment: .leading, spacing: 5) {
                     ProgressView(value: clampedDownloadProgress)
-                    Text("Mengunduh model lokal • " + String(Int(clampedDownloadProgress * 100)) + "%")
+                    Text(progressStage.title + " • " + String(Int(clampedDownloadProgress * 100)) + "%")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -39,17 +40,26 @@ struct AIConnectorToolbarStatusView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     ProgressView()
                         .controlSize(.small)
-                    Text("Karakter keluaran: " + String(generationProgress))
+                    Text(progressStage.title)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if progressStage == .generation {
+                        Text("Karakter keluaran: " + String(generationProgress))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             } else if case .loading = state {
                 Label(
-                    "Model sedang disiapkan di perangkat ini.",
+                    progressStage.title + ".",
                     systemImage: "cpu"
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            } else if case .segmenting = state {
+                Label(progressStage.title + ".", systemImage: "text.magnifyingglass")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             if let summary {
@@ -178,6 +188,7 @@ private struct SummaryPill: View {
 #Preview("Completed") {
     AIConnectorToolbarStatusView(
         state: .completed,
+        progressStage: .completed,
         downloadProgress: 1,
         generationProgress: 0,
         summary: AIConnectorRunSummary(

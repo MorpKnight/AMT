@@ -55,14 +55,14 @@ final class RAGTests: XCTestCase {
         XCTAssertEqual(results.first?.term, "Data Pribadi")
         XCTAssertEqual(
             results.first?.corpusVersion,
-            LegalDictionaryCorpusVersion.legacyKamusV1
+            "hukumonline-kamus@78a2ab626c092662b0441c95904c353b2487b216"
         )
-        XCTAssertEqual(results.first?.authority, .legacy)
+        XCTAssertEqual(results.first?.authority, .verified)
     }
 
     func testLexicalDefinitionQueryFindsDataPribadi() async {
         let store = LegalDictionaryStore()
-        let results = await store.searchRAG(
+        let results = store.search(
             "data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi",
             limit: 5
         )
@@ -72,7 +72,7 @@ final class RAGTests: XCTestCase {
 
     func testLexicalSearchReturnsNoResultForUnrelatedTokens() async {
         let store = LegalDictionaryStore()
-        let results = await store.searchRAG(
+        let results = store.search(
             "nebula kuantum xenolit fotonik",
             limit: 5
         )

@@ -232,6 +232,7 @@ private struct AIConnectorNativeDebugContent: View {
 
                 AIConnectorNativeProgressView(
                     state: viewModel.state,
+                    progressStage: viewModel.progressStage,
                     generationProgress: viewModel.generationProgress
                 )
 
@@ -322,6 +323,28 @@ private struct AIConnectorNativeDebugDetails: View {
             }
             .disabled(!viewModel.canRunBenchmark)
             .help("Jalankan benchmark tanpa mengubah dokumen.")
+
+            LabeledContent("Corpus") {
+                Text(viewModel.activeCorpusVersion)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            LabeledContent("Model semantik") {
+                Text(viewModel.semanticModelRevision == "none"
+                    ? "Tidak tersedia"
+                    : "E5 rev \(String(viewModel.semanticModelRevision.prefix(12)))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            if let retrieval = viewModel.semanticRetrievalConfiguration {
+                LabeledContent("Guard suggestion") {
+                    Text("E5 ≥ \(retrieval.suggestionSemanticThreshold, specifier: "%.2f") · margin ≥ \(retrieval.suggestionTopOneMargin, specifier: "%.2f")")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             if let segmentation = viewModel.segmentationResult {
                 LabeledContent("Segmentasi") {
@@ -422,6 +445,12 @@ private struct AIConnectorNativeDebugDetails: View {
                             Text("\(candidate.original) → \(candidate.replacement)")
                                 .font(.caption)
                                 .textSelection(.enabled)
+                            if let glossaryMatch = candidate.glossaryMatch {
+                                Text("Span terpilih · evidence \(glossaryMatch.entry.sourcePassageID ?? "-") · ref \(glossaryMatch.entry.referenceID ?? "-")")
+                                    .font(.caption2.monospaced())
+                                    .foregroundStyle(.secondary)
+                                    .textSelection(.enabled)
+                            }
                         }
                         .padding(.vertical, 4)
                     }
@@ -477,6 +506,7 @@ private struct AIConnectorNativeStatusLine: View {
 
 private struct AIConnectorNativeProgressView: View {
     let state: AIConnectorRunState
+    let progressStage: AIConnectorProgressStage
     let generationProgress: Int
 
     @ViewBuilder
@@ -485,10 +515,15 @@ private struct AIConnectorNativeProgressView: View {
         case let .downloading(progress):
             VStack(alignment: .leading, spacing: 6) {
                 ProgressView(value: progress)
-                LabeledContent("Mengunduh model") {
+                LabeledContent(progressStage == .semanticModelDownload
+                    ? "Model semantik"
+                    : "Model Qwen") {
                     Text("\(Int(progress * 100))%")
                         .monospacedDigit()
                 }
+                Text(progressStage.title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         case let .reviewing(current, total):
             VStack(alignment: .leading, spacing: 6) {
@@ -497,12 +532,12 @@ private struct AIConnectorNativeProgressView: View {
                     Text("\(current) dari \(total)")
                         .monospacedDigit()
                 }
-                Text("\(generationProgress) karakter keluaran · hasil ditampilkan setelah pemeriksaan")
+                Text("\(progressStage.title) · \(generationProgress) karakter keluaran · hasil ditampilkan setelah pemeriksaan")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         case .segmenting:
-            ProgressView("Menyiapkan teks")
+            ProgressView(progressStage.title)
         case .loading:
             ProgressView("Memuat model")
         default:
@@ -690,10 +725,27 @@ private struct AIConnectorNativeGlossaryMatchRow: View {
                 Text(match.entry.term)
                     .font(.subheadline.weight(.semibold))
                 Spacer(minLength: 0)
-                Text(String(format: "BM25 %.2f", match.score))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                if let fusionScore = match.fusionScore {
+                    Text(String(format: "RRF %.4f", fusionScore))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(String(format: "BM25 %.2f", match.score))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
             }
+            HStack(spacing: 8) {
+                Text("Rank \(match.rank)")
+                if let semanticScore = match.semanticScore {
+                    Text(String(format: "E5 %.3f", semanticScore))
+                }
+                if let retrievalOrigin = match.retrievalOrigin {
+                    Text(retrievalOrigin.rawValue)
+                }
+            }
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.secondary)
             Text(match.entry.regulation.isEmpty
                 ? "Sumber peraturan tidak tersedia"
                 : match.entry.regulation)
@@ -711,6 +763,13 @@ private struct AIConnectorNativeGlossaryMatchRow: View {
             )
             .font(.caption2)
             .foregroundStyle(match.entry.authority == .verified ? .green : .secondary)
+
+            if match.entry.sourcePassageID != nil || match.entry.referenceID != nil {
+                Text("Evidence: \(match.entry.sourcePassageID ?? "-") · \(match.entry.referenceID ?? "-")")
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
         }
         .padding(.vertical, 4)
     }

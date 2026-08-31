@@ -13,21 +13,20 @@
   - Mengimpor `.docx`, `.doc`, `.rtf`, dan `.txt` melalui Finder. Isi file diubah menjadi teks biasa untuk kebutuhan editor saat ini.
   - Menyediakan dokumen bawaan **AI Connector — Test Document** untuk smoke test. Dokumen ini selalu dibuat ulang saat aplikasi dibuka dan perubahan pada dokumen tersebut tidak disimpan ke disk.
 - **Dictionary / Lawtionary**
-  - Memuat `AMT/Dictionary/Resources/kamus_hukum.csv` sebagai resource aplikasi.
-  - Mencari berdasarkan istilah atau bagian dari pengertian melalui ranking lexical BM25.
-  - Menggabungkan corpus CSV utama dengan `rag_export/documents.json` secara asynchronous; corpus RAG lama selalu berstatus legacy dan tidak mengalahkan entry verified untuk istilah yang sama.
-  - Menonaktifkan semantic embedding sampai pasangan model dan tokenizer BGE-M3 yang terverifikasi tersedia. Tidak ada pseudo-embedding sebagai fallback.
-  - Menampilkan pengertian, peraturan, judul peraturan, dan tautan sumber jika tersedia.
-  - Menampilkan status provenance agar corpus legacy tidak terlihat sebagai sumber terverifikasi.
+  - Memuat versioned legal corpus `hukumonline-kamus@78a2ab626c092662b0441c95904c353b2487b216` sebagai resource aplikasi tanpa PDF.
+  - Exact term dan prefix memakai BM25 lokal; reverse lookup memakai equal-weight BM25 + `intfloat/multilingual-e5-small` melalui MLX saat semantic search pertama dipakai.
+  - E5 diunduh sekali ke cache Hugging Face dan kegagalan download otomatis menurunkan reverse lookup ke BM25. Dictionary tetap dapat dipakai offline untuk exact/lexical search.
+  - Mempertahankan beberapa definisi untuk istilah yang sama, termasuk sumber, status berlaku, passage, locator, dan relasi perubahan peraturan.
+  - Hanya evidence exact dengan dokumen resmi, status `in_force`, ekstraksi non-OCR, dan foreign key lengkap yang actionable untuk Suggestion. Corpus legacy/historical tetap dapat tampil tetapi tidak dapat menjadi replacement.
 - **Suggestion eksperimental**
-  - Meninjau teks dokumen menggunakan `mlx-community/Qwen3.5-4B-MLX-4bit` melalui MLX Swift sebagai model utama Debug. Qwen3.5 Legal 4B dan Qwen3.5 2B tetap tersedia untuk pembanding historis.
+  - Meninjau teks dokumen menggunakan `mlx-community/Qwen3.5-4B-MLX-4bit` melalui MLX Swift sebagai model utama Debug dan Release/TestFlight. Qwen3.5 Legal 4B dan Qwen3.5 2B tetap tersedia untuk pembanding historis.
   - Inferensi berjalan lokal setelah model selesai diunduh dan disimpan di cache Hugging Face.
   - Memproses seluruh dokumen per kalimat/klausul melalui work queue serial dalam batch 12; hasil valid muncul secara incremental.
   - Menggunakan cache hasil relatif terhadap segmen/kandidat, rule pack deterministik, bounded repair satu kali, challenge terbatas untuk `REJECT`, circuit breaker, dan fallback aman.
   - Membuat maksimal tiga candidate lokal non-overlap per segmen dari rule engine dan glossary verified. Qwen hanya menilai satu candidate per call dan tidak boleh membuat replacement, sumber, atau candidate baru.
   - Menggunakan structured tool decision `submit_review(candidate_id, decision)` sebagai jalur utama. Parser enam baris lama dipertahankan hanya untuk kompatibilitas benchmark historis.
   - Melindungi angka, tenggat, modalitas, kondisi, pengecualian, identifier, dan defined terms dari perubahan yang tidak sah.
-  - Menyediakan tiga mode Debug: baseline aturan deterministik, Hybrid dengan pemulihan terbatas, dan Qwen langsung untuk pembanding. Default Debug sementara adalah Hybrid + Qwen3.5 Base 4B.
+  - Menyediakan tiga mode eksperimen pada panel Debug: baseline aturan deterministik, Hybrid dengan pemulihan terbatas, dan Qwen langsung untuk pembanding. Default aplikasi adalah Hybrid + Qwen3.5 Base 4B.
   - Pada Hybrid, Qwen berfungsi sebagai confirmation/diagnostic; kegagalan model dapat dipulihkan melalui rule deterministik berisiko rendah, sedangkan `REJECT` eksplisit tidak diubah menjadi suggestion.
   - Menyediakan benchmark reproducible melalui work queue produksi untuk baseline, tiga generation profile Base 4B, cache rerun, Hybrid, thinking, dan cancellation.
   - Mendukung streaming internal, Cancel, Retry, dan pilihan thinking mode.
@@ -42,17 +41,18 @@ flowchart LR
     Dashboard --> Docs[DocumentStorageManager\nDashboardDocument]
     Dashboard --> Dictionary[DictionaryView]
     Dictionary --> Store[LegalDictionaryStore]
-    Store --> CSV[kamus_hukum.csv]
-    Store --> LocalRAG[LocalRAG actor<br/>lexical BM25]
-    LocalRAG --> LegacyCorpus[rag_export documents<br/>legacy]
+    Store --> Corpus[LegalCorpusStore<br/>versioned pack]
+    Corpus --> BM25[Local BM25]
+    Corpus --> E5[MLX E5<br/>lazy download/cache]
+    Store -. fallback .-> LocalRAG[Legacy LocalRAG<br/>diagnostics only]
     Dashboard --> Editor[DocumentEditorView]
     Editor --> AIView[AIConnectorDebugPanel<br/>(Debug only)]
     AIView --> VM[AIConnectorViewModel]
     VM --> Queue[Document-wide work queue<br/>batch 12 • serial]
     Queue --> Processor[Shared segment processor]
     Processor --> Cache[(In-memory segment cache)]
-    Processor --> Retrieval[Local BM25 glossary retrieval<br/>maks. 3 evidence]
-    Retrieval --> CSV[kamus_hukum.csv]
+    Processor --> Retrieval[Hybrid retrieval per clause<br/>BM25 + E5]
+    Retrieval --> Corpus
     Processor --> Rules[Versioned deterministic rule pack]
     Rules --> Candidates[Candidate builder<br/>maks. 3 non-overlap]
     Retrieval --> Candidates
@@ -79,21 +79,20 @@ flowchart LR
     MLX -. candidate-only; no tool retrieval .-> Tools
 ```
 
-`AMTApp` membuat `QwenSuggestionService` dan `LegalDictionaryStore`, lalu meneruskannya secara eksplisit ke view yang membutuhkan. ViewModel memiliki satu processor dan queue selama lifecycle editor. Queue menjalankan seluruh segmen secara serial sehingga model container tidak menerima generation bersamaan; hasil tiap segmen dapat langsung dipetakan menjadi highlight. Kode baru dikelompokkan berdasarkan fitur, sedangkan model dokumen dan storage dashboard masih berada pada boundary yang digunakan project saat ini.
+`AMTApp` membuat `QwenSuggestionService` dan `LegalDictionaryStore`, lalu meneruskannya secara eksplisit ke view yang membutuhkan. `LegalCorpusStore` adalah pack immutable bersama; `LegalSemanticRetriever` memiliki satu container E5 lazy selama lifecycle aplikasi. ViewModel memiliki satu processor dan queue selama lifecycle editor. Queue menjalankan seluruh segmen secara serial sehingga model container tidak menerima generation bersamaan; hasil tiap segmen dapat langsung dipetakan menjadi highlight. Kode baru dikelompokkan berdasarkan fitur, sedangkan model dokumen dan storage dashboard masih berada pada boundary yang digunakan project saat ini.
 
 ## Cara kerja Dictionary
 
-Dictionary saat ini bukan chatbot dan tidak menggunakan semantic embedding. Entry CSV utama dimuat sebagai index immutable, sedangkan corpus `rag_export` dimuat dan dicari melalui actor `LocalRAG` agar I/O serta ranking corpus tidak memblokir MainActor. Kedua sumber digabungkan menggunakan lexical BM25 dan exact-term boost. File vector lama tidak dibaca sampai AMT memiliki model serta tokenizer BGE-M3 yang kompatibel dan tervalidasi.
+Dictionary bukan chatbot dan tidak menggunakan Qwen. `LegalCorpusStore` memuat pack JSON + Float16 yang sudah diverifikasi hash, jumlah record, foreign key, dan dimensi embedding. BM25 dibangun lokal dari seluruh konsep; E5 multilingual hanya diload pada reverse lookup pertama dan dipakai dengan prefix `query:` serta mean pooling + L2 normalization. Corpus legacy `rag_export` hanya menjadi fallback/diagnostic ketika pack baru tidak tersedia.
 
 Urutan prioritas pencarian adalah:
 
-1. Istilah sama persis, lalu prefix dan substring istilah.
-2. Kecocokan frasa pada pengertian.
-3. Skor BM25 token istilah dan pengertian.
-4. Entry verified untuk duplicate term.
-5. Corpus CSV utama untuk tie antara dua entry legacy.
+1. Istilah sama persis atau prefix melalui exact/BM25 shortcut tanpa E5.
+2. Untuk uraian: top-100 BM25 dan top-100 E5 digabung equal-weight Reciprocal Rank Fusion dengan `rrf_k=60`.
+3. Grouping presentation mempertahankan semua definisi dan regulation reference untuk term yang sama.
+4. Status current/historical/unknown serta provenance ditampilkan terpisah; historical tidak menjadi candidate terminology.
 
-Pencarian mengabaikan perbedaan huruf besar-kecil, diakritik, dan spasi berlebih. Hasil dibatasi hingga 30 entry. Regex hanya digunakan untuk merapikan whitespace, bukan sebagai mesin pencarian semantik.
+Pencarian mengabaikan perbedaan huruf besar-kecil, diakritik, dan spasi berlebih. Hasil Dictionary reverse lookup dibatasi hingga lima term group, sedangkan retrieval internal dapat mengambil top-100 untuk fusion. Jika E5 gagal dimuat, hasil reverse lookup kembali ke BM25 dan terminology semantic candidate dinonaktifkan untuk run tersebut.
 
 Format utama CSV yang digunakan:
 
@@ -128,7 +127,7 @@ tidak menjadi suggestion. Parser enam baris tetap tersedia untuk benchmark lama,
 tetapi bukan jalur utama candidate-first. Unit test tidak mengunduh atau
 menjalankan model.
 
-Guard retrieval saat ini bersifat provisional untuk integrasi awal: kandidat non-exact harus memiliki skor BM25 minimal `20`, sedikitnya `4` token definisi yang cocok, dan margin minimal `3` terhadap kandidat berbeda berikutnya. Paling banyak tiga match dikirim ke candidate builder, tetapi hanya entry verified yang dapat menjadi terminology candidate actionable. Istilah multi-kata yang muncul langsung di teks dapat lolos sebagai direct term match untuk pencarian, bukan otomatis menjadi replacement. Guard ini bukan confidence hukum dan belum menggantikan review sumber resmi.
+Guard retrieval saat ini bersifat provisional untuk integrasi awal. Untuk reverse lookup dan suggestion, corpus memakai equal-weight BM25 + multilingual E5 melalui RRF; terminology candidate menggunakan threshold semantic `0.60`, margin top-one `0.03`, dan paling banyak tiga match sesuai parameter pada manifest corpus. Jika E5 tidak tersedia, jalur Dictionary turun ke BM25 dan terminology semantic candidate dinonaktifkan untuk run tersebut. Fallback BM25 kompatibilitas lama masih memakai skor minimal `20`, sedikitnya `4` token definisi yang cocok, dan margin minimal `3`. Semua angka ini adalah guard retrieval, bukan confidence hukum, dan threshold semantic saat ini masih provisional karena artifact evaluasi yang tersedia belum memiliki split kalibrasi manusia yang disetujui. Paling banyak tiga match dikirim ke candidate builder, tetapi hanya entry verified yang dapat menjadi terminology candidate actionable. Istilah multi-kata yang muncul langsung di teks dapat lolos sebagai direct term match untuk pencarian, bukan otomatis menjadi replacement. Guard ini tidak menggantikan review sumber resmi.
 
 Konfigurasi penting saat ini:
 
@@ -163,7 +162,7 @@ Model tidak dibundel ke repository. Pada penggunaan pertama, aplikasi membutuhka
 - macOS dengan environment Xcode yang mendukung target project `macOS 26.5`.
 - Xcode dan Git.
 - Mac Apple Silicon direkomendasikan untuk menjalankan Suggestion dengan MLX.
-- Koneksi internet pada penggunaan pertama Suggestion untuk mengunduh model. Hanya konfigurasi Debug yang mengaktifkan outbound network; Release tetap tanpa izin tersebut.
+- Koneksi internet pada penggunaan pertama Suggestion diperlukan untuk mengunduh model. Konfigurasi Debug dan Release mengaktifkan outbound network untuk kebutuhan tersebut; model tetap berjalan lokal setelah tersedia di cache.
 
 Dependency Swift yang dipin dan disimpan pada `AMT.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`:
 
@@ -171,7 +170,7 @@ Dependency Swift yang dipin dan disimpan pada `AMT.xcodeproj/project.xcworkspace
 - [swift-huggingface](https://github.com/huggingface/swift-huggingface) `0.9.0`
 - [swift-transformers](https://github.com/huggingface/swift-transformers) `1.3.3`
 
-Produk yang digunakan target AMT adalah `MLXLLM`, `MLXLMCommon`, `MLXHuggingFace`, `HuggingFace`, dan `Tokenizers`.
+Produk yang digunakan target AMT adalah `MLXLLM`, `MLXLMCommon`, `MLXHuggingFace`, `MLXEmbedders`, `HuggingFace`, dan `Tokenizers`.
 
 ## Menjalankan aplikasi
 
@@ -187,7 +186,7 @@ Produk yang digunakan target AMT adalah `MLXLLM`, `MLXLMCommon`, `MLXHuggingFace
 4. Jalankan dengan `⌘R`.
 5. Pilih **Dictionary** pada sidebar untuk mencari istilah atau pengertian.
 6. Pilih dokumen pada dashboard untuk membuka editor.
-7. Pada panel **Suggestion — Eksperimental** (Debug), pilih sumber input, opsional pilih dummy sample, lalu tekan **Jalankan review** untuk seluruh dokumen/fixture. Tombol sparkles pada toolbar juga memulai analisis dokumen aktif; panel Debug tersedia dari menu opsi.
+7. Pada panel **Suggestion — Eksperimental** (Debug), pilih sumber input, opsional pilih dummy sample, lalu tekan **Jalankan review** untuk seluruh dokumen/fixture. Tombol sparkles pada toolbar tersedia pada Debug dan Release untuk memulai analisis dokumen aktif; panel Debug tetap tersedia dari menu opsi pada build Debug.
 8. Untuk membandingkan kualitas, pilih strategi dan model, lalu tekan **Benchmark 8 fixture**. Hasil benchmark hanya evaluasi Debug dan tidak mengubah dokumen.
 
 Panel menampilkan jumlah segmen, batch queue, progress seluruh dokumen, cache, repair, fallback, hasil yang lolos validator, hasil yang memerlukan review manusia, dan output yang ditolak. Preview Current Document dibatasi ke 4.000 karakter pertama, tetapi analisis memakai seluruh isi dokumen dan panel memberi indikator jika preview terpotong. Tidak ada hasil yang diterapkan otomatis ke dokumen; highlight dapat ditinjau melalui popover editor dan Accept tetap merupakan aksi pengguna.
@@ -195,6 +194,54 @@ Panel menampilkan jumlah segmen, batch queue, progress seluruh dokumen, cache, r
 Dashboard juga selalu menampilkan **AI Connector — Test Document**. Dokumen ini memuat contoh redundansi, typo, istilah hukum, preservasi angka, tanggal, mata uang, persentase, defined terms, negasi, pengecualian, terminologi campuran, dan klausul sensitif. Isinya sengaja lebih dari 12 segmen agar pembentukan batch `12/12/...` dan hasil incremental dapat diuji; segmen >512 token diuji terpisah. Dokumen dapat diedit untuk pengujian, tetapi akan kembali ke isi awal ketika aplikasi dijalankan ulang.
 
 Pada Run atau benchmark model pertama, tunggu proses download dan loading model selesai. Run berikutnya menggunakan cache Hugging Face lokal selama cache masih tersedia. Cache Qwen3.5 2B, Legal 4B, dan base 4B tetap terpisah untuk perbandingan historis.
+
+## Corpus hukum dan semantic retrieval
+
+Pack yang dibundel berada di `AMT/Resources/legal_corpus/` dan berisi metadata
+konsep, regulasi, relasi, passage exact, serta matriks embedding Float16.
+Sumber dataset dan PDF tidak ikut dibundel. Pack dibuat deterministik dari
+artifact dataset menggunakan:
+
+```bash
+python3 Scripts/export_amt_legal_corpus.py \
+  --source-root /path/to/hukumonline-dataset \
+  --output-root AMT/Resources/legal_corpus
+```
+
+Exporter memverifikasi input yang diperlukan, menyortir record, menulis output
+secara atomik, dan menyimpan hash setiap file ke `manifest.json`. Manifest juga
+menyimpan hash urutan `record_id` konsep. Jika matriks embedding sudah tersedia
+dan tidak ingin dibuat ulang, `--skip-embeddings` hanya boleh digunakan bila
+source input, urutan konsep, dan ukuran matriks tetap sama. Setiap perubahan
+corpus, model E5, schema, atau parameter retrieval harus menghasilkan
+pack/revision baru sehingga cache Suggestion tidak digunakan ulang secara
+keliru.
+
+E5 (`intfloat/multilingual-e5-small`, revision
+`614241f622f53c4eeff9890bdc4f31cfecc418b3`) baru diunduh saat reverse lookup
+Dictionary atau semantic terminology retrieval pertama kali dipakai. Hasil
+exact/prefix tetap offline; jika download atau load E5 gagal, Dictionary turun
+ke BM25 dan terminology semantic candidate dinonaktifkan untuk run tersebut.
+Benchmark parity E5 terhadap Python tetap opt-in dan tidak dijalankan oleh test
+reguler.
+
+Smoke test runtime E5 juga opt-in. Test ini memuat revision yang sama seperti
+pack dan memeriksa bahwa hasil Swift memiliki skor cosine yang finite serta
+terurut. Jalankan hanya pada mesin yang siap mengunduh atau sudah memiliki
+cache model:
+
+```bash
+TEST_RUNNER_AMT_RUN_P012_E5_SMOKE=1 \
+xcodebuild \
+  -project AMT.xcodeproj \
+  -scheme AMT \
+  -configuration Debug \
+  -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath /private/tmp/AMT-P012-E5Smoke \
+  CODE_SIGNING_ALLOWED=NO \
+  -only-testing:AMTTests/LegalCorpusP012Tests/testOptInE5SemanticLookup \
+  test
+```
 
 ## Build dari command line
 
@@ -232,7 +279,10 @@ xcodebuild \
   test
 ```
 
-Unit test mencakup segmentasi, retrieval BM25, parser, safety validator, generation diagnostics, report encoding, dan quality-gate calculation. Download model dan evaluasi output Qwen tetap merupakan benchmark opt-in; test reguler tidak menyentuh model.
+Unit test mencakup segmentasi, corpus integrity, exact/BM25 retrieval, parser,
+safety validator, generation diagnostics, report encoding, dan quality-gate
+calculation. Download E5/Qwen dan evaluasi output model tetap merupakan
+benchmark opt-in; test reguler tidak menyentuh model.
 
 Benchmark P0.11 yang mengunduh atau memuat model dapat dijalankan hanya bila
 memang diinginkan. Default-nya Base 4B (`qwen35-base-4b`). Benchmark ini
@@ -268,7 +318,7 @@ Quality gate model hanya berlaku pada run `modelOnly` yang benar-benar berisi
 record `modelOnly`. Run Hybrid dan deterministic tetap melaporkan utility akhir,
 jumlah hasil asal model, serta fallback secara terpisah dan tidak dapat memperoleh
 status GO model. Benchmark tidak mengubah dokumen dan hasilnya belum otomatis
-mengaktifkan Release/TestFlight.
+tidak dengan sendirinya mengaktifkan atau memvalidasi Release/TestFlight.
 
 ## Struktur project
 
@@ -295,11 +345,11 @@ AMT/
 
 ## Batasan MVP
 
-- Pencarian Dictionary menggunakan lexical BM25; belum mendukung typo correction, stemming, sinonim, atau semantic retrieval. Semantic BGE-M3 gagal secara tertutup sampai model dan tokenizer yang cocok tersedia.
+- Pencarian Dictionary menggunakan exact/prefix/BM25 untuk term dan hybrid BM25 + E5 untuk reverse lookup. E5 diunduh secara lazy dan BM25 tetap menjadi fallback offline. Typo correction, stemming, dan sinonim bebas belum menjadi fitur corpus.
 - Suggestion sekarang memiliki highlight inline dan popover dengan Accept/Dismiss; tidak ada auto-rewrite tanpa aksi pengguna.
 - Thinking mode pada model kecil dapat berhenti sebelum jawaban final; aplikasi akan menampilkan error dan menyarankan non-thinking mode.
 - P0.8 memperkuat baseline deterministik dan benchmark Hybrid/Qwen, tetapi belum meluluskan Qwen-only untuk suggestion cards atau TestFlight.
-- P0.9 menguji model Legal 4B dengan metrik generation dan quality gate reproducible. Release/TestFlight tetap tidak mengaktifkan networking atau tombol analisis pada tahap ini.
+- P0.9 menguji model Legal 4B dengan metrik generation dan quality gate reproducible. Networking outbound dan tombol analisis kini diaktifkan pada Release/TestFlight untuk eksperimen terkontrol; kelulusan quality gate model tetap tidak diklaim.
 - P0.10 menambahkan document-wide work queue, cache segment-relative, bounded repair, circuit breaker, rule pack, multi-suggestion internal, conflict resolver, safety protection context, serta typed local-tool boundary yang belum dihubungkan ke model.
 - P0.11 mengubah jalur utama menjadi candidate-first: rule/retrieval lokal membuat maksimal tiga candidate, Qwen memilih melalui structured `submit_review`, lalu safety validator dan conflict resolver menentukan hasil yang dapat ditampilkan. Profile benchmark dan candidate-level diagnostics tersedia, tetapi Qwen-only belum menjadi jalur produksi.
 - Editor saat ini menyimpan teks biasa. Toolbar formatting masih berupa prototype dan belum menyimpan rich-text formatting.
@@ -309,7 +359,7 @@ AMT/
 ## Arah pengembangan berikutnya
 
 1. Evaluasi Dictionary dengan query istilah, pengertian, typo, dan paraphrase yang direview manusia.
-2. Kalibrasikan kembali guard BM25 dengan source review manusia pada corpus yang lebih luas.
+2. Buat calibration split yang direview manusia, lalu kalibrasikan threshold semantic, margin, dan guard BM25 pada corpus yang lebih luas.
 3. Hubungkan retrieval Dictionary dengan suggestion cards setelah candidate generation lolos decision gate.
 4. Pisahkan hasil grammar, istilah, dan isu substantif dengan status review yang jelas.
 5. Pertahankan catatan benchmark historis Qwen3.5 2B, Qwen3 4B, dan Legal 4B di luar source tree jika diperlukan untuk evaluasi lanjutan.

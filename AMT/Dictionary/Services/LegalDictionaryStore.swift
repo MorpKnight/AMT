@@ -19,8 +19,16 @@ nonisolated struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
     let regulation: String
     let regulationTitle: String
     let sourceURL: URL?
+    let officialDocumentURL: URL?
+    let referenceID: String?
     let authority: LegalDictionaryEntryAuthority
     let corpusVersion: String
+    let applicabilityStatus: LegalCorpusApplicabilityStatus
+    let sourcePassageID: String?
+    let articleLocator: String?
+    let pageStart: Int?
+    let pageEnd: Int?
+    let isActionable: Bool
 
     init(
         id: String,
@@ -29,8 +37,16 @@ nonisolated struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
         regulation: String,
         regulationTitle: String,
         sourceURL: URL?,
+        officialDocumentURL: URL? = nil,
+        referenceID: String? = nil,
         authority: LegalDictionaryEntryAuthority = .legacy,
-        corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy
+        corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy,
+        applicabilityStatus: LegalCorpusApplicabilityStatus = .unknown,
+        sourcePassageID: String? = nil,
+        articleLocator: String? = nil,
+        pageStart: Int? = nil,
+        pageEnd: Int? = nil,
+        isActionable: Bool? = nil
     ) {
         self.id = id
         self.term = term
@@ -38,8 +54,16 @@ nonisolated struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
         self.regulation = regulation
         self.regulationTitle = regulationTitle
         self.sourceURL = sourceURL
+        self.officialDocumentURL = officialDocumentURL
+        self.referenceID = referenceID
         self.authority = authority
         self.corpusVersion = corpusVersion
+        self.applicabilityStatus = applicabilityStatus
+        self.sourcePassageID = sourcePassageID
+        self.articleLocator = articleLocator
+        self.pageStart = pageStart
+        self.pageEnd = pageEnd
+        self.isActionable = isActionable ?? (authority == .verified)
     }
 
     nonisolated static let previewEntries = [
@@ -73,8 +97,31 @@ nonisolated struct LegalDictionaryMatch: Identifiable, Hashable, Sendable {
     let rank: Int
     let matchedDefinitionTokenCount: Int
     let isDirectTermMatch: Bool
+    let semanticScore: Float?
+    let fusionScore: Double?
+    let retrievalOrigin: LegalRetrievalOrigin?
 
     var id: String { entry.id }
+
+    init(
+        entry: LegalDictionaryEntry,
+        score: Double,
+        rank: Int,
+        matchedDefinitionTokenCount: Int,
+        isDirectTermMatch: Bool,
+        semanticScore: Float? = nil,
+        fusionScore: Double? = nil,
+        retrievalOrigin: LegalRetrievalOrigin? = nil
+    ) {
+        self.entry = entry
+        self.score = score
+        self.rank = rank
+        self.matchedDefinitionTokenCount = matchedDefinitionTokenCount
+        self.isDirectTermMatch = isDirectTermMatch
+        self.semanticScore = semanticScore
+        self.fusionScore = fusionScore
+        self.retrievalOrigin = retrievalOrigin
+    }
 }
 
 nonisolated struct LegalDictionaryStore: Sendable {
@@ -91,15 +138,63 @@ nonisolated struct LegalDictionaryStore: Sendable {
 
     let entries: [LegalDictionaryEntry]
     private let localRAG: LocalRAG
+    let corpusStore: LegalCorpusStore?
+    let semanticRetriever: LegalSemanticRetriever?
     private let retrievalIndex: [RetrievalIndexEntry]
     private let inverseDocumentFrequencies: [String: Double]
     private let averageDocumentLength: Double
 
+    var activeCorpusVersion: String {
+        corpusStore?.manifest.corpusVersion ?? LegalDictionaryCorpusVersion.legacyKamusV1
+    }
+
+    var semanticModelRevision: String {
+        corpusStore?.manifest.embedding.revision ?? "none"
+    }
+
+    var semanticRetrievalConfiguration: LegalCorpusRetrievalConfiguration? {
+        corpusStore?.manifest.retrieval
+    }
+
+    var semanticEmbeddingSchema: String {
+        corpusStore?.manifest.embedding.cacheKey ?? "none"
+    }
+
+    var semanticRetrievalProfile: String {
+        corpusStore?.manifest.retrieval.cacheKey ?? "none"
+    }
+
     nonisolated init(
         bundle: Bundle = .main,
-        localRAG: LocalRAG = .shared
+        localRAG: LocalRAG = .shared,
+        corpusStore: LegalCorpusStore? = nil,
+        semanticRetriever: LegalSemanticRetriever? = nil
     ) {
-        if let resourceURL = bundle.url(forResource: "kamus_hukum", withExtension: "csv"),
+        let loadedCorpus = corpusStore ?? (try? LegalCorpusStore(bundle: bundle))
+        if let loadedCorpus {
+            let corpusEntries = loadedCorpus.dictionaryEntries()
+            let corpusTerms = Set(corpusEntries.map { Self.normalize($0.term) })
+            let supplementalLegacyEntries: [LegalDictionaryEntry]
+            if let resourceURL = bundle.url(forResource: "kamus_hukum", withExtension: "csv"),
+               let data = try? Data(contentsOf: resourceURL),
+               let loadedEntries = Self.loadEntries(from: data) {
+                // Keep the verified corpus authoritative for terms it owns.
+                // The older CSV still supplies Dictionary-only coverage for
+                // concepts not present in the versioned pack, such as a term
+                // that is useful for local lookup but lacks current evidence.
+                supplementalLegacyEntries = loadedEntries.filter {
+                    !corpusTerms.contains(Self.normalize($0.term))
+                }
+            } else {
+                supplementalLegacyEntries = []
+            }
+            self.init(
+                entries: corpusEntries + supplementalLegacyEntries,
+                localRAG: localRAG,
+                corpusStore: loadedCorpus,
+                semanticRetriever: semanticRetriever ?? LegalSemanticRetriever(corpus: loadedCorpus)
+            )
+        } else if let resourceURL = bundle.url(forResource: "kamus_hukum", withExtension: "csv"),
            let data = try? Data(contentsOf: resourceURL),
            let loadedEntries = Self.loadEntries(from: data),
            !loadedEntries.isEmpty {
@@ -111,14 +206,24 @@ nonisolated struct LegalDictionaryStore: Sendable {
 
     nonisolated init(
         entries: [LegalDictionaryEntry],
-        localRAG: LocalRAG = .shared
+        localRAG: LocalRAG = .shared,
+        corpusStore: LegalCorpusStore? = nil,
+        semanticRetriever: LegalSemanticRetriever? = nil
     ) {
         self.entries = entries
         self.localRAG = localRAG
+        self.corpusStore = corpusStore
+        self.semanticRetriever = semanticRetriever
 
         let index = entries.map { entry in
             let retrievalDefinition = Self.retrievalDefinition(for: entry)
-            let tokens = Self.tokenize("\(entry.term) \(retrievalDefinition)")
+            let searchableText = [
+                entry.term,
+                retrievalDefinition,
+                entry.regulation,
+                entry.regulationTitle
+            ].joined(separator: " ")
+            let tokens = Self.tokenize(searchableText)
 
             return RetrievalIndexEntry(
                 termTokens: Self.tokenize(entry.term),
@@ -153,6 +258,28 @@ nonisolated struct LegalDictionaryStore: Sendable {
         rankedSearch(query, limit: limit).map(\.entry)
     }
 
+    /// Returns every definition attached to the same canonical term. The
+    /// corpus intentionally keeps these records separate so Dictionary can
+    /// show competing definitions and their individual provenance.
+    nonisolated func entries(forTerm term: String) -> [LegalDictionaryEntry] {
+        let normalizedTerm = Self.normalize(term)
+        guard !normalizedTerm.isEmpty else { return [] }
+
+        return entries.filter { Self.normalize($0.term) == normalizedTerm }
+    }
+
+    nonisolated func regulationRelations(
+        for entry: LegalDictionaryEntry
+    ) -> [LegalRegulationRelation] {
+        guard let corpusStore, let referenceID = entry.referenceID else { return [] }
+        return corpusStore.relations(for: referenceID)
+    }
+
+    nonisolated func isSemanticModelLoaded() async -> Bool {
+        guard let semanticRetriever else { return false }
+        return await semanticRetriever.isLoaded
+    }
+
     nonisolated private func rankedSearch(
         _ query: String,
         limit: Int
@@ -185,6 +312,15 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 return score > 0 ? (entry, score) : nil
             }
             .sorted { lhs, rhs in
+                let lhsIsExactTerm = Self.normalize(lhs.entry.term) == normalizedQuery
+                let rhsIsExactTerm = Self.normalize(rhs.entry.term) == normalizedQuery
+                if lhsIsExactTerm != rhsIsExactTerm {
+                    return lhsIsExactTerm
+                }
+                if lhsIsExactTerm && rhsIsExactTerm,
+                   lhs.entry.authority != rhs.entry.authority {
+                    return lhs.entry.authority == .verified
+                }
                 if lhs.score != rhs.score { return lhs.score > rhs.score }
                 if lhs.entry.authority != rhs.entry.authority {
                     return lhs.entry.authority == .verified
@@ -200,12 +336,48 @@ nonisolated struct LegalDictionaryStore: Sendable {
             .map { $0 }
     }
 
-    /// Searches the primary dictionary and the bundled legacy corpus using
-    /// lexical ranking only. Verified entries always win duplicate terms, and
-    /// the primary CSV corpus wins ties between legacy sources.
-    nonisolated func searchRAG(_ query: String, limit: Int = 30) async -> [LegalDictionaryEntry] {
+    /// Searches the versioned corpus. Exact and prefix term queries stay
+    /// lexical and therefore work offline; reverse lookup uses equal-weight
+    /// BM25 + E5 reciprocal-rank fusion when the semantic model is available.
+    /// A failed E5 load is intentionally contained and falls back to BM25.
+    nonisolated func searchRAG(
+        _ query: String,
+        limit: Int = 30,
+        semanticProgress: @Sendable @escaping (Double) -> Void = { _ in }
+    ) async -> [LegalDictionaryEntry] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard limit > 0, !trimmedQuery.isEmpty else { return [] }
+
+        if corpusStore != nil, semanticRetriever != nil {
+            let normalizedQuery = Self.normalize(trimmedQuery)
+            let hasLexicalShortcut = entries.contains { entry in
+                let term = Self.normalize(entry.term)
+                let regulation = Self.normalize(
+                    "\(entry.regulation) \(entry.regulationTitle)"
+                )
+                return term == normalizedQuery
+                    || term.hasPrefix(normalizedQuery)
+                    || regulation.contains(normalizedQuery)
+            }
+            if hasLexicalShortcut {
+                return search(trimmedQuery, limit: limit)
+            }
+
+            let request = LegalRetrievalRequest(
+                query: trimmedQuery,
+                intent: .reverseLookup,
+                limit: limit
+            )
+            if let matches = try? await hybridMatches(
+                request,
+                semanticProgress: semanticProgress
+            ), !matches.isEmpty {
+                return matches.compactMap { match in
+                    entries.first { $0.id == match.concept.recordID }
+                }
+            }
+            return search(trimmedQuery, limit: limit)
+        }
 
         let retrievalLimit = max(limit * 6, 30)
         async let primaryEntries = Task.detached(priority: .userInitiated) {
@@ -235,6 +407,350 @@ nonisolated struct LegalDictionaryStore: Sendable {
             LegalDictionaryStore(entries: mergedEntries, localRAG: self.localRAG)
                 .search(trimmedQuery, limit: limit)
         }.value
+    }
+
+    /// Returns source-backed retrieval matches for Dictionary and future
+    /// suggestion span retrieval. The method is also useful to diagnostics
+    /// because it preserves lexical, semantic, and fused scores separately.
+    nonisolated func retrieve(
+        _ request: LegalRetrievalRequest,
+        semanticProgress: @Sendable @escaping (Double) -> Void = { _ in }
+    ) async throws -> [LegalRetrievalMatch] {
+        guard request.limit > 0,
+              !request.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return []
+        }
+
+        if request.intent == .exactTerm {
+            return lexicalMatches(
+                for: request.query,
+                limit: request.limit,
+                origin: .exact
+            )
+        }
+
+        if corpusStore != nil, semanticRetriever != nil {
+            return try await hybridMatches(request, semanticProgress: semanticProgress)
+        }
+
+        return lexicalMatches(
+            for: request.query,
+            limit: request.limit,
+            origin: .lexical
+        )
+    }
+
+    /// Suggestion retrieval remains conservative: legacy records are exposed
+    /// to Dictionary/diagnostics but cannot become terminology candidates.
+    /// Semantic failure returns lexical candidates so spelling and grammar do
+    /// not stop when E5 is unavailable.
+    nonisolated func suggestionCandidatesAsync(
+        for text: String,
+        limit: Int = 3,
+        semanticProgress: @Sendable @escaping (Double) -> Void = { _ in }
+    ) async -> [LegalDictionaryMatch] {
+        guard limit > 0 else { return [] }
+
+        if corpusStore != nil, semanticRetriever != nil {
+            let effectiveLimit = min(
+                limit,
+                corpusStore?.manifest.retrieval.suggestionCandidateLimit ?? limit
+            )
+            guard effectiveLimit > 0 else { return [] }
+            let queries = Self.retrievalQueries(for: text)
+            let queryCount = max(1, queries.count)
+            var matchesByEntryID: [String: LegalDictionaryMatch] = [:]
+
+            for (queryIndex, query) in queries.enumerated() {
+                if Task.isCancelled {
+                    return []
+                }
+                let request = LegalRetrievalRequest(
+                    query: query,
+                    intent: .suggestion,
+                    limit: max(
+                        3,
+                        min(100, corpusStore?.manifest.retrieval.semanticTopK ?? 100)
+                    )
+                )
+                guard let hybrid = try? await hybridMatches(
+                    request,
+                    semanticProgress: { progress in
+                        let overall = (Double(queryIndex) + progress) / Double(queryCount)
+                        semanticProgress(overall)
+                    }
+                ) else {
+                    continue
+                }
+                if Task.isCancelled {
+                    return []
+                }
+
+                for match in makeSuggestionMatches(
+                    from: hybrid,
+                    text: query,
+                    limit: effectiveLimit
+                ) {
+                    if let previous = matchesByEntryID[match.entry.id] {
+                        if Self.isBetterSuggestionMatch(match, than: previous) {
+                            matchesByEntryID[match.entry.id] = match
+                        }
+                    } else {
+                        matchesByEntryID[match.entry.id] = match
+                    }
+                }
+            }
+
+            semanticProgress(1)
+            return matchesByEntryID.values
+                .sorted { lhs, rhs in
+                    if lhs.score != rhs.score { return lhs.score > rhs.score }
+                    return lhs.entry.id < rhs.entry.id
+                }
+                .prefix(effectiveLimit)
+                .map { $0 }
+        }
+
+        return suggestionCandidates(for: text, limit: limit)
+            .filter { $0.entry.isActionable }
+    }
+
+    private nonisolated func lexicalMatches(
+        for query: String,
+        limit: Int,
+        origin: LegalRetrievalOrigin
+    ) -> [LegalRetrievalMatch] {
+        guard let corpusStore, limit > 0 else { return [] }
+
+        return rankedSearch(query, limit: limit).enumerated().compactMap { rank, item in
+            guard let concept = corpusStore.concept(id: item.entry.id) else { return nil }
+            let evidence = concept.actionableEvidence ?? concept.evidence.first
+            return LegalRetrievalMatch(
+                concept: concept,
+                evidence: evidence,
+                lexicalScore: item.score,
+                semanticScore: nil,
+                fusionScore: nil,
+                rank: rank + 1,
+                origin: origin,
+                isActionable: item.entry.isActionable
+            )
+        }
+    }
+
+    private nonisolated func hybridMatches(
+        _ request: LegalRetrievalRequest,
+        semanticProgress: @Sendable @escaping (Double) -> Void
+    ) async throws -> [LegalRetrievalMatch] {
+        guard let corpusStore, let semanticRetriever else { return [] }
+
+        let retrievalConfiguration = corpusStore.manifest.retrieval
+        let lexicalLimit = max(
+            request.limit,
+            retrievalConfiguration.lexicalTopK
+        )
+        let semanticLimit = max(
+            request.limit,
+            retrievalConfiguration.semanticTopK
+        )
+        let lexical = rankedSearch(request.query, limit: lexicalLimit)
+        let semantic = try await semanticRetriever.search(
+            request.query,
+            limit: semanticLimit,
+            progress: semanticProgress
+        )
+
+        struct Accumulator {
+            let concept: LegalConcept
+            let evidence: LegalSourceEvidence?
+            var lexicalScore: Double?
+            var semanticScore: Float?
+            var lexicalRank: Int?
+            var semanticRank: Int?
+        }
+
+        var accumulator: [String: Accumulator] = [:]
+        for (zeroBasedRank, item) in lexical.enumerated() {
+            guard let concept = corpusStore.concept(id: item.entry.id) else { continue }
+            var value = accumulator[item.entry.id] ?? Accumulator(
+                concept: concept,
+                evidence: concept.actionableEvidence ?? concept.evidence.first,
+                lexicalScore: nil,
+                semanticScore: nil,
+                lexicalRank: nil,
+                semanticRank: nil
+            )
+            value.lexicalScore = item.score
+            value.lexicalRank = zeroBasedRank + 1
+            accumulator[item.entry.id] = value
+        }
+
+        for (zeroBasedRank, item) in semantic.enumerated() {
+            var value = accumulator[item.concept.recordID] ?? Accumulator(
+                concept: item.concept,
+                evidence: item.evidence,
+                lexicalScore: nil,
+                semanticScore: nil,
+                lexicalRank: nil,
+                semanticRank: nil
+            )
+            value.semanticScore = item.semanticScore
+            value.semanticRank = zeroBasedRank + 1
+            accumulator[item.concept.recordID] = value
+        }
+
+        let rrfK = Double(max(1, retrievalConfiguration.rrfK))
+        return accumulator.values
+            .map { value in
+                let lexicalContribution = value.lexicalRank.map {
+                    1.0 / (rrfK + Double($0))
+                } ?? 0
+                let semanticContribution = value.semanticRank.map {
+                    1.0 / (rrfK + Double($0))
+                } ?? 0
+                let fusionScore = lexicalContribution + semanticContribution
+                let origin: LegalRetrievalOrigin
+                if value.lexicalRank != nil, value.semanticRank != nil {
+                    origin = .hybrid
+                } else if value.semanticRank != nil {
+                    origin = .semantic
+                } else {
+                    origin = .lexical
+                }
+
+                return LegalRetrievalMatch(
+                    concept: value.concept,
+                    evidence: value.evidence,
+                    lexicalScore: value.lexicalScore,
+                    semanticScore: value.semanticScore,
+                    fusionScore: fusionScore,
+                    rank: 0,
+                    origin: origin,
+                    isActionable: value.concept.actionable
+                )
+            }
+            .sorted { lhs, rhs in
+                if lhs.fusionScore != rhs.fusionScore {
+                    return (lhs.fusionScore ?? 0) > (rhs.fusionScore ?? 0)
+                }
+                if lhs.semanticScore != rhs.semanticScore {
+                    return (lhs.semanticScore ?? -.greatestFiniteMagnitude)
+                        > (rhs.semanticScore ?? -.greatestFiniteMagnitude)
+                }
+                return lhs.concept.recordID < rhs.concept.recordID
+            }
+            .prefix(request.limit)
+            .enumerated()
+            .map { rank, match in
+                LegalRetrievalMatch(
+                    concept: match.concept,
+                    evidence: match.evidence,
+                    lexicalScore: match.lexicalScore,
+                    semanticScore: match.semanticScore,
+                    fusionScore: match.fusionScore,
+                    rank: rank + 1,
+                    origin: match.origin,
+                    isActionable: match.isActionable
+                )
+            }
+    }
+
+    private nonisolated func makeSuggestionMatches(
+        from matches: [LegalRetrievalMatch],
+        text: String,
+        limit: Int
+    ) -> [LegalDictionaryMatch] {
+        guard let corpusStore, limit > 0 else { return [] }
+        let configuration = corpusStore.manifest.retrieval
+        let semanticCandidates = matches
+            // Historical/unresolved concepts may rank highly for a semantic
+            // query, but they must not participate in the suggestion margin
+            // or become terminology candidates.
+            .filter { $0.semanticScore != nil && $0.isActionable }
+            .sorted { lhs, rhs in
+                if lhs.semanticScore != rhs.semanticScore {
+                    return (lhs.semanticScore ?? -.greatestFiniteMagnitude)
+                        > (rhs.semanticScore ?? -.greatestFiniteMagnitude)
+                }
+                return lhs.concept.recordID < rhs.concept.recordID
+            }
+        guard let first = semanticCandidates.first,
+              let firstScore = first.semanticScore,
+              firstScore >= configuration.suggestionSemanticThreshold else {
+            return []
+        }
+
+        let secondScore = semanticCandidates.dropFirst().first?.semanticScore ?? 0
+        guard semanticCandidates.count == 1
+            || firstScore - secondScore >= configuration.suggestionTopOneMargin else {
+            return []
+        }
+
+        return semanticCandidates
+            .filter {
+                $0.isActionable
+                    && ($0.semanticScore ?? -.greatestFiniteMagnitude)
+                        >= configuration.suggestionSemanticThreshold
+            }
+            .compactMap { match in
+                guard let entry = entries.first(where: { $0.id == match.concept.recordID }) else {
+                    return nil
+                }
+                let definitionTokens = Set(Self.tokenize(entry.definition))
+                let textTokens = Self.tokenize(text)
+                let termTokens = Self.tokenize(entry.term)
+                let matchedDefinitionTokenCount = Set(textTokens)
+                    .intersection(definitionTokens)
+                    .count
+                let isDirectTermMatch = !termTokens.isEmpty
+                    && Self.containsTokenSequence(textTokens, termTokens)
+
+                return LegalDictionaryMatch(
+                    entry: entry,
+                    score: match.fusionScore ?? Double(match.semanticScore ?? 0),
+                    rank: match.rank,
+                    matchedDefinitionTokenCount: matchedDefinitionTokenCount,
+                    isDirectTermMatch: isDirectTermMatch,
+                    semanticScore: match.semanticScore,
+                    fusionScore: match.fusionScore,
+                    retrievalOrigin: match.origin
+                )
+            }
+            .prefix(limit)
+            .map { $0 }
+    }
+
+    private nonisolated static func retrievalQueries(for text: String) -> [String] {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+
+        let clauses = trimmed
+            .split(whereSeparator: { $0 == "," || $0 == ";" })
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { tokenize($0).count >= 2 }
+
+        var queries: [String] = [trimmed]
+        var seen = Set([normalize(trimmed)])
+        for clause in clauses where seen.insert(normalize(clause)).inserted {
+            queries.append(clause)
+        }
+        return queries
+    }
+
+    private nonisolated static func isBetterSuggestionMatch(
+        _ candidate: LegalDictionaryMatch,
+        than existing: LegalDictionaryMatch
+    ) -> Bool {
+        if candidate.score != existing.score { return candidate.score > existing.score }
+        if candidate.semanticScore != existing.semanticScore {
+            return (candidate.semanticScore ?? -.greatestFiniteMagnitude)
+                > (existing.semanticScore ?? -.greatestFiniteMagnitude)
+        }
+        if candidate.matchedDefinitionTokenCount != existing.matchedDefinitionTokenCount {
+            return candidate.matchedDefinitionTokenCount
+                > existing.matchedDefinitionTokenCount
+        }
+        return candidate.entry.id < existing.entry.id
     }
 
     nonisolated func relatedTerms(
@@ -476,7 +992,8 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 regulationTitle: values["uu"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
                 sourceURL: URL(string: values["url"]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""),
                 authority: authority,
-                corpusVersion: LegalDictionaryCorpusVersion.legacyKamusV1
+                corpusVersion: LegalDictionaryCorpusVersion.legacyKamusV1,
+                isActionable: false
             )
         }
     }
