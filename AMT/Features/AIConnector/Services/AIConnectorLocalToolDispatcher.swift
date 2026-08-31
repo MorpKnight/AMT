@@ -4,7 +4,11 @@ import MLXLMCommon
 enum AIConnectorLocalToolError: Error, Equatable, Sendable {
     case emptyQuery
     case missingEntryID
+    case missingPassageID
+    case missingReferenceID
     case unknownEntry
+    case unknownPassage
+    case unknownRegulation
     case budgetExceeded
     case resultLimitExceeded
     case timeout
@@ -12,12 +16,9 @@ enum AIConnectorLocalToolError: Error, Equatable, Sendable {
 
 /// Read-only tool boundary for the future grounded model path.
 ///
-/// It deliberately reports the current legacy corpus as non-authoritative.
-/// The dispatcher is usable by tests and future orchestration, but is not
-/// attached to Qwen until the corpus has current provenance and status data.
+/// It only reads the versioned corpus/dictionary. It is usable by orchestration
+/// and tests, but is not exposed as an open-ended Qwen tool loop.
 actor AIConnectorLocalToolDispatcher {
-    nonisolated static let corpusVersion = LegalDictionaryCorpusVersion.legacyKamusV1
-
     private let dictionaryStore: LegalDictionaryStore
     private let budget: AIConnectorLocalToolBudget
     private var callCount = 0
@@ -64,9 +65,12 @@ actor AIConnectorLocalToolDispatcher {
             return AIConnectorLocalToolResponse(
                 name: request.name,
                 payload: Self.encode(entries: entries),
-                corpusVersion: Self.responseCorpusVersion(for: entries),
+                corpusVersion: Self.responseCorpusVersion(
+                    for: entries,
+                    fallback: dictionaryStore.activeCorpusVersion
+                ),
                 isAuthoritative: !entries.isEmpty && entries.allSatisfy {
-                    $0.authority == .verified
+                    $0.authority == .verified && $0.isActionable
                 }
             )
 
@@ -83,7 +87,67 @@ actor AIConnectorLocalToolDispatcher {
                 name: request.name,
                 payload: Self.encode(entries: [entry]),
                 corpusVersion: entry.corpusVersion,
-                isAuthoritative: entry.authority == .verified
+                isAuthoritative: entry.authority == .verified && entry.isActionable
+            )
+
+        case .getSourcePassage:
+            guard let passageID = request.passageID,
+                  !passageID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw AIConnectorLocalToolError.missingPassageID
+            }
+            guard let corpusStore = dictionaryStore.corpusStore,
+                  let passage = corpusStore.sourcePassage(id: passageID) else {
+                throw AIConnectorLocalToolError.unknownPassage
+            }
+            try ensureWithinBudget(startedAt)
+            return AIConnectorLocalToolResponse(
+                name: request.name,
+                payload: Self.encode(passage),
+                corpusVersion: corpusStore.manifest.corpusVersion,
+                isAuthoritative: passage.officialDocumentURL != nil
+            )
+
+        case .getRegulationStatus:
+            guard let referenceID = request.referenceID,
+                  !referenceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw AIConnectorLocalToolError.missingReferenceID
+            }
+            guard let corpusStore = dictionaryStore.corpusStore,
+                  let regulation = corpusStore.regulation(id: referenceID) else {
+                throw AIConnectorLocalToolError.unknownRegulation
+            }
+            try ensureWithinBudget(startedAt)
+            return AIConnectorLocalToolResponse(
+                name: request.name,
+                payload: Self.encode(
+                    RegulationStatusPayload(
+                        referenceID: regulation.referenceID,
+                        status: regulation.applicabilityStatus.rawValue,
+                        statusRaw: regulation.officialStatusRaw,
+                        officialDetailURL: regulation.officialDetailURL?.absoluteString,
+                        officialDocumentURL: regulation.officialDocumentURL?.absoluteString
+                    )
+                ),
+                corpusVersion: corpusStore.manifest.corpusVersion,
+                isAuthoritative: regulation.applicabilityStatus == .inForce
+            )
+
+        case .getRegulationRelations:
+            guard let referenceID = request.referenceID,
+                  !referenceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw AIConnectorLocalToolError.missingReferenceID
+            }
+            guard let corpusStore = dictionaryStore.corpusStore,
+                  corpusStore.regulation(id: referenceID) != nil else {
+                throw AIConnectorLocalToolError.unknownRegulation
+            }
+            let relations = corpusStore.relations(for: referenceID)
+            try ensureWithinBudget(startedAt)
+            return AIConnectorLocalToolResponse(
+                name: request.name,
+                payload: Self.encode(relations),
+                corpusVersion: corpusStore.manifest.corpusVersion,
+                isAuthoritative: !relations.isEmpty
             )
         }
     }
@@ -126,6 +190,42 @@ actor AIConnectorLocalToolDispatcher {
                         "required": ["entryID"]
                     ] as [String: any Sendable]
                 ] as [String: any Sendable]
+            ] as ToolSpec,
+            [
+                "type": "function",
+                "function": [
+                    "name": AIConnectorLocalToolName.getSourcePassage.rawValue,
+                    "description": "Ambil passage sumber terstruktur berdasarkan stable passage ID.",
+                    "parameters": [
+                        "type": "object",
+                        "properties": ["passageID": ["type": "string"]],
+                        "required": ["passageID"]
+                    ] as [String: any Sendable]
+                ] as [String: any Sendable]
+            ] as ToolSpec,
+            [
+                "type": "function",
+                "function": [
+                    "name": AIConnectorLocalToolName.getRegulationStatus.rawValue,
+                    "description": "Ambil status berlaku dan metadata resmi regulasi.",
+                    "parameters": [
+                        "type": "object",
+                        "properties": ["referenceID": ["type": "string"]],
+                        "required": ["referenceID"]
+                    ] as [String: any Sendable]
+                ] as [String: any Sendable]
+            ] as ToolSpec,
+            [
+                "type": "function",
+                "function": [
+                    "name": AIConnectorLocalToolName.getRegulationRelations.rawValue,
+                    "description": "Ambil relasi perubahan regulasi dari corpus lokal.",
+                    "parameters": [
+                        "type": "object",
+                        "properties": ["referenceID": ["type": "string"]],
+                        "required": ["referenceID"]
+                    ] as [String: any Sendable]
+                ] as [String: any Sendable]
             ] as ToolSpec
         ]
     }
@@ -141,6 +241,13 @@ actor AIConnectorLocalToolDispatcher {
                 regulation: $0.regulation,
                 regulationTitle: $0.regulationTitle,
                 sourceURL: $0.sourceURL?.absoluteString,
+                officialDocumentURL: $0.officialDocumentURL?.absoluteString,
+                referenceID: $0.referenceID,
+                applicabilityStatus: $0.applicabilityStatus.rawValue,
+                sourcePassageID: $0.sourcePassageID,
+                articleLocator: $0.articleLocator,
+                pageStart: $0.pageStart,
+                pageEnd: $0.pageEnd,
                 authority: $0.authority.rawValue,
                 corpusVersion: $0.corpusVersion
             )
@@ -152,11 +259,20 @@ actor AIConnectorLocalToolDispatcher {
         return result
     }
 
+    private nonisolated static func encode<T: Encodable>(_ value: T) -> String {
+        guard let data = try? JSONEncoder().encode(value),
+              let result = String(data: data, encoding: .utf8) else {
+            return "{}"
+        }
+        return result
+    }
+
     private nonisolated static func responseCorpusVersion(
-        for entries: [LegalDictionaryEntry]
+        for entries: [LegalDictionaryEntry],
+        fallback: String
     ) -> String {
         let versions = Set(entries.map(\.corpusVersion))
-        return versions.count == 1 ? versions.first ?? Self.corpusVersion : "mixed-corpus"
+        return versions.count == 1 ? versions.first ?? fallback : "mixed-corpus"
     }
 
     private struct ToolEntry: Codable, Sendable {
@@ -166,7 +282,30 @@ actor AIConnectorLocalToolDispatcher {
         let regulation: String
         let regulationTitle: String
         let sourceURL: String?
+        let officialDocumentURL: String?
+        let referenceID: String?
+        let applicabilityStatus: String
+        let sourcePassageID: String?
+        let articleLocator: String?
+        let pageStart: Int?
+        let pageEnd: Int?
         let authority: String
         let corpusVersion: String
+    }
+
+    private struct RegulationStatusPayload: Codable, Sendable {
+        let referenceID: String
+        let status: String
+        let statusRaw: String
+        let officialDetailURL: String?
+        let officialDocumentURL: String?
+
+        enum CodingKeys: String, CodingKey {
+            case referenceID = "reference_id"
+            case status
+            case statusRaw = "status_raw"
+            case officialDetailURL = "official_detail_url"
+            case officialDocumentURL = "official_document_url"
+        }
     }
 }

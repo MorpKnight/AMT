@@ -755,6 +755,9 @@ struct AIConnectorDocumentProtectionContext: Hashable, Sendable {
 enum AIConnectorLocalToolName: String, Codable, CaseIterable, Hashable, Sendable {
     case searchLegalConcepts
     case getLegalDefinition
+    case getSourcePassage
+    case getRegulationStatus
+    case getRegulationRelations
 }
 
 struct AIConnectorLocalToolRequest: Hashable, Sendable {
@@ -762,6 +765,24 @@ struct AIConnectorLocalToolRequest: Hashable, Sendable {
     let query: String?
     let entryID: String?
     let limit: Int
+    let passageID: String?
+    let referenceID: String?
+
+    init(
+        name: AIConnectorLocalToolName,
+        query: String? = nil,
+        entryID: String? = nil,
+        limit: Int = 5,
+        passageID: String? = nil,
+        referenceID: String? = nil
+    ) {
+        self.name = name
+        self.query = query
+        self.entryID = entryID
+        self.limit = limit
+        self.passageID = passageID
+        self.referenceID = referenceID
+    }
 }
 
 struct AIConnectorLocalToolResponse: Hashable, Sendable {
@@ -1213,6 +1234,44 @@ enum AIConnectorRunState: Equatable {
             "Mengunduh model..."
         case let .reviewing(current, total):
             "Meninjau segmen \(current) dari \(total)..."
+        case .completed:
+            "Selesai"
+        case .cancelled:
+            "Dibatalkan"
+        case .failed:
+            "Gagal"
+        }
+    }
+}
+
+enum AIConnectorProgressStage: String, Hashable, Sendable {
+    case idle
+    case segmenting
+    case semanticModelDownload
+    case semanticRetrieval
+    case modelDownload
+    case modelLoading
+    case generation
+    case completed
+    case cancelled
+    case failed
+
+    var title: String {
+        switch self {
+        case .idle:
+            "Siap"
+        case .segmenting:
+            "Menyiapkan teks"
+        case .semanticModelDownload:
+            "Mengunduh model pencarian semantik"
+        case .semanticRetrieval:
+            "Mencari evidence yang relevan"
+        case .modelDownload:
+            "Mengunduh model Qwen"
+        case .modelLoading:
+            "Memuat model Qwen"
+        case .generation:
+            "Menilai rekomendasi"
         case .completed:
             "Selesai"
         case .cancelled:

@@ -11,7 +11,9 @@ final class AIConnectorBenchmarkRunner {
     private let workQueue: AIConnectorWorkQueue
 
     var onDownloadProgress: (@MainActor @Sendable (Double) -> Void)?
+    var onSemanticProgress: (@MainActor @Sendable (Double) -> Void)?
     var onGenerationProgress: (@MainActor @Sendable (Int) -> Void)?
+    var onProgressStage: (@MainActor @Sendable (AIConnectorProgressStage) -> Void)?
 
     init(
         service: QwenSuggestionService,
@@ -97,6 +99,14 @@ final class AIConnectorBenchmarkRunner {
             },
             generationProgress: { [weak self] characters in
                 self?.onGenerationProgress?(characters)
+            },
+            semanticProgress: { [weak self] value in
+                Task { @MainActor [weak self] in
+                    self?.onSemanticProgress?(value)
+                }
+            },
+            progressStage: { [weak self] stage in
+                self?.onProgressStage?(stage)
             },
             generationProfile: generationProfile
         )

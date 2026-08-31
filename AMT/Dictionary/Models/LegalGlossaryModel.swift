@@ -17,6 +17,13 @@ nonisolated struct LegalReference: Hashable, Sendable {
     let dateEnacted: String?
     let dateEffective: String?
     let sourceURL: URL?
+    let officialDocumentURL: URL?
+    let referenceID: String?
+    let applicabilityStatus: LegalCorpusApplicabilityStatus
+    let articleLocator: String?
+    let pageStart: Int?
+    let pageEnd: Int?
+    let sourcePassageID: String?
 
     init(
         lawName: String,
@@ -24,7 +31,14 @@ nonisolated struct LegalReference: Hashable, Sendable {
         institution: String? = nil,
         dateEnacted: String? = nil,
         dateEffective: String? = nil,
-        sourceURL: URL? = nil
+        sourceURL: URL? = nil,
+        officialDocumentURL: URL? = nil,
+        referenceID: String? = nil,
+        applicabilityStatus: LegalCorpusApplicabilityStatus = .unknown,
+        articleLocator: String? = nil,
+        pageStart: Int? = nil,
+        pageEnd: Int? = nil,
+        sourcePassageID: String? = nil
     ) {
         self.lawName = lawName
         self.lawTitle = lawTitle
@@ -32,6 +46,13 @@ nonisolated struct LegalReference: Hashable, Sendable {
         self.dateEnacted = dateEnacted
         self.dateEffective = dateEffective
         self.sourceURL = sourceURL
+        self.officialDocumentURL = officialDocumentURL
+        self.referenceID = referenceID
+        self.applicabilityStatus = applicabilityStatus
+        self.articleLocator = articleLocator
+        self.pageStart = pageStart
+        self.pageEnd = pageEnd
+        self.sourcePassageID = sourcePassageID
     }
 }
 
@@ -64,19 +85,28 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
     let seeAlso: [String]
     let authority: LegalDictionaryEntryAuthority
     let corpusVersion: String
+    let applicabilityStatus: LegalCorpusApplicabilityStatus
+    let isActionable: Bool
+    let regulationRelations: [LegalRegulationRelation]
 
     init(
         term: String,
         definitions: [DefinitionItem],
         seeAlso: [String] = [],
         authority: LegalDictionaryEntryAuthority = .legacy,
-        corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy
+        corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy,
+        applicabilityStatus: LegalCorpusApplicabilityStatus = .unknown,
+        isActionable: Bool = false,
+        regulationRelations: [LegalRegulationRelation] = []
     ) {
         self.term = term
         self.definitions = definitions
         self.seeAlso = seeAlso
         self.authority = authority
         self.corpusVersion = corpusVersion
+        self.applicabilityStatus = applicabilityStatus
+        self.isActionable = isActionable
+        self.regulationRelations = regulationRelations
     }
 
     /// Single-definition convenience initializer
@@ -86,7 +116,10 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
         reference: LegalReference? = nil,
         seeAlso: [String] = [],
         authority: LegalDictionaryEntryAuthority = .legacy,
-        corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy
+        corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy,
+        applicabilityStatus: LegalCorpusApplicabilityStatus = .unknown,
+        isActionable: Bool = false,
+        regulationRelations: [LegalRegulationRelation] = []
     ) {
         self.term = term
         self.definitions = [
@@ -95,6 +128,9 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
         self.seeAlso = seeAlso
         self.authority = authority
         self.corpusVersion = corpusVersion
+        self.applicabilityStatus = applicabilityStatus
+        self.isActionable = isActionable
+        self.regulationRelations = regulationRelations
     }
 }
 
