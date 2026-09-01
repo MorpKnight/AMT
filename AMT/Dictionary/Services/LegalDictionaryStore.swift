@@ -130,6 +130,15 @@ nonisolated struct LegalDictionaryStore: Sendable {
     /// runtime while the versioned legal corpus is being evaluated.
     nonisolated static let legacyCSVRuntimeEnabled = false
 
+    /// Minimum cosine similarity required before a semantic reverse-lookup
+    /// result can be shown in Dictionary. This is a retrieval guard, not a
+    /// confidence score or a statement about legal correctness.
+    nonisolated static let dictionarySemanticThreshold: Float = 0.60
+
+    /// Short queries are assumed to be term lookups. They must have lexical
+    /// evidence and must not be expanded into an unrelated semantic result.
+    nonisolated static let dictionaryTermQueryMaximumTokenCount = 3
+
     private static let suggestionMinimumScore = 20.0
     private static let suggestionMinimumMargin = 3.0
     private static let suggestionMinimumMatchedDefinitionTokens = 4
@@ -342,10 +351,12 @@ nonisolated struct LegalDictionaryStore: Sendable {
             .map { $0 }
     }
 
-    /// Searches the versioned corpus. Exact and prefix term queries stay
-    /// lexical and therefore work offline; reverse lookup uses equal-weight
-    /// BM25 + E5 reciprocal-rank fusion when the semantic model is available.
-    /// A failed E5 load is intentionally contained and falls back to BM25.
+    /// Searches the versioned corpus. Exact, prefix, and short term-shaped
+    /// queries stay lexical and therefore work offline. Longer reverse-lookups
+    /// use equal-weight BM25 + E5 reciprocal-rank fusion when the semantic
+    /// model is available, but a semantic match must pass the Dictionary
+    /// threshold before it can be shown. A failed E5 load is intentionally
+    /// contained and falls back to BM25.
     nonisolated func searchRAG(
         _ query: String,
         limit: Int = 30,
@@ -354,21 +365,29 @@ nonisolated struct LegalDictionaryStore: Sendable {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard limit > 0, !trimmedQuery.isEmpty else { return [] }
 
-        if corpusStore != nil, semanticRetriever != nil {
-            let normalizedQuery = Self.normalize(trimmedQuery)
-            let hasLexicalShortcut = entries.contains { entry in
-                let term = Self.normalize(entry.term)
-                let regulation = Self.normalize(
-                    "\(entry.regulation) \(entry.regulationTitle)"
-                )
-                return term == normalizedQuery
-                    || term.hasPrefix(normalizedQuery)
-                    || regulation.contains(normalizedQuery)
-            }
-            if hasLexicalShortcut {
-                return search(trimmedQuery, limit: limit)
-            }
+        let lexicalResults = search(trimmedQuery, limit: limit)
+        let normalizedQuery = Self.normalize(trimmedQuery)
+        let queryTokenCount = Set(Self.tokenize(trimmedQuery)).count
+        let hasLexicalTermEvidence = entries.contains { entry in
+            let term = Self.normalize(entry.term)
+            let regulation = Self.normalize(
+                "\(entry.regulation) \(entry.regulationTitle)"
+            )
+            return term == normalizedQuery
+                || term.hasPrefix(normalizedQuery)
+                || term.contains(normalizedQuery)
+                || regulation.contains(normalizedQuery)
+        }
 
+        // A short query such as "justifikasi" is a request for a term. If it
+        // is not present in the active corpus, returning the nearest E5 vector
+        // would fabricate a dictionary answer from an unrelated concept.
+        if queryTokenCount <= Self.dictionaryTermQueryMaximumTokenCount
+            || hasLexicalTermEvidence {
+            return lexicalResults
+        }
+
+        if corpusStore != nil, semanticRetriever != nil {
             let request = LegalRetrievalRequest(
                 query: trimmedQuery,
                 intent: .reverseLookup,
@@ -377,12 +396,18 @@ nonisolated struct LegalDictionaryStore: Sendable {
             if let matches = try? await hybridMatches(
                 request,
                 semanticProgress: semanticProgress
-            ), !matches.isEmpty {
-                return matches.compactMap { match in
-                    entries.first { $0.id == match.concept.recordID }
+            ) {
+                let acceptedMatches = Self.acceptedDictionaryMatches(
+                    matches,
+                    limit: limit
+                )
+                if !acceptedMatches.isEmpty {
+                    return acceptedMatches.compactMap { match in
+                        entries.first { $0.id == match.concept.recordID }
+                    }
                 }
             }
-            return search(trimmedQuery, limit: limit)
+            return lexicalResults
         }
 
         let retrievalLimit = max(limit * 6, 30)
@@ -413,6 +438,25 @@ nonisolated struct LegalDictionaryStore: Sendable {
             LegalDictionaryStore(entries: mergedEntries, localRAG: self.localRAG)
                 .search(trimmedQuery, limit: limit)
         }.value
+    }
+
+    private nonisolated static func acceptedDictionaryMatches(
+        _ matches: [LegalRetrievalMatch],
+        limit: Int
+    ) -> [LegalRetrievalMatch] {
+        guard limit > 0 else { return [] }
+
+        return matches.filter { match in
+            guard let semanticScore = match.semanticScore else {
+                // A lexical-only match still has literal corpus evidence. It
+                // is allowed when semantic retrieval also produced no score.
+                return match.lexicalScore != nil
+            }
+            return semanticScore.isFinite
+                && semanticScore >= Self.dictionarySemanticThreshold
+        }
+        .prefix(limit)
+        .map { $0 }
     }
 
     /// Returns source-backed retrieval matches for Dictionary and future
