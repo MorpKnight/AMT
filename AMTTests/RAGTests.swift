@@ -80,6 +80,18 @@ final class RAGTests: XCTestCase {
         XCTAssertTrue(results.isEmpty)
     }
 
+    func testDictionaryReturnsNoResultForUnknownTermWithoutSemanticFallback() async {
+        let store = LegalDictionaryStore()
+
+        XCTAssertTrue(store.search("justifikasi", limit: 5).isEmpty)
+
+        let results = await store.searchRAG("justifikasi", limit: 5)
+        let isSemanticModelLoaded = await store.isSemanticModelLoaded()
+
+        XCTAssertTrue(results.isEmpty)
+        XCTAssertFalse(isSemanticModelLoaded)
+    }
+
     func testVerifiedEntryWinsDuplicateLegacyTerm() async {
         let verifiedEntry = LegalDictionaryEntry(
             id: "verified-data-pribadi",

@@ -114,7 +114,7 @@ struct DashboardView: View {
 
             // Documents Grid Section
             ScrollView {
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 28) {
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
                     // Import Word Document Button Card (+)
                     NewDocumentCardView {
                         storageManager.importWordDocumentFromFinder { importedDoc in
@@ -123,7 +123,7 @@ struct DashboardView: View {
                             }
                         }
                     }
-
+                    .frame(maxHeight: .infinity, alignment: .top)
                     // Existing Document Cards
                     ForEach(filteredDocuments) { doc in
                         DocumentCardView(
@@ -137,8 +137,8 @@ struct DashboardView: View {
                         )
                     }
                 }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 40)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
             }
         }
         .navigationTitle("")
