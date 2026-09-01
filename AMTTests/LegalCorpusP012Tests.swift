@@ -108,13 +108,26 @@ final class LegalCorpusP012Tests: XCTestCase {
         XCTAssertTrue(store.semanticRetrievalProfile.contains("60"))
     }
 
-    func testLegacyCSVEntriesCannotBecomeActionable() {
-        let legacyEntries = LegalDictionaryStore().entries.filter {
-            $0.corpusVersion == LegalDictionaryCorpusVersion.legacyKamusV1
-        }
+    func testLegacyCSVRuntimeIsDisabledWithoutDeletingItsParser() {
+        XCTAssertFalse(LegalDictionaryStore.legacyCSVRuntimeEnabled)
 
-        XCTAssertFalse(legacyEntries.isEmpty)
-        XCTAssertTrue(legacyEntries.allSatisfy { !$0.isActionable })
+        let activeEntries = LegalDictionaryStore().entries
+        XCTAssertTrue(activeEntries.allSatisfy {
+            $0.corpusVersion != LegalDictionaryCorpusVersion.legacyKamusV1
+        })
+
+        let retainedLegacyEntry = LegalDictionaryEntry(
+            id: "legacy-fixture",
+            term: "Legacy Fixture",
+            definition: "Fixture legacy untuk menguji batas actionable.",
+            regulation: "",
+            regulationTitle: "",
+            sourceURL: nil,
+            authority: .verified,
+            corpusVersion: LegalDictionaryCorpusVersion.legacyKamusV1,
+            isActionable: false
+        )
+        XCTAssertFalse(retainedLegacyEntry.isActionable)
     }
 
     func testCorpusLoaderRejectsTamperedPayload() throws {

@@ -633,7 +633,7 @@ final class AIConnectorTests: XCTestCase {
         XCTAssertEqual(segmentation.omittedSegmentCount, 0)
     }
 
-    func testBuiltInDummyDocumentRetrievesLongFormLegalTerms() {
+    func testBuiltInDummyDocumentRetrievesActiveCorpusTermsOnly() {
         let store = LegalDictionaryStore()
         let segmentation = LegalTextSegmenter().segment(
             documentText: AIConnectorDummyDocument.initialContent
@@ -647,7 +647,7 @@ final class AIConnectorTests: XCTestCase {
 
         XCTAssertTrue(retrievedTerms.contains("Data Pribadi"))
         XCTAssertTrue(retrievedTerms.contains("Korporasi"))
-        XCTAssertTrue(retrievedTerms.contains("Keadaan Kahar"))
+        XCTAssertFalse(retrievedTerms.contains("Keadaan Kahar"))
     }
 
     func testGlossarySnapshotRetainsSegmentAndCandidateForRunHistory() {

@@ -11,7 +11,7 @@
   - Membuat, membuka, mencari, dan menghapus dokumen.
   - Menyimpan dokumen secara lokal di folder `Documents/AMT_Documents` sebagai JSON.
   - Mengimpor `.docx`, `.doc`, `.rtf`, dan `.txt` melalui Finder. Isi file diubah menjadi teks biasa untuk kebutuhan editor saat ini.
-  - Menyediakan dokumen bawaan **AI Connector — Test Document** untuk smoke test. Dokumen ini selalu dibuat ulang saat aplikasi dibuka dan perubahan pada dokumen tersebut tidak disimpan ke disk.
+  - Menyediakan empat dokumen bawaan AI Connector dengan kompleksitas dan domain berbeda untuk smoke test. Dokumen-dokumen ini selalu dibuat ulang saat aplikasi dibuka dan perubahan pada dokumen tersebut tidak disimpan ke disk.
 - **Dictionary / Lawtionary**
   - Memuat versioned legal corpus `hukumonline-kamus@78a2ab626c092662b0441c95904c353b2487b216` sebagai resource aplikasi tanpa PDF.
   - Exact term dan prefix memakai BM25 lokal; reverse lookup memakai equal-weight BM25 + `intfloat/multilingual-e5-small` melalui MLX saat semantic search pertama dipakai.
@@ -30,7 +30,7 @@
   - Pada Hybrid, Qwen berfungsi sebagai confirmation/diagnostic; kegagalan model dapat dipulihkan melalui rule deterministik berisiko rendah, sedangkan `REJECT` eksplisit tidak diubah menjadi suggestion.
   - Menyediakan benchmark reproducible melalui work queue produksi untuk baseline, tiga generation profile Base 4B, cache rerun, Hybrid, thinking, dan cancellation.
   - Mendukung streaming internal, Cancel, Retry, dan pilihan thinking mode.
-  - Menyediakan delapan dummy sample untuk smoke test perilaku awal, termasuk terminologi `Data Pribadi`.
+  - Menyediakan delapan dummy sample pendek untuk smoke test perilaku awal, termasuk terminologi `Data Pribadi`; sample ini berbeda dari dokumen bawaan dashboard.
 
 ## Arsitektur ringkas
 
@@ -94,13 +94,13 @@ Urutan prioritas pencarian adalah:
 
 Pencarian mengabaikan perbedaan huruf besar-kecil, diakritik, dan spasi berlebih. Hasil Dictionary reverse lookup dibatasi hingga lima term group, sedangkan retrieval internal dapat mengambil top-100 untuk fusion. Jika E5 gagal dimuat, hasil reverse lookup kembali ke BM25 dan terminology semantic candidate dinonaktifkan untuk run tersebut.
 
-Format utama CSV yang digunakan:
+Format CSV legacy yang masih dipertahankan oleh parser untuk migrasi berikutnya:
 
 ```text
 istilah,pengertian,undang_undang,uu,url,status
 ```
 
-Entry dengan `status=VERIFIED` menjadi evidence yang dapat dipakai sebagai candidate terminology. Entry `status=OK` atau status kosong dipertahankan sebagai corpus legacy untuk pencarian/diagnostics, tetapi tidak actionable dan tidak dapat menghasilkan highlight atau Accept. Semua entry dari `rag_export` juga diperlakukan sebagai legacy. Status lain dilewati. Jika resource CSV tidak dapat dimuat, aplikasi menggunakan beberapa entry preview agar layar Dictionary tetap dapat dibuka; entry preview tetap legacy dan ditandai perlu verifikasi sumber.
+Runtime `kamus_hukum.csv` saat ini dinonaktifkan melalui `LegalDictionaryStore.legacyCSVRuntimeEnabled = false`; parser dan resource-nya tidak dihapus agar dapat diaktifkan kembali setelah corpus diperbarui dan direview. Dictionary menggunakan versioned legal corpus sebagai sumber utama. Jika corpus tersebut tidak dapat dimuat, aplikasi menggunakan beberapa entry preview agar layar Dictionary tetap dapat dibuka. Entry preview tetap legacy dan ditandai perlu verifikasi sumber.
 
 ## Cara kerja Suggestion
 
@@ -191,7 +191,7 @@ Produk yang digunakan target AMT adalah `MLXLLM`, `MLXLMCommon`, `MLXHuggingFace
 
 Panel menampilkan jumlah segmen, batch queue, progress seluruh dokumen, cache, repair, fallback, hasil yang lolos validator, hasil yang memerlukan review manusia, dan output yang ditolak. Preview Current Document dibatasi ke 4.000 karakter pertama, tetapi analisis memakai seluruh isi dokumen dan panel memberi indikator jika preview terpotong. Tidak ada hasil yang diterapkan otomatis ke dokumen; highlight dapat ditinjau melalui popover editor dan Accept tetap merupakan aksi pengguna.
 
-Dashboard juga selalu menampilkan **AI Connector — Test Document**. Dokumen ini memuat contoh redundansi, typo, istilah hukum, preservasi angka, tanggal, mata uang, persentase, defined terms, negasi, pengecualian, terminologi campuran, dan klausul sensitif. Isinya sengaja lebih dari 12 segmen agar pembentukan batch `12/12/...` dan hasil incremental dapat diuji; segmen >512 token diuji terpisah. Dokumen dapat diedit untuk pengujian, tetapi akan kembali ke isi awal ketika aplikasi dijalankan ulang.
+Dashboard juga selalu menampilkan empat dokumen bawaan AI Connector: PKS layanan digital, DPA dan Transfer Internasional, Financing Agreement dengan Facility/Collateral/Default, serta kontrak pengadaan sistem informasi publik. Dokumen-dokumen ini memuat contoh redundansi, typo, istilah hukum, preservasi angka, tanggal, mata uang, persentase, defined terms, negasi, pengecualian, terminologi campuran, klausul data pribadi, dan konflik instruksi yang sengaja dibuat untuk pengujian. Semuanya lebih dari 12 segmen agar pembentukan batch `12/12/...` dan hasil incremental dapat diuji. Dokumen dapat diedit untuk pengujian, tetapi akan kembali ke isi awal ketika aplikasi dijalankan ulang.
 
 Pada Run atau benchmark model pertama, tunggu proses download dan loading model selesai. Run berikutnya menggunakan cache Hugging Face lokal selama cache masih tersedia. Cache Qwen3.5 2B, Legal 4B, dan base 4B tetap terpisah untuk perbandingan historis.
 
@@ -373,4 +373,4 @@ AMT/
 - [Swift Hugging Face](https://github.com/huggingface/swift-huggingface)
 - [Swift Transformers](https://github.com/huggingface/swift-transformers)
 - [Qwen3.5 model card](https://huggingface.co/Qwen/Qwen3.5-2B)
-- Sumber setiap entry Dictionary ditentukan oleh kolom `url` pada `kamus_hukum.csv`.
+- Sumber entry Dictionary aktif berasal dari versioned legal corpus dan metadata evidence di `AMT/Resources/legal_corpus/`. Parser `kamus_hukum.csv` dipertahankan untuk migrasi berikutnya, tetapi tidak digunakan oleh runtime saat ini.
