@@ -41,5 +41,8 @@ fastlane/test_output
 .env
 .env.*
 
+# Training experiments
+training/
+
 # Agent
 AGENTS.md
