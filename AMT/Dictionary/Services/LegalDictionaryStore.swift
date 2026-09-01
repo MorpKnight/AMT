@@ -125,6 +125,11 @@ nonisolated struct LegalDictionaryMatch: Identifiable, Hashable, Sendable {
 }
 
 nonisolated struct LegalDictionaryStore: Sendable {
+    /// The legacy CSV parser and resource are retained for a future migration,
+    /// but the old corpus is intentionally not part of the active Dictionary
+    /// runtime while the versioned legal corpus is being evaluated.
+    nonisolated static let legacyCSVRuntimeEnabled = false
+
     private static let suggestionMinimumScore = 20.0
     private static let suggestionMinimumMargin = 3.0
     private static let suggestionMinimumMatchedDefinitionTokens = 4
@@ -175,13 +180,13 @@ nonisolated struct LegalDictionaryStore: Sendable {
             let corpusEntries = loadedCorpus.dictionaryEntries()
             let corpusTerms = Set(corpusEntries.map { Self.normalize($0.term) })
             let supplementalLegacyEntries: [LegalDictionaryEntry]
-            if let resourceURL = bundle.url(forResource: "kamus_hukum", withExtension: "csv"),
+            if Self.legacyCSVRuntimeEnabled,
+               let resourceURL = bundle.url(forResource: "kamus_hukum", withExtension: "csv"),
                let data = try? Data(contentsOf: resourceURL),
                let loadedEntries = Self.loadEntries(from: data) {
                 // Keep the verified corpus authoritative for terms it owns.
-                // The older CSV still supplies Dictionary-only coverage for
-                // concepts not present in the versioned pack, such as a term
-                // that is useful for local lookup but lacks current evidence.
+                // This branch is deliberately disabled until the legacy CSV
+                // has been refreshed and reviewed against the versioned pack.
                 supplementalLegacyEntries = loadedEntries.filter {
                     !corpusTerms.contains(Self.normalize($0.term))
                 }
@@ -194,7 +199,8 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 corpusStore: loadedCorpus,
                 semanticRetriever: semanticRetriever ?? LegalSemanticRetriever(corpus: loadedCorpus)
             )
-        } else if let resourceURL = bundle.url(forResource: "kamus_hukum", withExtension: "csv"),
+        } else if Self.legacyCSVRuntimeEnabled,
+                  let resourceURL = bundle.url(forResource: "kamus_hukum", withExtension: "csv"),
            let data = try? Data(contentsOf: resourceURL),
            let loadedEntries = Self.loadEntries(from: data),
            !loadedEntries.isEmpty {
