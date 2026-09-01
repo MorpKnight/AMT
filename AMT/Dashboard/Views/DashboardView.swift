@@ -16,6 +16,10 @@ struct DashboardView: View {
     let suggestionService: QwenSuggestionService
     let dictionaryStore: LegalDictionaryStore
 
+    @State private var documentViewModels: [UUID: AIConnectorViewModel] = [:]
+    @State private var analyzingDocument: DashboardDocument?
+    @State private var aiConnectorViewModel: AIConnectorViewModel?
+
     private var filteredDocuments: [DashboardDocument] {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return storageManager.documents
@@ -49,16 +53,19 @@ struct DashboardView: View {
                             storageManager.saveDocument(currentDoc)
                         }
                         activeDocument = nil
+                        analyzingDocument = nil
+                        aiConnectorViewModel = nil
                     },
                     onCreateNewDocument: {
                         storageManager.importWordDocumentFromFinder { importedDoc in
                             if let doc = importedDoc {
-                                activeDocument = doc
+                                startAnalyzingDocument(doc)
                             }
                         }
                     },
                     suggestionService: suggestionService,
-                    dictionaryStore: dictionaryStore
+                    dictionaryStore: dictionaryStore,
+                    aiConnectorViewModel: aiConnectorViewModel
                 )
             } else {
                 // Main Dashboard Split View
@@ -68,7 +75,16 @@ struct DashboardView: View {
                 } detail: {
                     switch selectedTab {
                     case .document, .none:
-                        documentDashboardContent
+                        if let vm = aiConnectorViewModel, analyzingDocument != nil, vm.isRunning {
+                            DocumentAnalysisLoadingView(
+                                progressStage: vm.progressStage,
+                                downloadProgress: vm.downloadProgress,
+                                generationProgress: vm.generationProgress
+                            )
+                            .transition(.opacity)
+                        } else {
+                            documentDashboardContent
+                        }
                     case .dictionary:
                         DictionaryView(dictionaryStore: dictionaryStore)
                     }
@@ -78,6 +94,22 @@ struct DashboardView: View {
         }
         .navigationTitle("")
         .frame(minWidth: 900, minHeight: 600)
+        .onChange(of: aiConnectorViewModel?.isRunning) { _, isRunning in
+            if isRunning == false, let doc = analyzingDocument {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    self.activeDocument = doc
+                    self.analyzingDocument = nil
+                }
+            }
+        }
+    }
+
+    private func startAnalyzingDocument(_ doc: DashboardDocument) {
+        let vm = AIConnectorViewModel(service: suggestionService, dictionaryStore: dictionaryStore)
+        self.documentViewModels[doc.id] = vm
+        self.aiConnectorViewModel = vm
+        self.analyzingDocument = doc
+        vm.run(documentText: doc.content)
     }
 
     // MARK: - Document Grid Dashboard View
@@ -119,7 +151,7 @@ struct DashboardView: View {
                     NewDocumentCardView {
                         storageManager.importWordDocumentFromFinder { importedDoc in
                             if let doc = importedDoc {
-                                activeDocument = doc
+                                startAnalyzingDocument(doc)
                             }
                         }
                     }
@@ -129,7 +161,9 @@ struct DashboardView: View {
                         DocumentCardView(
                             document: doc,
                             onSelect: {
-                                activeDocument = doc
+                                let vm = documentViewModels[doc.id] ?? AIConnectorViewModel(service: suggestionService, dictionaryStore: dictionaryStore)
+                                self.aiConnectorViewModel = vm
+                                self.activeDocument = doc
                             },
                             onDelete: {
                                 storageManager.deleteDocument(doc)

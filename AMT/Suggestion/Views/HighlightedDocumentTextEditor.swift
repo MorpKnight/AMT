@@ -75,6 +75,9 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         textView.onClick = { [weak coordinator = context.coordinator] point in
             coordinator?.handleClick(at: point)
         }
+        textView.onHover = { [weak coordinator = context.coordinator] point in
+            coordinator?.handleHover(at: point)
+        }
 
         textStorage.setAttributedString(
             NSAttributedString(
@@ -191,6 +194,47 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             }
         }
 
+        func handleHover(at point: NSPoint) {
+            guard let textView,
+                  let layoutManager,
+                  let textContainer,
+                  !parent.suggestions.isEmpty
+            else {
+                return
+            }
+
+            let containerPoint = NSPoint(
+                x: point.x - textView.textContainerOrigin.x,
+                y: point.y - textView.textContainerOrigin.y
+            )
+            let characterIndex = layoutManager.characterIndex(
+                for: containerPoint,
+                in: textContainer,
+                fractionOfDistanceBetweenInsertionPoints: nil
+            )
+
+            guard characterIndex != NSNotFound,
+                  let suggestion = parent.suggestions.first(where: {
+                      NSLocationInRange(characterIndex, $0.sourceRange)
+                  })
+            else {
+                return
+            }
+
+            if presentedSuggestionID != suggestion.id {
+                parent.onSelect(suggestion.id)
+                layoutManager.update(
+                    suggestions: parent.suggestions,
+                    selectedSuggestionID: suggestion.id
+                )
+                presentPopover(
+                    for: suggestion,
+                    anchor: anchor(for: suggestion),
+                    isStale: !rangeContainsOriginal(suggestion)
+                )
+            }
+        }
+
         func handleClick(at point: NSPoint) {
             guard let textView,
                   let layoutManager,
@@ -227,9 +271,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             )
             presentPopover(
                 for: suggestion,
-                anchor: lineAnchor(
-                    point: containerPoint
-                ),
+                anchor: anchor(for: suggestion),
                 isStale: !rangeContainsOriginal(suggestion)
             )
         }
@@ -303,7 +345,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                     }
                 )
             )
-            popover.contentSize = NSSize(width: 420, height: 320)
+            popover.contentSize = NSSize(width: 380, height: 300)
             self.popover = popover
             presentedSuggestionID = suggestion.id
 
@@ -444,6 +486,26 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
 
 final class SuggestionTextView: NSTextView {
     var onClick: ((NSPoint) -> Void)?
+    var onHover: ((NSPoint) -> Void)?
+
+    private var trackingArea: NSTrackingArea?
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let trackingArea {
+            removeTrackingArea(trackingArea)
+        }
+        let options: NSTrackingArea.Options = [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow]
+        let newArea = NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil)
+        addTrackingArea(newArea)
+        self.trackingArea = newArea
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        super.mouseMoved(with: event)
+        let point = convert(event.locationInWindow, from: nil)
+        onHover?(point)
+    }
 
     override func mouseDown(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
@@ -489,17 +551,12 @@ final class SuggestionLayoutManager: NSLayoutManager {
 
             addTemporaryAttribute(
                 .foregroundColor,
-                value: NSColor.systemRed,
+                value: NSColor(red: 0.65, green: 0.12, blue: 0.18, alpha: 1.0),
                 forCharacterRange: item.range
             )
             addTemporaryAttribute(
-                .underlineStyle,
-                value: NSUnderlineStyle.single.rawValue,
-                forCharacterRange: item.range
-            )
-            addTemporaryAttribute(
-                .underlineColor,
-                value: NSColor.systemRed,
+                .font,
+                value: NSFont.systemFont(ofSize: 16, weight: .bold),
                 forCharacterRange: item.range
             )
         }
@@ -540,15 +597,13 @@ final class SuggestionLayoutManager: NSLayoutManager {
             ) { rect, _ in
                 let drawRect = rect
                     .offsetBy(dx: origin.x, dy: origin.y)
-                    .insetBy(dx: -3, dy: 1)
-                let color = NSColor.systemRed.withAlphaComponent(
-                    item.isSelected ? 0.24 : 0.11
-                )
+                    .insetBy(dx: -4, dy: 1)
+                let color = NSColor(red: 0.98, green: 0.88, blue: 0.90, alpha: 1.0)
                 color.setFill()
                 NSBezierPath(
                     roundedRect: drawRect,
-                    xRadius: 4,
-                    yRadius: 4
+                    xRadius: 6,
+                    yRadius: 6
                 ).fill()
             }
         }
