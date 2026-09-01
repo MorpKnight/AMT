@@ -15,18 +15,14 @@ final class DictionaryViewModel {
     var searchText: String = ""
     var selectedEntry: LegalGlossaryEntry? = nil
     var isShowingDetail: Bool = false
+    var isNotFound: Bool = false
     var isLoading: Bool = false
     var semanticProgress: Double?
     var topMatches: [LegalGlossaryEntry] = []
 
     // MARK: - Popular Terms
     /// Array of popular legal terms displayed in the "Istilah Populer" section.
-    ///
-    /// TODO: [AI Team]
-    /// 1. Replace this default array with real-time recommendations from your ranking or embedding model.
-    /// 2. You can inject a suggestion service or async loader method here:
-    ///    `func refreshPopularTerms(basedOn context: String? = nil) async { ... }`
-    var popularTerms: [PopularTerm] = PopularTerm.defaultPopularTerms
+    var popularTerms: [PopularTerm] = []
 
     private let dictionaryStore: LegalDictionaryStore
     @ObservationIgnored private var lookupTask: Task<Void, Never>?
@@ -34,6 +30,12 @@ final class DictionaryViewModel {
 
     init(dictionaryStore: LegalDictionaryStore = LegalDictionaryStore()) {
         self.dictionaryStore = dictionaryStore
+        self.popularTerms = PopularTerm.randomPopularTerms(count: 3, from: dictionaryStore.entries)
+    }
+
+    /// Refreshes the popular terms section with 3 random terms.
+    func refreshPopularTerms() {
+        popularTerms = PopularTerm.randomPopularTerms(count: 3, from: dictionaryStore.entries)
     }
 
     // MARK: - Search & Lookup Actions
@@ -61,6 +63,7 @@ final class DictionaryViewModel {
         let lookupID = UUID()
         activeLookupID = lookupID
         isLoading = true
+        isNotFound = false
         semanticProgress = nil
 
         lookupTask = Task { @MainActor [weak self] in
@@ -92,6 +95,7 @@ final class DictionaryViewModel {
 
             withAnimation(.easeInOut(duration: 0.2)) {
                 self.isShowingDetail = !glossaryEntries.isEmpty
+                self.isNotFound = glossaryEntries.isEmpty
                 self.isLoading = false
                 self.semanticProgress = nil
             }
@@ -202,6 +206,7 @@ final class DictionaryViewModel {
         semanticProgress = nil
         withAnimation(.easeInOut(duration: 0.2)) {
             self.isShowingDetail = false
+            self.isNotFound = false
             self.selectedEntry = nil
         }
     }

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct DictionaryView: View {
     @State private var viewModel: DictionaryViewModel
+    @Environment(\.colorScheme) private var colorScheme
 
     init(dictionaryStore: LegalDictionaryStore = LegalDictionaryStore()) {
         _viewModel = State(initialValue: DictionaryViewModel(dictionaryStore: dictionaryStore))
@@ -16,7 +17,10 @@ struct DictionaryView: View {
 
     var body: some View {
         Group {
-            if viewModel.isShowingDetail {
+            if viewModel.isNotFound {
+                dictionaryNotFoundView
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            } else if viewModel.isShowingDetail {
                 DictionaryDetailView(viewModel: viewModel)
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
             } else {
@@ -27,6 +31,7 @@ struct DictionaryView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
         .animation(.easeInOut(duration: 0.22), value: viewModel.isShowingDetail)
+        .animation(.easeInOut(duration: 0.22), value: viewModel.isNotFound)
     }
 
     // MARK: - Lawtionary Home Search Screen (Matching Mockup)
@@ -122,6 +127,66 @@ struct DictionaryView: View {
             Spacer()
         }
         .padding(.horizontal, 24)
+    }
+
+    // MARK: - Term Not Found View (Matching Design Spec)
+
+    private var dictionaryNotFoundView: some View {
+        VStack(spacing: 28) {
+            // Card Container
+            VStack(spacing: 14) {
+                // Circular Search Glass Icon
+                ZStack {
+                    Circle()
+                        .fill(Color(white: 0.42))
+                        .frame(width: 32, height: 32)
+
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+
+                // Header Title
+                Text("Istilah yang kamu cari tidak ada")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 4)
+
+                // Description Subtitle
+                Text("Cek kembali terkait penulisan atau istilah yang kamu cari")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 36)
+            .padding(.vertical, 36)
+            .frame(maxWidth: 540)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(colorScheme == .dark ? Color(white: 0.12) : Color(red: 0.97, green: 0.97, blue: 0.98))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .strokeBorder(Color(red: 0.32, green: 0.45, blue: 0.96), lineWidth: 2)
+            )
+
+            // "Kembali ke pencarian" Button
+            Button(action: {
+                viewModel.clearSearch()
+            }) {
+                Text("Kembali ke pencarian")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Color(red: 0.08, green: 0.38, blue: 0.85))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
