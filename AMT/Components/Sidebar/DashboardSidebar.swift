@@ -30,10 +30,10 @@ struct DashboardSidebar: View {
             HStack(spacing: 8) {
                 Image(systemName: "doc.text.fill")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Color.brandPrimary)
                 Text("Lawtionary")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.primary)
+                    .appFont(.titleMedium, weight: .bold)
+                    .foregroundStyle(Color.textPrimary)
             }
             .padding(.horizontal, 16)
             .padding(.top, 16)
@@ -44,7 +44,8 @@ struct DashboardSidebar: View {
                 ForEach(DashboardTab.allCases) { tab in
                     NavigationLink(value: tab) {
                         Label(tab.rawValue, systemImage: tab.icon)
-                            .font(.system(size: 14, weight: .medium))
+                            .appFont(.subheadline, weight: .medium)
+                            .foregroundStyle(Color.textPrimary)
                     }
                     .tag(tab)
                 }
