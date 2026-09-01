@@ -12,13 +12,14 @@ struct DocumentEditorView: View {
     @Binding var activeDocument: DashboardDocument
     let onBackToDashboard: () -> Void
     let onCreateNewDocument: () -> Void
-
+    
     private let suggestionService: QwenSuggestionService
-
+    
     @State private var selectedDocumentID: UUID?
     @State private var aiConnectorViewModel: AIConnectorViewModel
     @State private var isDebugPanelPresented = false
-
+//    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    
     init(
         documents: [DashboardDocument],
         activeDocument: Binding<DashboardDocument>,
@@ -40,9 +41,11 @@ struct DocumentEditorView: View {
             )
         )
     }
-
+    
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView
+//        (columnVisibility: $columnVisibility)
+        {
             EditorSidebar(
                 documents: documents,
                 selectedDocumentID: $selectedDocumentID,
@@ -50,38 +53,45 @@ struct DocumentEditorView: View {
                 onCreateNewDocument: onCreateNewDocument
             )
             .navigationTitle("")
+            
         } detail: {
             VStack(spacing: 0) {
                 EditorToolbar(
                     documentTitle: $activeDocument.title,
+//                    onToggleSidebar: {
+//                        withAnimation(.easeInOut(duration: 0.2)) {
+//                            columnVisibility = (columnVisibility == .detailOnly) ? .all : .detailOnly
+//                        }
+//                    },
                     onExport: {
                         DocumentExporter.exportAsDocx(
                             title: activeDocument.title,
                             content: activeDocument.content
                         )
-                    },
-                    onAnalyze: {
-                        aiConnectorViewModel.run(documentText: activeDocument.content)
-                    },
-                    onCancelAnalysis: {
-                        aiConnectorViewModel.cancel()
-                    },
-                    onShowDebug: {
-                        isDebugPanelPresented = true
-                    },
-                    canAnalyze: aiConnectorViewModel.canRun(
-                        documentText: activeDocument.content
-                    ),
-                    isAnalyzing: aiConnectorViewModel.isRunning,
-                    analysisState: aiConnectorViewModel.state,
-                    analysisProgressStage: aiConnectorViewModel.progressStage,
-                    analysisDownloadProgress: aiConnectorViewModel.downloadProgress,
-                    analysisGenerationProgress: aiConnectorViewModel.generationProgress,
-                    analysisSummary: aiConnectorViewModel.runSummary,
-                    analysisErrorMessage: aiConnectorViewModel.errorMessage
+//                    },
+                    //                    onAnalyze: {
+                    //                        aiConnectorViewModel.run(documentText: activeDocument.content)
+                    //                    },
+                    //                    onCancelAnalysis: {
+                    //                        aiConnectorViewModel.cancel()
+                    //                    },
+                    //                    onShowDebug: {
+                    //                        isDebugPanelPresented = true
+                    //                    },
+                    //                    canAnalyze: aiConnectorViewModel.canRun(
+                    //                        documentText: activeDocument.content
+                    //                    ),
+                    //                    isAnalyzing: aiConnectorViewModel.isRunning,
+                    //                    analysisState: aiConnectorViewModel.state,
+                    //                    analysisProgressStage: aiConnectorViewModel.progressStage,
+                    //                    analysisDownloadProgress: aiConnectorViewModel.downloadProgress,
+                    //                    analysisGenerationProgress: aiConnectorViewModel.generationProgress,
+                    //                    analysisSummary: aiConnectorViewModel.runSummary,
+                    //                    analysisErrorMessage: aiConnectorViewModel.errorMessage
+                    }
                 )
-                Divider()
-
+//                Divider()
+                
                 HighlightedDocumentTextEditor(
                     text: $activeDocument.content,
                     suggestions: aiConnectorViewModel.editorSuggestions,
@@ -94,7 +104,7 @@ struct DocumentEditorView: View {
                     },
                     onAccept: { suggestion in
                         let delta = suggestion.replacement.utf16.count
-                            - suggestion.original.utf16.count
+                        - suggestion.original.utf16.count
                         aiConnectorViewModel.reconcileAfterAccept(
                             suggestion.id,
                             replacementDelta: delta
@@ -122,15 +132,6 @@ struct DocumentEditorView: View {
                 selectedDocumentID = newID
             }
         }
-        #if DEBUG
-        .sheet(isPresented: $isDebugPanelPresented) {
-            AIConnectorDebugPanel(
-                documentText: activeDocument.content,
-                viewModel: aiConnectorViewModel
-            )
-            .frame(minWidth: 760, minHeight: 600)
-        }
-        #endif
     }
 }
 
