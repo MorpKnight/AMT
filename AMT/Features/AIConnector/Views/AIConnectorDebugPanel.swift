@@ -7,1125 +7,10 @@ struct AIConnectorDebugPanel: View {
     @Bindable var viewModel: AIConnectorViewModel
 
     var body: some View {
-        GroupBox("Suggestion — Eksperimental") {
-            VStack(alignment: .leading, spacing: 10) {
-                AIConnectorPanelHeader()
-                AIConnectorSafetyNotice()
-
-                HStack(alignment: .top, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Picker("Strategi review", selection: $viewModel.reviewMode) {
-                            ForEach(AIConnectorReviewMode.allCases) { mode in
-                                Text(mode.title).tag(mode)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        Text(viewModel.reviewMode.detail)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    }
-                    .frame(width: 220, alignment: .leading)
-
-                    if viewModel.reviewMode.usesModel {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Picker("Model", selection: $viewModel.modelVariant) {
-                                ForEach(AIConnectorModelVariant.allCases) { model in
-                                    Text(model.title).tag(model)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            Text("\(viewModel.modelVariant.downloadEstimate) • rev \(viewModel.modelVariant.shortRevision)")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                        .frame(width: 220, alignment: .leading)
-                    }
-
-                    Picker("Sumber input", selection: $viewModel.inputSource) {
-                        ForEach(AIConnectorInputSource.allCases) { source in
-                            Text(source.title).tag(source)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .frame(width: 180, alignment: .leading)
-
-                    if viewModel.inputSource == .dummy {
-                        Picker("Fixture", selection: $viewModel.selectedSampleID) {
-                            ForEach(AIConnectorSample.samples) { sample in
-                                Text(sample.title).tag(sample.id)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .frame(maxWidth: 280)
-                    } else {
-                        Label("\(documentText.count) karakter", systemImage: "character.textbox")
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    Toggle("Thinking eksperimental", isOn: $viewModel.thinkingEnabled)
-                        .toggleStyle(.checkbox)
-                        .help("Mode eksperimental; reasoning internal tetap disembunyikan.")
-                }
-                .disabled(viewModel.isRunning)
-                .padding(10)
-                .background(.quaternary.opacity(0.22), in: RoundedRectangle(cornerRadius: 9))
-
-                Text(viewModel.inputPreview(documentText: documentText))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(4)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(10)
-                    .background(.quaternary.opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 9)
-                            .stroke(.quaternary.opacity(0.65), lineWidth: 1)
-                    )
-
-                if viewModel.inputWasTruncated(documentText: documentText) {
-                    Label(
-                        "Input dibatasi ke 4.000 karakter pertama.",
-                        systemImage: "scissors"
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .padding(.horizontal, 2)
-                }
-
-                if viewModel.inputSource == .dummy {
-                    DisclosureGroup("Sinyal yang diharapkan (Debug)") {
-                        Text(viewModel.selectedSample.expectedSignal)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 4)
-                    }
-                }
-
-                if let segmentation = viewModel.segmentationResult {
-                    AIConnectorSegmentationSummary(
-                        segmentation: segmentation,
-                        skippedSegmentCount: viewModel.skippedSegmentCount
-                    )
-                } else {
-                    Text("Teks akan diproses per kalimat, maksimal 12 segmen per Run.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 2)
-                }
-
-                if !viewModel.currentSegmentPreview.isEmpty, viewModel.isRunning {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Target saat ini")
-                            .font(.caption.weight(.semibold))
-                        Text(viewModel.currentSegmentPreview)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(3)
-                    }
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.blue.opacity(0.08), in: RoundedRectangle(cornerRadius: 9))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 9)
-                            .stroke(.blue.opacity(0.22), lineWidth: 1)
-                    )
-                }
-
-                if viewModel.isRunning, !viewModel.currentGlossaryMatches.isEmpty {
-                    DisclosureGroup {
-                        ScrollView(.vertical) {
-                            GlossaryMatchesList(matches: viewModel.currentGlossaryMatches)
-                                .padding(.top, 4)
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: 180, alignment: .topLeading)
-                    } label: {
-                        AIConnectorDisclosureHeader(
-                            title: "Kandidat glossary segmen saat ini",
-                            count: viewModel.currentGlossaryMatches.count,
-                            systemImage: "books.vertical",
-                            tint: .purple
-                        )
-                    }
-                }
-
-                if !viewModel.isRunning, !viewModel.glossarySnapshots.isEmpty {
-                    DisclosureGroup {
-                        ScrollView(.vertical) {
-                            LazyVStack(alignment: .leading, spacing: 10) {
-                                ForEach(viewModel.glossarySnapshots) { snapshot in
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Text("Segmen \(snapshot.segment.id)")
-                                            .font(.caption.weight(.semibold))
-                                        Text(snapshot.segment.targetText)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(3)
-                                        GlossaryMatchesList(matches: snapshot.matches)
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .textSelection(.enabled)
-                                }
-                            }
-                            .padding(.top, 4)
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: 240, alignment: .topLeading)
-                    } label: {
-                        AIConnectorDisclosureHeader(
-                            title: "Kandidat glossary hasil run",
-                            count: viewModel.glossaryCandidateCount,
-                            systemImage: "books.vertical",
-                            tint: .purple
-                        )
-                    }
-                }
-
-                HStack(spacing: 8) {
-                    if viewModel.isRunning {
-                        Button {
-                            viewModel.cancel()
-                        } label: {
-                            Label("Batalkan", systemImage: "stop.fill")
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(.red)
-                        .keyboardShortcut(.cancelAction)
-                    } else {
-                        Button {
-                            viewModel.run(documentText: documentText)
-                        } label: {
-                            Label("Jalankan review", systemImage: "play.fill")
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .keyboardShortcut(.return, modifiers: [.command])
-                        .disabled(!viewModel.canRun(documentText: documentText))
-
-                        Button {
-                            viewModel.runBenchmark()
-                        } label: {
-                            Label(
-                                viewModel.reviewMode == .deterministic
-                                    ? "Uji baseline"
-                                    : "Benchmark \(AIConnectorSample.samples.count) fixture",
-                                systemImage: "checklist"
-                            )
-                        }
-                        .buttonStyle(.bordered)
-                        .help(viewModel.reviewMode == .deterministic
-                            ? "Jalankan seluruh fixture dengan aturan deterministik tanpa mengunduh model."
-                            : "Jalankan seluruh fixture dengan model dan safety boundary yang dipilih.")
-                        .disabled(!viewModel.canRunBenchmark)
-
-                        if case .failed = viewModel.state {
-                            Button {
-                                viewModel.run(documentText: documentText)
-                            } label: {
-                                Label("Coba lagi", systemImage: "arrow.clockwise")
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                    }
-
-                    Spacer(minLength: 0)
-                    AIConnectorStateBadge(state: viewModel.state)
-                }
-
-                if case let .downloading(progress) = viewModel.state {
-                    AIConnectorProgressCard(
-                        title: "Mengunduh model",
-                        detail: "Model akan tersimpan di cache lokal setelah selesai.",
-                        progress: progress
-                    )
-                }
-
-                if case let .reviewing(current, total) = viewModel.state {
-                    AIConnectorProgressCard(
-                        title: "Meninjau kalimat \(current) dari \(total)",
-                        detail: "\(viewModel.generationProgress) karakter output • hasil belum ditampilkan sebelum lolos pemeriksaan",
-                        progress: Double(max(current - 1, 0)) / Double(max(total, 1))
-                    )
-                }
-
-                if case .segmenting = viewModel.state {
-                    AIConnectorProgressCard(
-                        title: "Menyiapkan teks",
-                        detail: "Membagi dokumen menjadi segmen kalimat.",
-                        progress: nil
-                    )
-                }
-
-                if case .loading = viewModel.state {
-                    AIConnectorProgressCard(
-                        title: "Memuat model",
-                        detail: "Menyiapkan model lokal sebelum review dimulai.",
-                        progress: nil
-                    )
-                }
-
-                if let errorMessage = viewModel.errorMessage {
-                    Label(errorMessage, systemImage: "xmark.octagon")
-                        .font(.callout)
-                        .foregroundStyle(.red)
-                        .padding(10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 9))
-                }
-
-                if let summary = viewModel.runSummary {
-                    AIConnectorRunSummaryView(summary: summary)
-                }
-
-                if let evaluation = viewModel.fixtureEvaluation {
-                    AIConnectorFixtureEvaluationView(evaluation: evaluation)
-                }
-
-                if let benchmarkReport = viewModel.benchmarkReport {
-                    AIConnectorBenchmarkReportView(report: benchmarkReport)
-                } else if let benchmarkSummary = viewModel.benchmarkSummary {
-                    AIConnectorBenchmarkSummaryView(summary: benchmarkSummary)
-                }
-
-                if let metrics = viewModel.latestGenerationMetrics {
-                    AIConnectorGenerationMetricsView(metrics: metrics)
-                }
-
-                if !viewModel.validatedReviews.isEmpty {
-                    DisclosureGroup {
-                        ScrollView(.vertical) {
-                            LazyVStack(alignment: .leading, spacing: 10) {
-                                ForEach(viewModel.validatedReviews) { review in
-                                    AIValidatedReviewRow(review: review)
-                                }
-                            }
-                            .padding(.top, 4)
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: 240, alignment: .topLeading)
-                    } label: {
-                        AIConnectorDisclosureHeader(
-                            title: "Hasil tervalidasi",
-                            count: viewModel.validatedReviews.count,
-                            systemImage: "checkmark.shield.fill",
-                            tint: .green
-                        )
-                    }
-                }
-
-                #if DEBUG
-                if !viewModel.rejectedReviews.isEmpty {
-                    DisclosureGroup {
-                        ScrollView(.vertical) {
-                            LazyVStack(alignment: .leading, spacing: 10) {
-                                ForEach(viewModel.rejectedReviews) { rejection in
-                                    AIReviewRejectionRow(rejection: rejection)
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: 240, alignment: .topLeading)
-                        .padding(.top, 4)
-                    } label: {
-                        AIConnectorDisclosureHeader(
-                            title: "Output model ditolak",
-                            count: viewModel.rejectedReviews.count,
-                            systemImage: "exclamationmark.triangle.fill",
-                            tint: .orange
-                        )
-                    }
-                }
-                #endif
-
-                VStack(alignment: .leading, spacing: 8) {
-                    AIConnectorSectionHeader(
-                        title: "Output ringkas",
-                        subtitle: "Salinan hasil yang lolos pemeriksaan.",
-                        systemImage: "doc.plaintext"
-                    )
-                    ScrollView {
-                        Text(viewModel.output.isEmpty
-                            ? "Belum ada hasil yang lolos pemeriksaan."
-                            : viewModel.output)
-                            .font(.callout)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .textSelection(.enabled)
-                            .foregroundStyle(viewModel.output.isEmpty ? .secondary : .primary)
-                            .padding(10)
-                    }
-                    .frame(minHeight: 90, maxHeight: 180)
-                    .background(.quaternary.opacity(0.18), in: RoundedRectangle(cornerRadius: 9))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 9)
-                            .stroke(.quaternary.opacity(0.65), lineWidth: 1)
-                    )
-                }
-            }
-            .padding(8)
-        }
-        .padding(8)
-        .onDisappear(perform: viewModel.cancel)
-        .onChange(of: viewModel.inputSource) { _, _ in
-            viewModel.resetInputMetadata()
-        }
-        .onChange(of: viewModel.selectedSampleID) { _, _ in
-            viewModel.resetInputMetadata()
-        }
-        .onChange(of: viewModel.reviewMode) { _, _ in
-            viewModel.resetInputMetadata()
-        }
-        .onChange(of: viewModel.modelVariant) { _, _ in
-            viewModel.resetInputMetadata()
-        }
-        .onChange(of: documentText) { _, _ in
-            viewModel.resetInputMetadata()
-        }
-    }
-}
-
-private struct GlossaryMatchesList: View {
-    let matches: [LegalDictionaryMatch]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(matches) { match in
-                GlossaryMatchRow(match: match)
-            }
-        }
-    }
-}
-
-private struct AIConnectorPanelHeader: View {
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "sparkles")
-                .font(.title2)
-                .foregroundStyle(.tint)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Review bahasa hukum")
-                    .font(.headline)
-                Text("Eksperimen lokal untuk menguji segmentasi, glossary, dan safety gate.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 0)
-
-            Text("DEBUG")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(.orange)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 4)
-                .background(.orange.opacity(0.12), in: Capsule())
-        }
-    }
-}
-
-private struct AIConnectorSafetyNotice: View {
-    var body: some View {
-        HStack(alignment: .top, spacing: 9) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Eksperimen, bukan nasihat hukum")
-                    .font(.subheadline.weight(.semibold))
-                Text("Output hanya saran awal. Jangan masukkan dokumen rahasia; dokumen tidak diubah otomatis.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 9))
-        .overlay(
-            RoundedRectangle(cornerRadius: 9)
-                .stroke(.orange.opacity(0.25), lineWidth: 1)
+        AIConnectorNativeDebugContent(
+            documentText: documentText,
+            viewModel: viewModel
         )
-    }
-}
-
-private struct AIConnectorSegmentationSummary: View {
-    let segmentation: AITextSegmentationResult
-    let skippedSegmentCount: Int
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            AIConnectorSectionHeader(
-                title: "Analisis dokumen",
-                subtitle: "Segmentasi yang dipakai pada Run terakhir.",
-                systemImage: "text.magnifyingglass"
-            )
-
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 100), spacing: 8)],
-                spacing: 8
-            ) {
-                AIConnectorMetricTile(
-                    value: "\(segmentation.segments.count)",
-                    label: "Segmen",
-                    tint: .blue
-                )
-                AIConnectorMetricTile(
-                    value: "\(segmentation.headingCount)",
-                    label: "Heading",
-                    tint: .purple
-                )
-                AIConnectorMetricTile(
-                    value: "\(segmentation.tooLongSegmentCount)",
-                    label: "Terlalu panjang",
-                    tint: .orange
-                )
-                AIConnectorMetricTile(
-                    value: "\(skippedSegmentCount)",
-                    label: "Dilewati",
-                    tint: .secondary
-                )
-            }
-        }
-        .padding(12)
-        .background(.quaternary.opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
-    }
-}
-
-private struct AIConnectorSectionHeader: View {
-    let title: String
-    let subtitle: String?
-    let systemImage: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: systemImage)
-                .foregroundStyle(.tint)
-                .frame(width: 18)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-}
-
-private struct AIConnectorMetricTile: View {
-    let value: String
-    let label: String
-    let tint: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(value)
-                .font(.headline.monospacedDigit())
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-        }
-        .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 7)
-        .background(tint.opacity(0.11), in: RoundedRectangle(cornerRadius: 8))
-    }
-}
-
-private struct AIConnectorStateBadge: View {
-    let state: AIConnectorRunState
-
-    var body: some View {
-        Label(state.title, systemImage: state.iconName)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(state.tint)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .background(state.tint.opacity(0.11), in: Capsule())
-    }
-}
-
-private struct AIConnectorProgressCard: View {
-    let title: String
-    let detail: String
-    let progress: Double?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 8) {
-                ProgressView()
-                    .controlSize(.small)
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                Spacer(minLength: 0)
-                if let progress {
-                    Text("\(Int(max(0, min(1, progress)) * 100))%")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            if let progress {
-                ProgressView(value: max(0, min(1, progress)))
-                    .progressViewStyle(.linear)
-                    .tint(.accentColor)
-            }
-
-            Text(detail)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.blue.opacity(0.07), in: RoundedRectangle(cornerRadius: 9))
-    }
-}
-
-private struct AIConnectorFixtureEvaluationView: View {
-    let evaluation: AIConnectorFixtureEvaluation
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            AIConnectorSectionHeader(
-                title: evaluation.passed ? "Fixture lulus" : "Fixture belum lulus",
-                subtitle: evaluation.sample.title,
-                systemImage: evaluation.passed
-                    ? "checkmark.seal.fill"
-                    : "exclamationmark.triangle.fill"
-            )
-            .foregroundStyle(evaluation.passed ? .green : .orange)
-
-            Text("Expected: \(evaluation.sample.expectedSignal)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-
-            Text(actualSummary)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-
-            Text(evaluation.detail)
-                .font(.caption)
-                .foregroundStyle(evaluation.passed ? .green : .orange)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background((evaluation.passed ? Color.green : Color.orange).opacity(0.08), in: RoundedRectangle(cornerRadius: 9))
-    }
-
-    private var actualSummary: String {
-        guard let actualStatus = evaluation.actualStatus else {
-            return "Actual: tidak ada hasil valid."
-        }
-
-        let replacement = evaluation.actualReplacement.map { " → \($0)" } ?? ""
-        return "Actual: \(actualStatus.displayTitle)\(replacement)"
-    }
-}
-
-private struct AIConnectorBenchmarkSummaryView: View {
-    let summary: AIConnectorBenchmarkSummary
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            AIConnectorSectionHeader(
-                title: "Benchmark fixture",
-                subtitle: "\(summary.reviewMode.title) • \(summary.modelVariant.title)",
-                systemImage: "checklist"
-            )
-
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("\(summary.passedCount)/\(summary.totalCount)")
-                    .font(.title3.monospacedDigit().weight(.bold))
-                    .foregroundStyle(summary.passedCount == summary.totalCount ? .green : .orange)
-                Text("fixture memenuhi expected signal")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-                Text(String(format: "%.2f dtk", summary.duration))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(summary.evaluations) { evaluation in
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: evaluation.passed
-                            ? "checkmark.circle.fill"
-                            : "xmark.circle.fill")
-                            .foregroundStyle(evaluation.passed ? .green : .red)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(evaluation.sample.title)
-                                .font(.caption.weight(.semibold))
-                            Text(actualSummary(for: evaluation))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            Text(evaluation.detail)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                }
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
-    }
-
-    private func actualSummary(for evaluation: AIConnectorFixtureEvaluation) -> String {
-        guard let status = evaluation.actualStatus else {
-            return "Actual: tidak ada hasil tervalidasi."
-        }
-
-        let replacement = evaluation.actualReplacement.map { " → \($0)" } ?? ""
-        return "Actual: \(status.displayTitle)\(replacement)"
-    }
-}
-
-private struct AIConnectorBenchmarkReportView: View {
-    let report: AIConnectorBenchmarkReport
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                AIConnectorSectionHeader(
-                    title: "Quality gate P0.9",
-                    subtitle: "\(report.reviewMode.title) • \(report.modelVariant.title)",
-                    systemImage: "checkmark.shield"
-                )
-                Spacer(minLength: 0)
-                Text(report.qualityGate.decision.rawValue)
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(report.qualityGate.passed ? .green : .orange)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        (report.qualityGate.passed ? Color.green : Color.orange).opacity(0.12),
-                        in: Capsule()
-                    )
-            }
-
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("\(report.passedCount)/\(report.totalCount)")
-                    .font(.title3.monospacedDigit().weight(.bold))
-                Text("fixture sesuai expected signal")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-                Text(String(format: "%.2f dtk", report.duration))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 112), spacing: 8)],
-                spacing: 8
-            ) {
-                AIConnectorMetricTile(
-                    value: "\(report.qualityGate.languagePassCount)/\(report.qualityGate.languageTotal)",
-                    label: "Bahasa",
-                    tint: .blue
-                )
-                AIConnectorMetricTile(
-                    value: "\(report.qualityGate.neutralSafetyPassCount)/\(report.qualityGate.neutralSafetyTotal)",
-                    label: "Neutral/safety",
-                    tint: .green
-                )
-                AIConnectorMetricTile(
-                    value: "\(report.qualityGate.truncatedCount)",
-                    label: "Token limit",
-                    tint: .orange
-                )
-                AIConnectorMetricTile(
-                    value: "\(report.qualityGate.repetitionCount)",
-                    label: "Repetition ≥ 0,2",
-                    tint: .orange
-                )
-                AIConnectorMetricTile(
-                    value: "\(report.qualityGate.reasoningLeakCount)",
-                    label: "Reasoning leak",
-                    tint: .red
-                )
-                AIConnectorMetricTile(
-                    value: "\(totalPromptTokens)",
-                    label: "Prompt token",
-                    tint: .purple
-                )
-                AIConnectorMetricTile(
-                    value: "\(totalGenerationTokens)",
-                    label: "Generation token",
-                    tint: .purple
-                )
-            }
-
-            VStack(alignment: .leading, spacing: 7) {
-                ForEach(report.records) { record in
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: record.expectedSignalPassed
-                            ? "checkmark.circle.fill"
-                            : "xmark.circle.fill")
-                            .foregroundStyle(record.expectedSignalPassed ? .green : .red)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(record.sampleTitle)
-                                .font(.caption.weight(.semibold))
-                            Text(actualSummary(for: record))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            if let rejectionReason = record.rejectionReason {
-                                Text(rejectionReason)
-                                    .font(.caption2)
-                                    .foregroundStyle(.orange)
-                            }
-                            if let validatedReason = record.validatedReason {
-                                Text(validatedReason)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            if let ratio = record.repeatedSixGramRatio, ratio > 0 {
-                                Text(String(format: "Repeated 6-gram ratio %.3f", ratio))
-                                    .font(.caption2.monospacedDigit())
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            #if DEBUG
-                            if record.outputWasRejected, let diagnosticOutput = record.diagnosticOutput {
-                                DisclosureGroup("Diagnostic output (Debug)") {
-                                    Text(diagnosticOutput)
-                                        .font(.caption2.monospaced())
-                                        .textSelection(.enabled)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.top, 3)
-                                }
-                            }
-                            #endif
-                        }
-                        Spacer(minLength: 0)
-                    }
-                }
-            }
-
-            Text("Quality gate: minimal 2/3 kasus bahasa, seluruh neutral/safety, tanpa truncation, repetition, reasoning leak, atau sumber buatan.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary.opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
-    }
-
-    private var totalPromptTokens: Int {
-        report.records.compactMap(\.promptTokenCount).reduce(0, +)
-    }
-
-    private var totalGenerationTokens: Int {
-        report.records.compactMap(\.generationTokenCount).reduce(0, +)
-    }
-
-    private func actualSummary(for record: AIConnectorBenchmarkRecord) -> String {
-        let status = record.validatedStatus.flatMap(AIReviewStatus.init(rawValue:))?.displayTitle
-            ?? (record.skipped ? "Dilewati" : "Output ditolak")
-        let origin = record.origin.map { " • \($0)" } ?? ""
-        let replacement: String
-        if record.validatedStatus == AIReviewStatus.suggestion.rawValue,
-           let validatedReplacement = record.validatedReplacement {
-            replacement = " → \(validatedReplacement)"
-        } else {
-            replacement = ""
-        }
-        return "Actual: \(status)\(origin)\(replacement)"
-    }
-}
-
-private struct AIConnectorGenerationMetricsView: View {
-    let metrics: AIConnectorGenerationMetrics
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            AIConnectorSectionHeader(
-                title: "Metrik generation terakhir",
-                subtitle: "Diambil dari completion info MLX; progress live tetap berupa karakter.",
-                systemImage: "speedometer"
-            )
-
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 115), spacing: 8)],
-                spacing: 8
-            ) {
-                AIConnectorMetricTile(
-                    value: "\(metrics.promptTokenCount)",
-                    label: "Prompt token",
-                    tint: .purple
-                )
-                AIConnectorMetricTile(
-                    value: "\(metrics.generationTokenCount)",
-                    label: "Generation token",
-                    tint: .purple
-                )
-                AIConnectorMetricTile(
-                    value: String(format: "%.2f dtk", metrics.promptDuration),
-                    label: "Prompt duration",
-                    tint: .blue
-                )
-                AIConnectorMetricTile(
-                    value: String(format: "%.2f dtk", metrics.generationDuration),
-                    label: "Generation duration",
-                    tint: .blue
-                )
-                AIConnectorMetricTile(
-                    value: metrics.stopReason.rawValue,
-                    label: "Stop reason",
-                    tint: metrics.stopReason == .stop ? .green : .orange
-                )
-            }
-        }
-        .padding(12)
-        .background(.quaternary.opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
-    }
-}
-
-private struct AIConnectorRunSummaryView: View {
-    let summary: AIConnectorRunSummary
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            AIConnectorSectionHeader(
-                title: "Ringkasan Run",
-                subtitle: "Hasil setelah parser, safety validator, dan fallback.",
-                systemImage: "chart.bar.xaxis"
-            )
-
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 105), spacing: 8)],
-                spacing: 8
-            ) {
-                AIConnectorMetricTile(
-                    value: "\(summary.processedSegmentCount)",
-                    label: "Diproses",
-                    tint: .blue
-                )
-                AIConnectorMetricTile(
-                    value: "\(summary.suggestionCount)",
-                    label: "Saran",
-                    tint: .green
-                )
-                AIConnectorMetricTile(
-                    value: "\(summary.needsReviewCount)",
-                    label: "Perlu review",
-                    tint: .orange
-                )
-                AIConnectorMetricTile(
-                    value: "\(summary.noSuggestionCount)",
-                    label: "Tidak ada saran",
-                    tint: .secondary
-                )
-                AIConnectorMetricTile(
-                    value: "\(summary.recoveredCount)",
-                    label: "Dipulihkan",
-                    tint: .purple
-                )
-                AIConnectorMetricTile(
-                    value: "\(summary.rejectedCount)",
-                    label: "Output ditahan",
-                    tint: .red
-                )
-                AIConnectorMetricTile(
-                    value: "\(summary.skippedSegmentCount)",
-                    label: "Dilewati",
-                    tint: .secondary
-                )
-            }
-        }
-        .padding(12)
-        .background(.quaternary.opacity(0.16), in: RoundedRectangle(cornerRadius: 9))
-    }
-}
-
-private struct AIConnectorDisclosureHeader: View {
-    let title: String
-    let count: Int
-    let systemImage: String
-    let tint: Color
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: systemImage)
-                .foregroundStyle(tint)
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-            Spacer(minLength: 0)
-            Text("\(count)")
-                .font(.caption.monospacedDigit().weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(tint.opacity(0.11), in: Capsule())
-        }
-    }
-}
-
-private struct AIValidatedReviewRow: View {
-    let review: AIValidatedReview
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 9) {
-                Image(systemName: review.status.iconName)
-                    .font(.title3)
-                    .foregroundStyle(review.status.tint)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(alignment: .firstTextBaseline, spacing: 7) {
-                        Text(review.status.displayTitle)
-                            .font(.subheadline.weight(.semibold))
-
-                        if !review.category.displayTitle.isEmpty {
-                            Text(review.category.displayTitle)
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background(.quaternary, in: Capsule())
-                        }
-
-                        Spacer(minLength: 0)
-                    }
-
-                    Text(review.origin.displayTitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            if review.status == .suggestion {
-                if let original = review.original {
-                    AIConnectorReviewText(label: "Asli", text: original)
-                }
-                if let replacement = review.replacement {
-                    AIConnectorReviewText(label: "Usulan", text: replacement, tint: .green)
-                }
-            } else if review.status == .noSuggestion {
-                Label(
-                    "Segmen sudah diperiksa; tidak ada perubahan bahasa yang cukup aman untuk disarankan.",
-                    systemImage: "checkmark.circle"
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            } else {
-                Label(
-                    "Penggantian ditahan karena dapat memengaruhi makna hukum.",
-                    systemImage: "hand.raised.fill"
-                )
-                .font(.caption)
-                .foregroundStyle(.orange)
-            }
-
-            Text("Alasan: \(review.reason)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textSelection(.enabled)
-
-            if let glossaryMatch = review.glossaryMatch {
-                VStack(alignment: .leading, spacing: 2) {
-                    Label("Glossary: \(glossaryMatch.entry.term)", systemImage: "books.vertical")
-                        .font(.caption)
-                    if !glossaryMatch.entry.regulation.isEmpty {
-                        Text("Sumber: \(glossaryMatch.entry.regulation)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .foregroundStyle(.secondary)
-            }
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(review.status.tint.opacity(0.07), in: RoundedRectangle(cornerRadius: 9))
-        .overlay(
-            RoundedRectangle(cornerRadius: 9)
-                .stroke(review.status.tint.opacity(0.18), lineWidth: 1)
-        )
-        .textSelection(.enabled)
-    }
-}
-
-private struct AIConnectorReviewText: View {
-    let label: String
-    let text: String
-    var tint: Color? = nil
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label.uppercased())
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Text(text)
-                .font(.callout)
-                .foregroundStyle(tint ?? .primary)
-                .textSelection(.enabled)
-        }
-        .padding(8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background.opacity(0.65), in: RoundedRectangle(cornerRadius: 7))
-    }
-}
-
-private struct AIReviewRejectionRow: View {
-    let rejection: AIReviewRejection
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Label("Segmen \(rejection.segment.id)", systemImage: "exclamationmark.triangle")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.orange)
-            Text(rejection.reason)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            if !rejection.rawOutput.isEmpty {
-                Text(rejection.rawOutput)
-                    .font(.caption.monospaced())
-                    .textSelection(.enabled)
-                    .padding(8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.black.opacity(0.06), in: RoundedRectangle(cornerRadius: 7))
-            }
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.orange.opacity(0.06), in: RoundedRectangle(cornerRadius: 9))
-    }
-}
-
-private struct GlossaryMatchRow: View {
-    let match: LegalDictionaryMatch
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack {
-                Text(match.entry.term)
-                    .fontWeight(.semibold)
-                Spacer(minLength: 0)
-                Text(String(format: "BM25 %.2f", match.score))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-            Text(match.entry.regulation.isEmpty
-                ? "Sumber peraturan tidak tersedia"
-                : match.entry.regulation)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
-        .background(.background.opacity(0.65), in: RoundedRectangle(cornerRadius: 7))
     }
 }
 
@@ -1187,6 +72,850 @@ private extension AIConnectorRunState {
             .secondary
         case .failed:
             .red
+        }
+    }
+}
+
+private struct AIConnectorNativeDebugContent: View {
+    let documentText: String
+
+    @Bindable var viewModel: AIConnectorViewModel
+
+    private var actionableReviews: [AIValidatedReview] {
+        viewModel.validatedReviews.filter { review in
+            guard review.status == .suggestion,
+                  let original = review.original,
+                  let replacement = review.replacement else {
+                return false
+            }
+
+            return !original.isEmpty
+                && !replacement.isEmpty
+                && original != replacement
+        }
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Suggestion")
+                        .font(.title2.weight(.semibold))
+                    Text("Periksa ejaan, tata bahasa, dan istilah tanpa mengubah dokumen secara otomatis.")
+                        .foregroundStyle(.secondary)
+                }
+
+                Label(
+                    "Eksperimental — bukan nasihat hukum",
+                    systemImage: "info.circle"
+                )
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
+            }
+
+            Section("Sumber") {
+                Picker("Dokumen", selection: $viewModel.inputSource) {
+                    ForEach(AIConnectorInputSource.allCases) { source in
+                        Text(source.title).tag(source)
+                    }
+                }
+
+                if viewModel.inputSource == .dummy {
+                    Picker("Contoh", selection: $viewModel.selectedSampleID) {
+                        ForEach(AIConnectorSample.samples) { sample in
+                            Text(sample.title).tag(sample.id)
+                        }
+                    }
+
+                    DisclosureGroup("Sinyal yang diharapkan") {
+                        Text(viewModel.selectedSample.expectedSignal)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 4)
+                    }
+                } else {
+                    LabeledContent("Panjang") {
+                        Text("\(documentText.count) karakter")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                LabeledContent("Preview") {
+                    Text(viewModel.inputPreview(documentText: documentText))
+                        .font(.callout)
+                        .lineLimit(6)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                if viewModel.inputWasTruncated(documentText: documentText) {
+                    Label(
+                        "Preview menampilkan 4.000 karakter pertama. Analisis tetap memakai seluruh dokumen.",
+                        systemImage: "scissors"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+            }
+
+            Section("Pengaturan") {
+                Picker("Strategi", selection: $viewModel.reviewMode) {
+                    ForEach(AIConnectorReviewMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+
+                if viewModel.reviewMode.usesModel {
+                    Picker("Model", selection: $viewModel.modelVariant) {
+                        ForEach(AIConnectorModelVariant.allCases) { model in
+                            Text(model.title).tag(model)
+                        }
+                    }
+
+                    LabeledContent("Versi") {
+                        Text("\(viewModel.modelVariant.downloadEstimate) · rev \(viewModel.modelVariant.shortRevision)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+
+                    Picker("Profil", selection: $viewModel.generationProfilePreset) {
+                        ForEach(AIConnectorGenerationProfilePreset.allCases) { profile in
+                            Text(profile.title).tag(profile)
+                        }
+                    }
+
+                    Toggle("Mode thinking (eksperimental)", isOn: $viewModel.thinkingEnabled)
+                        .help("Reasoning internal tidak ditampilkan.")
+                }
+
+                Text(viewModel.reviewMode.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .disabled(viewModel.isRunning)
+
+            Section("Review") {
+                HStack(spacing: 8) {
+                    if viewModel.isRunning {
+                        Button(role: .cancel) {
+                            viewModel.cancel()
+                        } label: {
+                            Label("Batalkan", systemImage: "stop")
+                        }
+                        .keyboardShortcut(.cancelAction)
+                    } else {
+                        Button {
+                            viewModel.run(documentText: documentText)
+                        } label: {
+                            Label("Mulai review", systemImage: "text.magnifyingglass")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .keyboardShortcut(.return, modifiers: [.command])
+                        .disabled(!viewModel.canRun(documentText: documentText))
+
+                        if case .failed = viewModel.state {
+                            Button {
+                                viewModel.run(documentText: documentText)
+                            } label: {
+                                Label("Coba lagi", systemImage: "arrow.clockwise")
+                            }
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+                    AIConnectorNativeStatusLine(state: viewModel.state)
+                }
+
+                AIConnectorNativeProgressView(
+                    state: viewModel.state,
+                    progressStage: viewModel.progressStage,
+                    generationProgress: viewModel.generationProgress
+                )
+
+                if let errorMessage = viewModel.errorMessage {
+                    Label(errorMessage, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                        .textSelection(.enabled)
+                }
+            }
+
+            if let summary = viewModel.runSummary {
+                Section("Ringkasan") {
+                    AIConnectorNativeRunSummaryView(summary: summary)
+                }
+            }
+
+            if !actionableReviews.isEmpty {
+                Section("Rekomendasi") {
+                    ForEach(actionableReviews) { review in
+                        AIConnectorNativeValidatedReviewRow(review: review)
+                    }
+                }
+            }
+
+            #if DEBUG
+            if !viewModel.rejectedReviews.isEmpty {
+                Section("Output ditolak") {
+                    ForEach(viewModel.rejectedReviews) { rejection in
+                        AIConnectorNativeRejectionRow(rejection: rejection)
+                    }
+                }
+            }
+            #endif
+
+            if !viewModel.output.isEmpty {
+                Section("Output rekomendasi") {
+                    Text(viewModel.output)
+                        .font(.callout)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
+                }
+            }
+
+            Section {
+                DisclosureGroup("Detail debug") {
+                    AIConnectorNativeDebugDetails(viewModel: viewModel)
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .padding(.vertical, 8)
+        .onDisappear(perform: viewModel.cancel)
+        .onChange(of: viewModel.inputSource) { _, _ in
+            viewModel.resetInputMetadata()
+        }
+        .onChange(of: viewModel.selectedSampleID) { _, _ in
+            viewModel.resetInputMetadata()
+        }
+        .onChange(of: viewModel.reviewMode) { _, _ in
+            viewModel.resetInputMetadata()
+        }
+        .onChange(of: viewModel.modelVariant) { _, _ in
+            viewModel.resetInputMetadata()
+        }
+        .onChange(of: viewModel.generationProfilePreset) { _, _ in
+            viewModel.resetInputMetadata()
+        }
+        .onChange(of: documentText) { _, _ in
+            viewModel.resetInputMetadata()
+        }
+    }
+}
+
+private struct AIConnectorNativeDebugDetails: View {
+    @Bindable var viewModel: AIConnectorViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Button {
+                viewModel.runBenchmark()
+            } label: {
+                Label(
+                    viewModel.reviewMode == .deterministic
+                        ? "Uji baseline"
+                        : "Jalankan benchmark fixture",
+                    systemImage: "checklist"
+                )
+            }
+            .disabled(!viewModel.canRunBenchmark)
+            .help("Jalankan benchmark tanpa mengubah dokumen.")
+
+            LabeledContent("Corpus") {
+                Text(viewModel.activeCorpusVersion)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            LabeledContent("Model semantik") {
+                Text(viewModel.semanticModelRevision == "none"
+                    ? "Tidak tersedia"
+                    : "E5 rev \(String(viewModel.semanticModelRevision.prefix(12)))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            if let retrieval = viewModel.semanticRetrievalConfiguration {
+                LabeledContent("Guard suggestion") {
+                    Text("E5 ≥ \(retrieval.suggestionSemanticThreshold, specifier: "%.2f") · margin ≥ \(retrieval.suggestionTopOneMargin, specifier: "%.2f")")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if let segmentation = viewModel.segmentationResult {
+                LabeledContent("Segmentasi") {
+                    Text("\(segmentation.segments.count) segmen · \(segmentation.headingCount) heading")
+                        .foregroundStyle(.secondary)
+                }
+                LabeledContent("Batas") {
+                    Text("\(segmentation.tooLongSegmentCount) terlalu panjang · \(viewModel.skippedSegmentCount) dilewati")
+                        .foregroundStyle(.secondary)
+                }
+                if !viewModel.queueBatchSizes.isEmpty {
+                    LabeledContent("Batch") {
+                        Text(viewModel.queueBatchSizes.map(String.init).joined(separator: " / ") + " · serial")
+                            .font(.body.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } else {
+                Text("Belum ada hasil diagnostik.")
+                    .foregroundStyle(.secondary)
+            }
+
+            if !viewModel.currentSegmentPreview.isEmpty {
+                DisclosureGroup("Target saat ini") {
+                    Text(viewModel.currentSegmentPreview)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(4)
+                        .textSelection(.enabled)
+                        .padding(.top, 4)
+                }
+            }
+
+            if !viewModel.currentGlossaryMatches.isEmpty {
+                DisclosureGroup("Kandidat glossary saat ini") {
+                    ForEach(viewModel.currentGlossaryMatches) { match in
+                        AIConnectorNativeGlossaryMatchRow(match: match)
+                    }
+                }
+            }
+
+            if !viewModel.glossarySnapshots.isEmpty {
+                DisclosureGroup("Kandidat glossary hasil run") {
+                    ForEach(viewModel.glossarySnapshots) { snapshot in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Segmen \(snapshot.segment.id)")
+                                .font(.subheadline.weight(.semibold))
+                            Text(snapshot.segment.targetText)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(3)
+                                .textSelection(.enabled)
+                            ForEach(snapshot.matches) { match in
+                                AIConnectorNativeGlossaryMatchRow(match: match)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+
+            if viewModel.currentQueueState != nil || !viewModel.queueBatchSizes.isEmpty {
+                DisclosureGroup("Queue") {
+                    if let state = viewModel.currentQueueState {
+                        LabeledContent("State") {
+                            Text(state.rawValue)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    if let batchIndex = viewModel.currentBatchIndex,
+                       let batchSize = viewModel.currentBatchSize {
+                        LabeledContent("Batch aktif") {
+                            Text("\(batchIndex) dari \(viewModel.queueBatchSizes.count) · \(batchSize) item")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
+            if !viewModel.currentCandidates.isEmpty || !viewModel.currentCandidateDecisions.isEmpty {
+                DisclosureGroup("Kandidat dan keputusan") {
+                    ForEach(viewModel.currentCandidates) { candidate in
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack {
+                                Text(candidate.id)
+                                    .font(.body.monospaced().weight(.semibold))
+                                Text(candidate.category.displayTitle)
+                                    .foregroundStyle(.secondary)
+                                Spacer(minLength: 0)
+                                if let decision = viewModel.currentCandidateDecisions.first(where: {
+                                    $0.candidateID == candidate.id
+                                }) {
+                                    Text(decision.decision?.rawValue ?? "MODEL_FAILURE")
+                                        .font(.caption.monospaced())
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Text("\(candidate.original) → \(candidate.replacement)")
+                                .font(.caption)
+                                .textSelection(.enabled)
+                            if let glossaryMatch = candidate.glossaryMatch {
+                                Text("Span terpilih · evidence \(glossaryMatch.entry.sourcePassageID ?? "-") · ref \(glossaryMatch.entry.referenceID ?? "-")")
+                                    .font(.caption2.monospaced())
+                                    .foregroundStyle(.secondary)
+                                    .textSelection(.enabled)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+
+            if let evaluation = viewModel.fixtureEvaluation {
+                DisclosureGroup("Fixture") {
+                    LabeledContent("Status") {
+                        Text(evaluation.passed ? "Lulus" : "Belum lulus")
+                            .foregroundStyle(evaluation.passed ? .green : .orange)
+                    }
+                    Text(evaluation.sample.expectedSignal)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                    Text(evaluation.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if let benchmarkReport = viewModel.benchmarkReport {
+                DisclosureGroup("Benchmark") {
+                    AIConnectorNativeBenchmarkReportView(report: benchmarkReport)
+                }
+            } else if let benchmarkSummary = viewModel.benchmarkSummary {
+                DisclosureGroup("Benchmark") {
+                    AIConnectorNativeBenchmarkSummaryView(summary: benchmarkSummary)
+                }
+            }
+
+            if let metrics = viewModel.latestGenerationMetrics {
+                DisclosureGroup("Metrik generation") {
+                    AIConnectorNativeGenerationMetricsView(metrics: metrics)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, 8)
+    }
+}
+
+private struct AIConnectorNativeStatusLine: View {
+    let state: AIConnectorRunState
+
+    var body: some View {
+        Label(state.title, systemImage: state.iconName)
+            .foregroundStyle(state.tint)
+            .accessibilityValue(state.title)
+    }
+}
+
+private struct AIConnectorNativeProgressView: View {
+    let state: AIConnectorRunState
+    let progressStage: AIConnectorProgressStage
+    let generationProgress: Int
+
+    @ViewBuilder
+    var body: some View {
+        switch state {
+        case let .downloading(progress):
+            VStack(alignment: .leading, spacing: 6) {
+                ProgressView(value: progress)
+                LabeledContent(progressStage == .semanticModelDownload
+                    ? "Model semantik"
+                    : "Model Qwen") {
+                    Text("\(Int(progress * 100))%")
+                        .monospacedDigit()
+                }
+                Text(progressStage.title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case let .reviewing(current, total):
+            VStack(alignment: .leading, spacing: 6) {
+                ProgressView(value: Double(current), total: Double(max(total, 1)))
+                LabeledContent("Meninjau") {
+                    Text("\(current) dari \(total)")
+                        .monospacedDigit()
+                }
+                Text("\(progressStage.title) · \(generationProgress) karakter keluaran · hasil ditampilkan setelah pemeriksaan")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        case .segmenting:
+            ProgressView(progressStage.title)
+        case .loading:
+            ProgressView("Memuat model")
+        default:
+            EmptyView()
+        }
+    }
+}
+
+private struct AIConnectorNativeRunSummaryView: View {
+    let summary: AIConnectorRunSummary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            LabeledContent("Diproses") {
+                Text("\(summary.processedSegmentCount) dari \(summary.totalSegmentCount)")
+                    .monospacedDigit()
+            }
+            LabeledContent("Saran") {
+                Text("\(summary.suggestionCount)")
+                    .monospacedDigit()
+            }
+            LabeledContent("Perlu review") {
+                Text("\(summary.needsReviewCount)")
+                    .monospacedDigit()
+            }
+            LabeledContent("Ditahan") {
+                Text("\(summary.rejectedCount)")
+                    .monospacedDigit()
+            }
+
+            DisclosureGroup("Statistik lengkap") {
+                LabeledContent("Tidak ada saran") {
+                    Text("\(summary.noSuggestionCount)").monospacedDigit()
+                }
+                LabeledContent("Fallback") {
+                    Text("\(summary.fallbackCount)").monospacedDigit()
+                }
+                LabeledContent("Cache hit") {
+                    Text("\(summary.cacheHitCount)").monospacedDigit()
+                }
+                LabeledContent("First pass") {
+                    Text("\(summary.firstPassSuccessCount)").monospacedDigit()
+                }
+                LabeledContent("Model call") {
+                    Text("\(summary.modelCallCount)").monospacedDigit()
+                }
+                LabeledContent("Challenge") {
+                    Text("\(summary.challengeCount)").monospacedDigit()
+                }
+            }
+
+            if summary.wasPartial {
+                Label("Run dibatalkan; hasil parsial tetap tersedia.", systemImage: "pause.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if summary.circuitBreakerActivated {
+                Label("Jalur deterministik dipakai untuk segmen berikutnya.", systemImage: "bolt.shield")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private struct AIConnectorNativeValidatedReviewRow: View {
+    let review: AIValidatedReview
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: review.status.iconName)
+                    .foregroundStyle(review.status.tint)
+                Text(review.category.displayTitle)
+                    .font(.subheadline.weight(.semibold))
+                Text(review.origin.displayTitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+            }
+
+            if let original = review.original {
+                LabeledContent("Asli") {
+                    Text(original)
+                        .strikethrough()
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            if let replacement = review.replacement {
+                LabeledContent("Usulan") {
+                    Text(replacement)
+                        .foregroundStyle(.green)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+
+            Text("Alasan: \(review.reason)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+
+            if review.category == .terminology,
+               let glossaryMatch = review.glossaryMatch {
+                LabeledContent("Istilah hukum") {
+                    Text(glossaryMatch.entry.term)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                if !glossaryMatch.entry.regulation.isEmpty {
+                    LabeledContent("Peraturan") {
+                        Text(glossaryMatch.entry.regulation)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+
+                if !glossaryMatch.entry.regulationTitle.isEmpty {
+                    LabeledContent("Judul") {
+                        Text(glossaryMatch.entry.regulationTitle)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+
+                if let sourceURL = glossaryMatch.entry.sourceURL {
+                    LabeledContent("Sumber") {
+                        Link("Buka sumber", destination: sourceURL)
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct AIConnectorNativeRejectionRow: View {
+    let rejection: AIReviewRejection
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Segmen \(rejection.segment.id)", systemImage: "exclamationmark.triangle")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+
+            LabeledContent("Kelas") {
+                Text(rejection.classification.rawValue)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(rejection.reason)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+
+            if rejection.rawOutput.isEmpty {
+                Text("Output mentah tidak tersedia.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                DisclosureGroup("Output mentah (Debug)") {
+                    Text(rejection.rawOutput)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 4)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct AIConnectorNativeGlossaryMatchRow: View {
+    let match: LegalDictionaryMatch
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack {
+                Text(match.entry.term)
+                    .font(.subheadline.weight(.semibold))
+                Spacer(minLength: 0)
+                if let fusionScore = match.fusionScore {
+                    Text(String(format: "RRF %.4f", fusionScore))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(String(format: "BM25 %.2f", match.score))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            HStack(spacing: 8) {
+                Text("Rank \(match.rank)")
+                if let semanticScore = match.semanticScore {
+                    Text(String(format: "E5 %.3f", semanticScore))
+                }
+                if let retrievalOrigin = match.retrievalOrigin {
+                    Text(retrievalOrigin.rawValue)
+                }
+            }
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.secondary)
+            Text(match.entry.regulation.isEmpty
+                ? "Sumber peraturan tidak tersedia"
+                : match.entry.regulation)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+
+            Label(
+                match.entry.authority == .verified
+                    ? "Dapat dipakai sebagai evidence"
+                    : "Legacy — hanya diagnostik, belum menjadi rekomendasi",
+                systemImage: match.entry.authority == .verified
+                    ? "checkmark.seal"
+                    : "lock.shield"
+            )
+            .font(.caption2)
+            .foregroundStyle(match.entry.authority == .verified ? .green : .secondary)
+
+            if match.entry.sourcePassageID != nil || match.entry.referenceID != nil {
+                Text("Evidence: \(match.entry.sourcePassageID ?? "-") · \(match.entry.referenceID ?? "-")")
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct AIConnectorNativeBenchmarkSummaryView: View {
+    let summary: AIConnectorBenchmarkSummary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            LabeledContent("Hasil") {
+                Text("\(summary.passedCount) dari \(summary.totalCount)")
+                    .monospacedDigit()
+            }
+            LabeledContent("Durasi") {
+                Text(String(format: "%.2f dtk", summary.duration))
+                    .monospacedDigit()
+            }
+            ForEach(summary.evaluations) { evaluation in
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: evaluation.passed
+                        ? "checkmark.circle"
+                        : "xmark.circle")
+                        .foregroundStyle(evaluation.passed ? .green : .red)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(evaluation.sample.title)
+                            .font(.caption.weight(.semibold))
+                        Text(evaluation.detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct AIConnectorNativeBenchmarkReportView: View {
+    let report: AIConnectorBenchmarkReport
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(qualityGateTitle)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(qualityGateColor)
+                Spacer(minLength: 0)
+                Text("\(report.passedCount) dari \(report.totalCount)")
+                    .monospacedDigit()
+            }
+
+            LabeledContent("Profil") {
+                Text(report.generationProfile)
+                    .foregroundStyle(.secondary)
+            }
+            LabeledContent("Durasi") {
+                Text(String(format: "%.2f dtk", report.duration))
+                    .monospacedDigit()
+            }
+            LabeledContent("Safety") {
+                Text("\(report.qualityGate.safetyContainedCount) dari \(report.qualityGate.safetyTotal)")
+                    .monospacedDigit()
+            }
+            LabeledContent("Utility akhir") {
+                Text(report.qualityGate.utilityPassed ? "Lulus" : "Belum lulus")
+                    .foregroundStyle(report.qualityGate.utilityPassed ? .green : .orange)
+            }
+            LabeledContent("Hasil asal model") {
+                Text("\(report.qualityGate.modelOriginResultCount)")
+                    .monospacedDigit()
+            }
+            LabeledContent("Fallback") {
+                Text("\(report.qualityGate.fallbackCount)")
+                    .monospacedDigit()
+            }
+            LabeledContent("Model call") {
+                Text("\(report.records.reduce(0) { $0 + $1.modelCallCount })")
+                    .monospacedDigit()
+            }
+            LabeledContent("Cache hit") {
+                Text("\(report.records.filter(\.cacheHit).count)")
+                    .monospacedDigit()
+            }
+
+            #if DEBUG
+            if !report.candidateRecords.isEmpty {
+                DisclosureGroup("Detail kandidat") {
+                    ForEach(report.candidateRecords) { candidate in
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("\(candidate.sampleTitle) · \(candidate.candidateID)")
+                                .font(.caption.weight(.semibold))
+                            Text("\(candidate.original) → \(candidate.replacement)")
+                                .font(.caption)
+                                .textSelection(.enabled)
+                            Text("\(candidate.source.displayTitle) · \(candidate.decision?.rawValue ?? "MODEL_FAILURE")")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+            #endif
+        }
+    }
+
+    private var qualityGateTitle: String {
+        switch report.qualityGate.decision {
+        case .go:
+            "Model gate: GO"
+        case .noGo:
+            "Model gate: NO-GO"
+        case .notApplicable:
+            "Model gate: tidak berlaku"
+        }
+    }
+
+    private var qualityGateColor: Color {
+        switch report.qualityGate.decision {
+        case .go:
+            .green
+        case .noGo:
+            .orange
+        case .notApplicable:
+            .secondary
+        }
+    }
+}
+
+private struct AIConnectorNativeGenerationMetricsView: View {
+    let metrics: AIConnectorGenerationMetrics
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            LabeledContent("Prompt") {
+                Text("\(metrics.promptTokenCount) token · \(String(format: "%.2f dtk", metrics.promptDuration))")
+                    .monospacedDigit()
+            }
+            LabeledContent("Keluaran") {
+                Text("\(metrics.generationTokenCount) token · \(String(format: "%.2f dtk", metrics.generationDuration))")
+                    .monospacedDigit()
+            }
+            LabeledContent("Stop reason") {
+                Text(metrics.stopReason.rawValue)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }

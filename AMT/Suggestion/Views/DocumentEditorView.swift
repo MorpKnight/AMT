@@ -74,6 +74,7 @@ struct DocumentEditorView: View {
                     ),
                     isAnalyzing: aiConnectorViewModel.isRunning,
                     analysisState: aiConnectorViewModel.state,
+                    analysisProgressStage: aiConnectorViewModel.progressStage,
                     analysisDownloadProgress: aiConnectorViewModel.downloadProgress,
                     analysisGenerationProgress: aiConnectorViewModel.generationProgress,
                     analysisSummary: aiConnectorViewModel.runSummary,

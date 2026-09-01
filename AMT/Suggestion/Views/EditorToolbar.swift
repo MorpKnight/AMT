@@ -40,6 +40,7 @@ struct EditorToolbar: View {
     var canAnalyze = false
     var isAnalyzing = false
     var analysisState: AIConnectorRunState = .idle
+    var analysisProgressStage: AIConnectorProgressStage = .idle
     var analysisDownloadProgress = 0.0
     var analysisGenerationProgress = 0
     var analysisSummary: AIConnectorRunSummary?
@@ -199,7 +200,6 @@ struct EditorToolbar: View {
             .buttonStyle(.plain)
             .help("Ekspor Dokumen (.docx)")
 
-            #if DEBUG
             if onAnalyze != nil {
                 Button {
                     if isAnalyzing {
@@ -227,6 +227,7 @@ struct EditorToolbar: View {
                 .popover(isPresented: $isAnalysisStatusPresented, arrowEdge: .bottom) {
                     AIConnectorToolbarStatusView(
                         state: analysisState,
+                        progressStage: analysisProgressStage,
                         downloadProgress: analysisDownloadProgress,
                         generationProgress: analysisGenerationProgress,
                         summary: analysisSummary,
@@ -238,7 +239,6 @@ struct EditorToolbar: View {
                     )
                 }
             }
-            #endif
 
             #if DEBUG
             Menu {

@@ -3,74 +3,115 @@ import XCTest
 @testable import AMT
 
 final class RAGTests: XCTestCase {
+    func testLocalRAGLoadsValidatedLexicalSnapshot() async throws {
+        let status = try await LocalRAG.shared.loadDataIfNeeded()
 
-    func testLocalRAGLoadsResources() throws {
-        let localRAG = LocalRAG.shared
-        localRAG.loadDataIfNeeded()
-
-        XCTAssertTrue(localRAG.isLoaded, "LocalRAG should load resources successfully")
-        XCTAssertEqual(localRAG.documents.count, 3146, "Should load 3,146 legal documents")
-        XCTAssertEqual(localRAG.embeddings.count, 3146 * 1024, "Should load 3,146 x 1024 Float32 embeddings")
-
-        XCTAssertNotNil(localRAG.metadata, "Metadata should be loaded")
-        XCTAssertEqual(localRAG.metadata?.model, "BAAI/bge-m3", "Metadata model should be BAAI/bge-m3")
-        XCTAssertEqual(localRAG.metadata?.dimension, 1024, "Embedding dimension should be 1024")
+        XCTAssertEqual(status.documentCount, 3_146)
+        XCTAssertEqual(status.metadata.documentCount, 3_146)
+        XCTAssertEqual(status.metadata.model, "BAAI/bge-m3")
+        XCTAssertEqual(status.metadata.dimension, 1_024)
+        XCTAssertEqual(status.retrievalMode, .lexicalBM25)
     }
 
-    func testBGEEmbeddingNormalization() throws {
-        let bge = BGEEmbedding.shared
-        let rawVector: [Float] = [3.0, 4.0, 0.0]
-        let normalized = bge.normalize(rawVector)
-
-        var sumSq: Float = 0
-        for val in normalized {
-            sumSq += val * val
-        }
-        let length = sqrt(sumSq)
+    func testBGEEmbeddingNormalization() {
+        let rawVector: [Float] = [3, 4, 0]
+        let normalized = BGEEmbedding.shared.normalize(rawVector)
+        let length = sqrt(normalized.reduce(0) { $0 + $1 * $1 })
 
         XCTAssertEqual(normalized[0], 0.6, accuracy: 1e-4)
         XCTAssertEqual(normalized[1], 0.8, accuracy: 1e-4)
-        XCTAssertEqual(length, 1.0, accuracy: 1e-4, "L2 norm of normalized vector must be 1.0")
+        XCTAssertEqual(length, 1, accuracy: 1e-4)
     }
 
-    func testVectorSimilaritySearch() async throws {
-        let localRAG = LocalRAG.shared
-        localRAG.loadDataIfNeeded()
+    func testSemanticEmbeddingFailsClosedWithoutVerifiedTokenizer() async {
+        XCTAssertFalse(BGEEmbedding.shared.isSemanticSearchAvailable)
 
-        let bge = BGEEmbedding.shared
-        let query = "Data Pribadi"
-        let queryEmbedding = try await bge.generateEmbedding(for: query)
-
-        let results = localRAG.search(queryEmbedding: queryEmbedding, topK: 5, minThreshold: -1.0)
-
-        XCTAssertFalse(results.isEmpty, "Search should return non-empty RAG results")
-        if let topMatch = results.first {
-            XCTAssertFalse(topMatch.document.istilah.isEmpty, "Matched document should have valid term")
-            XCTAssertFalse(topMatch.document.pengertian.isEmpty, "Matched document should have valid definition")
+        do {
+            _ = try await BGEEmbedding.shared.generateEmbedding(for: "Data Pribadi")
+            XCTFail("Semantic embedding must remain disabled")
+        } catch let error as BGEEmbeddingError {
+            guard case .verifiedModelAndTokenizerUnavailable = error else {
+                return XCTFail("Unexpected semantic capability error: \(error)")
+            }
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
         }
     }
 
-    func testKeywordRAGSearchFallback() throws {
-        let localRAG = LocalRAG.shared
-        localRAG.loadDataIfNeeded()
+    func testLexicalRAGSearchFindsExactTerm() async throws {
+        let results = try await LocalRAG.shared.searchByKeyword(
+            query: "Abrasi",
+            topK: 3
+        )
 
-        let results = localRAG.searchByKeyword(query: "Abrasi", topK: 3)
-        if let first = results.first {
-            XCTAssertEqual(first.document.istilah, "Abrasi")
-        } else {
-            XCTAssertTrue(localRAG.documents.isEmpty || !results.isEmpty)
-        }
+        XCTAssertEqual(results.first?.document.istilah, "Abrasi")
+        XCTAssertGreaterThan(results.first?.score ?? 0, 0)
     }
 
-    func testLegalDictionaryStoreRAGSearch() async throws {
+    func testLegalDictionarySearchPrefersPrimaryCorpusForDuplicateTerm() async {
         let store = LegalDictionaryStore()
         let results = await store.searchRAG("Data Pribadi", limit: 5)
 
-
-        XCTAssertFalse(results.isEmpty, "LegalDictionaryStore searchRAG should return entries")
-        XCTAssertEqual(results[0].term, "Data Pribadi")
-        XCTAssertFalse(results[0].definition.isEmpty)
+        XCTAssertEqual(results.first?.term, "Data Pribadi")
+        XCTAssertEqual(
+            results.first?.corpusVersion,
+            "hukumonline-kamus@78a2ab626c092662b0441c95904c353b2487b216"
+        )
+        XCTAssertEqual(results.first?.authority, .verified)
     }
 
+    func testLexicalDefinitionQueryFindsDataPribadi() async {
+        let store = LegalDictionaryStore()
+        let results = store.search(
+            "data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi",
+            limit: 5
+        )
 
+        XCTAssertEqual(results.first?.term, "Data Pribadi")
+    }
+
+    func testLexicalSearchReturnsNoResultForUnrelatedTokens() async {
+        let store = LegalDictionaryStore()
+        let results = store.search(
+            "nebula kuantum xenolit fotonik",
+            limit: 5
+        )
+
+        XCTAssertTrue(results.isEmpty)
+    }
+
+    func testVerifiedEntryWinsDuplicateLegacyTerm() async {
+        let verifiedEntry = LegalDictionaryEntry(
+            id: "verified-data-pribadi",
+            term: "Data Pribadi",
+            definition: "Definisi yang telah melalui review corpus test.",
+            regulation: "Test Regulation",
+            regulationTitle: "Verified fixture",
+            sourceURL: nil,
+            authority: .verified,
+            corpusVersion: "verified-test-v1"
+        )
+        let store = LegalDictionaryStore(entries: [verifiedEntry])
+        let results = await store.searchRAG("Data Pribadi", limit: 5)
+
+        XCTAssertEqual(results.first?.id, verifiedEntry.id)
+        XCTAssertEqual(results.first?.authority, .verified)
+    }
+
+    func testEntryDefaultsFailClosedAsLegacy() {
+        let entry = LegalDictionaryEntry(
+            id: "unspecified",
+            term: "Istilah",
+            definition: "Pengertian",
+            regulation: "",
+            regulationTitle: "",
+            sourceURL: nil
+        )
+
+        XCTAssertEqual(entry.authority, .legacy)
+        XCTAssertEqual(
+            entry.corpusVersion,
+            LegalDictionaryCorpusVersion.unspecifiedLegacy
+        )
+    }
 }

@@ -11,15 +11,23 @@ final class AIConnectorViewModel {
     var selectedSampleID = "redundant-wajib-untuk"
     var thinkingEnabled = false
     var reviewMode: AIConnectorReviewMode = .hybrid
-    var modelVariant: AIConnectorModelVariant = .qwen35Legal4B
+    var modelVariant: AIConnectorModelVariant = .qwen35Base4B
+    var generationProfilePreset: AIConnectorGenerationProfilePreset = .greedy
 
     private(set) var state: AIConnectorRunState = .idle
+    private(set) var progressStage: AIConnectorProgressStage = .idle
     private(set) var errorMessage: String?
     private(set) var downloadProgress = 0.0
     private(set) var generationProgress = 0
     private(set) var latestGenerationMetrics: AIConnectorGenerationMetrics?
     private(set) var currentSegmentPreview = ""
     private(set) var currentGlossaryMatches: [LegalDictionaryMatch] = []
+    private(set) var currentCandidates: [AIConnectorReviewCandidate] = []
+    private(set) var currentCandidateDecisions: [AIConnectorCandidateDecisionRecord] = []
+    private(set) var currentQueueState: AIConnectorQueueState?
+    private(set) var currentBatchIndex: Int?
+    private(set) var currentBatchSize: Int?
+    private(set) var queueBatchSizes: [Int] = []
     private(set) var glossarySnapshots: [AIReviewGlossarySnapshot] = []
     private(set) var segmentationResult: AITextSegmentationResult?
     private(set) var validatedReviews: [AIValidatedReview] = []
@@ -27,6 +35,15 @@ final class AIConnectorViewModel {
     private(set) var processedSegmentCount = 0
     private(set) var skippedSegmentCount = 0
     private(set) var noSuggestionCount = 0
+    private(set) var cacheHitCount = 0
+    private(set) var firstPassSuccessCount = 0
+    private(set) var repairAttemptCount = 0
+    private(set) var fallbackCount = 0
+    private(set) var candidateCount = 0
+    private(set) var acceptedCandidateCount = 0
+    private(set) var modelCallCount = 0
+    private(set) var challengeCount = 0
+    private(set) var circuitBreakerActivated = false
     private(set) var output = ""
     private(set) var runSummary: AIConnectorRunSummary?
     private(set) var fixtureEvaluation: AIConnectorFixtureEvaluation?
@@ -38,11 +55,10 @@ final class AIConnectorViewModel {
     private let service: QwenSuggestionService
     private let dictionaryStore: LegalDictionaryStore
     private let segmenter = LegalTextSegmenter()
-    private let outputParser = AIConnectorOutputParser()
-    private let suggestionValidator = AIConnectorSuggestionValidator()
-    private let deterministicSuggestionEngine = AIConnectorDeterministicSuggestionEngine()
     private let fixtureEvaluator = AIConnectorFixtureEvaluator()
     private let benchmarkRunner: AIConnectorBenchmarkRunner
+    private let workQueue: AIConnectorWorkQueue
+    private let segmentProcessor: AIConnectorSegmentProcessor
     private var task: Task<Void, Never>?
     private var activeOperationID: UUID?
     private var exposesEditorSuggestions = false
@@ -54,6 +70,15 @@ final class AIConnectorViewModel {
     ) {
         self.service = service
         self.dictionaryStore = dictionaryStore
+        let segmentCache = AIConnectorSegmentCache()
+        let processor = AIConnectorSegmentProcessor(
+            service: service,
+            dictionaryStore: dictionaryStore,
+            ruleStore: AIConnectorRuleStore(),
+            segmentCache: segmentCache
+        )
+        self.segmentProcessor = processor
+        self.workQueue = AIConnectorWorkQueue(processor: processor)
         self.benchmarkRunner = AIConnectorBenchmarkRunner(
             service: service,
             dictionaryStore: dictionaryStore
@@ -81,6 +106,18 @@ final class AIConnectorViewModel {
         glossarySnapshots.reduce(0) { count, snapshot in
             count + snapshot.matches.count
         }
+    }
+
+    var activeCorpusVersion: String {
+        dictionaryStore.activeCorpusVersion
+    }
+
+    var semanticModelRevision: String {
+        dictionaryStore.semanticModelRevision
+    }
+
+    var semanticRetrievalConfiguration: LegalCorpusRetrievalConfiguration? {
+        dictionaryStore.semanticRetrievalConfiguration
     }
 
     func inputPreview(documentText: String) -> String {
@@ -113,6 +150,7 @@ final class AIConnectorViewModel {
         resetRunState()
         exposesEditorSuggestions = false
         state = .segmenting
+        progressStage = .segmenting
 
         let summary = fixtureEvaluator.runDeterministicBaseline(
             dictionaryStore: dictionaryStore,
@@ -134,8 +172,10 @@ final class AIConnectorViewModel {
             }.count,
             recoveredCount: 0,
             rejectedCount: summary.evaluations.filter { !$0.passed }.count,
-            skippedSegmentCount: 0
+            skippedSegmentCount: 0,
+            totalSegmentCount: summary.totalCount
         )
+        progressStage = .completed
         state = .completed
     }
 
@@ -151,18 +191,60 @@ final class AIConnectorViewModel {
         let runMode = reviewMode
         let runModelVariant = modelVariant
         let runThinkingEnabled = thinkingEnabled
+        let runGenerationProfilePreset = generationProfilePreset
         let operationID = UUID()
         let samples = AIConnectorSample.samples
         activeOperationID = operationID
         state = .segmenting
+        progressStage = .segmenting
+        benchmarkRunner.onSemanticProgress = { [weak self] progress in
+            guard let self, self.activeOperationID == operationID else { return }
+            self.downloadProgress = progress
+            self.progressStage = progress < 1
+                ? .semanticModelDownload
+                : .semanticRetrieval
+            self.state = progress < 1
+                ? .downloading(progress)
+                : .reviewing(
+                    current: self.currentReviewIndex(
+                        fallback: max(self.processedSegmentCount + 1, 1)
+                    ),
+                    total: samples.count
+                )
+        }
         benchmarkRunner.onDownloadProgress = { [weak self] progress in
             guard let self, self.activeOperationID == operationID else { return }
             self.downloadProgress = progress
+            self.progressStage = .modelDownload
             self.state = .downloading(progress)
+        }
+        benchmarkRunner.onProgressStage = { [weak self] stage in
+            guard let self, self.activeOperationID == operationID else { return }
+            self.progressStage = stage
+            switch stage {
+            case .semanticModelDownload:
+                self.state = .downloading(self.downloadProgress)
+            case .semanticRetrieval, .modelLoading, .generation:
+                self.state = .reviewing(
+                    current: self.currentReviewIndex(
+                        fallback: max(self.processedSegmentCount + 1, 1)
+                    ),
+                    total: samples.count
+                )
+            default:
+                break
+            }
         }
         benchmarkRunner.onGenerationProgress = { [weak self] characters in
             guard let self, self.activeOperationID == operationID else { return }
             self.generationProgress = characters
+            self.progressStage = .generation
+            self.state = .reviewing(
+                current: self.currentReviewIndex(
+                    fallback: max(self.processedSegmentCount + 1, 1)
+                ),
+                total: samples.count
+            )
         }
 
         task = Task { [weak self] in
@@ -174,6 +256,7 @@ final class AIConnectorViewModel {
                     modelVariant: runModelVariant,
                     thinkingEnabled: runThinkingEnabled,
                     samples: samples,
+                    generationProfilePreset: runGenerationProfilePreset,
                     progress: { [weak self] current, total in
                         guard let self, self.activeOperationID == operationID else { return }
                         self.state = .reviewing(current: current, total: total)
@@ -185,22 +268,23 @@ final class AIConnectorViewModel {
                 benchmarkReport = report
                 benchmarkSummary = report.legacySummary
                 runSummary = makeRunSummary(from: report)
+                latestGenerationMetrics = latestMetrics(from: report.records)
                 currentSegmentPreview = ""
                 currentGlossaryMatches = []
-                benchmarkRunner.onDownloadProgress = nil
-                benchmarkRunner.onGenerationProgress = nil
+                clearBenchmarkCallbacks()
+                progressStage = .completed
                 state = .completed
                 task = nil
             } catch is CancellationError {
                 guard activeOperationID == operationID else { return }
-                benchmarkRunner.onDownloadProgress = nil
-                benchmarkRunner.onGenerationProgress = nil
+                clearBenchmarkCallbacks()
+                progressStage = .cancelled
                 state = .cancelled
                 task = nil
             } catch {
                 guard activeOperationID == operationID else { return }
-                benchmarkRunner.onDownloadProgress = nil
-                benchmarkRunner.onGenerationProgress = nil
+                clearBenchmarkCallbacks()
+                progressStage = .failed
                 errorMessage = error.localizedDescription
                 state = .failed(errorMessage ?? "Benchmark model gagal dijalankan.")
                 task = nil
@@ -211,6 +295,7 @@ final class AIConnectorViewModel {
     func run(documentText: String) {
         guard canRun(documentText: documentText) else {
             errorMessage = "Pilih atau masukkan teks sebelum menjalankan model."
+            progressStage = .failed
             state = .failed(errorMessage ?? "Input tidak tersedia.")
             return
         }
@@ -226,9 +311,12 @@ final class AIConnectorViewModel {
         let sampleForRun = inputSource == .dummy ? selectedSample : nil
         let runMode = reviewMode
         let runModelVariant = modelVariant
+        let runThinkingEnabled = thinkingEnabled
+        let runGenerationProfilePreset = generationProfilePreset
         let operationID = UUID()
         activeOperationID = operationID
         state = .segmenting
+        progressStage = .segmenting
 
         task = Task { [weak self] in
             guard let self else { return }
@@ -238,194 +326,167 @@ final class AIConnectorViewModel {
                 guard activeOperationID == operationID else { return }
 
                 segmentationResult = segmentation
-                skippedSegmentCount = segmentation.omittedSegmentCount
+                queueBatchSizes = AIConnectorWorkQueue.batchSizes(
+                    for: segmentation.segments.count
+                )
+                skippedSegmentCount = 0
                 guard !segmentation.segments.isEmpty else {
                     throw QwenSuggestionError.emptyInput
                 }
 
                 let total = segmentation.segments.count
-                state = runMode.usesModel && !service.hasLoadedModel(for: runModelVariant)
-                    ? .loading
-                    : .reviewing(current: 1, total: total)
 
-                for (index, segment) in segmentation.segments.enumerated() {
+                let protectionContext = segmentProcessor.protectionContext(
+                    for: sourceText
+                )
+                let stream = await workQueue.start(
+                    runID: operationID,
+                    segments: segmentation.segments,
+                    mode: runMode,
+                    modelVariant: runModelVariant,
+                    thinkingEnabled: runThinkingEnabled,
+                    documentProtectionContext: protectionContext,
+                    downloadProgress: { [weak self] progress in
+                        Task { @MainActor [weak self] in
+                            guard let self, self.activeOperationID == operationID else { return }
+                            self.downloadProgress = progress
+                            self.progressStage = .modelDownload
+                            self.state = .downloading(progress)
+                        }
+                    },
+                    generationProgress: { [weak self] characters in
+                        guard let self, self.activeOperationID == operationID else { return }
+                        self.generationProgress = characters
+                        self.progressStage = .generation
+                        self.state = .reviewing(
+                            current: self.currentReviewIndex(
+                                fallback: max(
+                                    self.processedSegmentCount + self.skippedSegmentCount + 1,
+                                    1
+                                )
+                            ),
+                            total: total
+                        )
+                    },
+                    semanticProgress: { [weak self] progress in
+                        Task { @MainActor [weak self] in
+                            guard let self, self.activeOperationID == operationID else { return }
+                            self.downloadProgress = progress
+                            self.progressStage = progress < 1
+                                ? .semanticModelDownload
+                                : .semanticRetrieval
+                            self.state = progress < 1
+                                ? .downloading(progress)
+                                : .reviewing(
+                                    current: self.currentReviewIndex(
+                                        fallback: max(
+                                            self.processedSegmentCount + self.skippedSegmentCount + 1,
+                                            1
+                                        )
+                                    ),
+                                    total: total
+                                )
+                        }
+                    },
+                    progressStage: { [weak self] stage in
+                        guard let self, self.activeOperationID == operationID else { return }
+                        self.progressStage = stage
+                        switch stage {
+                        case .semanticModelDownload:
+                            self.state = .downloading(self.downloadProgress)
+                        case .semanticRetrieval, .modelLoading, .generation:
+                            self.state = .reviewing(
+                                current: self.currentReviewIndex(
+                                    fallback: max(
+                                        self.processedSegmentCount + self.skippedSegmentCount + 1,
+                                        1
+                                    )
+                                ),
+                                total: total
+                            )
+                        default:
+                            break
+                        }
+                    },
+                    generationProfile: runGenerationProfilePreset.profile(
+                        for: runModelVariant,
+                        thinkingEnabled: runThinkingEnabled
+                    )
+                )
+
+                for await event in stream {
                     try Task.checkCancellation()
                     guard activeOperationID == operationID else { return }
 
-                    let current = index + 1
-                    currentSegmentPreview = segment.targetText
-                    let glossaryMatches = dictionaryStore.suggestionCandidates(
-                        for: segment.targetText,
-                        limit: 1
-                    )
-                    currentGlossaryMatches = glossaryMatches
-                    if !glossaryMatches.isEmpty {
-                        glossarySnapshots.append(
-                            AIReviewGlossarySnapshot(
-                                segment: segment,
-                                matches: glossaryMatches
-                            )
+                    switch event {
+                    case let .stateChanged(segmentID, segmentState):
+                        currentQueueState = segmentState
+                        let zeroBasedSegmentIndex = max(segmentID - 1, 0)
+                        currentBatchIndex = zeroBasedSegmentIndex / LegalTextSegmenter.batchSize + 1
+                        currentBatchSize = queueBatchSizes.indices.contains(
+                            zeroBasedSegmentIndex / LegalTextSegmenter.batchSize
                         )
-                    }
-                    generationProgress = 0
-                    state = .reviewing(current: current, total: total)
-
-                    if runMode == .deterministic {
-                        do {
-                            let parsedReview = deterministicSuggestionEngine.review(
-                                for: segment,
-                                glossaryMatches: glossaryMatches
-                            )
-                            let validatedReview = try suggestionValidator.validate(
-                                parsedReview,
-                                for: segment,
-                                glossaryMatches: glossaryMatches,
-                                origin: .deterministic
-                            )
-                            accept(validatedReview)
-                        } catch let validationError as AIConnectorValidationError {
-                            recordRejection(
-                                segment: segment,
-                                rawOutput: "",
-                                reason: validationError.message
-                            )
+                            ? queueBatchSizes[zeroBasedSegmentIndex / LegalTextSegmenter.batchSize]
+                            : nil
+                        if let segment = segmentation.segments.first(where: { $0.id == segmentID }) {
+                            currentSegmentPreview = segment.targetText
                         }
-                        continue
-                    }
-
-                    do {
-                        let result = try await service.review(
-                            segment: segment,
-                            thinkingEnabled: thinkingEnabled,
-                            glossaryMatches: glossaryMatches,
-                            downloadProgress: { [weak self] progress in
-                                Task { @MainActor [weak self] in
-                                    guard let self, self.activeOperationID == operationID else { return }
-                                    self.downloadProgress = progress
-                                    self.state = .downloading(progress)
-                                }
-                            },
-                            generationProgress: { [weak self] tokenCount in
-                                guard let self, self.activeOperationID == operationID else { return }
-                                self.generationProgress = tokenCount
-                                self.state = .reviewing(current: current, total: total)
-                            },
-                            modelVariant: runModelVariant
-                        )
-                        try Task.checkCancellation()
-                        guard activeOperationID == operationID else { return }
-                        latestGenerationMetrics = result.metrics
-
-                        if result.metrics.stopReason == .cancelled {
-                            throw CancellationError()
-                        }
-
-                        if result.metrics.stopReason == .length {
-                            handleRejectedModelOutput(
-                                segment: segment,
-                                rawOutput: result.output,
-                                reason: "Model mencapai batas token; output tidak diproses.",
-                                glossaryMatches: glossaryMatches,
-                                mode: runMode
-                            )
-                            continue
-                        }
-
-                        if result.containsReasoningMarkers {
-                            handleRejectedModelOutput(
-                                segment: segment,
-                                rawOutput: result.output,
-                                reason: "Output mengandung reasoning atau token template; diagnostic di-redact.",
-                                glossaryMatches: glossaryMatches,
-                                mode: runMode
-                            )
-                            continue
-                        }
-
-                        do {
-                            let parsedReview = try outputParser.parse(result.output)
-
-                            do {
-                                let validatedReview = try suggestionValidator.validate(
-                                    parsedReview,
-                                    for: segment,
-                                    glossaryMatches: glossaryMatches
-                                )
-                                accept(validatedReview)
-                            } catch let validationError as AIConnectorValidationError {
-                                handleRejectedModelOutput(
-                                    segment: segment,
-                                    rawOutput: result.output,
-                                    reason: validationError.message,
-                                    validationError: validationError,
-                                    modelStatus: parsedReview.status,
-                                    glossaryMatches: glossaryMatches,
-                                    mode: runMode
-                                )
+                        switch segmentState {
+                        case .generating, .parsing, .validating, .preparing, .retrieving:
+                            if segmentState == .preparing || segmentState == .retrieving {
+                                progressStage = .semanticRetrieval
+                            } else if progressStage != .modelDownload {
+                                progressStage = .modelLoading
                             }
-                        } catch let parserError as AIConnectorOutputParserError {
-                            handleRejectedModelOutput(
-                                segment: segment,
-                                rawOutput: result.output,
-                                reason: parserError.message,
-                                glossaryMatches: glossaryMatches,
-                                mode: runMode
+                            state = .reviewing(
+                                current: max(processedSegmentCount + skippedSegmentCount + 1, 1),
+                                total: total
+                            )
+                        case .skipped, .completed, .noSuggestion, .needsReview, .rejected,
+                             .failed, .cancelled, .pending:
+                            break
+                        }
+
+                    case let .result(result):
+                        apply(result: result)
+                        await workQueue.acknowledgeResult()
+
+                    case let .progress(current, total):
+                        state = .reviewing(current: min(current + 1, total), total: total)
+
+                    case .circuitBreakerActivated:
+                        circuitBreakerActivated = true
+                        errorMessage = "Model dialihkan ke pemulihan deterministik untuk sisa dokumen."
+
+                    case let .finished(summary):
+                        runSummary = summary
+                        currentQueueState = summary.wasPartial ? .cancelled : .completed
+                        currentSegmentPreview = summary.wasPartial ? currentSegmentPreview : ""
+                        if let sampleForRun {
+                            fixtureEvaluation = fixtureEvaluator.evaluate(
+                                sample: sampleForRun,
+                                reviews: validatedReviews
                             )
                         }
-                    } catch let qwenError as QwenSuggestionError {
-                        if case .segmentTooLong = qwenError {
-                            if let segmentationResult {
-                                self.segmentationResult = AITextSegmentationResult(
-                                    segments: segmentationResult.segments,
-                                    headingCount: segmentationResult.headingCount,
-                                    tooLongSegmentCount: segmentationResult.tooLongSegmentCount + 1,
-                                    omittedSegmentCount: segmentationResult.omittedSegmentCount
-                                )
-                            }
-                            skippedSegmentCount += 1
-                            recordRejection(
-                                segment: segment,
-                                rawOutput: "",
-                                reason: qwenError.localizedDescription,
-                                countsAsProcessed: false
-                            )
-                            continue
-                        }
-                        throw qwenError
+                        progressStage = summary.wasPartial ? .cancelled : .completed
+                        state = summary.wasPartial ? .cancelled : .completed
+
+                    case let .failed(message):
+                        errorMessage = message
+                        progressStage = .failed
+                        state = .failed(message)
                     }
                 }
-
-                guard activeOperationID == operationID, !Task.isCancelled else { return }
-                runSummary = AIConnectorRunSummary(
-                    reviewMode: runMode,
-                    modelVariant: runModelVariant,
-                    processedSegmentCount: processedSegmentCount,
-                    suggestionCount: acceptedSuggestionCount,
-                    needsReviewCount: needsReviewCount,
-                    noSuggestionCount: noSuggestionCount,
-                    recoveredCount: validatedReviews.filter {
-                        $0.origin == .deterministicFallback
-                    }.count,
-                    rejectedCount: rejectedReviews.count,
-                    skippedSegmentCount: skippedSegmentCount
-                )
-                currentSegmentPreview = ""
-                currentGlossaryMatches = []
-                if let sampleForRun {
-                    fixtureEvaluation = fixtureEvaluator.evaluate(
-                        sample: sampleForRun,
-                        reviews: validatedReviews
-                    )
-                }
-                state = .completed
                 task = nil
             } catch is CancellationError {
                 guard activeOperationID == operationID else { return }
+                progressStage = .cancelled
                 state = .cancelled
                 task = nil
             } catch {
                 guard activeOperationID == operationID else { return }
                 errorMessage = error.localizedDescription
+                progressStage = .failed
                 state = .failed(errorMessage ?? "Model gagal dijalankan.")
                 task = nil
             }
@@ -435,8 +496,11 @@ final class AIConnectorViewModel {
     func resetInputMetadata() {
         cancelRunningTask()
         service.cancelLoading()
+        workQueue.requestCancellation()
+        Task { await workQueue.cancel() }
         clearBenchmarkCallbacks()
         resetRunState()
+        progressStage = .idle
         state = .idle
     }
 
@@ -445,8 +509,11 @@ final class AIConnectorViewModel {
         activeOperationID = nil
         cancelRunningTask()
         service.cancelLoading()
+        workQueue.requestCancellation()
+        Task { await workQueue.cancel() }
         clearBenchmarkCallbacks()
-        clearEditorSuggestions()
+        runSummary = currentPartialSummary()
+        progressStage = .cancelled
         state = .cancelled
     }
 
@@ -485,7 +552,9 @@ final class AIConnectorViewModel {
     private func sourceText(documentText: String) -> String {
         switch inputSource {
         case .currentDocument:
-            String(documentText.prefix(Self.maximumDocumentCharacters))
+            // The old 4,000-character limit is now preview-only. Queueing
+            // receives the complete document so later segments are not lost.
+            documentText
         case .dummy:
             selectedSample.text
         }
@@ -496,19 +565,111 @@ final class AIConnectorViewModel {
         task = nil
     }
 
+    private func currentReviewIndex(fallback: Int) -> Int {
+        if case let .reviewing(current, _) = state {
+            return current
+        }
+        return fallback
+    }
+
     private func clearBenchmarkCallbacks() {
         benchmarkRunner.onDownloadProgress = nil
+        benchmarkRunner.onSemanticProgress = nil
         benchmarkRunner.onGenerationProgress = nil
+        benchmarkRunner.onProgressStage = nil
+    }
+
+    private func apply(result: AIConnectorSegmentResult) {
+        currentSegmentPreview = result.segment.targetText
+        currentGlossaryMatches = result.glossaryMatches
+        currentCandidates = result.candidates
+        currentCandidateDecisions = result.candidateDecisions
+        if let generationMetrics = result.generationMetrics {
+            latestGenerationMetrics = generationMetrics
+        }
+
+        if !result.glossaryMatches.isEmpty {
+            glossarySnapshots.append(
+                AIReviewGlossarySnapshot(
+                    segment: result.segment,
+                    matches: result.glossaryMatches
+                )
+            )
+        }
+
+        validatedReviews.append(contentsOf: result.reviews)
+        rejectedReviews.append(contentsOf: result.rejections)
+        if result.skipped {
+            skippedSegmentCount += 1
+        } else {
+            processedSegmentCount += 1
+        }
+        if result.cacheHit { cacheHitCount += 1 }
+        if result.firstPassSucceeded { firstPassSuccessCount += 1 }
+        if result.repairAttempted { repairAttemptCount += 1 }
+        if result.usedFallback { fallbackCount += 1 }
+        candidateCount += result.candidates.count
+        acceptedCandidateCount += result.candidateDecisions.filter {
+            $0.decision == .accept
+        }.count
+        modelCallCount += result.modelCallCount
+        challengeCount += result.challengeCount
+        noSuggestionCount += result.reviews.filter {
+            $0.status == .noSuggestion
+        }.count
+
+        if exposesEditorSuggestions {
+            editorSuggestions = EditorSuggestionMapper.make(
+                reviews: validatedReviews,
+                documentText: editorSourceText
+            )
+        }
+        updateOutput()
+        runSummary = currentPartialSummary()
+    }
+
+    private func currentPartialSummary() -> AIConnectorRunSummary {
+        AIConnectorRunSummary(
+            reviewMode: reviewMode,
+            modelVariant: modelVariant,
+            processedSegmentCount: processedSegmentCount,
+            suggestionCount: acceptedSuggestionCount,
+            needsReviewCount: needsReviewCount,
+            noSuggestionCount: noSuggestionCount,
+            recoveredCount: validatedReviews.filter {
+                $0.origin == .deterministicFallback
+            }.count,
+            rejectedCount: rejectedReviews.count,
+            skippedSegmentCount: skippedSegmentCount,
+            totalSegmentCount: segmentationResult?.segments.count ?? processedSegmentCount,
+            cacheHitCount: cacheHitCount,
+            firstPassSuccessCount: firstPassSuccessCount,
+            repairAttemptCount: repairAttemptCount,
+            fallbackCount: fallbackCount,
+            circuitBreakerActivated: circuitBreakerActivated,
+            wasPartial: true,
+            candidateCount: candidateCount,
+            acceptedCandidateCount: acceptedCandidateCount,
+            modelCallCount: modelCallCount,
+            challengeCount: challengeCount
+        )
     }
 
     private func resetRunState() {
         activeOperationID = nil
+        progressStage = .idle
         errorMessage = nil
         downloadProgress = 0
         generationProgress = 0
         latestGenerationMetrics = nil
         currentSegmentPreview = ""
         currentGlossaryMatches = []
+        currentCandidates = []
+        currentCandidateDecisions = []
+        currentQueueState = nil
+        currentBatchIndex = nil
+        currentBatchSize = nil
+        queueBatchSizes = []
         glossarySnapshots = []
         segmentationResult = nil
         validatedReviews = []
@@ -516,6 +677,15 @@ final class AIConnectorViewModel {
         processedSegmentCount = 0
         skippedSegmentCount = 0
         noSuggestionCount = 0
+        cacheHitCount = 0
+        firstPassSuccessCount = 0
+        repairAttemptCount = 0
+        fallbackCount = 0
+        candidateCount = 0
+        acceptedCandidateCount = 0
+        modelCallCount = 0
+        challengeCount = 0
+        circuitBreakerActivated = false
         output = ""
         runSummary = nil
         fixtureEvaluation = nil
@@ -530,9 +700,23 @@ final class AIConnectorViewModel {
         from report: AIConnectorBenchmarkReport
     ) -> AIConnectorRunSummary {
         let records = report.records
+        let candidateRecords = report.candidateRecords
         let statusCount: (AIReviewStatus) -> Int = { status in
             records.filter { $0.validatedStatus == status.rawValue }.count
         }
+
+        let candidateCount = candidateRecords.isEmpty
+            ? records.reduce(0) { $0 + ($1.candidateID == nil ? 0 : 1) }
+            : candidateRecords.count
+        let acceptedCandidateCount = candidateRecords.isEmpty
+            ? records.filter { $0.candidateDecision == .accept }.count
+            : candidateRecords.filter { $0.decision == .accept }.count
+        let modelCallCount = candidateRecords.isEmpty
+            ? records.reduce(0) { $0 + $1.modelCallCount }
+            : candidateRecords.reduce(0) { $0 + $1.attemptCount }
+        let challengeCount = candidateRecords.isEmpty
+            ? records.filter(\.challengeAttempted).count
+            : candidateRecords.filter(\.challengeAttempted).count
 
         return AIConnectorRunSummary(
             reviewMode: report.reviewMode,
@@ -543,119 +727,67 @@ final class AIConnectorViewModel {
             noSuggestionCount: statusCount(.noSuggestion),
             recoveredCount: records.filter(\.wasFallback).count,
             rejectedCount: records.filter(\.outputWasRejected).count,
-            skippedSegmentCount: records.filter(\.skipped).count
+            skippedSegmentCount: records.filter(\.skipped).count,
+            totalSegmentCount: records.count,
+            cacheHitCount: records.filter(\.cacheHit).count,
+            firstPassSuccessCount: records.filter(\.firstPassSucceeded).count,
+            repairAttemptCount: records.filter(\.repairAttempted).count,
+            fallbackCount: records.filter(\.wasFallback).count,
+            candidateCount: candidateCount,
+            acceptedCandidateCount: acceptedCandidateCount,
+            modelCallCount: modelCallCount,
+            challengeCount: challengeCount
         )
     }
 
-    private func recordRejection(
-        segment: AIReviewSegment,
-        rawOutput: String,
-        reason: String,
-        countsAsProcessed: Bool = true
-    ) {
-        rejectedReviews.append(
-            AIReviewRejection(
-                segment: segment,
-                rawOutput: rawOutput,
-                reason: reason
-            )
-        )
-        if countsAsProcessed {
-            processedSegmentCount += 1
-        }
-    }
-
-    private func handleRejectedModelOutput(
-        segment: AIReviewSegment,
-        rawOutput: String,
-        reason: String,
-        validationError: AIConnectorValidationError? = nil,
-        modelStatus: AIReviewStatus? = nil,
-        glossaryMatches: [LegalDictionaryMatch],
-        mode: AIConnectorReviewMode
-    ) {
-        guard mode == .hybrid else {
-            recordRejection(
-                segment: segment,
-                rawOutput: rawOutput,
-                reason: reason
-            )
-            return
-        }
-
-        let fallback: AIParsedReview?
-        if let deterministicSuggestion = deterministicSuggestionEngine.suggestion(
-            for: segment,
-            glossaryMatches: glossaryMatches
-        ) {
-            fallback = deterministicSuggestion
-        } else if validationError == .replacementUnchanged
-                    || modelStatus == .noSuggestion
-                    || rawOutput
-                    .components(separatedBy: .newlines)
-                    .contains(where: { $0.trimmingCharacters(in: .whitespaces) == "STATUS: NO_SUGGESTION" }) {
-            fallback = deterministicSuggestionEngine.noSuggestion(for: segment)
-        } else {
-            fallback = nil
-        }
-
-        if let fallback,
-           let validatedFallback = try? suggestionValidator.validate(
-               fallback,
-               for: segment,
-               glossaryMatches: glossaryMatches,
-               origin: .deterministicFallback
-           ) {
-            recordRejection(
-                segment: segment,
-                rawOutput: rawOutput,
-                reason: reason,
-                countsAsProcessed: false
-            )
-            accept(validatedFallback)
-            return
-        }
-
-        recordRejection(
-            segment: segment,
-            rawOutput: rawOutput,
-            reason: reason
-        )
-    }
-
-    private func accept(_ review: AIValidatedReview) {
-        validatedReviews.append(review)
-        processedSegmentCount += 1
-        if review.status == .noSuggestion {
-            noSuggestionCount += 1
-        }
-        if exposesEditorSuggestions {
-            editorSuggestions = EditorSuggestionMapper.make(
-                reviews: validatedReviews,
-                documentText: editorSourceText
+    private func latestMetrics(
+        from records: [AIConnectorBenchmarkRecord]
+    ) -> AIConnectorGenerationMetrics? {
+        for record in records.reversed() {
+            guard let promptTokenCount = record.promptTokenCount,
+                  let generationTokenCount = record.generationTokenCount,
+                  let promptDuration = record.promptDuration,
+                  let generationDuration = record.generationDuration,
+                  let stopReason = record.stopReason else {
+                continue
+            }
+            return AIConnectorGenerationMetrics(
+                promptTokenCount: promptTokenCount,
+                generationTokenCount: generationTokenCount,
+                promptDuration: promptDuration,
+                generationDuration: generationDuration,
+                stopReason: stopReason
             )
         }
-        updateOutput()
+        return nil
     }
 
     private func updateOutput() {
-        output = validatedReviews.map { review in
-            let original = review.original ?? review.segment.targetText
-            let replacement = review.replacement ?? "-"
-            let category = review.category.displayTitle.isEmpty
-                ? nil
-                : review.category.displayTitle
-            let heading = category.map {
-                "[\(review.status.displayTitle) • \($0)]"
-            } ?? "[\(review.status.displayTitle)]"
-            return """
-            \(heading)
-            Original: \(original)
-            Replacement: \(replacement)
-            Alasan: \(review.reason)
-            Sumber: \(review.origin.displayTitle)
-            """
-        }
-        .joined(separator: "\n\n")
+        output = validatedReviews
+            .compactMap { review in
+                guard review.status == .suggestion,
+                      let original = review.original,
+                      let replacement = review.replacement,
+                      !original.isEmpty,
+                      !replacement.isEmpty,
+                      original != replacement else {
+                    return nil
+                }
+
+                let category = review.category.displayTitle.isEmpty
+                    ? nil
+                    : review.category.displayTitle
+                let heading = category.map {
+                    "[\(review.status.displayTitle) • \($0)]"
+                } ?? "[\(review.status.displayTitle)]"
+                return """
+                \(heading)
+                Original: \(original)
+                Replacement: \(replacement)
+                Alasan: \(review.reason)
+                Sumber: \(review.origin.displayTitle)
+                """
+            }
+            .joined(separator: "\n\n")
     }
 }

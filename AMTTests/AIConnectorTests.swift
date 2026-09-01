@@ -22,13 +22,15 @@ final class AIConnectorTests: XCTestCase {
         XCTAssertEqual(result.segments[1].nextContext, "Kalimat ketiga?")
     }
 
-    func testSegmenterCapsNumberOfSegments() {
+    func testSegmenterProcessesAllSegmentsAndExposesBatchSize() {
         let text = (1...15).map { "Kalimat nomor \($0)." }.joined(separator: "\n\n")
         let result = LegalTextSegmenter().segment(documentText: text)
 
-        XCTAssertEqual(result.segments.count, LegalTextSegmenter.maximumSegments)
-        XCTAssertEqual(result.omittedSegmentCount, 3)
-        XCTAssertEqual(result.segments.last?.nextContext, "Kalimat nomor 13.")
+        XCTAssertEqual(result.segments.count, 15)
+        XCTAssertEqual(result.queuedSegmentCount, 15)
+        XCTAssertEqual(result.omittedSegmentCount, 0)
+        XCTAssertEqual(result.segments[11].nextContext, "Kalimat nomor 13.")
+        XCTAssertNil(result.segments.last?.nextContext)
     }
 
     func testSegmenterSplitsLongSentenceAtSemicolon() {
@@ -38,6 +40,16 @@ final class AIConnectorTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(result.segments.count, 2)
         XCTAssertTrue(result.segments[0].targetText.hasSuffix(";"))
         XCTAssertEqual(result.segments[1].targetText, "bagian lanjutan.")
+    }
+
+    func testSegmenterMarksSegmentOver512TokensWithoutTruncatingIt() {
+        let text = String(repeating: "kata ", count: 520) + "selesai."
+        let result = LegalTextSegmenter().segment(documentText: text)
+
+        XCTAssertEqual(result.segments.count, 1)
+        XCTAssertEqual(result.tooLongSegmentCount, 1)
+        XCTAssertTrue(result.segments[0].isTooLong)
+        XCTAssertEqual(result.segments[0].targetText, text)
     }
 
     func testParserAcceptsTaggedSuggestion() throws {
@@ -109,6 +121,44 @@ final class AIConnectorTests: XCTestCase {
             glossaryMatches: []
         )
         XCTAssertEqual(review.status, .noSuggestion)
+    }
+
+    func testCanonicalizerClearsHarmlessNoSuggestionOriginal() throws {
+        let parsed = try AIConnectorOutputParser().parse("""
+        STATUS: NO_SUGGESTION
+        CATEGORY: NONE
+        ORIGINAL: Perjanjian ini berlaku.
+        REPLACEMENT: -
+        GLOSSARY_ID: -
+        REASON: Tidak ada masalah bahasa yang jelas.
+        """)
+
+        let canonical = AIConnectorOutputCanonicalizer().canonicalize(parsed)
+
+        XCTAssertEqual(canonical.status, .noSuggestion)
+        XCTAssertNil(canonical.original)
+        XCTAssertNil(canonical.replacement)
+        XCTAssertNil(canonical.glossaryID)
+        XCTAssertNoThrow(
+            try AIConnectorSuggestionValidator().validate(
+                canonical,
+                for: makeSegment(target: "Perjanjian ini berlaku."),
+                glossaryMatches: []
+            )
+        )
+    }
+
+    func testCanonicalizerDoesNotRewriteConflictingSuggestionSemantics() throws {
+        let parsed = try AIConnectorOutputParser().parse("""
+        STATUS: SUGGESTION
+        CATEGORY: NONE
+        ORIGINAL: berlaku
+        REPLACEMENT: efektif
+        GLOSSARY_ID: -
+        REASON: Perbaikan bahasa.
+        """)
+
+        XCTAssertEqual(AIConnectorOutputCanonicalizer().canonicalize(parsed), parsed)
     }
 
     func testValidatorRejectsChangedNumbers() throws {
@@ -216,6 +266,50 @@ final class AIConnectorTests: XCTestCase {
             )
         ) { error in
             XCTAssertEqual(error as? AIConnectorValidationError, .unsupportedSourceClaim)
+        }
+    }
+
+    func testValidatorRejectsNonMinimalWholeSentenceEdit() throws {
+        let target = "Pihak Kedua wajib untuk menyerahkan laporan bulanan paling lambat tanggal 5 setiap bulan."
+        let parsed = try AIConnectorOutputParser().parse("""
+        STATUS: SUGGESTION
+        CATEGORY: GRAMMAR
+        ORIGINAL: \(target)
+        REPLACEMENT: Pihak Kedua wajib menyerahkan laporan bulanan paling lambat tanggal 5 setiap bulan.
+        GLOSSARY_ID: -
+        REASON: Menghapus kata yang tidak diperlukan.
+        """)
+
+        XCTAssertThrowsError(
+            try AIConnectorSuggestionValidator().validate(
+                parsed,
+                for: makeSegment(target: target),
+                glossaryMatches: []
+            )
+        ) { error in
+            XCTAssertEqual(error as? AIConnectorValidationError, .nonMinimalEditSpan)
+        }
+    }
+
+    func testValidatorRejectsReasonQuotingTextOutsideEvidence() throws {
+        let target = "Pihak Pertama dapat mengakhiri Perjanjian ini."
+        let parsed = try AIConnectorOutputParser().parse("""
+        STATUS: SUGGESTION
+        CATEGORY: CLARITY
+        ORIGINAL: mengakhiri
+        REPLACEMENT: mengakhiri
+        GLOSSARY_ID: -
+        REASON: Frasa "untuk menyerahkan" perlu diringkas.
+        """)
+
+        XCTAssertThrowsError(
+            try AIConnectorSuggestionValidator().validate(
+                parsed,
+                for: makeSegment(target: target),
+                glossaryMatches: []
+            )
+        ) { error in
+            XCTAssertEqual(error as? AIConnectorValidationError, .ungroundedReason)
         }
     }
 
@@ -515,17 +609,45 @@ final class AIConnectorTests: XCTestCase {
         XCTAssertTrue(store.suggestionCandidates(for: "Kopi dan teh disediakan di ruang rapat.").isEmpty)
     }
 
-    func testBuiltInDummyDocumentCoversAdditionalCasesAndSegmentLimit() {
+    func testBuiltInDummyDocumentCoversAdditionalCasesAndIsDocumentWide() {
         let content = AIConnectorDummyDocument.initialContent
         let segmentation = LegalTextSegmenter().segment(documentText: content)
 
+        XCTAssertTrue(content.contains("PERJANJIAN KERJA SAMA"))
+        XCTAssertTrue(content.contains("Pihak Pertama dan Pihak Kedua secara bersama-sama disebut"))
+        XCTAssertTrue(content.contains("telah dibuat dan ditanda tangani"))
+        XCTAssertTrue(content.contains("Pihak Kedua wajib untuk menyediakan Layanan"))
+        XCTAssertTrue(content.contains("data tentang orang perseorangan yang teridentifikasi"))
+        XCTAssertTrue(content.contains("kumpulan orang dan/atau kekayaan yang terorganisasi"))
+        XCTAssertTrue(content.contains("Suatu keadaan yang terjadi di luar kehendak para pihak"))
+        XCTAssertTrue(content.contains("kerjasama"))
+        XCTAssertTrue(content.contains("bertanggungjawab"))
+        XCTAssertTrue(content.contains("di simpan"))
         XCTAssertTrue(content.contains("Rp100.000.000 (seratus juta rupiah)"))
         XCTAssertTrue(content.contains("pajak pertambahan nilai sebesar 11%"))
-        XCTAssertTrue(content.contains("keadaan kahar, kecuali"))
+        XCTAssertTrue(content.contains("Keadaan Kahar, kecuali"))
         XCTAssertTrue(content.contains("Borrower wajib mengirimkan quarterly report kepada Lender"))
         XCTAssertTrue(content.contains("Pihak Kedua tidak dapat mengalihkan hak dan kewajibannya"))
-        XCTAssertEqual(segmentation.segments.count, LegalTextSegmenter.maximumSegments)
-        XCTAssertGreaterThan(segmentation.omittedSegmentCount, 0)
+        XCTAssertGreaterThan(segmentation.segments.count, LegalTextSegmenter.batchSize)
+        XCTAssertEqual(segmentation.queuedSegmentCount, segmentation.segments.count)
+        XCTAssertEqual(segmentation.omittedSegmentCount, 0)
+    }
+
+    func testBuiltInDummyDocumentRetrievesActiveCorpusTermsOnly() {
+        let store = LegalDictionaryStore()
+        let segmentation = LegalTextSegmenter().segment(
+            documentText: AIConnectorDummyDocument.initialContent
+        )
+
+        let retrievedTerms = Set(
+            segmentation.segments.flatMap { segment in
+                store.suggestionCandidates(for: segment.targetText).map { $0.entry.term }
+            }
+        )
+
+        XCTAssertTrue(retrievedTerms.contains("Data Pribadi"))
+        XCTAssertTrue(retrievedTerms.contains("Korporasi"))
+        XCTAssertFalse(retrievedTerms.contains("Keadaan Kahar"))
     }
 
     func testGlossarySnapshotRetainsSegmentAndCandidateForRunHistory() {

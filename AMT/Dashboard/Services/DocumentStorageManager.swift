@@ -57,11 +57,11 @@ final class DocumentStorageManager: ObservableObject {
 
             // Sort by latest updated first
             loadedDocs.sort { $0.updatedAt > $1.updatedAt }
-            loadedDocs.insert(AIConnectorDummyDocument.document, at: 0)
+            loadedDocs.insert(contentsOf: AIConnectorDummyDocument.builtInDocuments, at: 0)
             self.documents = loadedDocs
         } catch {
             print("Error loading documents via Foundation FileManager: \(error.localizedDescription)")
-            self.documents = [AIConnectorDummyDocument.document]
+            self.documents = AIConnectorDummyDocument.builtInDocuments
         }
     }
 

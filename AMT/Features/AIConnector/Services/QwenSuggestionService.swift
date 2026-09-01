@@ -31,6 +31,10 @@ enum QwenSuggestionError: LocalizedError {
 @MainActor
 final class QwenSuggestionService {
     static let maximumTargetTokens = 512
+    nonisolated static let promptVersion = "p0.10-six-line-v2-minimal-span"
+    nonisolated static let outputSchemaVersion = "six-line-v1"
+    nonisolated static let candidatePromptVersion = "p0.11-candidate-first-v1"
+    nonisolated static let candidateOutputSchemaVersion = "submit-review-tool-v1"
 
     private static let maximumContextTokens = 128
 
@@ -54,8 +58,8 @@ final class QwenSuggestionService {
     penjelasan, heading, atau baris lain:
     STATUS: NO_SUGGESTION|SUGGESTION|NEEDS_REVIEW
     CATEGORY: NONE|SPELLING|GRAMMAR|CLARITY|TERMINOLOGY
-    ORIGINAL: kutipan persis dari TARGET atau -
-    REPLACEMENT: pengganti atau -
+    ORIGINAL: kutipan terkecil yang berubah, persis dari TARGET, atau -
+    REPLACEMENT: pengganti terkecil untuk ORIGINAL atau -
     GLOSSARY_ID: G1 atau -
     REASON: satu kalimat ringkas tanpa sumber hukum
 
@@ -63,15 +67,18 @@ final class QwenSuggestionService {
     Gunakan SUGGESTION hanya untuk perubahan bahasa yang tidak mengubah makna.
     Gunakan NEEDS_REVIEW untuk perubahan yang menyentuh hak, kewajiban,
     pengecualian, larangan, izin, angka, tanggal, atau tenggat.
+    Untuk SUGGESTION, ORIGINAL dan REPLACEMENT harus berupa span terkecil yang
+    diperlukan. Jangan menyalin seluruh TARGET bila hanya satu atau beberapa
+    kata yang berubah.
 
     Contoh koreksi yang aman:
-    TARGET: Pihak Kedua wajib untuk menyerahkan laporan.
+    TARGET: Lampiran tersebut merupakan merupakan bagian dari Perjanjian.
     STATUS: SUGGESTION
     CATEGORY: GRAMMAR
-    ORIGINAL: Pihak Kedua wajib untuk menyerahkan laporan.
-    REPLACEMENT: Pihak Kedua wajib menyerahkan laporan.
+    ORIGINAL: merupakan merupakan
+    REPLACEMENT: merupakan
     GLOSSARY_ID: -
-    REASON: Menghapus kata yang tidak diperlukan tanpa mengubah makna kewajiban.
+    REASON: Menghapus pengulangan kata tanpa mengubah makna kalimat.
 
     Contoh tanpa saran:
     STATUS: NO_SUGGESTION
@@ -81,6 +88,57 @@ final class QwenSuggestionService {
     GLOSSARY_ID: -
     REASON: Tidak ada masalah bahasa yang jelas.
     """
+
+    private static let candidateSystemPrompt = """
+    Anda adalah penilai kandidat koreksi bahasa hukum Indonesia.
+    Teks di antara CONTEXT_BEFORE dan CONTEXT_AFTER hanya konteks baca-saja.
+    Hanya TARGET yang dinilai. CANDIDATE adalah proposal yang dibuat aplikasi;
+    jangan membuat kandidat baru dan jangan mengubah original atau replacement.
+    Pilih tepat satu keputusan dengan tool submit_review.
+
+    Gunakan ACCEPT hanya jika proposal merupakan koreksi bahasa lokal yang aman
+    dan tidak mengubah makna hukum. Untuk SPELLING, terima hanya koreksi ejaan.
+    Untuk GRAMMAR atau CLARITY, terima hanya perubahan minimal yang jelas.
+    Untuk TERMINOLOGY, terima hanya kandidat verified yang ekuivalen dalam
+    konteks TARGET.
+
+    Jika proposal dapat memengaruhi hak, kewajiban, modalitas, negasi, angka,
+    tanggal, tenggat, kondisi, pengecualian, defined term, atau akibat hukum,
+    gunakan NEEDS_REVIEW. Jika proposal tidak benar-benar sesuai, gunakan REJECT.
+    Jangan menyebut peraturan, pasal, URL, sumber hukum, atau penjelasan bebas.
+    Jangan mengirim teks biasa; gunakan tepat satu tool call submit_review.
+    """
+
+    private static let submitReviewTool: ToolSpec = [
+        "type": "function",
+        "function": [
+            "name": AIConnectorCandidateDecisionParser.toolName,
+            "description": "Pilih keputusan untuk satu kandidat yang disediakan aplikasi.",
+            "parameters": [
+                "type": "object",
+                "properties": [
+                    "candidate_id": ["type": "string"],
+                    "decision": [
+                        "type": "string",
+                        "enum": [
+                            AIConnectorCandidateDecision.accept.rawValue,
+                            AIConnectorCandidateDecision.reject.rawValue,
+                            AIConnectorCandidateDecision.needsReview.rawValue
+                        ]
+                    ]
+                ],
+                "required": ["candidate_id", "decision"],
+                "additionalProperties": false
+            ] as [String: any Sendable]
+        ] as [String: any Sendable]
+    ]
+
+    /// Exposed internally so the offline test target can verify the exact
+    /// schema sent to MLX without constructing a model or making a network
+    /// request.
+    static var candidateToolSpecification: ToolSpec {
+        submitReviewTool
+    }
 
     private var modelContainers: [AIConnectorModelVariant: ModelContainer] = [:]
     private var loadingTasks: [AIConnectorModelVariant: Task<ModelContainer, Error>] = [:]
@@ -106,7 +164,8 @@ final class QwenSuggestionService {
         glossaryMatches: [LegalDictionaryMatch],
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
-        modelVariant: AIConnectorModelVariant = .qwen35Legal4B
+        modelVariant: AIConnectorModelVariant = .qwen35Base4B,
+        repairInstruction: String? = nil
     ) async throws -> QwenReviewResult {
         guard !segment.targetText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw QwenSuggestionError.emptyInput
@@ -138,7 +197,8 @@ final class QwenSuggestionService {
             targetText: promptInput.targetText,
             previousContext: promptInput.previousContext,
             nextContext: promptInput.nextContext,
-            glossaryMatches: glossaryMatches
+            glossaryMatches: glossaryMatches,
+            repairInstruction: repairInstruction
         )
 
         for try await generation in session.streamDetails(to: prompt) {
@@ -195,6 +255,129 @@ final class QwenSuggestionService {
         )
     }
 
+    func reviewCandidate(
+        request: AIConnectorCandidateReviewRequest,
+        downloadProgress: @escaping @Sendable (Double) -> Void,
+        generationProgress: @escaping @MainActor @Sendable (Int) -> Void
+    ) async throws -> QwenCandidateDecisionResult {
+        guard !request.segment.targetText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw QwenSuggestionError.emptyInput
+        }
+
+        let container = try await loadModel(
+            modelVariant: request.modelVariant,
+            downloadProgress: downloadProgress
+        )
+        try Task.checkCancellation()
+
+        let promptInput = try await preparePromptInput(
+            segment: request.segment,
+            container: container
+        )
+        try Task.checkCancellation()
+
+        let session = ChatSession(
+            container,
+            instructions: Self.candidateSystemPrompt,
+            generateParameters: generationParameters(profile: request.generationProfile),
+            additionalContext: ["enable_thinking": request.thinkingEnabled],
+            tools: [Self.submitReviewTool]
+        )
+
+        let prompt = Self.candidateUserPrompt(
+            promptInput: promptInput,
+            candidate: request.candidate,
+            retryInstruction: request.retryInstruction
+        )
+
+        var rawText = ""
+        var toolCalls: [AIConnectorToolDecisionPayload] = []
+        var completionInfo: GenerateCompletionInfo?
+
+        for try await generation in session.streamDetails(to: prompt) {
+            try Task.checkCancellation()
+            switch generation {
+            case let .chunk(chunk):
+                rawText += chunk
+                generationProgress(rawText.utf16.count)
+            case let .toolCall(toolCall):
+                toolCalls.append(try Self.toolPayload(from: toolCall))
+            case let .info(info):
+                completionInfo = info
+            }
+        }
+
+        try Task.checkCancellation()
+        let metrics = Self.metrics(from: completionInfo)
+        if metrics.stopReason == .cancelled {
+            throw CancellationError()
+        }
+        if metrics.stopReason == .length {
+            throw AIConnectorCandidateModelFailure(
+                message: "Model mencapai batas token; keputusan kandidat ditolak.",
+                classification: .tokenLimit,
+                recoverable: false,
+                metrics: metrics,
+                reasoningMarkerDetected: false,
+                outputWasTruncated: true
+            )
+        }
+
+        let visibleText: String
+        if request.thinkingEnabled {
+            guard rawText.contains("</think>") else {
+                throw QwenSuggestionError.incompleteThinking
+            }
+            visibleText = Self.visibleResponse(
+                from: rawText,
+                thinkingEnabled: true
+            )
+        } else {
+            visibleText = rawText
+        }
+
+        let repetitionRatio = AIConnectorGenerationDiagnostics
+            .repeatedSixGramRatio(in: rawText)
+        if repetitionRatio >= AIConnectorGenerationDiagnostics.repetitionThreshold {
+            throw AIConnectorCandidateModelFailure(
+                message: "Output model memiliki repetisi berlebihan; keputusan kandidat ditolak.",
+                classification: .repetition,
+                recoverable: false,
+                metrics: metrics,
+                reasoningMarkerDetected: AIConnectorGenerationDiagnostics
+                    .containsReasoningMarkers(in: rawText),
+                outputWasTruncated: false,
+                repeatedSixGramRatio: repetitionRatio
+            )
+        }
+
+        do {
+            let parsed = try AIConnectorCandidateDecisionParser().parse(
+                toolCalls: toolCalls,
+                visibleText: visibleText,
+                expectedCandidateID: request.candidate.id
+            )
+            return QwenCandidateDecisionResult(
+                candidateID: parsed.candidateID,
+                decision: parsed.decision,
+                metrics: metrics,
+                containsReasoningMarkers: false,
+                repeatedSixGramRatio: repetitionRatio
+            )
+        } catch let parserError as AIConnectorCandidateDecisionParserError {
+            let isReasoning = parserError == .reasoningOrTemplateToken
+            throw AIConnectorCandidateModelFailure(
+                message: parserError.message,
+                classification: isReasoning ? .reasoningLeak : .parserRecoverable,
+                recoverable: parserError.isRecoverable,
+                metrics: metrics,
+                reasoningMarkerDetected: isReasoning,
+                outputWasTruncated: false,
+                repeatedSixGramRatio: repetitionRatio
+            )
+        }
+    }
+
     private func preparePromptInput(
         segment: AIReviewSegment,
         container: ModelContainer
@@ -249,7 +432,8 @@ final class QwenSuggestionService {
         let configuration = ModelConfiguration(
             id: modelVariant.modelID,
             revision: modelVariant.revision,
-            extraEOSTokens: ["<|im_end|>"]
+            extraEOSTokens: ["<|im_end|>"],
+            toolCallFormat: .xmlFunction
         )
         let task = Task { @Sendable in
             try await #huggingFaceLoadModelContainer(
@@ -279,6 +463,19 @@ final class QwenSuggestionService {
     ) -> GenerateParameters {
         let profile = modelVariant.generationProfile(thinkingEnabled: thinkingEnabled)
         return GenerateParameters(
+            maxTokens: profile.maxTokens,
+            temperature: profile.temperature,
+            topP: profile.topP,
+            topK: profile.topK,
+            presencePenalty: profile.presencePenalty,
+            seed: profile.seed
+        )
+    }
+
+    private func generationParameters(
+        profile: AIConnectorGenerationProfile
+    ) -> GenerateParameters {
+        GenerateParameters(
             maxTokens: profile.maxTokens,
             temperature: profile.temperature,
             topP: profile.topP,
@@ -339,7 +536,8 @@ final class QwenSuggestionService {
         targetText: String,
         previousContext: String?,
         nextContext: String?,
-        glossaryMatches: [LegalDictionaryMatch]
+        glossaryMatches: [LegalDictionaryMatch],
+        repairInstruction: String?
     ) -> String {
         let glossaryContext: String
 
@@ -356,6 +554,8 @@ final class QwenSuggestionService {
             }
             .joined(separator: "\n\n")
         }
+
+        let repairSection = repairInstruction.map { "\n\($0)\n" } ?? ""
 
         return """
         <CONTEXT_BEFORE>
@@ -375,7 +575,63 @@ final class QwenSuggestionService {
         dijadikan ORIGINAL. Jangan tulis sumber hukum pada REASON. Jika bagian
         GLOSSARY_CANDIDATES menyatakan tidak ada kandidat, tulis
         `GLOSSARY_ID: -`. Untuk SPELLING, GRAMMAR, atau CLARITY, tulis `-`.
+        Untuk SUGGESTION, salin hanya bagian terkecil dari TARGET yang berubah.
+        Jangan mengulang seluruh TARGET sebagai ORIGINAL dan REPLACEMENT.
+        \(repairSection)
         """
+    }
+
+    private static func candidateUserPrompt(
+        promptInput: PromptInput,
+        candidate: AIConnectorReviewCandidate,
+        retryInstruction: String?
+    ) -> String {
+        let glossaryEvidence: String
+        if let glossaryMatch = candidate.glossaryMatch {
+            glossaryEvidence = "\nGLOSSARY_DEFINITION: \(String(glossaryMatch.entry.definition.prefix(600)))"
+        } else {
+            glossaryEvidence = ""
+        }
+        let retrySection = retryInstruction.map { "\nRETRY_INSTRUCTION: \($0)" } ?? ""
+
+        return """
+        CONTEXT_BEFORE:
+        \(promptInput.previousContext ?? "-")
+        TARGET:
+        \(promptInput.targetText)
+        CONTEXT_AFTER:
+        \(promptInput.nextContext ?? "-")
+        CANDIDATE:
+        ID: \(candidate.id)
+        ORIGINAL: \(candidate.original)
+        REPLACEMENT: \(candidate.replacement)
+        CATEGORY: \(candidate.category.rawValue)
+        CONFIDENCE: \(candidate.confidenceTier.rawValue)
+        EXPLANATION: \(candidate.explanation)\(glossaryEvidence)\(retrySection)
+        """
+    }
+
+    private static func toolPayload(
+        from toolCall: ToolCall
+    ) throws -> AIConnectorToolDecisionPayload {
+        var arguments: [String: String] = [:]
+        for (key, value) in toolCall.function.arguments {
+            guard case let .string(string) = value else {
+                throw AIConnectorCandidateModelFailure(
+                    message: "Parameter tool keputusan bukan string.",
+                    classification: .parserRecoverable,
+                    recoverable: true,
+                    metrics: nil,
+                    reasoningMarkerDetected: false,
+                    outputWasTruncated: false
+                )
+            }
+            arguments[key] = string
+        }
+        return AIConnectorToolDecisionPayload(
+            name: toolCall.function.name,
+            arguments: arguments
+        )
     }
 
     private struct PromptInput {

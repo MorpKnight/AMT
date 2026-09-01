@@ -1,0 +1,1739 @@
+[
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Badan Narkotika Nasional Nomor 4 Tahun 2017",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-bnn-no-4-tahun-2017|repeals|peraturan.go.id:pp-no-60-tahun-2008",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-bnn-no-4-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-60-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Badan Usaha Milik Negara Nomor PER-2/MBU/03/2023 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permen-bumn-no-per-2-mbu-03-2023-tahun-2023|repeals|peraturan.go.id:permen-bumn-no-per-08-mbu-12-2019-tahun-2019",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permen-bumn-no-per-2-mbu-03-2023-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permen-bumn-no-per-08-mbu-12-2019-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Energi Dan Sumber Daya Mineral Nomor 06 Tahun 2016",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permen-esdm-no-06-tahun-2016|repeals|peraturan.go.id:permen-esdm-no-37-tahun-2015",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permen-esdm-no-06-tahun-2016",
+    "target_reference_id": "peraturan.go.id:permen-esdm-no-37-tahun-2015"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN MENTERI ENERGI DAN SUMBER DAYA MINERAL NOMOR 25 TAHUN 2018 TENTANG PENGUSAHAAN PERTAMBANGAN MINERAL DAN BATUBARA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permen-esdm-no-11-tahun-2019|amends|peraturan.go.id:permen-esdm-no-25-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permen-esdm-no-11-tahun-2019",
+    "target_reference_id": "peraturan.go.id:permen-esdm-no-25-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI ENERGI DAN SUMBER DAYA MINERAL NOMOR 4 TAHUN 2018 TENTANG PENGUSAHAAN GAS BUMI PADA KEGIATAN USAHA HILIR MINYAK DAN GAS BUMI",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permen-esdm-no-19-tahun-2021|amends|peraturan.go.id:permen-esdm-no-4-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permen-esdm-no-19-tahun-2021",
+    "target_reference_id": "peraturan.go.id:permen-esdm-no-4-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN MENTERI ENERGI DAN SUMBER DAYA MINERAL NOMOR 50 TAHUN 2017 TENTANG PEMANFAATAN SUMBER ENERGI TERBARUKAN UNTUK PENYEDIAAN TENAGA LISTRIK",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permen-esdm-no-4-tahun-2020|amends|peraturan.go.id:permen-esdm-no-50-tahun-2017",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permen-esdm-no-4-tahun-2020",
+    "target_reference_id": "peraturan.go.id:permen-esdm-no-50-tahun-2017"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Menteri Energi dan Sumber Daya Mineral Nomor 25 Tahun 2018 tentang Pengusahaan Pertambangan Mineral dan Batubara",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permen-esdm-no-50-tahun-2018|amends|peraturan.go.id:permen-esdm-no-25-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permen-esdm-no-50-tahun-2018",
+    "target_reference_id": "peraturan.go.id:permen-esdm-no-25-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Menteri Energi dan Sumber Daya Mineral Nomor 50 Tahun 2017 tentang Pemanfaatan Sumber Energi Terbarukan Untuk Penyediaan Tenaga Listrik",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permen-esdm-no-53-tahun-2018|amends|peraturan.go.id:permen-esdm-no-50-tahun-2017",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permen-esdm-no-53-tahun-2018",
+    "target_reference_id": "peraturan.go.id:permen-esdm-no-50-tahun-2017"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI KETENAGAKERJAAN NOMOR 33 TAHUN 2016 TENTANG TATA CARA PENGAWASAN KETENAGAKERJAAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenaker-no-1-tahun-2020|amends|peraturan.go.id:permenaker-no-33-tahun-2016",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenaker-no-1-tahun-2020",
+    "target_reference_id": "peraturan.go.id:permenaker-no-33-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI KETENAGAKERJAAN NOMOR 18 TAHUN 2017 TENTANG TATA CARA WAJIB LAPOR KETENAGAKERJAAN DI PERUSAHAAN DALAM JARINGAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenaker-no-4-tahun-2019|amends|peraturan.go.id:permenaker-no-18-tahun-2017",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenaker-no-4-tahun-2019",
+    "target_reference_id": "peraturan.go.id:permenaker-no-18-tahun-2017"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI PERDAGANGAN NOMOR 110 TAHUN 2018 TENTANG KETENTUAN IMPOR BESI ATAU BAJA, BAJA PADUAN, DAN PRODUK TURUNANNYA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permendag-no-03-tahun-2020|amends|peraturan.go.id:permendag-no-110-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permendag-no-03-tahun-2020",
+    "target_reference_id": "peraturan.go.id:permendag-no-110-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Komunikasi dan Informatika Nomor 13 Tahun 2019",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permenkominfo-no-13-tahun-2019|repeals|peraturan.go.id:permenkominfo-no-7-tahun-2018",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permenkominfo-no-13-tahun-2019",
+    "target_reference_id": "peraturan.go.id:permenkominfo-no-7-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI KOMUNIKASI DAN INFORMATIKA NOMOR 7 TAHUN 2018 TENTANG PELAYANAN PERIZINAN BERUSAHA TERINTEGRASI SECARA ELEKTRONIK BIDANG KOMUNIKASI DAN INFORMATIKA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkominfo-no-7-tahun-2019|amends|peraturan.go.id:permenkominfo-no-7-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkominfo-no-7-tahun-2019",
+    "target_reference_id": "peraturan.go.id:permenkominfo-no-7-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS PERATURAN PRESIDEN NOMOR 191 TAHUN 2014 TENTANG PENYEDIAAN, PENDISTRIBUSIAN DAN HARGA JUAL ECERAN BAHAN BAKAR MINYAK",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-117-tahun-2021|amends|peraturan.go.id:perpres-no-191-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-117-tahun-2021",
+    "target_reference_id": "peraturan.go.id:perpres-no-191-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Presiden Nomor 4 Tahun 2016 Tentang Percepatan Pembangunan Infrastruktur Ketenagalistrikan",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-14-tahun-2017|amends|peraturan.go.id:perpres-no-4-tahun-2016",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-14-tahun-2017",
+    "target_reference_id": "peraturan.go.id:perpres-no-4-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEEMPAT ATAS PERATURAN PRESIDEN NOMOR 71 TAHUN 2012 TENTANG PENYELENGGARAAN PENGADAAN TANAH BAGI PEMBANGUNAN UNTUK KEPENTINGAN UMUM",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-148-tahun-2015|amends|peraturan.go.id:perpres-no-71-tahun-2012",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-148-tahun-2015",
+    "target_reference_id": "peraturan.go.id:perpres-no-71-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS PERATURAN PRESIDEN NOMOR 71 TAHUN 2012 TENTANG PENYELENGGARAAN PENGADAAN TANAH BAGI PEMBANGUNAN UNTUK KEPENTINGAN UMUM",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-30-tahun-2015|amends|peraturan.go.id:perpres-no-71-tahun-2012",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-30-tahun-2015",
+    "target_reference_id": "peraturan.go.id:perpres-no-71-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PRESIDEN NOMOR 71 TAHUN 2012 TENTANG PENYELENGGARAAN PENGADAAN TANAH BAGI PEMBANGUNAN UNTUK KEPENTINGAN UMUM",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-40-tahun-2014|amends|peraturan.go.id:perpres-no-71-tahun-2012",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-40-tahun-2014",
+    "target_reference_id": "peraturan.go.id:perpres-no-71-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Presiden Nomor 191 Tahun 2014 tentang Penyediaan, Pendistribusian dan Harga Jual Eceran Bahan Bakar Minyak",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-43-tahun-2018|amends|peraturan.go.id:perpres-no-191-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-43-tahun-2018",
+    "target_reference_id": "peraturan.go.id:perpres-no-191-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PRESIDEN NOMOR 10 TAHUN 2021 TENTANG BIDANG USAHA PENANAMAN MODAL",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-49-tahun-2021|amends|peraturan.go.id:perpres-no-10-tahun-2021",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-49-tahun-2021",
+    "target_reference_id": "peraturan.go.id:perpres-no-10-tahun-2021"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS PERATURAN PRESIDEN NOMOR 82 TAHUN 2018 TENTANG JAMINAN KESEHATAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-59-tahun-2024|amends|peraturan.go.id:perpres-no-82-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-59-tahun-2024",
+    "target_reference_id": "peraturan.go.id:perpres-no-82-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PRESIDEN NOMOR 82 TAHUN 2018 TENTANG JAMINAN KESEHATAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-64-tahun-2020|amends|peraturan.go.id:perpres-no-82-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-64-tahun-2020",
+    "target_reference_id": "peraturan.go.id:perpres-no-82-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PRESIDEN NOMOR 191 TAHUN 2014 TENTANG PENYEDIAAN, PENDISTRIBUSIAN DAN HARGA JUAL ECERAN BAHAN BAKAR MINYAK",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-69-tahun-2021|amends|peraturan.go.id:perpres-no-191-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-69-tahun-2021",
+    "target_reference_id": "peraturan.go.id:perpres-no-191-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PRESIDEN NOMOR 82 TAHUN 2018 TENTANG JAMINAN KESEHATAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-75-tahun-2019|amends|peraturan.go.id:perpres-no-82-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-75-tahun-2019",
+    "target_reference_id": "peraturan.go.id:perpres-no-82-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Presiden Nomor 62 Tahun 2018 Tentang Penanganan Dampak Sosial Kemasyarakatan Dalam Rangka Penyediaan Tanah Untuk Pembangunan Nasional",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-78-tahun-2023|amends|peraturan.go.id:perpres-no-62-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-78-tahun-2023",
+    "target_reference_id": "peraturan.go.id:perpres-no-62-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Kedua Atas Peraturan Presiden Nomor 4 Tahun 2016 Tentang Percepatan Pembangunan Infrastruktur Ketenagalistrikan",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-89-tahun-2025|amends|peraturan.go.id:perpres-no-4-tahun-2016",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-89-tahun-2025",
+    "target_reference_id": "peraturan.go.id:perpres-no-4-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PRESIDEN NOMOR 71 TAHUN 2012 TENTANG PENYELENGGARAAN PENGADAAN TANAH BAGI PEMBANGUNAN UNTUK KEPENTINGAN UMUM",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-99-tahun-2014|amends|peraturan.go.id:perpres-no-71-tahun-2012",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-99-tahun-2014",
+    "target_reference_id": "peraturan.go.id:perpres-no-71-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PEMERINTAH NOMOR 23 TAHUN 2010 TENTANG PELAKSANAAN KEGIATAN USAHA PERTAMBANGAN MINERAL DAN BATUBARA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-1-tahun-2014|amends|peraturan.go.id:pp-no-23-tahun-2010",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-1-tahun-2014",
+    "target_reference_id": "peraturan.go.id:pp-no-23-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Keempat Atas Peraturan Pemerintah Nomor 23 Tahun 2010 Tentang Pelaksanaan Kegiatan Usaha Pertambangan Mineral Dan Batubara",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-1-tahun-2017|amends|peraturan.go.id:pp-no-23-tahun-2010",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-1-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-23-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 86 TAHUN 2019 TENTANG KEAMANAN PANGAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-1-tahun-2026|amends|peraturan.go.id:pp-no-86-tahun-2019",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-1-tahun-2026",
+    "target_reference_id": "peraturan.go.id:pp-no-86-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 10 Tahun 2011",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-10-tahun-2011|repeals|peraturan.go.id:pp-no-2-tahun-2006",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-10-tahun-2011",
+    "target_reference_id": "peraturan.go.id:pp-no-2-tahun-2006"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 10 Tahun 2020",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-10-tahun-2020|repeals|peraturan.go.id:pp-no-4-tahun-2013",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-10-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-4-tahun-2013"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Kedua atas Peraturan Pemerintah Nomor 39 Tahun 2010 tentang Administrasi Prajurit Tentara Nasional Indonesia",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-10-tahun-2026|amends|peraturan.go.id:pp-no-39-tahun-2010",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-10-tahun-2026",
+    "target_reference_id": "peraturan.go.id:pp-no-39-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 63 TAHUN 2005 TENTANG SISTEM MANAJEMEN SUMBER DAYA MANUSIA KOMISI PEMBERANTASAN KORUPSI",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-103-tahun-2012|amends|peraturan.go.id:pp-no-63-tahun-2005",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-103-tahun-2012",
+    "target_reference_id": "peraturan.go.id:pp-no-63-tahun-2005"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PEMERINTAH NOMOR 24 TAHUN 2010 TENTANG PENGGUNAAN KAWASAAN HUTAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-105-tahun-2015|amends|peraturan.go.id:pp-no-24-tahun-2010",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-105-tahun-2015",
+    "target_reference_id": "peraturan.go.id:pp-no-24-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 11 Tahun 2017",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-11-tahun-2017|repeals|peraturan.go.id:pp-no-21-tahun-2014",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-11-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-21-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 11 Tahun 2017",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-11-tahun-2017|repeals|peraturan.go.id:pp-no-97-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-11-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-97-tahun-2000"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PEMERINTAH NOMOR 43 TAHUN 2014 TENTANG PERATURAN PELAKSANAAN UNDANG-UNDANG NOMOR 6 TAHUN 2014 TENTANG DESA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-11-tahun-2019|amends|peraturan.go.id:pp-no-43-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-11-tahun-2019",
+    "target_reference_id": "peraturan.go.id:pp-no-43-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 11 Tahun 2020",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-11-tahun-2020|repeals|peraturan.go.id:pp-no-35-tahun-2018",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-11-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-35-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 14 TAHUN 2016 TENTANG PENYELENGGARAAN PERUMAHAN DAN KAWASAN PERMUKIMAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-12-tahun-2021|amends|peraturan.go.id:pp-no-14-tahun-2016",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-12-tahun-2021",
+    "target_reference_id": "peraturan.go.id:pp-no-14-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Kedua Atas Peraturan Pemerintah Nomor 63 Tahun 2005 tentang Sistem Manajemen Sumber Daya Manusia Komisi Pemberantasan Korupsi",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-14-tahun-2017|amends|peraturan.go.id:pp-no-63-tahun-2005",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-14-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-63-tahun-2005"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 16 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-16-tahun-2023|repeals|peraturan.go.id:pp-no-56-tahun-2011",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-16-tahun-2023",
+    "target_reference_id": "peraturan.go.id:pp-no-56-tahun-2011"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 17 Tahun 2017",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-17-tahun-2017|repeals|peraturan.go.id:pp-no-90-tahun-2010",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-17-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-90-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 17 Tahun 2018",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-17-tahun-2018|repeals|peraturan.go.id:pp-no-73-tahun-2005",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-17-tahun-2018",
+    "target_reference_id": "peraturan.go.id:pp-no-73-tahun-2005"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 18 Tahun 2013",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-18-tahun-2013|repeals|peraturan.go.id:pp-no-14-tahun-2009",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-18-tahun-2013",
+    "target_reference_id": "peraturan.go.id:pp-no-14-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 2 Tahun 2012",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-2-tahun-2012|repeals|peraturan.go.id:pp-no-57-tahun-2005",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-2-tahun-2012",
+    "target_reference_id": "peraturan.go.id:pp-no-57-tahun-2005"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 63 TAHUN 2008 TENTANG PELAKSANAAN UNDANG-UNDANG TENTANG YAYASAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-2-tahun-2013|amends|peraturan.go.id:pp-no-63-tahun-2008",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-2-tahun-2013",
+    "target_reference_id": "peraturan.go.id:pp-no-63-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 2 Tahun 2014",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-2-tahun-2014|repeals|peraturan.go.id:pp-no-29-tahun-2008",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-2-tahun-2014",
+    "target_reference_id": "peraturan.go.id:pp-no-29-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 20 Tahun 2019",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-20-tahun-2019|repeals|peraturan.go.id:pp-no-79-tahun-2014",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-20-tahun-2019",
+    "target_reference_id": "peraturan.go.id:pp-no-79-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 84 TAHUN 2014 TENTANG PENJUALAN BARANG MILIK NEGARA/DAERAH BERUPA KENDARAAN PERORANGAN DINAS",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-20-tahun-2022|amends|peraturan.go.id:pp-no-84-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-20-tahun-2022",
+    "target_reference_id": "peraturan.go.id:pp-no-84-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 25 TAHUN 2020 TENTANG PENYELENGGARAAN TABUNGAN PERUMAHAN RAKYAT",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-21-tahun-2024|amends|peraturan.go.id:pp-no-25-tahun-2020",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-21-tahun-2024",
+    "target_reference_id": "peraturan.go.id:pp-no-25-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 60 TAHUN 2014 TENTANG DANA DESA YANG BERSUMBER DARI ANGGARAN PENDAPATAN DAN BELANJA NEGARA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-22-tahun-2015|amends|peraturan.go.id:pp-no-60-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-22-tahun-2015",
+    "target_reference_id": "peraturan.go.id:pp-no-60-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 14 TAHUN 2012 TENTANG KEGIATAN USAHA PENYEDIAAN TENAGA LISTRIK",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-23-tahun-2014|amends|peraturan.go.id:pp-no-14-tahun-2012",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-23-tahun-2014",
+    "target_reference_id": "peraturan.go.id:pp-no-14-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 67 TAHUN 2014 TENTANG PERATURAN PELAKSANAAN UNDANGUNDANG NOMOR 15 TAHUN 2012 TENTANG VETERAN REPUBLIK INDONESIA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-23-tahun-2016|amends|peraturan.go.id:pp-no-67-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-23-tahun-2016",
+    "target_reference_id": "peraturan.go.id:pp-no-67-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 24 Tahun 2004",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-24-tahun-2004|repeals|peraturan.go.id:pp-no-110-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-24-tahun-2004",
+    "target_reference_id": "peraturan.go.id:pp-no-110-tahun-2000"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 23 TAHUN 2010 TENTANG PELAKSANAAN KEGIATAN USAHA PERTAMBANGAN MINERAL DAN BATUBARA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-24-tahun-2012|amends|peraturan.go.id:pp-no-23-tahun-2010",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-24-tahun-2012",
+    "target_reference_id": "peraturan.go.id:pp-no-23-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 24 Tahun 2017",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-24-tahun-2017|repeals|peraturan.go.id:pp-no-21-tahun-2016",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-24-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-21-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 24 Tahun 2020",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-24-tahun-2020|repeals|peraturan.go.id:pp-no-37-tahun-2019",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-24-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-37-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 24 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-24-tahun-2023|repeals|peraturan.go.id:pp-no-52-tahun-2012",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-24-tahun-2023",
+    "target_reference_id": "peraturan.go.id:pp-no-52-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 25 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-25-tahun-2023|repeals|peraturan.go.id:pp-no-22-tahun-2010",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-25-tahun-2023",
+    "target_reference_id": "peraturan.go.id:pp-no-22-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 31 TAHUN 2013 TENTANG PERATURAN PELAKSANAAN UNDANGUNDANG NOMOR 6 TAHUN 2011 TENTANG KEIMIGRASIAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-26-tahun-2016|amends|peraturan.go.id:pp-no-31-tahun-2013",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-26-tahun-2016",
+    "target_reference_id": "peraturan.go.id:pp-no-31-tahun-2013"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 26 Tahun 2020",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-26-tahun-2020|repeals|peraturan.go.id:pp-no-76-tahun-2008",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-26-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-76-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 28 Tahun 2018",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-28-tahun-2018|repeals|peraturan.go.id:pp-no-50-tahun-2007",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-28-tahun-2018",
+    "target_reference_id": "peraturan.go.id:pp-no-50-tahun-2007"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 18 TAHUN 2013 TENTANG TATA CARA PENGUNDURAN DIRI KEPALA DAERAH, WAKIL KEPALA DAERAH, DAN PEGAWAI NEGERI YANG AKAN MENJADI BAKAL CALON ANGGOTA DPR, DPD, DPRD PROVINSI, DAN DPRD KABUPATEN/KOTA, SERTA PELAKSANAAN CUT",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-29-tahun-2014|amends|peraturan.go.id:pp-no-18-tahun-2013",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-29-tahun-2014",
+    "target_reference_id": "peraturan.go.id:pp-no-18-tahun-2013"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 14 TAHUN 2018 TENTANG KEPEMILIKAN ASING PADA PERUSAHAAN PERASURANSIAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-3-tahun-2020|amends|peraturan.go.id:pp-no-14-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-3-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-14-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 29 TAHUN 2021 TENTANG PENYELENGGARAAN BIDANG PERDAGANGAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-3-tahun-2026|amends|peraturan.go.id:pp-no-29-tahun-2021",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-3-tahun-2026",
+    "target_reference_id": "peraturan.go.id:pp-no-29-tahun-2021"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 30 Tahun 2011",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-30-tahun-2011|repeals|peraturan.go.id:pp-no-54-tahun-2005",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-30-tahun-2011",
+    "target_reference_id": "peraturan.go.id:pp-no-54-tahun-2005"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 30 Tahun 2020",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-30-tahun-2020|repeals|peraturan.go.id:pp-no-77-tahun-2013",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-30-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-77-tahun-2013"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Kedua Atas Peraturan Pemerintah Nomor 67 Tahun 2014 tentang Peraturan Pelaksanaan Undang-Undang Nomor 15 Tahun 2012 tentang Veteran Republik Indonesia",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-31-tahun-2018|amends|peraturan.go.id:pp-no-67-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-31-tahun-2018",
+    "target_reference_id": "peraturan.go.id:pp-no-67-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 32 Tahun 2006",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-32-tahun-2006|repeals|peraturan.go.id:pp-no-34-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-32-tahun-2006",
+    "target_reference_id": "peraturan.go.id:pp-no-34-tahun-2000"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 32 Tahun 2018",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-32-tahun-2018|repeals|peraturan.go.id:pp-no-18-tahun-2013",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-32-tahun-2018",
+    "target_reference_id": "peraturan.go.id:pp-no-18-tahun-2013"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 3 TAHUN 2017 TENTANG OTORITAS VETERINER",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-34-tahun-2024|amends|peraturan.go.id:pp-no-3-tahun-2017",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-34-tahun-2024",
+    "target_reference_id": "peraturan.go.id:pp-no-3-tahun-2017"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 35 Tahun 2018",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-35-tahun-2018|repeals|peraturan.go.id:pp-no-41-tahun-2008",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-35-tahun-2018",
+    "target_reference_id": "peraturan.go.id:pp-no-41-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 7 TAHUN 2018 TENTANG PEMBERIAN KOMPENSASI, RESTITUSI, DAN BANTUAN KEPADA SAKSI DAN KORBAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-35-tahun-2020|amends|peraturan.go.id:pp-no-7-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-35-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-7-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 35 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-35-tahun-2023|repeals|peraturan.go.id:pp-no-55-tahun-2016",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-35-tahun-2023",
+    "target_reference_id": "peraturan.go.id:pp-no-55-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 35 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-35-tahun-2023|repeals|peraturan.go.id:pp-no-97-tahun-2012",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-35-tahun-2023",
+    "target_reference_id": "peraturan.go.id:pp-no-97-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 35 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-35-tahun-2024|repeals|peraturan.go.id:pp-no-42-tahun-2007",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-35-tahun-2024",
+    "target_reference_id": "peraturan.go.id:pp-no-42-tahun-2007"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 39 TAHUN 2010 TENTANG ADMINISTRASI PRAJURIT TENTARA NASIONAL INDONESIA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-35-tahun-2025|amends|peraturan.go.id:pp-no-39-tahun-2010",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-35-tahun-2025",
+    "target_reference_id": "peraturan.go.id:pp-no-39-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 36 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-36-tahun-2023|repeals|peraturan.go.id:pp-no-1-tahun-2019",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-36-tahun-2023",
+    "target_reference_id": "peraturan.go.id:pp-no-1-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 37 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-37-tahun-2023|repeals|peraturan.go.id:pp-no-60-tahun-2014",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-37-tahun-2023",
+    "target_reference_id": "peraturan.go.id:pp-no-60-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 24 TAHUN 2017 TENTANG PEMBERIAN PENGHASILAN KETIGA BELAS KEPADA PIMPINAN DAN PEGAWAI NONPEGAWAI NEGERI SIPIL PADA LEMBAGA NONSTRUKTURAL",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-38-tahun-2019|amends|peraturan.go.id:pp-no-24-tahun-2017",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-38-tahun-2019",
+    "target_reference_id": "peraturan.go.id:pp-no-24-tahun-2017"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 13 TAHUN 2005 TENTANG LEMBAGA PENYIARAN PUBLIK TELEVISI REPUBLIK INDONESIA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-4-tahun-2024|amends|peraturan.go.id:pp-no-13-tahun-2005",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-4-tahun-2024",
+    "target_reference_id": "peraturan.go.id:pp-no-13-tahun-2005"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEEMPAT ATAS PERATURAN PEMERINTAH NOMOR 31 TAHUN 2013 TENTANG PERATURAN PELAKSANAAN UNDANG-UNDANG NOMOR 6 TAHUN 2011 TENTANG KEIMIGRASIAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-40-tahun-2023|amends|peraturan.go.id:pp-no-31-tahun-2013",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-40-tahun-2023",
+    "target_reference_id": "peraturan.go.id:pp-no-31-tahun-2013"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 23 TAHUN 2020 TENTANG PELAKSANAAN PROGRAM PEMULIHAN EKONOMI NASIONAL DALAM RANGKA MENDUKUNG KEBIJAKAN KEUANGAN NEGARA UNTUK PENANGANAN PANDEMI CORONA VIRUS DISEASE 2019 (COVID-19) DAN/ATAU MENGHADAPI ANCAMAN YANG MEMBAHAYAKAN PEREKONOMIAN NASIONAL DAN/ATAU STABILITAS SISTEM KEUANGAN SERTA PENYELAMATAN EKONOMI NASIONAL",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-43-tahun-2020|amends|peraturan.go.id:pp-no-23-tahun-2020",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-43-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-23-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 44 Tahun 2020",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-44-tahun-2020|repeals|peraturan.go.id:pp-no-24-tahun-2017",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-44-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-24-tahun-2017"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS PERATURAN PEMERINTAH NOMOR 94 TAHUN 2012 TENTANG HAK KEUANGAN DAN FASILITAS HAKIM YANG BERADA DI BAWAH MAHKAMAH AGUNG",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-44-tahun-2024|amends|peraturan.go.id:pp-no-94-tahun-2012",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-44-tahun-2024",
+    "target_reference_id": "peraturan.go.id:pp-no-94-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 44 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-44-tahun-2024|repeals|peraturan.go.id:pp-no-8-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-44-tahun-2024",
+    "target_reference_id": "peraturan.go.id:pp-no-8-tahun-2000"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 45 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-45-tahun-2023|repeals|peraturan.go.id:pp-no-33-tahun-2007",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-45-tahun-2023",
+    "target_reference_id": "peraturan.go.id:pp-no-33-tahun-2007"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 43 TAHUN 2014 TENTANG PERATURAN PELAKSANAAN UNDANG-UNDANG NOMOR 6 TAHUN 2014 TENTANG DESA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-47-tahun-2015|amends|peraturan.go.id:pp-no-43-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-47-tahun-2015",
+    "target_reference_id": "peraturan.go.id:pp-no-43-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Pemerintah Nomor 21 Tahun 2011 tentang Pembentukan, Susunan, dan Tata Kerja Perwakilan Ombudsman Republik Indonesia di Daerah",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-48-tahun-2017|amends|peraturan.go.id:pp-no-21-tahun-2011",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-48-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-21-tahun-2011"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS PERATURAN PEMERINTAH NOMOR 31 TAHUN 2013 TENTANG PERATURAN PELAKSANAAN UNDANG-UNDANG NOMOR 6 TAHUN 2011 TENTANG KEIMIGRASIAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-48-tahun-2021|amends|peraturan.go.id:pp-no-31-tahun-2013",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-48-tahun-2021",
+    "target_reference_id": "peraturan.go.id:pp-no-31-tahun-2013"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 67 TAHUN 2002 TENTANG BADAN PENGATUR PENYEDIAAN DAN PENDISTRIBUSIAN BAHAN BAKAR MINYAK DAN KEGIATAN USAHA PENGANGKUTAN GAS BUMI MELALUI PIPA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-49-tahun-2012|amends|peraturan.go.id:pp-no-67-tahun-2002",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-49-tahun-2012",
+    "target_reference_id": "peraturan.go.id:pp-no-67-tahun-2002"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PEMERINTAH NOMOR 44 TAHUN 2015 TENTANG PENYELENGGARAAN PROGRAM JAMINAN KECELAKAAN KERJA DAN JAMINAN KEMATIAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-49-tahun-2023|amends|peraturan.go.id:pp-no-44-tahun-2015",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-49-tahun-2023",
+    "target_reference_id": "peraturan.go.id:pp-no-44-tahun-2015"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Pemerintah Nomor 38 Tahun 2013 tentang Penghasilan, Fasilitas, Penghargaan, dan Hak-Hak Lain Bagi Kepala dan Wakil Kepala Pusat Pelaporan dan Analisis Transaksi Keuangan",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-51-tahun-2017|amends|peraturan.go.id:pp-no-38-tahun-2013",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-51-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-38-tahun-2013"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 51 Tahun 2018",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-51-tahun-2018|repeals|peraturan.go.id:pp-no-49-tahun-2014",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-51-tahun-2018",
+    "target_reference_id": "peraturan.go.id:pp-no-49-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PEMERINTAH NOMOR 31 TAHUN 2013 TENTANG PERATURAN PELAKSANAAN UNDANG-UNDANG NOMOR 6 TAHUN 2011 TENTANG KEIMIGRASIAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-51-tahun-2020|amends|peraturan.go.id:pp-no-31-tahun-2013",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-51-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-31-tahun-2013"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 54 Tahun 2005",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-54-tahun-2005|repeals|peraturan.go.id:pp-no-107-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-54-tahun-2005",
+    "target_reference_id": "peraturan.go.id:pp-no-107-tahun-2000"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 102 TAHUN 2015 TENTANG ASURANSI SOSIAL PRAJURIT TENTARA NASIONAL INDONESIA, ANGGOTA KEPOLISIAN NEGARA REPUBLIK INDONESIA, DAN PEGAWAI APARATUR SIPIL NEGARA DI LINGKUNGAN KEMENTERIAN PERTAHANAN DAN KEPOLISIAN NEGARA REPUBLIK INDONESIA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-54-tahun-2020|amends|peraturan.go.id:pp-no-102-tahun-2015",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-54-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-102-tahun-2015"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Kedua Atas Peraturan Pemerintah Nomor 35 Tahun 2004 tentang Kegiatan Usaha Hulu Minyak dan Gas Bumi",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-55-tahun-2009|amends|peraturan.go.id:pp-no-35-tahun-2004",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-55-tahun-2009",
+    "target_reference_id": "peraturan.go.id:pp-no-35-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 56 Tahun 2018",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-56-tahun-2018|repeals|peraturan.go.id:pp-no-30-tahun-2011",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-56-tahun-2018",
+    "target_reference_id": "peraturan.go.id:pp-no-30-tahun-2011"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 48 TAHUN 2018 TENTANG TATA CARA PEMBERIAN HIBAH KEPADA PEMERINTAH ASING/LEMBAGA ASING",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-57-tahun-2019|amends|peraturan.go.id:pp-no-48-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-57-tahun-2019",
+    "target_reference_id": "peraturan.go.id:pp-no-48-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Pemerintah Nomor 56 Tahun 2009 Tentang Penyelenggaraan Perkeretaapian",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-6-tahun-2017|amends|peraturan.go.id:pp-no-56-tahun-2009",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-6-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-56-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 6 Tahun 2019",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-6-tahun-2019|repeals|peraturan.go.id:pp-no-32-tahun-2006",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-6-tahun-2019",
+    "target_reference_id": "peraturan.go.id:pp-no-32-tahun-2006"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 46 TAHUN 2015 TENTANG PENYELENGGARAAN PROGRAM JAMINAN HARI TUA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-60-tahun-2015|amends|peraturan.go.id:pp-no-46-tahun-2015",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-60-tahun-2015",
+    "target_reference_id": "peraturan.go.id:pp-no-46-tahun-2015"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 24 TAHUN 2010 TENTANG PENGGUNAAN KAWASAN HUTAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-61-tahun-2012|amends|peraturan.go.id:pp-no-24-tahun-2010",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-61-tahun-2012",
+    "target_reference_id": "peraturan.go.id:pp-no-24-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 43 TAHUN 2015 TENTANG PIHAK PELAPOR DALAM PENCEGAHAN DAN PEMBERANTASAN TINDAK PIDANA PENCUCIAN UANG",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-61-tahun-2021|amends|peraturan.go.id:pp-no-43-tahun-2015",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-61-tahun-2021",
+    "target_reference_id": "peraturan.go.id:pp-no-43-tahun-2015"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 62 Tahun 2002",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-62-tahun-2002|repeals|peraturan.go.id:pp-no-142-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-62-tahun-2002",
+    "target_reference_id": "peraturan.go.id:pp-no-142-tahun-2000"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 61 TAHUN 2009 TENTANG KEPELABUHANAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-64-tahun-2015|amends|peraturan.go.id:pp-no-61-tahun-2009",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-64-tahun-2015",
+    "target_reference_id": "peraturan.go.id:pp-no-61-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 36 TAHUN 2007 TENTANG PELAKSANAAN UNDANG-UNDANG NOMOR 9 TAHUN 2006 TENTANG SISTEM RESI GUDANG",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-70-tahun-2013|amends|peraturan.go.id:pp-no-36-tahun-2007",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-70-tahun-2013",
+    "target_reference_id": "peraturan.go.id:pp-no-36-tahun-2007"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 71 Tahun 2019",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-71-tahun-2019|repeals|peraturan.go.id:pp-no-82-tahun-2012",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-71-tahun-2019",
+    "target_reference_id": "peraturan.go.id:pp-no-82-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 72 Tahun 2012",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-72-tahun-2012|repeals|peraturan.go.id:pp-no-133-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-72-tahun-2012",
+    "target_reference_id": "peraturan.go.id:pp-no-133-tahun-2000"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 18 TAHUN 2016 TENTANG PERANGKAT DAERAH",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-72-tahun-2019|amends|peraturan.go.id:pp-no-18-tahun-2016",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-72-tahun-2019",
+    "target_reference_id": "peraturan.go.id:pp-no-18-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 56 TAHUN 2008 TENTANG PERUSAHAAN PENERBIT SURAT BERHARGA SYARIAH NEGARA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-73-tahun-2012|amends|peraturan.go.id:pp-no-56-tahun-2008",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-73-tahun-2012",
+    "target_reference_id": "peraturan.go.id:pp-no-56-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 23 TAHUN 2005 TENTANG PENGELOLAAN KEUANGAN BADAN LAYANAN UMUM",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-74-tahun-2012|amends|peraturan.go.id:pp-no-23-tahun-2005",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-74-tahun-2012",
+    "target_reference_id": "peraturan.go.id:pp-no-23-tahun-2005"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Pemerintah Nomor 94 Tahun 2012 Tentang Hak Keuangan dan Fasilitas Hakim Yang Berada di Bawah Mahkamah Agung",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-74-tahun-2016|amends|peraturan.go.id:pp-no-94-tahun-2012",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-74-tahun-2016",
+    "target_reference_id": "peraturan.go.id:pp-no-94-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 77 Tahun 2013",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-77-tahun-2013|repeals|peraturan.go.id:pp-no-81-tahun-2007",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-77-tahun-2013",
+    "target_reference_id": "peraturan.go.id:pp-no-81-tahun-2007"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS PERATURAN PEMERINTAH NOMOR 23 TAHUN 2010 TENTANG PELAKSANAAN KEGIATAN USAHA PERTAMBANGAN MINERAL DAN BATUBARA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-77-tahun-2014|amends|peraturan.go.id:pp-no-23-tahun-2010",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-77-tahun-2014",
+    "target_reference_id": "peraturan.go.id:pp-no-23-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Kedua Atas Peraturan Pemerintah Nomor 60 Tahun 2014 Tentang Dana Desa Yang Bersumber Dari Anggaran Pendapatan Dan Belanja Negara",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-8-tahun-2016|amends|peraturan.go.id:pp-no-60-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-8-tahun-2016",
+    "target_reference_id": "peraturan.go.id:pp-no-60-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Kelima Atas Peraturan Pemerintah Nomor 23 Tahun 2010 tentang Pelaksanaan Kegiatan Usaha Pertambangan Mineral dan Batubara",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-8-tahun-2018|amends|peraturan.go.id:pp-no-23-tahun-2010",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-8-tahun-2018",
+    "target_reference_id": "peraturan.go.id:pp-no-23-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 26 TAHUN 2015 TENTANG BENTUK DAN MEKANISME PENDANAAN PERGURUAN TINGGI NEGERI BADAN HUKUM",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-8-tahun-2020|amends|peraturan.go.id:pp-no-26-tahun-2015",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-8-tahun-2020",
+    "target_reference_id": "peraturan.go.id:pp-no-26-tahun-2015"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 44 TAHUN 2015 TENTANG PENYELENGGARAAN PROGRAM JAMINAN KECELAKAAN KERJA DAN JAMINAN KEMATIAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-82-tahun-2019|amends|peraturan.go.id:pp-no-44-tahun-2015",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-82-tahun-2019",
+    "target_reference_id": "peraturan.go.id:pp-no-44-tahun-2015"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 32 TAHUN 2009 TENTANG TEMPAT PENIMBUNAN BERIKAT",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-85-tahun-2015|amends|peraturan.go.id:pp-no-32-tahun-2009",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-85-tahun-2015",
+    "target_reference_id": "peraturan.go.id:pp-no-32-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 9 Tahun 2003",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-9-tahun-2003|repeals|peraturan.go.id:pp-no-96-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-9-tahun-2003",
+    "target_reference_id": "peraturan.go.id:pp-no-96-tahun-2000"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 27 TAHUN 2007 TENTANG PENGELOLAAN WILAYAH PESISIR DAN PULAU-PULAU KECIL",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-1-tahun-2014|amends|peraturan.go.id:uu-no-27-tahun-2007",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-1-tahun-2014",
+    "target_reference_id": "peraturan.go.id:uu-no-27-tahun-2007"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 1 Tahun 2022",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-1-tahun-2022|repeals|peraturan.go.id:uu-no-33-tahun-2004",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-1-tahun-2022",
+    "target_reference_id": "peraturan.go.id:uu-no-33-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS UNDANG-UNDANG NOMOR 11 TAHUN 2008 TENTANG INFORMASI DAN TRANSAKSI ELEKTRONIK",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-1-tahun-2024|amends|peraturan.go.id:uu-no-11-tahun-2008",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-1-tahun-2024",
+    "target_reference_id": "peraturan.go.id:uu-no-11-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS UNDANG-UNDANG NOMOR 19 TAHUN 2003 TENTANG BADAN USAHA MILIK NEGARA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-1-tahun-2025|amends|peraturan.go.id:uu-no-19-tahun-2003",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-1-tahun-2025",
+    "target_reference_id": "peraturan.go.id:uu-no-19-tahun-2003"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 10 Tahun 2008",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-10-tahun-2008|repeals|peraturan.go.id:uu-no-12-tahun-2003",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-10-tahun-2008",
+    "target_reference_id": "peraturan.go.id:uu-no-12-tahun-2003"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 11 Tahun 2019",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-11-tahun-2019|repeals|peraturan.go.id:uu-no-18-tahun-2002",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-11-tahun-2019",
+    "target_reference_id": "peraturan.go.id:uu-no-18-tahun-2002"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 16 TAHUN 2004 TENTANG KEJAKSAAN REPUBLIK INDONESIA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-11-tahun-2021|amends|peraturan.go.id:uu-no-16-tahun-2004",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-11-tahun-2021",
+    "target_reference_id": "peraturan.go.id:uu-no-16-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 13 Tahun 2016",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-13-tahun-2016|repeals|peraturan.go.id:uu-no-14-tahun-2001",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-13-tahun-2016",
+    "target_reference_id": "peraturan.go.id:uu-no-14-tahun-2001"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS UNDANG-UNDANG NOMOR 17 TAHUN 2014 TENTANG MAJELIS PERMUSYAWARATAN RAKYAT, DEWAN PERWAKILAN RAKYAT, DEWAN PERWAKILAN DAERAH, DAN DEWAN PERWAKILAN RAKYAT DAERAH",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-13-tahun-2019|amends|peraturan.go.id:uu-no-17-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-13-tahun-2019",
+    "target_reference_id": "peraturan.go.id:uu-no-17-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS UNDANG-UNDANG NOMOR 12 TAHUN 2011 TENTANG PEMBENTUKAN PERATURAN PERUNDANG-UNDANGAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-13-tahun-2022|amends|peraturan.go.id:uu-no-12-tahun-2011",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-13-tahun-2022",
+    "target_reference_id": "peraturan.go.id:uu-no-12-tahun-2011"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Ketiga Atas Undang-Undang Nomor 8 Tahun 2019 Tentang Penyelenggaraan Ibadah Haji dan Umrah",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-14-tahun-2025|amends|peraturan.go.id:uu-no-8-tahun-2019",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-14-tahun-2025",
+    "target_reference_id": "peraturan.go.id:uu-no-8-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 15 Tahun 2011",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-15-tahun-2011|repeals|peraturan.go.id:uu-no-22-tahun-2007",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-15-tahun-2011",
+    "target_reference_id": "peraturan.go.id:uu-no-22-tahun-2007"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 12 TAHUN 2011 TENTANG PEMBENTUKAN PERATURAN PERUNDANG-UNDANGAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-15-tahun-2019|amends|peraturan.go.id:uu-no-12-tahun-2011",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-15-tahun-2019",
+    "target_reference_id": "peraturan.go.id:uu-no-12-tahun-2011"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Keempat atas Undang-undang nomor 19 tahun 2003 tentang badan usaha milik negara",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-16-tahun-2025|amends|peraturan.go.id:uu-no-19-tahun-2003",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-16-tahun-2025",
+    "target_reference_id": "peraturan.go.id:uu-no-19-tahun-2003"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 17 Tahun 2014",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-17-tahun-2014|repeals|peraturan.go.id:uu-no-27-tahun-2009",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-17-tahun-2014",
+    "target_reference_id": "peraturan.go.id:uu-no-27-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 17 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-17-tahun-2023|repeals|peraturan.go.id:uu-no-18-tahun-2014",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-17-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-18-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 17 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-17-tahun-2023|repeals|peraturan.go.id:uu-no-20-tahun-2013",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-17-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-20-tahun-2013"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 17 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-17-tahun-2023|repeals|peraturan.go.id:uu-no-29-tahun-2004",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-17-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-29-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 17 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-17-tahun-2023|repeals|peraturan.go.id:uu-no-36-tahun-2009",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-17-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-36-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 17 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-17-tahun-2023|repeals|peraturan.go.id:uu-no-36-tahun-2014",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-17-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-36-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 17 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-17-tahun-2023|repeals|peraturan.go.id:uu-no-38-tahun-2014",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-17-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-38-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 17 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-17-tahun-2023|repeals|peraturan.go.id:uu-no-4-tahun-2019",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-17-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-4-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 17 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-17-tahun-2023|repeals|peraturan.go.id:uu-no-44-tahun-2009",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-17-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-44-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 17 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-17-tahun-2023|repeals|peraturan.go.id:uu-no-6-tahun-2018",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-17-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-6-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 22 TAHUN 2004 TENTANG KOMISI YUDISIAL",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-18-tahun-2011|amends|peraturan.go.id:uu-no-22-tahun-2004",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-18-tahun-2011",
+    "target_reference_id": "peraturan.go.id:uu-no-22-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 18 Tahun 2017",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-18-tahun-2017|repeals|peraturan.go.id:uu-no-39-tahun-2004",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-18-tahun-2017",
+    "target_reference_id": "peraturan.go.id:uu-no-39-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Ketiga Atas Undang-Undang Nomor 10 Tahun 2009 Tentang Kepariwisataan",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-18-tahun-2025|amends|peraturan.go.id:uu-no-10-tahun-2009",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-18-tahun-2025",
+    "target_reference_id": "peraturan.go.id:uu-no-10-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Undang-Undang Nomor 11 Tahun 2008 Tentang Informasi Dan Transaksi Elektronik",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-19-tahun-2016|amends|peraturan.go.id:uu-no-11-tahun-2008",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-19-tahun-2016",
+    "target_reference_id": "peraturan.go.id:uu-no-11-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 2 Tahun 2008",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-2-tahun-2008|repeals|peraturan.go.id:uu-no-31-tahun-2002",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-2-tahun-2008",
+    "target_reference_id": "peraturan.go.id:uu-no-31-tahun-2002"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 2 TAHUN 2008 TENTANG PARTAI POLITIK",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-2-tahun-2011|amends|peraturan.go.id:uu-no-2-tahun-2008",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-2-tahun-2011",
+    "target_reference_id": "peraturan.go.id:uu-no-2-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 30 TAHUN 2004 TENTANG JABATAN NOTARIS",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-2-tahun-2014|amends|peraturan.go.id:uu-no-30-tahun-2004",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-2-tahun-2014",
+    "target_reference_id": "peraturan.go.id:uu-no-30-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Kedua Atas Undang-Undang Nomor 17 Tahun 2014 tentang Majelis Permusyawaratan Rakyat, Dewan Perwakilan Rakyat, Dewan Perwakilan Daerah, dan Dewan Perwakilan Rakyat Daerah",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-2-tahun-2018|amends|peraturan.go.id:uu-no-17-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-2-tahun-2018",
+    "target_reference_id": "peraturan.go.id:uu-no-17-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS UNDANG-UNDANG NOMOR 21 TAHUN 2001 TENTANG OTONOMI KHUSUS BAGI PROVINSI PAPUA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-2-tahun-2021|amends|peraturan.go.id:uu-no-21-tahun-2001",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-2-tahun-2021",
+    "target_reference_id": "peraturan.go.id:uu-no-21-tahun-2001"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS UNDANG-UNDANG NOMOR 38 TAHUN 2004 TENTANG JALAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-2-tahun-2022|amends|peraturan.go.id:uu-no-38-tahun-2004",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-2-tahun-2022",
+    "target_reference_id": "peraturan.go.id:uu-no-38-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEEMPAT ATAS UNDANG-UNDANG NOMOR 4 TAHUN 2009 TENTANG PERTAMBANGAN MINERAL DAN BATUBARA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-2-tahun-2025|amends|peraturan.go.id:uu-no-4-tahun-2009",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-2-tahun-2025",
+    "target_reference_id": "peraturan.go.id:uu-no-4-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 20 Tahun 2016",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-20-tahun-2016|repeals|peraturan.go.id:uu-no-15-tahun-2001",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-20-tahun-2016",
+    "target_reference_id": "peraturan.go.id:uu-no-15-tahun-2001"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 20 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-20-tahun-2023|repeals|peraturan.go.id:uu-no-5-tahun-2014",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-20-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-5-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 21 Tahun 2014",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-21-tahun-2014|repeals|peraturan.go.id:uu-no-27-tahun-2003",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-21-tahun-2014",
+    "target_reference_id": "peraturan.go.id:uu-no-27-tahun-2003"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 23 Tahun 2014",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-23-tahun-2014|repeals|peraturan.go.id:uu-no-32-tahun-2004",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-23-tahun-2014",
+    "target_reference_id": "peraturan.go.id:uu-no-32-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 23 TAHUN 2006 TENTANG ADMINISTRASI KEPENDUDUKAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-24-tahun-2013|amends|peraturan.go.id:uu-no-23-tahun-2006",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-24-tahun-2013",
+    "target_reference_id": "peraturan.go.id:uu-no-23-tahun-2006"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 27 Tahun 2009",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-27-tahun-2009|repeals|peraturan.go.id:uu-no-22-tahun-2003",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-27-tahun-2009",
+    "target_reference_id": "peraturan.go.id:uu-no-22-tahun-2003"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 28 Tahun 2014",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-28-tahun-2014|repeals|peraturan.go.id:uu-no-19-tahun-2002",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-28-tahun-2014",
+    "target_reference_id": "peraturan.go.id:uu-no-19-tahun-2002"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 27 TAHUN 2014 TENTANG ANGGARAN PENDAPATAN DAN BELANJA NEGARA TAHUN ANGGARAN 2015",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-3-tahun-2015|amends|peraturan.go.id:uu-no-27-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-3-tahun-2015",
+    "target_reference_id": "peraturan.go.id:uu-no-27-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 4 TAHUN 2009 TENTANG PERTAMBANGAN MINERAL DAN BATUBARA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-3-tahun-2020|amends|peraturan.go.id:uu-no-4-tahun-2009",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-3-tahun-2020",
+    "target_reference_id": "peraturan.go.id:uu-no-4-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 3 Tahun 2022",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-3-tahun-2022|repeals|peraturan.go.id:uu-no-29-tahun-2007",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-3-tahun-2022",
+    "target_reference_id": "peraturan.go.id:uu-no-29-tahun-2007"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS UNDANG-UNDANG NOMOR 6 TAHUN 2014 TENTANG DESA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-3-tahun-2024|amends|peraturan.go.id:uu-no-6-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-3-tahun-2024",
+    "target_reference_id": "peraturan.go.id:uu-no-6-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 34 TAHUN 2004 TENTANG TENTARA NASIONAL INDONESIA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-3-tahun-2025|amends|peraturan.go.id:uu-no-34-tahun-2004",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-3-tahun-2025",
+    "target_reference_id": "peraturan.go.id:uu-no-34-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 13 TAHUN 2006 TENTANG PERLINDUNGAN SAKSI DAN KORBAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-31-tahun-2014|amends|peraturan.go.id:uu-no-13-tahun-2006",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-31-tahun-2014",
+    "target_reference_id": "peraturan.go.id:uu-no-13-tahun-2006"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 23 TAHUN 2002 TENTANG PERLINDUNGAN ANAK",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-35-tahun-2014|amends|peraturan.go.id:uu-no-23-tahun-2002",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-35-tahun-2014",
+    "target_reference_id": "peraturan.go.id:uu-no-23-tahun-2002"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 39 Tahun 2014",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-39-tahun-2014|repeals|peraturan.go.id:uu-no-18-tahun-2004",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-39-tahun-2014",
+    "target_reference_id": "peraturan.go.id:uu-no-18-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 22 TAHUN 2011 TENTANG ANGGARAN PENDAPATAN DAN BELANJA NEGARA TAHUN ANGGARAN 2012",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-4-tahun-2012|amends|peraturan.go.id:uu-no-22-tahun-2011",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-4-tahun-2012",
+    "target_reference_id": "peraturan.go.id:uu-no-22-tahun-2011"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 18 TAHUN 2009 TENTANG PETERNAKAN DAN KESEHATAN HEWAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-41-tahun-2014|amends|peraturan.go.id:uu-no-18-tahun-2009",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-41-tahun-2014",
+    "target_reference_id": "peraturan.go.id:uu-no-18-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 17 TAHUN 2014 TENTANG MAJELIS PERMUSYAWARATAN RAKYAT, DEWAN PERWAKILAN RAKYAT, DEWAN PERWAKILAN DAERAH, DAN DEWAN PERWAKILAN RAKYAT DAERAH",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-42-tahun-2014|amends|peraturan.go.id:uu-no-17-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-42-tahun-2014",
+    "target_reference_id": "peraturan.go.id:uu-no-17-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 22 TAHUN 2002 TENTANG GRASI",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-5-tahun-2010|amends|peraturan.go.id:uu-no-22-tahun-2002",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-5-tahun-2010",
+    "target_reference_id": "peraturan.go.id:uu-no-22-tahun-2002"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 6 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-6-tahun-2023|repeals|peraturan.go.id:uu-no-11-tahun-2020",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-6-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-11-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS UNDANG-UNDANG NOMOR 6 TAHUN 2011 TENTANG KEIMIGRASIAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-63-tahun-2024|amends|peraturan.go.id:uu-no-6-tahun-2011",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-63-tahun-2024",
+    "target_reference_id": "peraturan.go.id:uu-no-6-tahun-2011"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 19 TAHUN 2006 TENTANG DEWAN PERTIMBANGAN PRESIDEN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-64-tahun-2024|amends|peraturan.go.id:uu-no-19-tahun-2006",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-64-tahun-2024",
+    "target_reference_id": "peraturan.go.id:uu-no-19-tahun-2006"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS UNDANG-UNDANG NOMOR 13 TAHUN 2016 TENTANG PATEN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-65-tahun-2024|amends|peraturan.go.id:uu-no-13-tahun-2016",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-65-tahun-2024",
+    "target_reference_id": "peraturan.go.id:uu-no-13-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS UNDANG-UNDANG NOMOR 17 TAHUN 2008 TENTANG PELAYARAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-66-tahun-2024|amends|peraturan.go.id:uu-no-17-tahun-2008",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-66-tahun-2024",
+    "target_reference_id": "peraturan.go.id:uu-no-17-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 7 Tahun 2017",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-7-tahun-2017|repeals|peraturan.go.id:uu-no-15-tahun-2011",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-7-tahun-2017",
+    "target_reference_id": "peraturan.go.id:uu-no-15-tahun-2011"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 7 Tahun 2017",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-7-tahun-2017|repeals|peraturan.go.id:uu-no-42-tahun-2008",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-7-tahun-2017",
+    "target_reference_id": "peraturan.go.id:uu-no-42-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 7 Tahun 2017",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-7-tahun-2017|repeals|peraturan.go.id:uu-no-8-tahun-2012",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-7-tahun-2017",
+    "target_reference_id": "peraturan.go.id:uu-no-8-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 8 Tahun 2010",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-8-tahun-2010|repeals|peraturan.go.id:uu-no-15-tahun-2002",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-8-tahun-2010",
+    "target_reference_id": "peraturan.go.id:uu-no-15-tahun-2002"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 8 Tahun 2010",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-8-tahun-2010|repeals|peraturan.go.id:uu-no-25-tahun-2003",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-8-tahun-2010",
+    "target_reference_id": "peraturan.go.id:uu-no-25-tahun-2003"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 8 Tahun 2012",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-8-tahun-2012|repeals|peraturan.go.id:uu-no-10-tahun-2008",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-8-tahun-2012",
+    "target_reference_id": "peraturan.go.id:uu-no-10-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 1 TAHUN 2015 TENTANG PENETAPAN PERATURAN PEMERINTAH PENGGANTI UNDANG-UNDANG NOMOR 1 TAHUN 2014 TENTANG PEMILIHAN GUBERNUR, BUPATI, DAN WALIKOTA MENJADI UNDANG-UNDANG",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-8-tahun-2015|amends|peraturan.go.id:uu-no-1-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-8-tahun-2015",
+    "target_reference_id": "peraturan.go.id:uu-no-1-tahun-2014"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Undang-Undang Nomor 18 Tahun 2016 tentang Anggaran Pendapatan dan Belanja Negara Tahun Anggaran 2017",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-8-tahun-2017|amends|peraturan.go.id:uu-no-18-tahun-2016",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-8-tahun-2017",
+    "target_reference_id": "peraturan.go.id:uu-no-18-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 8 Tahun 2019",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-8-tahun-2019|repeals|peraturan.go.id:uu-no-13-tahun-2008",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-8-tahun-2019",
+    "target_reference_id": "peraturan.go.id:uu-no-13-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 9 TAHUN 2006 TENTANG SISTEM RESI GUDANG",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-9-tahun-2011|amends|peraturan.go.id:uu-no-9-tahun-2006",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-9-tahun-2011",
+    "target_reference_id": "peraturan.go.id:uu-no-9-tahun-2006"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS UNDANG-UNDANG NOMOR 23 TAHUN 2014 TENTANG PEMERINTAHAN DAERAH",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-9-tahun-2015|amends|peraturan.go.id:uu-no-23-tahun-2014",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-9-tahun-2015",
+    "target_reference_id": "peraturan.go.id:uu-no-23-tahun-2014"
+  }
+]

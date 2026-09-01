@@ -1,7 +1,6 @@
 import Foundation
-import Accelerate
 
-public struct LocalRAGMetadata: Codable, Sendable {
+nonisolated public struct LocalRAGMetadata: Codable, Sendable {
     public let model: String
     public let dimension: Int
     public let documentCount: Int
@@ -21,7 +20,17 @@ public struct LocalRAGMetadata: Codable, Sendable {
     }
 }
 
-public struct RAGSearchResult: Identifiable, Hashable, Sendable {
+nonisolated public enum LocalRAGRetrievalMode: String, Codable, Hashable, Sendable {
+    case lexicalBM25 = "lexical-bm25"
+}
+
+nonisolated public struct LocalRAGStatus: Sendable {
+    public let documentCount: Int
+    public let metadata: LocalRAGMetadata
+    public let retrievalMode: LocalRAGRetrievalMode
+}
+
+nonisolated public struct RAGSearchResult: Identifiable, Hashable, Sendable {
     public let document: RAGDocument
     public let score: Float
     public let rank: Int
@@ -35,184 +44,321 @@ public struct RAGSearchResult: Identifiable, Hashable, Sendable {
     }
 }
 
-public final class LocalRAG: @unchecked Sendable {
+/// Actor-isolated access to the bundled legacy legal corpus.
+///
+/// The current product intentionally uses lexical BM25 retrieval. Bundled
+/// vectors are not loaded because AMT does not yet ship the matching BGE-M3
+/// tokenizer required to create a trustworthy query embedding.
+public actor LocalRAG {
     public static let shared = LocalRAG()
 
-    public private(set) var documents: [RAGDocument] = []
-    public private(set) var embeddings: [Float] = [] // Row-major: count * dimension
-    public private(set) var metadata: LocalRAGMetadata?
-    public private(set) var isLoaded: Bool = false
+    private var snapshot: LocalRAGSnapshot?
+    private var loadingTask: Task<LocalRAGSnapshot, Error>?
 
-    private let queue = DispatchQueue(label: "com.amt.LocalRAG", qos: .userInitiated)
+    public init() {}
 
-    public init() {
-        loadDataIfNeeded()
-    }
+    @discardableResult
+    public func loadDataIfNeeded(bundle: Bundle = .main) async throws -> LocalRAGStatus {
+        if let snapshot {
+            return snapshot.status
+        }
 
-    public func loadDataIfNeeded(bundle: Bundle = .main) {
-        queue.sync {
-            guard !isLoaded else { return }
-            loadData(bundle: bundle)
+        if let loadingTask {
+            let loadedSnapshot = try await loadingTask.value
+            return loadedSnapshot.status
+        }
+
+        guard let documentsURL = Self.findResource(
+            name: "documents",
+            extension: "json",
+            in: bundle
+        ), let metadataURL = Self.findResource(
+            name: "metadata",
+            extension: "json",
+            in: bundle
+        ) else {
+            throw LocalRAGError.resourcesUnavailable
+        }
+
+        let task = Task.detached(priority: .userInitiated) {
+            try LocalRAGSnapshot.load(
+                documentsURL: documentsURL,
+                metadataURL: metadataURL
+            )
+        }
+        loadingTask = task
+
+        do {
+            let loadedSnapshot = try await task.value
+            snapshot = loadedSnapshot
+            loadingTask = nil
+            return loadedSnapshot.status
+        } catch {
+            loadingTask = nil
+            throw error
         }
     }
 
-    private func loadData(bundle: Bundle) {
-        // 1. Locate rag_export resources
-        let jsonURL = findResource(name: "documents", ext: "json", in: bundle)
-        let binURL = findResource(name: "embeddings", ext: "bin", in: bundle)
-        let metaURL = findResource(name: "metadata", ext: "json", in: bundle)
-
-        // Load metadata
-        if let metaURL = metaURL, let metaData = try? Data(contentsOf: metaURL) {
-            self.metadata = try? JSONDecoder().decode(LocalRAGMetadata.self, from: metaData)
-        }
-
-        // Load documents
-        if let jsonURL = jsonURL, let docData = try? Data(contentsOf: jsonURL) {
-            self.documents = (try? JSONDecoder().decode([RAGDocument].self, from: docData)) ?? []
-        }
-
-        // Load binary embeddings
-        if let binURL = binURL, let rawBinData = try? Data(contentsOf: binURL) {
-            let floatCount = rawBinData.count / MemoryLayout<Float>.size
-            var floats = [Float](repeating: 0, count: floatCount)
-            _ = floats.withUnsafeMutableBytes { ptr in
-                rawBinData.copyBytes(to: ptr)
-            }
-            self.embeddings = floats
-        }
-
-        if !documents.isEmpty && !embeddings.isEmpty {
-            self.isLoaded = true
-        }
+    public func currentStatus() -> LocalRAGStatus? {
+        snapshot?.status
     }
 
-    private func findResource(name: String, ext: String, in bundle: Bundle) -> URL? {
-        let bundleForClass = Bundle(for: LocalRAG.self)
-        for b in [bundle, bundleForClass, Bundle.main] {
-            if let url = b.url(forResource: name, withExtension: ext, subdirectory: "rag_export") ??
-                b.url(forResource: name, withExtension: ext) {
-                return url
-            }
-        }
-        // Fallback for file system relative paths in dev/testing environments
-        let fm = FileManager.default
-        let currentDir = fm.currentDirectoryPath
-        let possiblePaths = [
-            "\(currentDir)/AMT/Resources/rag_export/\(name).\(ext)",
-            "\(currentDir)/Resources/rag_export/\(name).\(ext)",
-            "\(currentDir)/rag_export/\(name).\(ext)",
-            "/Users/bayudf/Documents/GitHub/AMT/AMT/Resources/rag_export/\(name).\(ext)"
-        ]
-        for path in possiblePaths {
-            if fm.fileExists(atPath: path) {
-                return URL(fileURLWithPath: path)
-            }
-        }
-        return nil
-    }
-
-
-    /// Search the document vector store using a 1024-dimensional query embedding vector (BAAI/bge-m3).
-    /// Returns ranked RAGSearchResult matches ordered by similarity score.
-    public func search(
-        queryEmbedding: [Float],
-        topK: Int? = nil,
-        minThreshold: Float? = nil
-    ) -> [RAGSearchResult] {
-        guard isLoaded, !documents.isEmpty, !embeddings.isEmpty else {
-            return []
-        }
-
-        let dimension = metadata?.dimension ?? 1024
-        guard queryEmbedding.count == dimension else {
-            return []
-        }
-
-        let k = topK ?? metadata?.topK ?? 5
-        let threshold = minThreshold ?? metadata?.threshold ?? 0.6
-        let docCount = min(documents.count, embeddings.count / dimension)
-
-        var scores = [Float](repeating: 0, count: docCount)
-
-        // Compute inner product (cosine similarity) for each document vector using SIMD vDSP
-        queryEmbedding.withUnsafeBufferPointer { queryBuf in
-            embeddings.withUnsafeBufferPointer { embBuf in
-                guard let qBase = queryBuf.baseAddress, let eBase = embBuf.baseAddress else { return }
-
-                for i in 0..<docCount {
-                    let docVecPointer = eBase.advanced(by: i * dimension)
-                    var dotProduct: Float = 0
-                    vDSP_dotpr(qBase, 1, docVecPointer, 1, &dotProduct, vDSP_Length(dimension))
-                    scores[i] = dotProduct
-                }
-            }
-        }
-
-        // Rank documents by score descending
-        var candidates: [(index: Int, score: Float)] = []
-        candidates.reserveCapacity(docCount)
-        for (i, score) in scores.enumerated() {
-            if score >= threshold {
-                candidates.append((index: i, score: score))
-            }
-        }
-
-        candidates.sort { $0.score > $1.score }
-
-        let resultCount = min(k, candidates.count)
-        var results: [RAGSearchResult] = []
-        results.reserveCapacity(resultCount)
-
-        for rankIndex in 0..<resultCount {
-            let item = candidates[rankIndex]
-            let doc = documents[item.index]
-            results.append(RAGSearchResult(document: doc, score: item.score, rank: rankIndex + 1))
-        }
-
-        return results
-    }
-
-    /// Keyword search fallback when query vector is unavailable or for direct term lookup.
+    /// Lexical retrieval over term and definition text. This method executes on
+    /// the LocalRAG actor rather than the MainActor.
     public func searchByKeyword(
         query: String,
-        topK: Int = 5
-    ) -> [RAGSearchResult] {
-        guard !documents.isEmpty else { return [] }
+        topK: Int = 5,
+        bundle: Bundle = .main
+    ) async throws -> [RAGSearchResult] {
+        guard topK > 0 else { return [] }
+        _ = try await loadDataIfNeeded(bundle: bundle)
+        return snapshot?.search(query: query, topK: topK) ?? []
+    }
 
-        let normalizedQuery = query.folding(options: [String.CompareOptions.caseInsensitive, String.CompareOptions.diacriticInsensitive], locale: .current)
+    private nonisolated static func findResource(
+        name: String,
+        extension fileExtension: String,
+        in bundle: Bundle
+    ) -> URL? {
+        let candidateBundles = [bundle, Bundle(for: LocalRAG.self), Bundle.main]
+        for candidateBundle in candidateBundles {
+            if let URL = candidateBundle.url(
+                forResource: name,
+                withExtension: fileExtension,
+                subdirectory: "rag_export"
+            ) ?? candidateBundle.url(
+                forResource: name,
+                withExtension: fileExtension
+            ) {
+                return URL
+            }
+        }
+
+        let currentDirectory = FileManager.default.currentDirectoryPath
+        let relativePaths = [
+            "\(currentDirectory)/AMT/Resources/rag_export/\(name).\(fileExtension)",
+            "\(currentDirectory)/Resources/rag_export/\(name).\(fileExtension)",
+            "\(currentDirectory)/rag_export/\(name).\(fileExtension)"
+        ]
+
+        return relativePaths
+            .first(where: FileManager.default.fileExists(atPath:))
+            .map(URL.init(fileURLWithPath:))
+    }
+}
+
+public enum LocalRAGError: LocalizedError, Sendable {
+    case resourcesUnavailable
+    case malformedMetadata
+    case malformedDocuments
+    case documentCountMismatch(expected: Int, actual: Int)
+    case emptyDocument(index: Int)
+
+    public var errorDescription: String? {
+        switch self {
+        case .resourcesUnavailable:
+            "Resource corpus RAG lokal tidak ditemukan."
+        case .malformedMetadata:
+            "Metadata corpus RAG lokal tidak dapat dibaca."
+        case .malformedDocuments:
+            "Dokumen corpus RAG lokal tidak dapat dibaca."
+        case let .documentCountMismatch(expected, actual):
+            "Jumlah dokumen corpus tidak sesuai metadata (\(actual) dari \(expected))."
+        case let .emptyDocument(index):
+            "Corpus RAG memuat dokumen tanpa istilah atau pengertian pada indeks \(index)."
+        }
+    }
+}
+
+private nonisolated struct LocalRAGSnapshot: Sendable {
+    private struct IndexedDocument: Sendable {
+        let normalizedTerm: String
+        let termTokens: [String]
+        let termFrequencies: [String: Int]
+        let tokenCount: Int
+    }
+
+    let documents: [RAGDocument]
+    let metadata: LocalRAGMetadata
+    private let index: [IndexedDocument]
+    let inverseDocumentFrequencies: [String: Double]
+    let averageDocumentLength: Double
+
+    var status: LocalRAGStatus {
+        LocalRAGStatus(
+            documentCount: documents.count,
+            metadata: metadata,
+            retrievalMode: .lexicalBM25
+        )
+    }
+
+    static func load(
+        documentsURL: URL,
+        metadataURL: URL
+    ) throws -> LocalRAGSnapshot {
+        let decoder = JSONDecoder()
+
+        guard let metadata = try? decoder.decode(
+            LocalRAGMetadata.self,
+            from: Data(contentsOf: metadataURL)
+        ) else {
+            throw LocalRAGError.malformedMetadata
+        }
+
+        guard let documents = try? decoder.decode(
+            [RAGDocument].self,
+            from: Data(contentsOf: documentsURL)
+        ) else {
+            throw LocalRAGError.malformedDocuments
+        }
+
+        guard metadata.documentCount == documents.count else {
+            throw LocalRAGError.documentCountMismatch(
+                expected: metadata.documentCount,
+                actual: documents.count
+            )
+        }
+
+        for (index, document) in documents.enumerated() {
+            guard !normalize(document.istilah).isEmpty,
+                  !normalize(document.pengertian).isEmpty else {
+                throw LocalRAGError.emptyDocument(index: index)
+            }
+        }
+
+        let indexedDocuments = documents.map { document in
+            let normalizedTerm = normalize(document.istilah)
+            let tokens = tokenize("\(document.istilah) \(document.pengertian)")
+            return IndexedDocument(
+                normalizedTerm: normalizedTerm,
+                termTokens: tokenize(document.istilah),
+                termFrequencies: termFrequencies(for: tokens),
+                tokenCount: tokens.count
+            )
+        }
+
+        var documentFrequencies: [String: Int] = [:]
+        for document in indexedDocuments {
+            for token in document.termFrequencies.keys {
+                documentFrequencies[token, default: 0] += 1
+            }
+        }
+
+        let documentCount = Double(indexedDocuments.count)
+        let inverseDocumentFrequencies = Dictionary(
+            uniqueKeysWithValues: documentFrequencies.map { token, frequency in
+                let frequency = Double(frequency)
+                return (
+                    token,
+                    log(1 + (documentCount - frequency + 0.5) / (frequency + 0.5))
+                )
+            }
+        )
+        let averageDocumentLength = indexedDocuments.isEmpty
+            ? 0
+            : Double(indexedDocuments.reduce(0) { $0 + $1.tokenCount }) / documentCount
+
+        return LocalRAGSnapshot(
+            documents: documents,
+            metadata: metadata,
+            index: indexedDocuments,
+            inverseDocumentFrequencies: inverseDocumentFrequencies,
+            averageDocumentLength: averageDocumentLength
+        )
+    }
+
+    func search(query: String, topK: Int) -> [RAGSearchResult] {
+        let normalizedQuery = Self.normalize(query)
+        let orderedQueryTokens = Self.tokenize(query)
+        let queryTokens = Array(Set(orderedQueryTokens))
+        guard !normalizedQuery.isEmpty, !queryTokens.isEmpty else { return [] }
+
+        let scored = index.indices.compactMap { index -> (Int, Double)? in
+            let document = self.index[index]
+            var score = bm25Score(queryTokens: queryTokens, document: document)
+
+            if document.normalizedTerm == normalizedQuery {
+                score += 1_000
+            } else if document.normalizedTerm.hasPrefix(normalizedQuery) {
+                score += 300
+            } else if document.normalizedTerm.contains(normalizedQuery) {
+                score += 150
+            } else if Self.containsTokenSequence(orderedQueryTokens, document.termTokens) {
+                score += 40
+            }
+
+            return score > 0 ? (index, score) : nil
+        }
+        .sorted { lhs, rhs in
+            if lhs.1 != rhs.1 { return lhs.1 > rhs.1 }
+            return documents[lhs.0].istilah.localizedCaseInsensitiveCompare(
+                documents[rhs.0].istilah
+            ) == .orderedAscending
+        }
+        .prefix(topK)
+
+        return scored.enumerated().map { rank, item in
+            RAGSearchResult(
+                document: documents[item.0],
+                score: Float(item.1),
+                rank: rank + 1
+            )
+        }
+    }
+
+    private func bm25Score(
+        queryTokens: [String],
+        document: IndexedDocument
+    ) -> Double {
+        guard averageDocumentLength > 0 else { return 0 }
+
+        let k1 = 1.5
+        let b = 0.75
+        let documentLength = Double(document.tokenCount)
+        let normalization = 1 - b + b * documentLength / averageDocumentLength
+
+        return queryTokens.reduce(into: 0.0) { score, token in
+            let frequency = Double(document.termFrequencies[token] ?? 0)
+            guard frequency > 0 else { return }
+            score += (inverseDocumentFrequencies[token] ?? 0)
+                * frequency * (k1 + 1)
+                / (frequency + k1 * normalization)
+        }
+    }
+
+    private static func normalize(_ value: String) -> String {
+        value
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
+    }
 
-        guard !normalizedQuery.isEmpty else { return [] }
+    private static func tokenize(_ value: String) -> [String] {
+        normalize(value)
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map(String.init)
+    }
 
-        var candidates: [(doc: RAGDocument, score: Float)] = []
+    private static func termFrequencies(for tokens: [String]) -> [String: Int] {
+        tokens.reduce(into: [:]) { counts, token in
+            counts[token, default: 0] += 1
+        }
+    }
 
-        for doc in documents {
-            let termNorm = doc.istilah.folding(options: [String.CompareOptions.caseInsensitive, String.CompareOptions.diacriticInsensitive], locale: .current).lowercased()
-            let defNorm = doc.pengertian.folding(options: [String.CompareOptions.caseInsensitive, String.CompareOptions.diacriticInsensitive], locale: .current).lowercased()
-
-            var score: Float = 0.0
-            if termNorm == normalizedQuery {
-                score = 1.0
-            } else if termNorm.hasPrefix(normalizedQuery) {
-                score = 0.9
-            } else if termNorm.contains(normalizedQuery) {
-                score = 0.8
-            } else if defNorm.contains(normalizedQuery) {
-                score = 0.6
-            }
-
-            if score > 0 {
-                candidates.append((doc: doc, score: score))
-            }
+    private static func containsTokenSequence(
+        _ queryTokens: [String],
+        _ termTokens: [String]
+    ) -> Bool {
+        guard !termTokens.isEmpty, termTokens.count <= queryTokens.count else {
+            return false
         }
 
-        candidates.sort { $0.score > $1.score }
-        let topCount = min(topK, candidates.count)
-
-        return (0..<topCount).map { i in
-            RAGSearchResult(document: candidates[i].doc, score: candidates[i].score, rank: i + 1)
+        for start in 0...(queryTokens.count - termTokens.count) {
+            if Array(queryTokens[start..<(start + termTokens.count)]) == termTokens {
+                return true
+            }
         }
+        return false
     }
 }
