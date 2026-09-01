@@ -5,7 +5,9 @@
 //  Created by Giovan Christoffel Sihombing on 2026/08/25.
 //
 
+import Foundation
 import SwiftUI
+import AppKit
 
 enum TextStyle: String, CaseIterable, Identifiable {
     case body = "T"
@@ -33,18 +35,8 @@ enum TextAlignment: String, CaseIterable, Identifiable {
 
 struct EditorToolbar: View {
     @Binding var documentTitle: String
+//    var onToggleSidebar: (() -> Void)? = nil
     var onExport: (() -> Void)? = nil
-    var onAnalyze: (() -> Void)? = nil
-    var onCancelAnalysis: (() -> Void)? = nil
-    var onShowDebug: (() -> Void)? = nil
-    var canAnalyze = false
-    var isAnalyzing = false
-    var analysisState: AIConnectorRunState = .idle
-    var analysisProgressStage: AIConnectorProgressStage = .idle
-    var analysisDownloadProgress = 0.0
-    var analysisGenerationProgress = 0
-    var analysisSummary: AIConnectorRunSummary?
-    var analysisErrorMessage: String?
 
     @State private var selectedTextStyle: TextStyle = .body
     @State private var isBold = false
@@ -53,141 +45,168 @@ struct EditorToolbar: View {
     @State private var isStrikethrough = false
     @State private var selectedListStyle: ListStyle?
     @State private var selectedAlignment: TextAlignment = .leading
-    @State private var isAnalysisStatusPresented = false
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 12) {
+            // MARK: - Left Section (Sidebar Toggle & Document Title)
             leadingControls
+
             Spacer()
+
+            // MARK: - Center Section (4 Liquid Glass Capsule Groups)
             centerControls
+
             Spacer()
+
+            // MARK: - Right Section (Export Button)
             trailingControls
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(.bar, ignoresSafeAreaEdges: .all)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Left Section
 
     private var leadingControls: some View {
-        HStack(spacing: 8) {
-            TextField("Document Title", text: $documentTitle)
+        HStack(spacing: 12) {
+            // Document Title Text Field
+            TextField("Untitled", text: $documentTitle)
                 .textFieldStyle(.plain)
-                .font(.headline)
-                .frame(minWidth: 120, maxWidth: 200)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.primary)
+                .frame(minWidth: 100, maxWidth: 220)
         }
     }
 
-    // MARK: - Center Section
+    // MARK: - Center Section (4 Distinct Liquid Glass Groups)
 
     private var centerControls: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 8) {
+            // 1. Text Style Group (T, H1, H2, H3)
             textStyleGroup
+
+            // 2. Formatting Group (B, I, U, S)
             formattingGroup
+
+            // 3. List Style Group (Bullets, Numbered)
             listGroup
+
+            // 4. Alignment Group (Left, Center, Right)
             alignmentGroup
         }
     }
 
+    // 1. Text Style Capsule
     private var textStyleGroup: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 2) {
             ForEach(TextStyle.allCases) { style in
-                Button(action: { selectedTextStyle = style }) {
+                GlassPillButton(
+                    isActive: selectedTextStyle == style,
+                    action: { selectedTextStyle = style }
+                ) {
                     Text(style.rawValue)
-                        .font(style == .body ? .body : .caption)
-                        .fontWeight(.semibold)
-                        .frame(width: 32, height: 24)
-                        .background(
-                            selectedTextStyle == style
-                                ? Color.accentColor.opacity(0.15)
-                                : Color.clear
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .font(.system(size: 12, weight: selectedTextStyle == style ? .bold : .medium))
+                        .foregroundStyle(selectedTextStyle == style ? .primary : .secondary)
                 }
-                .buttonStyle(.plain)
             }
         }
-        .padding(2)
-        .background(Color.primary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .padding(.horizontal, 4)
+        .padding(.vertical, 3)
+        .liquidGlass(cornerRadius: 16)
     }
 
+    // 2. Formatting Capsule (B, I, U, S)
     private var formattingGroup: some View {
-        HStack(spacing: 0) {
-            FormatButton(
-                symbolName: "bold",
+        HStack(spacing: 2) {
+            // Bold
+            GlassPillButton(
                 isActive: isBold,
                 action: { isBold.toggle() }
-            )
-            FormatButton(
-                symbolName: "italic",
+            ) {
+                Text("B")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(isBold ? .primary : .secondary)
+            }
+
+            // Italic
+            GlassPillButton(
                 isActive: isItalic,
                 action: { isItalic.toggle() }
-            )
-            FormatButton(
-                symbolName: "underline",
+            ) {
+                Text("I")
+                    .font(.system(size: 13, weight: .bold))
+                    .italic()
+                    .foregroundStyle(isItalic ? .primary : .secondary)
+            }
+
+            // Underline
+            GlassPillButton(
                 isActive: isUnderline,
                 action: { isUnderline.toggle() }
-            )
-            FormatButton(
-                symbolName: "strikethrough",
+            ) {
+                Text("U")
+                    .font(.system(size: 13, weight: .semibold))
+                    .underline()
+                    .foregroundStyle(isUnderline ? .primary : .secondary)
+            }
+
+            // Strikethrough
+            GlassPillButton(
                 isActive: isStrikethrough,
                 action: { isStrikethrough.toggle() }
-            )
+            ) {
+                Text("S")
+                    .font(.system(size: 13, weight: .semibold))
+                    .strikethrough()
+                    .foregroundStyle(isStrikethrough ? .primary : .secondary)
+            }
         }
-        .padding(2)
-        .background(Color.primary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .padding(.horizontal, 4)
+        .padding(.vertical, 3)
+        .liquidGlass(cornerRadius: 16)
     }
 
+    // 3. List Style Capsule
     private var listGroup: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 2) {
             ForEach(ListStyle.allCases) { style in
-                Button(action: {
-                    selectedListStyle = selectedListStyle == style ? nil : style
-                }) {
+                GlassPillButton(
+                    isActive: selectedListStyle == style,
+                    action: {
+                        selectedListStyle = (selectedListStyle == style) ? nil : style
+                    }
+                ) {
                     Image(systemName: style.rawValue)
-                        .font(.system(size: 13))
-                        .frame(width: 28, height: 24)
-                        .background(
-                            selectedListStyle == style
-                                ? Color.accentColor.opacity(0.15)
-                                : Color.clear
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(selectedListStyle == style ? .primary : .secondary)
                 }
-                .buttonStyle(.plain)
             }
         }
-        .padding(2)
-        .background(Color.primary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .padding(.horizontal, 4)
+        .padding(.vertical, 3)
+        .liquidGlass(cornerRadius: 16)
     }
 
+    // 4. Alignment Capsule
     private var alignmentGroup: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 2) {
             ForEach(TextAlignment.allCases) { alignment in
-                Button(action: { selectedAlignment = alignment }) {
+                GlassPillButton(
+                    isActive: selectedAlignment == alignment,
+                    action: { selectedAlignment = alignment }
+                ) {
                     Image(systemName: alignment.rawValue)
-                        .font(.system(size: 13))
-                        .frame(width: 28, height: 24)
-                        .background(
-                            selectedAlignment == alignment
-                                ? Color.accentColor.opacity(0.15)
-                                : Color.clear
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(selectedAlignment == alignment ? .primary : .secondary)
                 }
-                .buttonStyle(.plain)
             }
         }
-        .padding(2)
-        .background(Color.primary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .padding(.horizontal, 4)
+        .padding(.vertical, 3)
+        .liquidGlass(cornerRadius: 16)
     }
 
-    // MARK: - Right Section
+    // MARK: - Right Section (Export Glass Button)
 
     private var trailingControls: some View {
         HStack(spacing: 8) {
@@ -195,99 +214,103 @@ struct EditorToolbar: View {
                 onExport?()
             }) {
                 Image(systemName: "square.and.arrow.up")
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.primary.opacity(0.85))
+                    .frame(width: 32, height: 32)
             }
             .buttonStyle(.plain)
+            .liquidGlass(cornerRadius: 10)
             .help("Ekspor Dokumen (.docx)")
-
-            if onAnalyze != nil {
-                Button {
-                    if isAnalyzing {
-                        onCancelAnalysis?()
-                    } else if canAnalyze {
-                        onAnalyze?()
-                        isAnalysisStatusPresented = true
-                    }
-                } label: {
-                    if isAnalyzing {
-                        HStack(spacing: 5) {
-                            ProgressView()
-                                .controlSize(.small)
-                            Image(systemName: "stop.fill")
-                        }
-                    } else {
-                        Image(systemName: "wand.and.sparkles")
-                    }
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(isAnalyzing ? .red : .secondary)
-                .opacity(canAnalyze || isAnalyzing ? 1 : 0.45)
-                .disabled(!canAnalyze && !isAnalyzing)
-                .help(isAnalyzing ? "Batalkan analisis" : "Analisis dokumen")
-                .popover(isPresented: $isAnalysisStatusPresented, arrowEdge: .bottom) {
-                    AIConnectorToolbarStatusView(
-                        state: analysisState,
-                        progressStage: analysisProgressStage,
-                        downloadProgress: analysisDownloadProgress,
-                        generationProgress: analysisGenerationProgress,
-                        summary: analysisSummary,
-                        errorMessage: analysisErrorMessage,
-                        onRetry: {
-                            onAnalyze?()
-                            isAnalysisStatusPresented = true
-                        }
-                    )
-                }
-            }
-
-            #if DEBUG
-            Menu {
-                Button {
-                    onShowDebug?()
-                } label: {
-                    Label("Buka panel Debug", systemImage: "ladybug")
-                }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .foregroundStyle(.secondary)
-            }
-            .menuStyle(.borderlessButton)
-            .help("Opsi lainnya")
-            #else
-            Button(action: {}) {
-                Image(systemName: "ellipsis.circle")
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .help("More Options")
-            #endif
         }
     }
 }
 
-// MARK: - Format Button
+// MARK: - Glass Pill Button Component
 
-private struct FormatButton: View {
-    let symbolName: String
+private struct GlassPillButton<Content: View>: View {
     let isActive: Bool
     let action: () -> Void
+    @ViewBuilder let content: () -> Content
+
+    @State private var isHovered = false
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbolName)
-                .font(.system(size: 13))
-                .frame(width: 28, height: 24)
+            content()
+                .frame(width: 26, height: 24)
                 .background(
-                    isActive
-                        ? Color.accentColor.opacity(0.15)
-                        : Color.clear
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(
+                            isActive
+                                ? Color.primary.opacity(0.12)
+                                : (isHovered ? Color.primary.opacity(0.06) : Color.clear)
+                        )
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+}
+
+// MARK: - Liquid Glass View Modifier
+
+private struct LiquidGlassModifier: ViewModifier {
+    var cornerRadius: CGFloat = 16
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .fill(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.05)
+                                    : Color.white.opacity(0.70)
+                            )
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        colorScheme == .dark ? Color.white.opacity(0.22) : Color.white.opacity(0.85),
+                                        colorScheme == .dark ? Color.white.opacity(0.04) : Color.white.opacity(0.35)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 0.8
+                            )
+                    }
+                    .shadow(
+                        color: colorScheme == .dark
+                            ? Color.black.opacity(0.4)
+                            : Color.black.opacity(0.06),
+                        radius: 6,
+                        x: 0,
+                        y: 2
+                    )
+            }
+    }
+}
+
+private extension View {
+    func liquidGlass(cornerRadius: CGFloat = 16) -> some View {
+        modifier(LiquidGlassModifier(cornerRadius: cornerRadius))
     }
 }
 
 #Preview {
-    EditorToolbar(documentTitle: .constant("Untitled"))
+    ZStack {
+        Color(nsColor: .windowBackgroundColor)
+            .ignoresSafeArea()
+
+        EditorToolbar(documentTitle: .constant("Untitled"))
+    }
+    .frame(width: 850, height: 100)
 }
