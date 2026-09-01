@@ -14,22 +14,18 @@ import UniformTypeIdentifiers
 final class DocumentStorageManager: ObservableObject {
     @Published var documents: [DashboardDocument] = []
     
-    private let fileManager = FileManager.default
-    private let folderName = "AMT_Documents"
+    private static let folderName = "AMT_Documents"
+    private let fileManager: FileManager
+    private let storageURL: URL
 
-    private var storageURL: URL {
-        let paths = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
-        let documentsDirectory = paths[0]
-        let folderURL = documentsDirectory.appendingPathComponent(folderName, isDirectory: true)
-        
-        if !fileManager.fileExists(atPath: folderURL.path) {
-            try? fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true, attributes: nil)
-        }
-        
-        return folderURL
-    }
-
-    init() {
+    init(fileManager: FileManager = .default, storageDirectory: URL? = nil) {
+        self.fileManager = fileManager
+        self.storageURL = storageDirectory ?? Self.defaultStorageURL(fileManager: fileManager)
+        try? fileManager.createDirectory(
+            at: self.storageURL,
+            withIntermediateDirectories: true,
+            attributes: nil
+        )
         loadDocuments()
     }
 
@@ -65,7 +61,7 @@ final class DocumentStorageManager: ObservableObject {
         }
     }
 
-    // MARK: - Import Document from Finder (.docx, .doc, .rtf, .md, .txt)
+    // MARK: - Import Document from Finder (.docx)
 
     func importWordDocumentFromFinder(completion: @escaping (DashboardDocument?) -> Void) {
         let panel = NSOpenPanel()
@@ -73,14 +69,8 @@ final class DocumentStorageManager: ObservableObject {
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.prompt = "Impor Dokumen"
-        panel.message = "Pilih file dokumen (.docx, .doc, .rtf, .md, .txt)"
-
-        var types: [UTType] = [.plainText, .rtf]
-        if let docx = UTType(filenameExtension: "docx") { types.append(docx) }
-        if let doc = UTType(filenameExtension: "doc") { types.append(doc) }
-        if let md = UTType(filenameExtension: "md") { types.append(md) }
-        if let markdown = UTType(filenameExtension: "markdown") { types.append(markdown) }
-        panel.allowedContentTypes = types
+        panel.message = "Pilih file dokumen Word (.docx)"
+        panel.allowedContentTypes = UTType(filenameExtension: "docx").map { [$0] } ?? []
 
         panel.begin { response in
             guard response == .OK, let url = panel.url else {
@@ -88,30 +78,63 @@ final class DocumentStorageManager: ObservableObject {
                 return
             }
 
-            let title = url.deletingPathExtension().lastPathComponent
-            var textContent = ""
-
             do {
-                textContent = try DocxToMarkdownConverter.convert(fileURL: url)
+                let newDoc = try self.importWordDocument(from: url)
+                completion(newDoc)
             } catch {
-                print("Error converting document to Markdown: \(error.localizedDescription)")
-                if let rawString = try? String(contentsOf: url, encoding: .utf8) {
-                    textContent = rawString
-                }
+                print("Error importing DOCX: \(error.localizedDescription)")
+                completion(nil)
             }
+        }
+    }
 
-            let newDoc = DashboardDocument(
-                id: UUID(),
-                title: title.isEmpty ? "Untitled" : title,
-                content: textContent,
+    /// Imports a DOCX, stores an immutable working copy, and persists only a safe relative path.
+    @discardableResult
+    func importWordDocument(from sourceURL: URL) throws -> DashboardDocument {
+        guard sourceURL.pathExtension.lowercased() == "docx" else {
+            throw DocumentStorageError.unsupportedFileType
+        }
+
+        let documentID = UUID()
+        let sidecarFilename = "\(documentID.uuidString).original.docx"
+        let sidecarURL = storageURL.appendingPathComponent(sidecarFilename)
+        try fileManager.copyItem(at: sourceURL, to: sidecarURL)
+
+        do {
+            let extraction = try DocxToMarkdownConverter.extract(fileURL: sidecarURL)
+            let fingerprint = try DocumentFingerprint.sha256(fileURL: sidecarURL)
+            let sourceTitle = sourceURL.deletingPathExtension().lastPathComponent
+            let document = DashboardDocument(
+                id: documentID,
+                title: sourceTitle.isEmpty ? "Untitled" : sourceTitle,
+                content: extraction.analysisText,
                 createdAt: Date(),
-                updatedAt: Date()
+                updatedAt: Date(),
+                originalFileName: sourceURL.lastPathComponent,
+                originalSidecarRelativePath: "\(Self.folderName)/\(sidecarFilename)",
+                originalFingerprint: fingerprint,
+                reviewSnapshot: nil
             )
 
-            self.saveDocument(newDoc)
-            self.documents.insert(newDoc, at: 0)
-            completion(newDoc)
+            let savedDocument = saveDocument(document)
+            documents.insert(savedDocument, at: 0)
+            return savedDocument
+        } catch {
+            try? fileManager.removeItem(at: sidecarURL)
+            throw error
         }
+    }
+
+    /// Resolves a stored original only inside the app-owned document directory.
+    func originalFileURL(for document: DashboardDocument) -> URL? {
+        guard let relativePath = document.originalSidecarRelativePath,
+              let filename = Self.safeSidecarFilename(from: relativePath)
+        else {
+            return nil
+        }
+
+        let sidecarURL = storageURL.appendingPathComponent(filename)
+        return fileManager.fileExists(atPath: sidecarURL.path) ? sidecarURL : nil
     }
 
     @discardableResult
@@ -131,12 +154,13 @@ final class DocumentStorageManager: ObservableObject {
             }
         }
 
-        saveDocument(newDoc)
-        documents.insert(newDoc, at: 0)
-        return newDoc
+        let savedDocument = saveDocument(newDoc)
+        documents.insert(savedDocument, at: 0)
+        return savedDocument
     }
 
-    func saveDocument(_ document: DashboardDocument) {
+    @discardableResult
+    func saveDocument(_ document: DashboardDocument) -> DashboardDocument {
         var updatedDoc = document
         updatedDoc.updatedAt = Date()
 
@@ -144,7 +168,7 @@ final class DocumentStorageManager: ObservableObject {
             if let index = documents.firstIndex(where: { $0.id == updatedDoc.id }) {
                 documents[index] = updatedDoc
             }
-            return
+            return updatedDoc
         }
         
         let encoder = JSONEncoder()
@@ -162,13 +186,59 @@ final class DocumentStorageManager: ObservableObject {
         } catch {
             print("Failed to save document to Foundation storage: \(error.localizedDescription)")
         }
+
+        return updatedDoc
     }
 
     func deleteDocument(_ document: DashboardDocument) {
         guard !AIConnectorDummyDocument.isBuiltIn(document) else { return }
 
         let fileURL = storageURL.appendingPathComponent("\(document.id.uuidString).json")
+        if let sidecarURL = originalFileURL(for: document) {
+            try? fileManager.removeItem(at: sidecarURL)
+        }
         try? fileManager.removeItem(at: fileURL)
         documents.removeAll { $0.id == document.id }
+    }
+
+    // MARK: - Private Helpers
+
+    private static func defaultStorageURL(fileManager: FileManager) -> URL {
+        let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? fileManager.temporaryDirectory
+        return documentsDirectory.appendingPathComponent(folderName, isDirectory: true)
+    }
+
+    private static func safeSidecarFilename(from relativePath: String) -> String? {
+        let components = relativePath.split(separator: "/").map(String.init)
+        let filename: String
+
+        switch components.count {
+        case 1:
+            filename = components[0]
+        case 2 where components[0] == folderName:
+            filename = components[1]
+        default:
+            return nil
+        }
+
+        guard filename.hasSuffix(".original.docx"),
+              !filename.contains(".."),
+              !filename.contains("\\")
+        else {
+            return nil
+        }
+        return filename
+    }
+}
+
+enum DocumentStorageError: LocalizedError, Equatable {
+    case unsupportedFileType
+
+    var errorDescription: String? {
+        switch self {
+        case .unsupportedFileType:
+            "AMT hanya dapat mengimpor dokumen DOCX pada tahap ini."
+        }
     }
 }

@@ -36,7 +36,7 @@ struct NewDocumentCardView: View {
         .onHover { hovering in
             isHovered = hovering
         }
-        .help("Impor file dokumen (.docx, .md, .txt) dari Finder")
+        .help("Impor file dokumen Word (.docx) dari Finder")
     }
 }
 

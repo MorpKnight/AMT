@@ -13,19 +13,31 @@ struct DashboardDocument: Identifiable, Codable, Equatable, Hashable {
     var content: String
     var createdAt: Date
     var updatedAt: Date
+    var originalFileName: String?
+    var originalSidecarRelativePath: String?
+    var originalFingerprint: String?
+    var reviewSnapshot: DocumentReviewSnapshot?
 
     init(
         id: UUID = UUID(),
         title: String = "Untitled",
         content: String = "",
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        originalFileName: String? = nil,
+        originalSidecarRelativePath: String? = nil,
+        originalFingerprint: String? = nil,
+        reviewSnapshot: DocumentReviewSnapshot? = nil
     ) {
         self.id = id
         self.title = title
         self.content = content
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.originalFileName = originalFileName
+        self.originalSidecarRelativePath = originalSidecarRelativePath
+        self.originalFingerprint = originalFingerprint
+        self.reviewSnapshot = reviewSnapshot
     }
 
     var formattedRelativeDate: String {

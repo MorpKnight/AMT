@@ -57,6 +57,20 @@ struct DashboardView: View {
                             }
                         }
                     },
+                    originalURLForDocument: { document in
+                        storageManager.originalFileURL(for: document)
+                    },
+                    onPersistReviewSnapshot: { documentID, snapshot in
+                        guard let currentDocument = activeDocument,
+                              currentDocument.id == documentID
+                        else {
+                            return
+                        }
+
+                        var updatedDocument = currentDocument
+                        updatedDocument.reviewSnapshot = snapshot
+                        activeDocument = storageManager.saveDocument(updatedDocument)
+                    },
                     suggestionService: suggestionService,
                     dictionaryStore: dictionaryStore
                 )

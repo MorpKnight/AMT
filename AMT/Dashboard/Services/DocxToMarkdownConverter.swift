@@ -12,6 +12,12 @@ import UniformTypeIdentifiers
 /// Converts Word documents (.docx, .doc), Rich Text (.rtf), and other formats into structured Markdown (.md).
 nonisolated struct DocxToMarkdownConverter: Sendable {
 
+    /// The text used for analysis and the unformatted source text used for safe range mapping.
+    struct ExtractionResult: Equatable, Sendable {
+        let analysisText: String
+        let sourceText: String
+    }
+
     // MARK: - Public API
 
     /// Converts a file at the given URL into a clean Markdown string.
@@ -31,27 +37,7 @@ nonisolated struct DocxToMarkdownConverter: Sendable {
         }
 
         // 2. Rich Text & Word Document loading via NSAttributedString
-        var options: [NSAttributedString.DocumentReadingOptionKey: Any] = [:]
-        if ext == "docx" || ext == "doc" {
-            options[.documentType] = NSAttributedString.DocumentType.wordML
-        } else if ext == "rtf" {
-            options[.documentType] = NSAttributedString.DocumentType.rtf
-        } else if ext == "html" || ext == "htm" {
-            options[.documentType] = NSAttributedString.DocumentType.html
-        }
-
-        var attributedString: NSAttributedString?
-
-        // Try reading with explicit document type options
-        if let directAttr = try? NSAttributedString(url: fileURL, options: options, documentAttributes: nil) {
-            attributedString = directAttr
-        } else if let fallbackAttr = try? NSAttributedString(url: fileURL, options: [:], documentAttributes: nil) {
-            attributedString = fallbackAttr
-        } else if let data = try? Data(contentsOf: fileURL) {
-            attributedString = try? NSAttributedString(data: data, options: options, documentAttributes: nil)
-        }
-
-        guard let attrString = attributedString, attrString.length > 0 else {
+        guard let attrString = try? loadAttributedString(fileURL: fileURL), attrString.length > 0 else {
             // Fallback to raw string if attributed loading is unavailable
             if let rawText = try? String(contentsOf: fileURL, encoding: .utf8) {
                 return rawText
@@ -60,6 +46,44 @@ nonisolated struct DocxToMarkdownConverter: Sendable {
         }
 
         return convert(attributedString: attrString)
+    }
+
+    /// Extracts Markdown for analysis while retaining the original text for UTF-16 mapping.
+    static func extract(fileURL: URL) throws -> ExtractionResult {
+        let attributedString = try loadAttributedString(fileURL: fileURL)
+        guard attributedString.length > 0 else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+
+        return ExtractionResult(
+            analysisText: convert(attributedString: attributedString),
+            sourceText: attributedString.string
+        )
+    }
+
+    /// Loads a document through AppKit so the original attributes remain available for export.
+    static func loadAttributedString(fileURL: URL) throws -> NSAttributedString {
+        let ext = fileURL.pathExtension.lowercased()
+        var options: [NSAttributedString.DocumentReadingOptionKey: Any] = [:]
+
+        if ext == "docx" || ext == "doc" {
+            options[.documentType] = NSAttributedString.DocumentType.wordML
+        } else if ext == "rtf" {
+            options[.documentType] = NSAttributedString.DocumentType.rtf
+        } else if ext == "html" || ext == "htm" {
+            options[.documentType] = NSAttributedString.DocumentType.html
+        }
+
+        if let direct = try? NSAttributedString(url: fileURL, options: options, documentAttributes: nil) {
+            return direct
+        }
+
+        if let fallback = try? NSAttributedString(url: fileURL, options: [:], documentAttributes: nil) {
+            return fallback
+        }
+
+        let data = try Data(contentsOf: fileURL)
+        return try NSAttributedString(data: data, options: options, documentAttributes: nil)
     }
 
     /// Converts an NSAttributedString into structured Markdown.

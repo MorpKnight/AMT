@@ -45,6 +45,8 @@ struct EditorToolbar: View {
     var analysisGenerationProgress = 0
     var analysisSummary: AIConnectorRunSummary?
     var analysisErrorMessage: String?
+    var showsFormattingControls = true
+    var canExport = true
 
     @State private var selectedTextStyle: TextStyle = .body
     @State private var isBold = false
@@ -59,7 +61,9 @@ struct EditorToolbar: View {
         HStack(spacing: 0) {
             leadingControls
             Spacer()
-            centerControls
+            if showsFormattingControls {
+                centerControls
+            }
             Spacer()
             trailingControls
         }
@@ -198,6 +202,8 @@ struct EditorToolbar: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .disabled(!canExport)
+            .opacity(canExport ? 1 : 0.45)
             .help("Ekspor Dokumen (.docx)")
 
             if onAnalyze != nil {
