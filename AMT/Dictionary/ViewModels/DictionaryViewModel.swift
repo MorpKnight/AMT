@@ -88,22 +88,10 @@ final class DictionaryViewModel {
                 return self.makeGlossaryEntry(forTerm: entry.term)
             }
             topMatches = glossaryEntries
-
-            if let first = glossaryEntries.first {
-                selectedEntry = first
-            } else {
-                selectedEntry = LegalGlossaryEntry(
-                    term: trimmed,
-                    singleDefinition: "Definisi untuk kata \"\(trimmed)\" belum ditemukan dalam glosarium lokal.",
-                    seeAlso: relatedTerms(count: 4, excluding: trimmed),
-                    authority: .legacy,
-                    corpusVersion: LegalDictionaryCorpusVersion.unspecifiedLegacy
-                )
-                topMatches = []
-            }
+            selectedEntry = glossaryEntries.first
 
             withAnimation(.easeInOut(duration: 0.2)) {
-                self.isShowingDetail = true
+                self.isShowingDetail = !glossaryEntries.isEmpty
                 self.isLoading = false
                 self.semanticProgress = nil
             }

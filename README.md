@@ -87,12 +87,17 @@ Dictionary bukan chatbot dan tidak menggunakan Qwen. `LegalCorpusStore` memuat p
 
 Urutan prioritas pencarian adalah:
 
-1. Istilah sama persis atau prefix melalui exact/BM25 shortcut tanpa E5.
-2. Untuk uraian: top-100 BM25 dan top-100 E5 digabung equal-weight Reciprocal Rank Fusion dengan `rrf_k=60`.
+1. Query berbentuk istilah pendek (maksimal tiga token), termasuk istilah sama
+   persis, prefix, atau substring, diproses lokal melalui BM25 tanpa E5. Jika
+   tidak ada evidence lexical pada corpus aktif, hasilnya kosong dan tidak
+   dialihkan ke tetangga semantic.
+2. Untuk uraian yang lebih panjang: top-100 BM25 dan top-100 E5 digabung
+   equal-weight Reciprocal Rank Fusion dengan `rrf_k=60`. Match semantic hanya
+   dapat ditampilkan jika cosine similarity-nya minimal `0.60`.
 3. Grouping presentation mempertahankan semua definisi dan regulation reference untuk term yang sama.
 4. Status current/historical/unknown serta provenance ditampilkan terpisah; historical tidak menjadi candidate terminology.
 
-Pencarian mengabaikan perbedaan huruf besar-kecil, diakritik, dan spasi berlebih. Hasil Dictionary reverse lookup dibatasi hingga lima term group, sedangkan retrieval internal dapat mengambil top-100 untuk fusion. Jika E5 gagal dimuat, hasil reverse lookup kembali ke BM25 dan terminology semantic candidate dinonaktifkan untuk run tersebut.
+Pencarian mengabaikan perbedaan huruf besar-kecil, diakritik, dan spasi berlebih. Hasil Dictionary reverse lookup dibatasi hingga lima term group, sedangkan retrieval internal dapat mengambil top-100 untuk fusion. Query seperti `justifikasi` yang tidak memiliki evidence di corpus aktif akan menghasilkan daftar kosong. Jika E5 gagal dimuat atau tidak ada semantic match yang melewati threshold, hasil reverse lookup kembali ke evidence BM25 yang literal.
 
 Format CSV legacy yang masih dipertahankan oleh parser untuk migrasi berikutnya:
 
@@ -127,7 +132,7 @@ tidak menjadi suggestion. Parser enam baris tetap tersedia untuk benchmark lama,
 tetapi bukan jalur utama candidate-first. Unit test tidak mengunduh atau
 menjalankan model.
 
-Guard retrieval saat ini bersifat provisional untuk integrasi awal. Untuk reverse lookup dan suggestion, corpus memakai equal-weight BM25 + multilingual E5 melalui RRF; terminology candidate menggunakan threshold semantic `0.60`, margin top-one `0.03`, dan paling banyak tiga match sesuai parameter pada manifest corpus. Jika E5 tidak tersedia, jalur Dictionary turun ke BM25 dan terminology semantic candidate dinonaktifkan untuk run tersebut. Fallback BM25 kompatibilitas lama masih memakai skor minimal `20`, sedikitnya `4` token definisi yang cocok, dan margin minimal `3`. Semua angka ini adalah guard retrieval, bukan confidence hukum, dan threshold semantic saat ini masih provisional karena artifact evaluasi yang tersedia belum memiliki split kalibrasi manusia yang disetujui. Paling banyak tiga match dikirim ke candidate builder, tetapi hanya entry verified yang dapat menjadi terminology candidate actionable. Istilah multi-kata yang muncul langsung di teks dapat lolos sebagai direct term match untuk pencarian, bukan otomatis menjadi replacement. Guard ini tidak menggantikan review sumber resmi.
+Guard retrieval saat ini bersifat provisional untuk integrasi awal. Dictionary memakai threshold semantic `0.60` dan menganggap query dengan maksimal tiga token sebagai term lookup yang wajib memiliki evidence lexical. Suggestion terminology memakai equal-weight BM25 + multilingual E5 melalui RRF, threshold semantic `0.60`, margin top-one `0.03`, dan paling banyak tiga match sesuai parameter pada manifest corpus. Jika E5 tidak tersedia, jalur Dictionary turun ke evidence BM25 dan terminology semantic candidate dinonaktifkan untuk run tersebut. Fallback BM25 kompatibilitas lama masih memakai skor minimal `20`, sedikitnya `4` token definisi yang cocok, dan margin minimal `3`. Semua angka ini adalah guard retrieval, bukan confidence hukum, dan threshold semantic saat ini masih provisional karena artifact evaluasi yang tersedia belum memiliki split kalibrasi manusia yang disetujui. Paling banyak tiga match dikirim ke candidate builder, tetapi hanya entry verified yang dapat menjadi terminology candidate actionable. Istilah multi-kata yang muncul langsung di teks dapat lolos sebagai direct term match untuk pencarian, bukan otomatis menjadi replacement. Guard ini tidak menggantikan review sumber resmi.
 
 Konfigurasi penting saat ini:
 
@@ -219,9 +224,10 @@ keliru.
 
 E5 (`intfloat/multilingual-e5-small`, revision
 `614241f622f53c4eeff9890bdc4f31cfecc418b3`) baru diunduh saat reverse lookup
-Dictionary atau semantic terminology retrieval pertama kali dipakai. Hasil
-exact/prefix tetap offline; jika download atau load E5 gagal, Dictionary turun
-ke BM25 dan terminology semantic candidate dinonaktifkan untuk run tersebut.
+uraian Dictionary atau semantic terminology retrieval pertama kali dipakai.
+Hasil exact/prefix dan term lookup pendek tetap offline; jika download atau load
+E5 gagal, Dictionary turun ke BM25 dan terminology semantic candidate
+dinonaktifkan untuk run tersebut.
 Benchmark parity E5 terhadap Python tetap opt-in dan tidak dijalankan oleh test
 reguler.
 
