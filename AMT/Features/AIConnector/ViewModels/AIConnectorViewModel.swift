@@ -35,6 +35,8 @@ final class AIConnectorViewModel {
     private(set) var segmentationResult: AITextSegmentationResult?
     private(set) var validatedReviews: [AIValidatedReview] = []
     private(set) var rejectedReviews: [AIReviewRejection] = []
+    private(set) var definitionAssessments: [AIConnectorDefinitionAssessment] = []
+    private(set) var definitionModelCallCount = 0
     private(set) var processedSegmentCount = 0
     private(set) var skippedSegmentCount = 0
     private(set) var noSuggestionCount = 0
@@ -122,6 +124,18 @@ final class AIConnectorViewModel {
 
     var needsReviewCount: Int {
         validatedReviews.filter { $0.status == .needsReview }.count
+    }
+
+    var definitionMatchCount: Int {
+        definitionAssessments.filter { $0.alignment == .matches }.count
+    }
+
+    var definitionMismatchCount: Int {
+        definitionAssessments.filter { $0.alignment == .mismatch }.count
+    }
+
+    var definitionNeedsReviewCount: Int {
+        definitionAssessments.filter { $0.alignment == .needsReview }.count
     }
 
     var glossaryCandidateCount: Int {
@@ -732,6 +746,10 @@ final class AIConnectorViewModel {
 
         validatedReviews.append(contentsOf: result.reviews)
         rejectedReviews.append(contentsOf: result.rejections)
+        if let definitionAssessment = result.definitionAssessment {
+            definitionAssessments.append(definitionAssessment)
+        }
+        definitionModelCallCount += result.definitionModelCallCount
         if result.skipped {
             skippedSegmentCount += 1
         } else {
@@ -817,6 +835,8 @@ final class AIConnectorViewModel {
         segmentationResult = nil
         validatedReviews = []
         rejectedReviews = []
+        definitionAssessments = []
+        definitionModelCallCount = 0
         processedSegmentCount = 0
         skippedSegmentCount = 0
         noSuggestionCount = 0
