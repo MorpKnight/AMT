@@ -149,15 +149,49 @@ nonisolated struct PopularTerm: Identifiable, Hashable, Sendable {
         self.score = score
     }
 
-    // MARK: - Default Mock Data
-    // TODO: [AI Team] Connect this list to the AI recommendation / trending legal terms algorithm.
-    static let defaultPopularTerms: [PopularTerm] = [
+    // MARK: - Popular Term Random Selection
+
+    static let candidatePopularTerms: [PopularTerm] = [
         PopularTerm(name: "Korporasi"),
         PopularTerm(name: "Perusahaan"),
         PopularTerm(name: "Ex Officio"),
         PopularTerm(name: "Pelaku Usaha"),
-        PopularTerm(name: "Data Pribadi")
+        PopularTerm(name: "Data Pribadi"),
+        PopularTerm(name: "Hukum Adat"),
+        PopularTerm(name: "Jaksa"),
+        PopularTerm(name: "Beban Pembuktian"),
+        PopularTerm(name: "Ganti Rugi"),
+        PopularTerm(name: "Wanprestasi"),
+        PopularTerm(name: "Tindak Pidana"),
+        PopularTerm(name: "Hak Cipta"),
+        PopularTerm(name: "Arbitrase"),
+        PopularTerm(name: "Badan Hukum"),
+        PopularTerm(name: "Subjek Hukum")
     ]
+
+    /// Selects `count` random popular terms from candidates or store entries.
+    static func randomPopularTerms(count: Int = 3, from entries: [LegalDictionaryEntry] = []) -> [PopularTerm] {
+        var pool: [PopularTerm] = candidatePopularTerms
+        if !entries.isEmpty {
+            let entryTerms = entries.compactMap { entry -> PopularTerm? in
+                let name = entry.term.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !name.isEmpty, name.count <= 25, !name.contains(";") else { return nil }
+                return PopularTerm(name: name)
+            }
+            if !entryTerms.isEmpty {
+                var uniqueDict = [String: PopularTerm]()
+                for term in pool + entryTerms {
+                    uniqueDict[term.name.lowercased()] = term
+                }
+                pool = Array(uniqueDict.values)
+            }
+        }
+        return Array(pool.shuffled().prefix(max(0, count)))
+    }
+
+    static var defaultPopularTerms: [PopularTerm] {
+        randomPopularTerms(count: 3)
+    }
 
     // MARK: - Curated Legal Glossary Samples
     // TODO: [AI Team] Replace or enrich these mock entries with model inferences or a full vector/lexical database.
