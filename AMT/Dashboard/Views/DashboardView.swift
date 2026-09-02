@@ -45,8 +45,8 @@ struct DashboardView: View {
                     activeDocument: Binding(
                         get: { document },
                         set: { updatedDoc in
-                            activeDocument = updatedDoc
-                            storageManager.saveDocument(updatedDoc)
+                            let savedDocument = storageManager.saveDocument(updatedDoc)
+                            activeDocument = savedDocument ?? updatedDoc
                         }
                     ),
                     onBackToDashboard: {
@@ -74,14 +74,7 @@ struct DashboardView: View {
                     case .document, .none:
                         if let vm = aiConnectorViewModel, analyzingDocument != nil, vm.isRunning {
                             DocumentAnalysisLoadingView(
-                                progressStage: vm.progressStage,
-                                downloadProgress: vm.downloadProgress,
-                                generationProgress: vm.generationProgress,
-                                analysisProgress: vm.analysisProgress,
-                                completedSegmentCount: vm.completedSegmentCount,
-                                totalSegmentCount: vm.totalSegmentCount,
-                                analysisStartedAt: vm.analysisStartedAt,
-                                lastActivityAt: vm.lastProgressActivityAt,
+                                progress: vm.progressSnapshot,
                                 onCancel: {
                                     vm.cancel()
                                 }
@@ -119,8 +112,20 @@ struct DashboardView: View {
         }
         .onChange(of: aiConnectorViewModel?.isRunning) { _, isRunning in
             if isRunning == false, let doc = analyzingDocument {
+                let analyzedDocument: DashboardDocument
+                if let vm = aiConnectorViewModel,
+                   let snapshot = vm.makeAnalysisSnapshot(documentText: doc.content),
+                   let persistedDocument = storageManager.saveAnalysisSnapshot(
+                       snapshot,
+                       for: doc
+                   ) {
+                    analyzedDocument = persistedDocument
+                } else {
+                    analyzedDocument = doc
+                }
+
                 withAnimation(.easeInOut(duration: 0.22)) {
-                    self.activeDocument = doc
+                    self.activeDocument = analyzedDocument
                     self.analyzingDocument = nil
                 }
             }
@@ -178,6 +183,14 @@ struct DashboardView: View {
                 service: suggestionService,
                 dictionaryStore: dictionaryStore
             )
+        if let snapshot = document.analysisSnapshot {
+            _ = vm.restoreAnalysisSnapshot(
+                snapshot,
+                documentText: document.content
+            )
+        } else {
+            vm.resetInputMetadata()
+        }
         documentViewModels[document.id] = vm
         aiConnectorViewModel = vm
         analyzingDocument = nil

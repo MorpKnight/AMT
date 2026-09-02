@@ -227,6 +227,13 @@ final class AIConnectorSegmentProcessor {
 
         let glossaryMatches: [LegalDictionaryMatch]
         if mode.usesModel, !forceDeterministic {
+            if dictionaryStore.corpusStore != nil,
+               dictionaryStore.semanticRetriever != nil {
+                let semanticModelLoaded = await dictionaryStore.isSemanticModelLoaded()
+                progressStage(semanticModelLoaded ? .semanticRetrieval : .semanticModelDownload)
+            } else {
+                progressStage(.semanticRetrieval)
+            }
             glossaryMatches = await dictionaryStore.suggestionCandidatesAsync(
                 for: segment.targetText,
                 limit: 1,
@@ -234,6 +241,7 @@ final class AIConnectorSegmentProcessor {
                     semanticProgress(progress)
                 }
             )
+            progressStage(.semanticRetrieval)
         } else {
             glossaryMatches = dictionaryStore.suggestionCandidates(
                 for: segment.targetText,
@@ -530,6 +538,13 @@ final class AIConnectorSegmentProcessor {
             && dictionaryStore.semanticRetriever != nil
         let glossaryMatches: [LegalDictionaryMatch]
         if mode.usesModel, !forceDeterministic {
+            if dictionaryStore.corpusStore != nil,
+               dictionaryStore.semanticRetriever != nil {
+                let semanticModelLoaded = await dictionaryStore.isSemanticModelLoaded()
+                progressStage(semanticModelLoaded ? .semanticRetrieval : .semanticModelDownload)
+            } else {
+                progressStage(.semanticRetrieval)
+            }
             glossaryMatches = await dictionaryStore.suggestionCandidatesAsync(
                 for: segment.targetText,
                 limit: 3,
@@ -537,6 +552,7 @@ final class AIConnectorSegmentProcessor {
                     semanticProgress(progress)
                 }
             )
+            progressStage(.semanticRetrieval)
         } else {
             glossaryMatches = dictionaryStore.suggestionCandidates(
                 for: segment.targetText,

@@ -6,7 +6,7 @@
 import CryptoKit
 import Foundation
 
-enum EditorSuggestionKind: String, Hashable, Sendable {
+enum EditorSuggestionKind: String, Codable, Hashable, Sendable {
     case language
     case definition
 
@@ -33,13 +33,14 @@ enum EditorSuggestionKind: String, Hashable, Sendable {
 ///
 /// `sourceRange` uses UTF-16 offsets because AppKit's text system and
 /// `NSRange` use the same indexing model.
-struct EditorSuggestion: Identifiable, Hashable {
+struct EditorSuggestion: Codable, Identifiable, Hashable {
     let id: UUID
     var sourceRange: NSRange
     let original: String
     let replacement: String
     let category: AIReviewCategory
     let kind: EditorSuggestionKind
+    let isDebugOnly: Bool
     let reason: String
     let origin: AIReviewOrigin
     let reference: EditorSuggestionReference?
@@ -53,6 +54,7 @@ struct EditorSuggestion: Identifiable, Hashable {
         replacement: String,
         category: AIReviewCategory,
         kind: EditorSuggestionKind = .language,
+        isDebugOnly: Bool = false,
         reason: String,
         origin: AIReviewOrigin,
         reference: EditorSuggestionReference? = nil,
@@ -65,15 +67,93 @@ struct EditorSuggestion: Identifiable, Hashable {
         self.replacement = replacement
         self.category = category
         self.kind = kind
+        self.isDebugOnly = isDebugOnly
         self.reason = reason
         self.origin = origin
         self.reference = reference
         self.prefixContext = prefixContext
         self.suffixContext = suffixContext
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case sourceRangeLocation = "source_range_location"
+        case sourceRangeLength = "source_range_length"
+        case original
+        case replacement
+        case category
+        case kind
+        case isDebugOnly
+        case reason
+        case origin
+        case reference
+        case prefixContext
+        case suffixContext
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let location = try container.decode(Int.self, forKey: .sourceRangeLocation)
+        let length = try container.decode(Int.self, forKey: .sourceRangeLength)
+        guard location >= 0, length >= 0 else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .sourceRangeLocation,
+                in: container,
+                debugDescription: "Suggestion range must not be negative."
+            )
+        }
+
+        self.id = try container.decode(UUID.self, forKey: .id)
+        self.sourceRange = NSRange(location: location, length: length)
+        self.original = try container.decode(String.self, forKey: .original)
+        self.replacement = try container.decode(String.self, forKey: .replacement)
+        self.category = try container.decode(AIReviewCategory.self, forKey: .category)
+        self.kind = try container.decodeIfPresent(EditorSuggestionKind.self, forKey: .kind)
+            ?? .language
+        self.isDebugOnly = try container.decodeIfPresent(Bool.self, forKey: .isDebugOnly)
+            ?? false
+        self.reason = try container.decode(String.self, forKey: .reason)
+        self.origin = try container.decode(AIReviewOrigin.self, forKey: .origin)
+        self.reference = try container.decodeIfPresent(
+            EditorSuggestionReference.self,
+            forKey: .reference
+        )
+        self.prefixContext = try container.decodeIfPresent(String.self, forKey: .prefixContext)
+        self.suffixContext = try container.decodeIfPresent(String.self, forKey: .suffixContext)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(sourceRange.location, forKey: .sourceRangeLocation)
+        try container.encode(sourceRange.length, forKey: .sourceRangeLength)
+        try container.encode(original, forKey: .original)
+        try container.encode(replacement, forKey: .replacement)
+        try container.encode(category, forKey: .category)
+        try container.encode(kind, forKey: .kind)
+        try container.encode(isDebugOnly, forKey: .isDebugOnly)
+        try container.encode(reason, forKey: .reason)
+        try container.encode(origin, forKey: .origin)
+        try container.encodeIfPresent(reference, forKey: .reference)
+        try container.encodeIfPresent(prefixContext, forKey: .prefixContext)
+        try container.encodeIfPresent(suffixContext, forKey: .suffixContext)
+    }
+
+    /// Ensures a restored range still points to the same text in the document.
+    func isAnchored(to documentText: String) -> Bool {
+        let documentLength = documentText.utf16.count
+        guard sourceRange.location >= 0,
+              sourceRange.length > 0,
+              sourceRange.location <= documentLength,
+              sourceRange.length <= documentLength - sourceRange.location else {
+            return false
+        }
+
+        return (documentText as NSString).substring(with: sourceRange) == original
+    }
 }
 
-struct EditorSuggestionReference: Hashable {
+struct EditorSuggestionReference: Codable, Hashable {
     let term: String
     let regulation: String
     let regulationTitle: String
@@ -211,6 +291,77 @@ enum EditorSuggestionMapper {
         }
     }
 
+    /// Creates read-only annotations for definitions that were found to be
+    /// semantically aligned with verified evidence. These are intentionally
+    /// separate from normal suggestions so they can be shown only in debug
+    /// mode and can never be accepted as an edit.
+    static func makeDefinitionDebugSuggestions(
+        assessments: [AIConnectorDefinitionAssessment],
+        documentText: String
+    ) -> [EditorSuggestion] {
+        let documentLength = documentText.utf16.count
+
+        return assessments.compactMap { assessment in
+            guard assessment.alignment == .matches,
+                  assessment.classification == .explicitDefinition
+                    || assessment.classification == .implicitDefinition,
+                  let candidate = assessment.candidate,
+                  let localRange = definitionDebugSourceRange(for: assessment),
+                  localRange.location >= 0 else {
+                return nil
+            }
+
+            let absoluteRange = NSRange(
+                location: assessment.segment.sourceLocation + localRange.location,
+                length: localRange.length
+            )
+            guard absoluteRange.location >= 0,
+                  NSMaxRange(absoluteRange) <= documentLength,
+                  absoluteRange.length > 0 else {
+                return nil
+            }
+
+            let original = (documentText as NSString).substring(with: absoluteRange)
+            let sourceDefinition = sourceDefinitionBody(
+                from: candidate.sourceDefinition,
+                term: candidate.term
+            )
+            guard !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  !sourceDefinition.isEmpty else {
+                return nil
+            }
+
+            let (prefixContext, suffixContext) = extractSurroundingContext(
+                range: absoluteRange,
+                in: documentText
+            )
+
+            return EditorSuggestion(
+                id: stableDefinitionSuggestionID(for: assessment),
+                sourceRange: absoluteRange,
+                original: original,
+                replacement: original,
+                category: .terminology,
+                kind: .definition,
+                isDebugOnly: true,
+                reason: assessment.reason,
+                origin: assessment.origin,
+                reference: definitionReference(
+                    for: candidate,
+                    sourceDefinition: sourceDefinition
+                ),
+                prefixContext: prefixContext,
+                suffixContext: suffixContext
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.sourceRange.location != rhs.sourceRange.location {
+                return lhs.sourceRange.location < rhs.sourceRange.location
+            }
+            return lhs.sourceRange.length < rhs.sourceRange.length
+        }
+    }
+
     private static func makeLanguageSuggestions(
         reviews: [AIValidatedReview],
         documentText: String
@@ -276,7 +427,7 @@ enum EditorSuggestionMapper {
         }
     }
 
-    private static func merge(_ suggestions: [EditorSuggestion]) -> [EditorSuggestion] {
+    static func merge(_ suggestions: [EditorSuggestion]) -> [EditorSuggestion] {
         var merged: [EditorSuggestion] = []
 
         for suggestion in suggestions {
@@ -319,15 +470,33 @@ enum EditorSuggestionMapper {
         return explicitDefinitionBodyRange(for: term, in: targetText)
     }
 
+    private static func definitionDebugSourceRange(
+        for assessment: AIConnectorDefinitionAssessment
+    ) -> NSRange? {
+        let targetText = assessment.segment.targetText
+        if let term = assessment.term ?? assessment.candidate?.term,
+           let expression = try? NSRegularExpression(
+               pattern: explicitDefinitionPattern(for: term)
+           ),
+           let match = expression.firstMatch(
+               in: targetText,
+               range: NSRange(location: 0, length: targetText.utf16.count)
+           ) {
+            return match.range
+        }
+
+        let statementText = assessment.statementText.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        guard !statementText.isEmpty else { return nil }
+        return uniqueRange(of: statementText, in: targetText)
+    }
+
     private static func explicitDefinitionBodyRange(
         for term: String,
         in text: String
     ) -> NSRange? {
-        let escapedTerm = NSRegularExpression.escapedPattern(for: term)
-        let pattern = "(?is)(?:yang\\s+dimaksud\\s+dengan\\s+)?"
-            + escapedTerm
-            + "\\s*[,;:]?\\s*(?:adalah|ialah|merupakan|berarti|"
-            + "didefinisikan\\s+sebagai|diartikan\\s+sebagai)\\s+(.+)$"
+        let pattern = explicitDefinitionPattern(for: term, captureBody: true)
         guard let expression = try? NSRegularExpression(pattern: pattern),
               let match = expression.firstMatch(
                   in: text,
@@ -336,6 +505,19 @@ enum EditorSuggestionMapper {
             return nil
         }
         return match.range(at: 1)
+    }
+
+    private static func explicitDefinitionPattern(
+        for term: String,
+        captureBody: Bool = false
+    ) -> String {
+        let escapedTerm = NSRegularExpression.escapedPattern(for: term)
+        let body = captureBody ? "(.+)" : ".+"
+        return "(?is)(?:yang\\s+dimaksud\\s+dengan\\s+)?"
+            + escapedTerm
+            + "\\s*[,;:]?\\s*(?:adalah|ialah|merupakan|berarti|"
+            + "didefinisikan\\s+sebagai|diartikan\\s+sebagai)\\s+"
+            + body + "$"
     }
 
     private static func definitionReplacement(

@@ -52,6 +52,7 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
                 for: segment.targetText,
                 semanticProgress: semanticProgress
             )
+            progressStage(.semanticRetrieval)
             if !retrievedMatches.isEmpty {
                 detection = detector.detect(
                     segment: segment,
@@ -96,7 +97,7 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
             )
         }
 
-        progressStage(.modelLoading)
+        progressStage(.definitionReview)
         var outcomes: [ModelOutcome] = []
         var modelCallCount = 0
         var lastFailure: Error?

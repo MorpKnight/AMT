@@ -18,6 +18,7 @@ struct DocumentEditorView: View {
     @State private var selectedDocumentID: UUID?
     @State private var aiConnectorViewModel: AIConnectorViewModel
     @State private var isDebugPanelPresented = false
+    @State private var showDefinitionDiagnostics = false
 //    @State private var columnVisibility: NavigationSplitViewVisibility = .all
     
     init(
@@ -95,7 +96,7 @@ struct DocumentEditorView: View {
                 
                 HighlightedDocumentTextEditor(
                     text: $activeDocument.content,
-                    suggestions: aiConnectorViewModel.editorSuggestions,
+                    suggestions: displayedEditorSuggestions,
                     selectedSuggestionID: aiConnectorViewModel.selectedSuggestionID,
                     onSelect: { id in
                         aiConnectorViewModel.selectSuggestion(id)
@@ -123,6 +124,7 @@ struct DocumentEditorView: View {
         .onChange(of: selectedDocumentID) { _, newID in
             aiConnectorViewModel.resetInputMetadata()
             isDebugPanelPresented = false
+            showDefinitionDiagnostics = false
             if let newID = newID,
                let doc = documents.first(where: { $0.id == newID }) {
                 activeDocument = doc
@@ -132,6 +134,9 @@ struct DocumentEditorView: View {
             if selectedDocumentID != newID {
                 selectedDocumentID = newID
             }
+        }
+        .onChange(of: showDefinitionDiagnostics) { _, _ in
+            aiConnectorViewModel.selectSuggestion(nil)
         }
         .sheet(isPresented: $isDebugPanelPresented) {
             AIConnectorDebugPanel(
@@ -143,6 +148,18 @@ struct DocumentEditorView: View {
         .focusedSceneValue(\.showAIConnectorDebugPanel) {
             isDebugPanelPresented = true
         }
+        .focusedSceneValue(\.showAIConnectorDefinitionDiagnostics, $showDefinitionDiagnostics)
+    }
+
+    private var displayedEditorSuggestions: [EditorSuggestion] {
+        guard showDefinitionDiagnostics else {
+            return aiConnectorViewModel.editorSuggestions
+        }
+
+        return EditorSuggestionMapper.merge(
+            aiConnectorViewModel.definitionDebugSuggestions
+                + aiConnectorViewModel.editorSuggestions
+        )
     }
 }
 

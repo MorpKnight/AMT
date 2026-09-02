@@ -4,10 +4,19 @@ private struct AIConnectorDebugPanelActionKey: FocusedValueKey {
     typealias Value = () -> Void
 }
 
+private struct AIConnectorDefinitionDiagnosticsVisibilityKey: FocusedValueKey {
+    typealias Value = Binding<Bool>
+}
+
 extension FocusedValues {
     var showAIConnectorDebugPanel: (() -> Void)? {
         get { self[AIConnectorDebugPanelActionKey.self] }
         set { self[AIConnectorDebugPanelActionKey.self] = newValue }
+    }
+
+    var showAIConnectorDefinitionDiagnostics: Binding<Bool>? {
+        get { self[AIConnectorDefinitionDiagnosticsVisibilityKey.self] }
+        set { self[AIConnectorDefinitionDiagnosticsVisibilityKey.self] = newValue }
     }
 }
 
@@ -23,6 +32,15 @@ struct AIConnectorDebugPanelCommands: Commands {
             }
             .disabled(showDebugPanel == nil)
             .keyboardShortcut("d", modifiers: [.command, .option])
+
+            Toggle(
+                "Tampilkan definisi selaras (Debug)",
+                isOn: showDefinitionDiagnostics ?? .constant(false)
+            )
+            .disabled(showDefinitionDiagnostics == nil)
         }
     }
+
+    @FocusedValue(\.showAIConnectorDefinitionDiagnostics)
+    private var showDefinitionDiagnostics
 }

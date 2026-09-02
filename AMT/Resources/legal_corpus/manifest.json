@@ -1,9 +1,9 @@
 {
-  "actionable_concept_count": 2354,
-  "concept_count": 3144,
-  "corpus_version": "hukumonline-kamus@78a2ab626c092662b0441c95904c353b2487b216",
+  "actionable_concept_count": 2238,
+  "concept_count": 8272,
+  "corpus_version": "hukumonline-kamus-combined-deduplicated@78a2ab626c092662b0441c95904c353b2487b216",
   "embedding": {
-    "concept_order_sha256": "3fa2e60171821d664a2f141417ae44bd3d3c6129d132c24c4dcd80e7cd267cb0",
+    "concept_order_sha256": "3b9e8320a31dfee5dffbed433ea594e5cb137285f1fbdb2a862e3d1d3ac85f84",
     "dimension": 384,
     "dtype": "float16-little-endian",
     "model": "intfloat/multilingual-e5-small",
@@ -20,14 +20,14 @@
     "source_passages": "source_passages.json"
   },
   "files_sha256": {
-    "concepts.json": "84b5c452dec045a559781f5d43a31a6f6c51f151184cbc31e2a5549d333c4a54",
-    "definition_embeddings.f16": "f0546daa941f2212b1c3f0a12dbb62832d4b590c158d12b7203e8eb2f8ffd713",
-    "regulations.json": "5bccd3ef2c4d2fdaec1634b37d4b3c5599ad4d86b8d55558df8e9de80fa37715",
-    "relations.json": "166d540007ecdd439d27155ee2aad00350024eac959e88a305d7b47fd3740508",
-    "source_passages.json": "7ee70ccb4673f2eeafd7d8ba05acceb783ba5ced85e83669d7d17c980ce25036"
+    "concepts.json": "eb4dca4f5f8f0becb28ddc98c3f6374a1797ef4613a668c9cfda94402ea989bf",
+    "definition_embeddings.f16": "2d45fedd0438c843990f8a52d88a4b8c5cfd1aeb5019dbbd4a02d1b2a27fea84",
+    "regulations.json": "161824f10942b7d4e5bef6be6f8d041e4c7419d6b561dba294b53b5897c3143f",
+    "relations.json": "d82d0e3ec0ee14cc205cd2af32beb3cd644c53c1a4eec6f158d2d40f07fab144",
+    "source_passages.json": "dae9eaca2a0d5df90649bc1457e044474238331e824131d1b763866923da930e"
   },
-  "regulation_count": 732,
-  "relation_count": 193,
+  "regulation_count": 1591,
+  "relation_count": 315,
   "retrieval": {
     "lexical_top_k": 100,
     "rrf_k": 60,
@@ -41,13 +41,14 @@
   },
   "schema_version": "amt-legal-corpus-v1",
   "source_dataset_revision": "78a2ab626c092662b0441c95904c353b2487b216",
+  "source_dataset_view": "combined-deduplicated",
   "source_input_sha256": {
+    "combined_definitions_deduplicated.jsonl": "b7a2edc33ef29b098db7c7254ea750ce3a377c1b1d0d7c55508dec08665e2230",
+    "combined_regulation_relations.jsonl": "44c9db812545c47186e87e6704a945f496166ec2dacb5d4f4a49e50c91b53408",
+    "combined_regulations.jsonl": "cc5af438655d247b28b79d8a80a1aa85019cefa83cdef0efa5910606748dc225",
     "definition_passage_links.jsonl": "968d158a04941b1ecc1c072245826aed36f10e7d9854d0e63cb32891a5c01b50",
-    "definitions.jsonl": "f6ca5045736169ca3106ff79c6eba0b1b96a4df2f106d05f01d9b51a1fc0683c",
     "regulation_documents.jsonl": "96a3d29d2194ff16b5f95b1e18996083a5147ad1cb68e7fe18fe65259b78dc78",
-    "regulation_passages.jsonl": "ffe9d0749e2470d8175fdbe4cd77d8fd6848d72463316af2025cca5f11c05eb4",
-    "regulation_relations.jsonl": "c1c33138bbc80a92c3948519a859e7429510fc244b8c6e5939fd9605b41e65bf",
-    "regulations.jsonl": "c20bc63753a21c8ec0400b83f06a70b7d75b470677750a5b66d5b30a3c1424a5"
+    "regulation_passages.jsonl": "ffe9d0749e2470d8175fdbe4cd77d8fd6848d72463316af2025cca5f11c05eb4"
   },
   "source_passage_count": 628
 }

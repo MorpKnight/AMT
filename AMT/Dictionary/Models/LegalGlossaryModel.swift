@@ -63,15 +63,21 @@ nonisolated struct DefinitionItem: Identifiable, Hashable, Sendable {
     var id: Int
     let text: String
     let reference: LegalReference?
+    let sources: [String]
+    let sourceURLs: [URL]
 
     init(
         id: Int,
         text: String,
-        reference: LegalReference? = nil
+        reference: LegalReference? = nil,
+        sources: [String] = [],
+        sourceURLs: [URL] = []
     ) {
         self.id = id
         self.text = text
         self.reference = reference
+        self.sources = sources
+        self.sourceURLs = sourceURLs
     }
 }
 

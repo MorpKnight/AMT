@@ -571,7 +571,7 @@ struct AIReviewRejection: Identifiable, Hashable, Sendable {
     var segmentID: Int { segment.id }
 }
 
-struct AIConnectorRunSummary: Hashable, Sendable {
+struct AIConnectorRunSummary: Codable, Hashable, Sendable {
     let reviewMode: AIConnectorReviewMode
     let modelVariant: AIConnectorModelVariant
     let processedSegmentCount: Int
@@ -1280,7 +1280,7 @@ enum AIConnectorRunState: Equatable {
     }
 }
 
-enum AIConnectorProgressStage: String, Hashable, Sendable {
+nonisolated enum AIConnectorProgressStage: String, Hashable, Sendable {
     case idle
     case segmenting
     case semanticModelDownload
@@ -1288,6 +1288,8 @@ enum AIConnectorProgressStage: String, Hashable, Sendable {
     case modelDownload
     case modelLoading
     case generation
+    case definitionReview
+    case deterministicReview
     case completed
     case cancelled
     case failed
@@ -1308,6 +1310,10 @@ enum AIConnectorProgressStage: String, Hashable, Sendable {
             "Memuat model Qwen"
         case .generation:
             "Menilai rekomendasi"
+        case .definitionReview:
+            "Memeriksa definisi istilah"
+        case .deterministicReview:
+            "Memeriksa aturan lokal"
         case .completed:
             "Selesai"
         case .cancelled:

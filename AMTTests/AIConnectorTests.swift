@@ -426,7 +426,9 @@ final class AIConnectorTests: XCTestCase {
             definition: "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
             regulation: "Undang-Undang Nomor 27 Tahun 2022",
             regulationTitle: "Pelindungan Data Pribadi",
-            sourceURL: nil
+            sourceURL: nil,
+            authority: .verified,
+            isActionable: true
         )
         let fillerEntries = (0..<100).map { index in
             LegalDictionaryEntry(
@@ -573,7 +575,9 @@ final class AIConnectorTests: XCTestCase {
             definition: "data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi",
             regulation: "Undang-Undang Nomor 27 Tahun 2022",
             regulationTitle: "Pelindungan Data Pribadi",
-            sourceURL: nil
+            sourceURL: nil,
+            authority: .verified,
+            isActionable: true
         )
         let fillerEntries = (0..<100).map { index in
             LegalDictionaryEntry(
@@ -602,7 +606,9 @@ final class AIConnectorTests: XCTestCase {
                 definition: "data tentang orang perseorangan yang teridentifikasi",
                 regulation: "Undang-Undang Nomor 27 Tahun 2022",
                 regulationTitle: "Pelindungan Data Pribadi",
-                sourceURL: nil
+                sourceURL: nil,
+                authority: .verified,
+                isActionable: true
             )
         ])
 

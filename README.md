@@ -13,10 +13,10 @@
   - Mengimpor `.docx`, `.doc`, `.rtf`, dan `.txt` melalui Finder. Isi file diubah menjadi teks biasa untuk kebutuhan editor saat ini.
   - Menyediakan empat dokumen bawaan AI Connector dengan kompleksitas dan domain berbeda untuk smoke test. Dokumen-dokumen ini selalu dibuat ulang saat aplikasi dibuka dan perubahan pada dokumen tersebut tidak disimpan ke disk.
 - **Dictionary / Lawtionary**
-  - Memuat versioned legal corpus `hukumonline-kamus@78a2ab626c092662b0441c95904c353b2487b216` sebagai resource aplikasi tanpa PDF.
+  - Memuat versioned legal corpus gabungan `hukumonline-kamus-combined-deduplicated@78a2ab626c092662b0441c95904c353b2487b216` sebagai resource aplikasi tanpa PDF, dengan 8.272 konsep dari Hukumonline Kamus dan Paralegal.id.
   - Exact term dan prefix memakai BM25 lokal; reverse lookup memakai equal-weight BM25 + `intfloat/multilingual-e5-small` melalui MLX saat semantic search pertama dipakai.
   - E5 diunduh sekali ke cache Hugging Face dan kegagalan download otomatis menurunkan reverse lookup ke BM25. Dictionary tetap dapat dipakai offline untuk exact/lexical search.
-  - Mempertahankan beberapa definisi untuk istilah yang sama, termasuk sumber, status berlaku, passage, locator, dan relasi perubahan peraturan.
+  - Mempertahankan beberapa definisi untuk istilah yang sama, provenance sumber kamus, status berlaku, passage, locator, dan relasi perubahan peraturan.
   - Hanya evidence exact dengan dokumen resmi, status `in_force`, ekstraksi non-OCR, dan foreign key lengkap yang actionable untuk Suggestion. Corpus legacy/historical tetap dapat tampil tetapi tidak dapat menjadi replacement.
 - **Suggestion eksperimental**
   - Meninjau teks dokumen menggunakan `mlx-community/Qwen3.5-4B-MLX-4bit` melalui MLX Swift sebagai model utama Debug dan Release/TestFlight. Qwen3.5 Legal 4B dan Qwen3.5 2B tetap tersedia untuk pembanding historis.
@@ -84,6 +84,14 @@ flowchart LR
 ## Cara kerja Dictionary
 
 Dictionary bukan chatbot dan tidak menggunakan Qwen. `LegalCorpusStore` memuat pack JSON + Float16 yang sudah diverifikasi hash, jumlah record, foreign key, dan dimensi embedding. BM25 dibangun lokal dari seluruh konsep; E5 multilingual hanya diload pada reverse lookup pertama dan dipakai dengan prefix `query:` serta mean pooling + L2 normalization. Corpus legacy `rag_export` hanya menjadi fallback/diagnostic ketika pack baru tidak tersedia.
+
+Pack aktif menggabungkan definisi Hukumonline Kamus dan Paralegal.id melalui
+view `combined-deduplicated`: definisi dengan isi yang sama dideduplikasi,
+sedangkan definisi berbeda untuk istilah yang sama tetap dipertahankan. Setiap
+definisi membawa nama dan halaman sumber kamusnya. Evidence exact dari passage
+resmi tetap menjadi syarat terpisah untuk entry actionable; definisi Paralegal.id
+yang belum memiliki evidence passage exact dapat dibaca di Dictionary, tetapi
+tidak dapat menjadi candidate terminology pada Suggestion.
 
 Urutan prioritas pencarian adalah:
 
@@ -210,8 +218,12 @@ artifact dataset menggunakan:
 ```bash
 python3 Scripts/export_amt_legal_corpus.py \
   --source-root /path/to/hukumonline-dataset \
-  --output-root AMT/Resources/legal_corpus
+  --output-root AMT/Resources/legal_corpus \
+  --dataset-view combined-deduplicated
 ```
+
+`--dataset-view hukumonline` tetap tersedia untuk membangun pack Hukumonline
+saja; `combined` mempertahankan seluruh baris gabungan tanpa deduplikasi exact.
 
 Exporter memverifikasi input yang diperlukan, menyortir record, menulis output
 secara atomik, dan menyimpan hash setiap file ke `manifest.json`. Manifest juga

@@ -83,6 +83,12 @@ final class DocumentStorageManager: ObservableObject {
                         document.content
                     )
                 }
+
+                if let snapshot = document.analysisSnapshot,
+                   snapshot.analyzedContentSHA256
+                    != DocumentFingerprinting.contentSHA256(document.content) {
+                    document.analysisSnapshot = nil
+                }
                 loadedDocs.append(document)
             }
 
@@ -202,7 +208,8 @@ final class DocumentStorageManager: ObservableObject {
         return newDocument
     }
 
-    func saveDocument(_ document: DashboardDocument) {
+    @discardableResult
+    func saveDocument(_ document: DashboardDocument) -> DashboardDocument? {
         var updatedDoc = document
         updatedDoc.updatedAt = Date()
 
@@ -210,13 +217,18 @@ final class DocumentStorageManager: ObservableObject {
             if let index = documents.firstIndex(where: { $0.id == updatedDoc.id }) {
                 documents[index] = updatedDoc
             }
-            return
+            return updatedDoc
         }
 
         updatedDoc.fingerprint = DocumentFingerprinting.refreshingContent(
             updatedDoc.fingerprint,
             content: updatedDoc.content
         )
+        if let snapshot = updatedDoc.analysisSnapshot,
+           snapshot.analyzedContentSHA256
+            != updatedDoc.fingerprint?.normalizedContentSHA256 {
+            updatedDoc.analysisSnapshot = nil
+        }
 
         do {
             try persist(updatedDoc)
@@ -225,8 +237,42 @@ final class DocumentStorageManager: ObservableObject {
                 documents[index] = updatedDoc
                 documents.sort { $0.updatedAt > $1.updatedAt }
             }
+            return updatedDoc
         } catch {
             print("Failed to save document to Foundation storage: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// Persists the completed analysis without changing the document's edit
+    /// timestamp. The content hash guard prevents stale results from being
+    /// attached to a different document version.
+    @discardableResult
+    func saveAnalysisSnapshot(
+        _ snapshot: DocumentAnalysisSnapshot,
+        for document: DashboardDocument
+    ) -> DashboardDocument? {
+        guard !AIConnectorDummyDocument.isBuiltIn(document),
+              snapshot.analyzedContentSHA256
+                == DocumentFingerprinting.contentSHA256(document.content),
+              let index = documents.firstIndex(where: { $0.id == document.id }) else {
+            return nil
+        }
+
+        var updatedDoc = document
+        updatedDoc.analysisSnapshot = snapshot
+        updatedDoc.fingerprint = DocumentFingerprinting.refreshingContent(
+            updatedDoc.fingerprint,
+            content: updatedDoc.content
+        )
+
+        do {
+            try persist(updatedDoc)
+            documents[index] = updatedDoc
+            return updatedDoc
+        } catch {
+            print("Failed to save analysis snapshot: \(error.localizedDescription)")
+            return nil
         }
     }
 

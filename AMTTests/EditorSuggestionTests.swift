@@ -63,6 +63,106 @@ final class EditorSuggestionTests: XCTestCase {
     }
 
     @MainActor
+    func testDefinitionDebugMapperShowsMatchingDefinitionAsReadOnlyAnnotation() throws {
+        let entry = makeDefinitionEntry(
+            definition: "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi.",
+            sourcePassageID: "passage-data-pribadi"
+        )
+        let target = "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi."
+        let segment = makeSegment(target: target)
+        let candidate = AIConnectorDefinitionCandidate(
+            id: "D1",
+            match: LegalDictionaryMatch(
+                entry: entry,
+                score: 1_000,
+                rank: 1,
+                matchedDefinitionTokenCount: 8,
+                isDirectTermMatch: true,
+                retrievalOrigin: .exact
+            ),
+            statementText: "data tentang orang perseorangan yang teridentifikasi.",
+            detection: .explicitPattern
+        )
+        let assessment = makeDefinitionAssessment(
+            segment: segment,
+            statementText: candidate.statementText,
+            candidate: candidate,
+            classification: .explicitDefinition,
+            alignment: .matches
+        )
+
+        XCTAssertTrue(
+            EditorSuggestionMapper.make(
+                reviews: [],
+                definitionAssessments: [assessment],
+                documentText: target
+            ).isEmpty
+        )
+
+        let suggestion = try XCTUnwrap(
+            EditorSuggestionMapper.makeDefinitionDebugSuggestions(
+                assessments: [assessment],
+                documentText: target
+            ).first
+        )
+
+        XCTAssertTrue(suggestion.isDebugOnly)
+        XCTAssertEqual(suggestion.kind, .definition)
+        XCTAssertEqual(
+            suggestion.sourceRange,
+            NSRange(location: 0, length: target.utf16.count)
+        )
+        XCTAssertEqual(suggestion.original, target)
+        XCTAssertEqual(suggestion.replacement, suggestion.original)
+        XCTAssertEqual(suggestion.reference?.term, "Data Pribadi")
+        XCTAssertEqual(
+            suggestion.reference?.definition,
+            "data tentang orang perseorangan yang teridentifikasi."
+        )
+        XCTAssertEqual(suggestion.reference?.sourcePassageID, "passage-data-pribadi")
+    }
+
+    @MainActor
+    func testDefinitionDebugMapperCanShowWholeImplicitDefinitionStatement() throws {
+        let entry = makeDefinitionEntry(
+            definition: "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi."
+        )
+        let target = "Data Pribadi digunakan dalam perjanjian ini."
+        let segment = makeSegment(target: target)
+        let candidate = AIConnectorDefinitionCandidate(
+            id: "D1",
+            match: LegalDictionaryMatch(
+                entry: entry,
+                score: 0.8,
+                rank: 1,
+                matchedDefinitionTokenCount: 2,
+                isDirectTermMatch: true,
+                retrievalOrigin: .semantic
+            ),
+            statementText: target,
+            detection: .retrievedCandidate
+        )
+        let assessment = makeDefinitionAssessment(
+            segment: segment,
+            statementText: target,
+            candidate: candidate,
+            classification: .implicitDefinition,
+            alignment: .matches
+        )
+
+        let suggestion = try XCTUnwrap(
+            EditorSuggestionMapper.makeDefinitionDebugSuggestions(
+                assessments: [assessment],
+                documentText: target
+            ).first
+        )
+
+        XCTAssertEqual(suggestion.sourceRange, NSRange(location: 0, length: target.utf16.count))
+        XCTAssertEqual(suggestion.original, target)
+        XCTAssertTrue(suggestion.isDebugOnly)
+    }
+
+    @MainActor
     func testDefinitionMapperHidesMatchesUncertaintyAndUnanchoredFindings() {
         let entry = makeDefinitionEntry(
             definition: "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi."
