@@ -26,7 +26,8 @@ struct DocumentEditorView: View {
         onBackToDashboard: @escaping () -> Void,
         onCreateNewDocument: @escaping () -> Void,
         suggestionService: QwenSuggestionService,
-        dictionaryStore: LegalDictionaryStore
+        dictionaryStore: LegalDictionaryStore,
+        aiConnectorViewModel: AIConnectorViewModel? = nil
     ) {
         self.documents = documents
         self._activeDocument = activeDocument
@@ -35,7 +36,7 @@ struct DocumentEditorView: View {
         self.suggestionService = suggestionService
         self._selectedDocumentID = State(initialValue: activeDocument.wrappedValue.id)
         self._aiConnectorViewModel = State(
-            initialValue: AIConnectorViewModel(
+            initialValue: aiConnectorViewModel ?? AIConnectorViewModel(
                 service: suggestionService,
                 dictionaryStore: dictionaryStore
             )

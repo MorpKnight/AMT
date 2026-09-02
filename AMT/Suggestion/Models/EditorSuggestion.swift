@@ -18,6 +18,32 @@ struct EditorSuggestion: Identifiable, Hashable {
     let reason: String
     let origin: AIReviewOrigin
     let reference: EditorSuggestionReference?
+    let prefixContext: String?
+    let suffixContext: String?
+
+    init(
+        id: UUID,
+        sourceRange: NSRange,
+        original: String,
+        replacement: String,
+        category: AIReviewCategory,
+        reason: String,
+        origin: AIReviewOrigin,
+        reference: EditorSuggestionReference? = nil,
+        prefixContext: String? = nil,
+        suffixContext: String? = nil
+    ) {
+        self.id = id
+        self.sourceRange = sourceRange
+        self.original = original
+        self.replacement = replacement
+        self.category = category
+        self.reason = reason
+        self.origin = origin
+        self.reference = reference
+        self.prefixContext = prefixContext
+        self.suffixContext = suffixContext
+    }
 }
 
 struct EditorSuggestionReference: Hashable {
@@ -64,6 +90,11 @@ enum EditorSuggestionMapper {
             }
 
             mappedCountBySegment[review.segment.id, default: 0] += 1
+            let (prefixContext, suffixContext) = extractSurroundingContext(
+                range: absoluteRange,
+                in: documentText
+            )
+
             mapped.append(
                 EditorSuggestion(
                     id: review.id,
@@ -73,7 +104,9 @@ enum EditorSuggestionMapper {
                     category: review.category,
                     reason: review.reason,
                     origin: review.origin,
-                    reference: reference(from: review)
+                    reference: reference(from: review),
+                    prefixContext: prefixContext,
+                    suffixContext: suffixContext
                 )
             )
         }
@@ -84,6 +117,41 @@ enum EditorSuggestionMapper {
             }
             return lhs.sourceRange.length < rhs.sourceRange.length
         }
+    }
+
+    static func extractSurroundingContext(
+        range: NSRange,
+        in documentText: String
+    ) -> (prefix: String?, suffix: String?) {
+        let nsText = documentText as NSString
+        guard range.location >= 0, NSMaxRange(range) <= nsText.length else {
+            return (nil, nil)
+        }
+
+        var prefix: String? = nil
+        if range.location > 0 {
+            let prefixLength = min(range.location, 40)
+            let prefixRange = NSRange(location: range.location - prefixLength, length: prefixLength)
+            let rawPrefix = nsText.substring(with: prefixRange)
+            let words = rawPrefix.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+            if let lastWord = words.last {
+                prefix = lastWord
+            }
+        }
+
+        var suffix: String? = nil
+        let afterLocation = NSMaxRange(range)
+        if afterLocation < nsText.length {
+            let suffixLength = min(nsText.length - afterLocation, 40)
+            let suffixRange = NSRange(location: afterLocation, length: suffixLength)
+            let rawSuffix = nsText.substring(with: suffixRange)
+            let words = rawSuffix.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+            if let firstWord = words.first {
+                suffix = firstWord + "..."
+            }
+        }
+
+        return (prefix, suffix)
     }
 
     private static func uniqueRange(of substring: String, in text: String) -> NSRange? {

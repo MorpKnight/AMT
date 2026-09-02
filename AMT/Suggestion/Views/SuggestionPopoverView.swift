@@ -12,224 +12,167 @@ struct SuggestionPopoverView: View {
     let onAccept: () -> Void
     let onDismiss: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            Divider()
-                .padding(.vertical, 12)
-
-            changePreview
-            detailSection(title: "Alasan", systemImage: "text.alignleft") {
-                Text(suggestion.reason)
-                    .font(.callout)
+        VStack(alignment: .leading, spacing: 14) {
+            // MARK: - Header (Correctness Suggestion)
+            HStack(spacing: 4) {
+                Text("Correctness")
+                    .font(.system(size: 11, weight: .regular))
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .textSelection(.enabled)
-            }
-
-            if let reference = suggestion.reference {
-                referenceSection(reference)
-            }
-
-            if isStale {
-                Label(
-                    "Teks sudah berubah. Jalankan analisis ulang sebelum menerima saran.",
-                    systemImage: "arrow.clockwise"
-                )
-                .font(.caption)
-                .foregroundStyle(.orange)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 12)
-            }
-
-            Divider()
-                .padding(.top, 16)
-                .padding(.bottom, 12)
-
-            HStack(spacing: 8) {
-                Spacer(minLength: 0)
-
-                Button("Dismiss", action: onDismiss)
-                    .buttonStyle(.bordered)
-
-                Button("Accept", action: onAccept)
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isStale)
-            }
-        }
-        .padding(16)
-        .frame(width: 420, alignment: .leading)
-        .background(.regularMaterial)
-    }
-
-    private var header: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: iconName)
-                .font(.title3)
-                .foregroundStyle(.red)
-                .frame(width: 22, height: 22)
-                .background(.red.opacity(0.10), in: Circle())
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text("Correctness Suggestion")
-                    .font(.caption)
+                Text("Suggestion")
+                    .font(.system(size: 11, weight: .regular))
                     .foregroundStyle(.secondary)
-
-                Text(suggestion.category.displayTitle)
-                    .font(.headline)
             }
 
-            Spacer(minLength: 0)
+            // MARK: - Diff Preview (e.g. Kedua wajib untuk wajib memproses...)
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                if let prefix = suggestion.prefixContext, !prefix.isEmpty {
+                    Text(prefix)
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(.secondary)
+                }
 
-            Text(suggestion.origin.displayTitle)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-    }
-
-    private var changePreview: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text("Rekomendasi")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            changeText
-                .font(.callout)
-            .fixedSize(horizontal: false, vertical: true)
-            .textSelection(.enabled)
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 9))
-        }
-    }
-
-    private var changeText: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(suggestion.original)
-                    .foregroundStyle(.secondary)
-                    .strikethrough(true, color: .secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Image(systemName: "arrow.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13, weight: .bold))
+                    .strikethrough(true, color: .primary.opacity(0.7))
+                    .foregroundStyle(.primary)
 
                 Text(suggestion.replacement)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.green)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Color(red: 0.12, green: 0.65, blue: 0.28))
+
+                if let suffix = suggestion.suffixContext, !suffix.isEmpty {
+                    Text(suffix)
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            // MARK: - Example Box Card
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Example")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                Text(exampleSentence)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.primary.opacity(0.9))
+                    .lineSpacing(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.white)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+            )
 
-            VStack(alignment: .leading, spacing: 5) {
-                Text(suggestion.original)
-                    .foregroundStyle(.secondary)
-                    .strikethrough(true, color: .secondary)
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Image(systemName: "arrow.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    Text(suggestion.replacement)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.green)
-                }
-            }
-        }
-    }
-
-    private func detailSection<Content: View>(
-        title: String,
-        systemImage: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(title, systemImage: systemImage)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            content()
-        }
-        .padding(.top, 14)
-    }
-
-    private func referenceSection(_ reference: EditorSuggestionReference) -> some View {
-        detailSection(title: "Referensi", systemImage: "link") {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(reference.term)
-                    .font(.callout.weight(.semibold))
-
-                Text(reference.regulation)
-                    .font(.caption)
+            // MARK: - References Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("References")
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
 
-                if !reference.regulationTitle.isEmpty {
-                    Text(reference.regulationTitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                HStack(spacing: 12) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "link")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.blue)
 
-                if let sourceURL = reference.sourceURL {
-                    Link(destination: sourceURL) {
-                        Label("Buka sumber", systemImage: "arrow.up.right.square")
-                            .font(.caption)
+                        Text(referenceLabel)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.blue)
+                    }
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "link")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.blue)
+
+                        Text(referenceLabel)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.blue)
                     }
                 }
             }
-            .fixedSize(horizontal: false, vertical: true)
+
+            if isStale {
+                Label("Teks sudah berubah. Jalankan analisis ulang.", systemImage: "exclamationmark.triangle")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.orange)
+            }
+
+            // MARK: - Bottom Action Buttons (Accept / Dismiss)
+            HStack(spacing: 16) {
+                Button(action: onAccept) {
+                    Text("Accept")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(colorScheme == .dark ? Color.white.opacity(0.15) : Color.white)
+                        )
+                        .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
+                }
+                .buttonStyle(.plain)
+                .disabled(isStale)
+
+                Button(action: onDismiss) {
+                    Text("Dismiss")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
+            .padding(.top, 4)
         }
+        .padding(16)
+        .frame(width: 360)
+        .background(colorScheme == .dark ? Color(red: 0.15, green: 0.16, blue: 0.18) : Color(red: 0.96, green: 0.96, blue: 0.97))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    private var iconName: String {
-        switch suggestion.category {
-        case .spelling:
-            "textformat.abc"
-        case .grammar:
-            "text.quote"
-        case .clarity:
-            "text.magnifyingglass"
-        case .terminology:
-            "books.vertical"
-        case .none:
-            "lightbulb"
+    private var exampleSentence: String {
+        if !suggestion.reason.isEmpty {
+            return suggestion.reason
         }
+        return "Perusahaan logistik itu melakukan wanprestasi karena terlambat mengirimkan barang pesanan hingga melewati batas waktu di kontrak."
+    }
+
+    private var referenceLabel: String {
+        if let ref = suggestion.reference {
+            return "\(ref.regulation)"
+        }
+        return "Pasal 1234 KUH Perdata"
     }
 }
 
-#Preview("Terminology with reference") {
+#Preview("Suggestion Popover") {
     SuggestionPopoverView(
         suggestion: EditorSuggestion(
             id: UUID(),
-            sourceRange: NSRange(location: 0, length: 17),
-            original: "data tentang orang",
-            replacement: "Data Pribadi",
+            sourceRange: NSRange(location: 0, length: 14),
+            original: "di luar kontrak",
+            replacement: "Wanprestasi",
             category: .terminology,
-            reason: "Istilah ini tersedia pada glossary lokal dan lebih ringkas.",
+            reason: "Perusahaan logistik itu melakukan wanprestasi karena terlambat mengirimkan barang pesanan hingga melewati batas waktu di kontrak.",
             origin: .deterministic,
             reference: EditorSuggestionReference(
-                term: "Data Pribadi",
-                regulation: "Undang-Undang Nomor 27 Tahun 2022",
-                regulationTitle: "Pelindungan Data Pribadi",
-                sourceURL: URL(string: "https://peraturan.bpk.go.id")
+                term: "Wanprestasi",
+                regulation: "Pasal 1234 KUH Perdata",
+                regulationTitle: "",
+                sourceURL: nil
             )
-        ),
-        isStale: false,
-        onAccept: {},
-        onDismiss: {}
-    )
-    .padding()
-}
-
-#Preview("Spelling without reference") {
-    SuggestionPopoverView(
-        suggestion: EditorSuggestion(
-            id: UUID(),
-            sourceRange: NSRange(location: 0, length: 16),
-            original: "ditanda tangani",
-            replacement: "ditandatangani",
-            category: .spelling,
-            reason: "Bentuk baku ditulis sebagai satu kata.",
-            origin: .deterministic,
-            reference: nil
         ),
         isStale: false,
         onAccept: {},

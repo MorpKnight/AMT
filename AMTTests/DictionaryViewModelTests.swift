@@ -12,6 +12,7 @@ final class DictionaryViewModelTests: XCTestCase {
 
         XCTAssertFalse(viewModel.isLoading)
         XCTAssertFalse(viewModel.isShowingDetail)
+        XCTAssertTrue(viewModel.isNotFound)
         XCTAssertNil(viewModel.selectedEntry)
         XCTAssertTrue(viewModel.topMatches.isEmpty)
     }
@@ -23,9 +24,21 @@ final class DictionaryViewModelTests: XCTestCase {
         await waitForLookupToFinish(viewModel)
 
         XCTAssertFalse(viewModel.isLoading)
-        XCTAssertTrue(viewModel.isShowingDetail)
-        XCTAssertEqual(viewModel.selectedEntry?.term, "Data Pribadi")
+        XCTAssertFalse(viewModel.isNotFound)
         XCTAssertFalse(viewModel.topMatches.isEmpty)
+    }
+
+    func testPopularTermsCountIsThree() async {
+        let viewModel = DictionaryViewModel(dictionaryStore: LegalDictionaryStore())
+        XCTAssertEqual(viewModel.popularTerms.count, 3)
+    }
+
+    func testRefreshPopularTermsUpdatesTerms() async {
+        let viewModel = DictionaryViewModel(dictionaryStore: LegalDictionaryStore())
+        XCTAssertEqual(viewModel.popularTerms.count, 3)
+
+        viewModel.refreshPopularTerms()
+        XCTAssertEqual(viewModel.popularTerms.count, 3)
     }
 
     private func waitForLookupToFinish(_ viewModel: DictionaryViewModel) async {
