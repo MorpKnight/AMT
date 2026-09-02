@@ -14,6 +14,8 @@ enum FormattingAction: Equatable {
     case underline
     case strikethrough
     case listStyle(ListStyle)
+    case undo
+    case redo
 }
 
 struct FormattingState: Equatable {
@@ -29,6 +31,26 @@ struct FormattingState: Equatable {
 final class EditorViewModel {
     var pendingAction: FormattingAction?
     var activeState = FormattingState()
+    var canUndo = false
+    var canRedo = false
+    var zoomPercent = EditorZoom.defaultPercent
+
+    func zoomIn() {
+        zoomPercent = EditorZoom.clamp(zoomPercent + EditorZoom.stepPercent)
+    }
+
+    func zoomOut() {
+        zoomPercent = EditorZoom.clamp(zoomPercent - EditorZoom.stepPercent)
+    }
+
+    func resetZoom() {
+        zoomPercent = EditorZoom.defaultPercent
+    }
+
+    func resetHistoryState() {
+        canUndo = false
+        canRedo = false
+    }
 }
 
 /// Converts the persisted Markdown representation to AppKit rich text. The
@@ -94,7 +116,7 @@ enum MarkdownRichTextCodec {
         static let code = OverlayMarks(rawValue: 1 << 3)
     }
 
-    static func render(_ markdown: String, defaultFont: NSFont) -> NSAttributedString {
+    static func render(_ markdown: String, defaultFont: NSFont = EditorTypography.defaultFont) -> NSAttributedString {
         guard !markdown.isEmpty else {
             return NSAttributedString(string: "", attributes: baseAttributes(font: defaultFont))
         }
@@ -191,8 +213,11 @@ enum MarkdownRichTextCodec {
             let inlineBits = (attributes[inlinePresentationIntentKey] as? NSNumber)?.intValue ?? 0
             var additions: [NSAttributedString.Key: Any] = [:]
 
-            var font = (attributes[.font] as? NSFont) ?? defaultFont
-            var shouldSetFont = attributes[.font] == nil
+            // Foundation's Markdown parser supplies its own small default
+            // font. Replace that parser fallback with the editor's shared
+            // typography token, while retaining semantic traits below.
+            var font = defaultFont
+            var shouldSetFont = true
             if let level = info.headingLevel {
                 font = fontWithTraits(font, pointSize: headingPointSize(level), bold: true, italic: nil)
                 shouldSetFont = true
@@ -349,10 +374,10 @@ enum MarkdownRichTextCodec {
 
     private static func headingPointSize(_ level: Int) -> CGFloat {
         switch level {
-        case 1: return 28
-        case 2: return 22
-        case 3: return 18
-        default: return 16
+        case 1: return EditorTypography.heading1PointSize
+        case 2: return EditorTypography.heading2PointSize
+        case 3: return EditorTypography.heading3PointSize
+        default: return EditorTypography.bodyPointSize
         }
     }
 
@@ -577,6 +602,8 @@ enum RichTextFormatter {
             return toggleAttribute(.strikethroughStyle, enabledValue: NSUnderlineStyle.single.rawValue, in: textView)
         case .listStyle(let style):
             return applyListStyle(style, to: textView)
+        case .undo, .redo:
+            return false
         }
     }
 
@@ -587,14 +614,14 @@ enum RichTextFormatter {
         let attributes = safeLocation < attributedText.length
             ? attributedText.attributes(at: safeLocation, effectiveRange: nil)
             : textView.typingAttributes
-        let font = (attributes[.font] as? NSFont) ?? NSFont.systemFont(ofSize: 16)
+        let font = (attributes[.font] as? NSFont) ?? EditorTypography.defaultFont
 
         return FormattingState(
-            textStyle: style(for: font),
+            textStyle: EditorTypography.textStyle(for: font),
             isBold: font.fontDescriptor.symbolicTraits.contains(.bold),
             isItalic: font.fontDescriptor.symbolicTraits.contains(.italic),
-            isUnderline: (attributes[.underlineStyle] as? Int ?? 0) != 0,
-            isStrikethrough: (attributes[.strikethroughStyle] as? Int ?? 0) != 0,
+            isUnderline: numericValue(attributes[.underlineStyle]) != 0,
+            isStrikethrough: numericValue(attributes[.strikethroughStyle]) != 0,
             listStyle: listStyle(for: textView.string as NSString, at: safeLocation)
         )
     }
@@ -603,17 +630,7 @@ enum RichTextFormatter {
         let paragraphRange = paragraphRange(in: textView)
         guard paragraphRange.length > 0 else { return false }
 
-        let font: NSFont
-        switch style {
-        case .body:
-            font = NSFont.systemFont(ofSize: 16)
-        case .heading1:
-            font = NSFont.systemFont(ofSize: 28, weight: .bold)
-        case .heading2:
-            font = NSFont.systemFont(ofSize: 22, weight: .bold)
-        case .heading3:
-            font = NSFont.systemFont(ofSize: 18, weight: .bold)
-        }
+        let font = EditorTypography.font(for: style)
 
         textView.textStorage?.addAttributes(MarkdownRichTextCodec.baseAttributes(font: font), range: paragraphRange)
         textView.typingAttributes = MarkdownRichTextCodec.baseAttributes(font: font)
@@ -626,7 +643,7 @@ enum RichTextFormatter {
         let isEnabled = traitIsEnabled(trait, in: textView, range: range)
 
         if range.length == 0 {
-            let currentFont = (textView.typingAttributes[.font] as? NSFont) ?? NSFont.systemFont(ofSize: 16)
+            let currentFont = (textView.typingAttributes[.font] as? NSFont) ?? EditorTypography.defaultFont
             var attributes = textView.typingAttributes
             attributes[.font] = font(from: currentFont, toggling: trait, enabled: !isEnabled)
             textView.typingAttributes = attributes
@@ -634,7 +651,7 @@ enum RichTextFormatter {
         }
 
         textStorage?.enumerateAttribute(.font, in: range, options: []) { value, subrange, _ in
-            let currentFont = (value as? NSFont) ?? NSFont.systemFont(ofSize: 16)
+            let currentFont = (value as? NSFont) ?? EditorTypography.defaultFont
             textStorage?.addAttribute(
                 .font,
                 value: font(from: currentFont, toggling: trait, enabled: !isEnabled),
@@ -653,7 +670,7 @@ enum RichTextFormatter {
         let attributes = range.length > 0
             ? textView.attributedString().attributes(at: range.location, effectiveRange: nil)
             : textView.typingAttributes
-        let isEnabled = (attributes[key] as? Int ?? 0) != 0
+        let isEnabled = numericValue(attributes[key]) != 0
 
         if range.length == 0 {
             var typingAttributes = textView.typingAttributes
@@ -707,13 +724,6 @@ enum RichTextFormatter {
         return selection
     }
 
-    private static func style(for font: NSFont) -> TextStyle {
-        if font.pointSize >= 26 { return .heading1 }
-        if font.pointSize >= 21 { return .heading2 }
-        if font.pointSize >= 17, font.fontDescriptor.symbolicTraits.contains(.bold) { return .heading3 }
-        return .body
-    }
-
     private static func listStyle(for text: NSString, at location: Int) -> ListStyle? {
         guard text.length > 0 else { return nil }
         let line = text.substring(with: text.lineRange(for: NSRange(location: min(location, text.length - 1), length: 0)))
@@ -737,7 +747,7 @@ enum RichTextFormatter {
         let attributes = range.length > 0
             ? textView.attributedString().attributes(at: range.location, effectiveRange: nil)
             : textView.typingAttributes
-        let font = (attributes[.font] as? NSFont) ?? NSFont.systemFont(ofSize: 16)
+        let font = (attributes[.font] as? NSFont) ?? EditorTypography.defaultFont
         return font.fontDescriptor.symbolicTraits.contains(trait)
     }
 
@@ -754,5 +764,11 @@ enum RichTextFormatter {
         }
         let descriptor = font.fontDescriptor.withSymbolicTraits(traits)
         return NSFont(descriptor: descriptor, size: font.pointSize) ?? font
+    }
+
+    private static func numericValue(_ value: Any?) -> Int {
+        if let number = value as? NSNumber { return number.intValue }
+        if let value = value as? Int { return value }
+        return 0
     }
 }

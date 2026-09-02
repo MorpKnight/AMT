@@ -3,6 +3,45 @@ import XCTest
 @testable import AMT
 
 final class DocumentRenderNormalizerTests: XCTestCase {
+    func testEditorTypographyUsesTheSharedScale() {
+        XCTAssertEqual(TextStyle.body.rawValue, "Paragraph")
+        XCTAssertEqual(EditorTypography.font(for: .body).pointSize, 18, accuracy: 0.01)
+        XCTAssertEqual(EditorTypography.font(for: .heading1).pointSize, 32, accuracy: 0.01)
+        XCTAssertEqual(EditorTypography.font(for: .heading2).pointSize, 26, accuracy: 0.01)
+        XCTAssertEqual(EditorTypography.font(for: .heading3).pointSize, 21, accuracy: 0.01)
+        XCTAssertTrue(EditorTypography.font(for: .heading1).fontDescriptor.symbolicTraits.contains(.bold))
+        XCTAssertTrue(EditorTypography.font(for: .heading2).fontDescriptor.symbolicTraits.contains(.bold))
+        XCTAssertTrue(EditorTypography.font(for: .heading3).fontDescriptor.symbolicTraits.contains(.bold))
+    }
+
+    func testEditorZoomClampsAndUsesTenPercentSteps() {
+        XCTAssertEqual(EditorZoom.clamp(20), 75)
+        XCTAssertEqual(EditorZoom.clamp(100), 100)
+        XCTAssertEqual(EditorZoom.clamp(500), 200)
+        XCTAssertEqual(EditorZoom.percent(for: 0.75), 75)
+        XCTAssertEqual(EditorZoom.percent(for: 0.90), 90)
+        XCTAssertEqual(EditorZoom.percent(for: 2.0), 200)
+        XCTAssertEqual(EditorZoom.percent(for: .nan), EditorZoom.defaultPercent)
+        XCTAssertEqual(EditorZoom.percent(for: .infinity), EditorZoom.maximumPercent)
+    }
+
+    func testMarkdownUsesTheSharedTypographyScale() {
+        let payload = DocumentRenderNormalizer.fromMarkdown(
+            "Paragraph\n\n# H1\n\n## H2\n\n### H3"
+        )
+        let rendered = payload.attributedText
+
+        let paragraphRange = (rendered.string as NSString).range(of: "Paragraph")
+        let h1Range = (rendered.string as NSString).range(of: "H1")
+        let h2Range = (rendered.string as NSString).range(of: "H2")
+        let h3Range = (rendered.string as NSString).range(of: "H3")
+
+        XCTAssertEqual((rendered.attribute(.font, at: paragraphRange.location, effectiveRange: nil) as? NSFont)?.pointSize ?? 0, 18, accuracy: 0.01)
+        XCTAssertEqual((rendered.attribute(.font, at: h1Range.location, effectiveRange: nil) as? NSFont)?.pointSize ?? 0, 32, accuracy: 0.01)
+        XCTAssertEqual((rendered.attribute(.font, at: h2Range.location, effectiveRange: nil) as? NSFont)?.pointSize ?? 0, 26, accuracy: 0.01)
+        XCTAssertEqual((rendered.attribute(.font, at: h3Range.location, effectiveRange: nil) as? NSFont)?.pointSize ?? 0, 21, accuracy: 0.01)
+    }
+
     func testMarkdownIsRenderedWithInlineBlocksListsTablesAndLinks() {
         let markdown = """
         # Judul

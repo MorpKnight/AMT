@@ -92,9 +92,11 @@ struct DocumentEditorView: View {
                                 .shadow(color: .black.opacity(0.12), radius: 12, y: 3)
                         } else {
                             HighlightedDocumentTextEditor(
+                                documentID: activeDocument.id,
                                 text: $activeDocument.content,
                                 richTextData: $activeDocument.richTextData,
                                 structuredDocument: $activeDocument.structuredDocument,
+                                zoomPercent: $editorViewModel.zoomPercent,
                                 suggestions: aiConnectorViewModel.editorSuggestions,
                                 selectedSuggestionID: aiConnectorViewModel.selectedSuggestionID,
                                 onSelect: { id in
@@ -143,6 +145,8 @@ struct DocumentEditorView: View {
                 selectedDocumentID = newID
             }
             presentationMode = .editing
+            editorViewModel.resetZoom()
+            editorViewModel.resetHistoryState()
         }
         .task(id: activeDocument.id) {
             // Older records may already have semantic blocks but no embedded

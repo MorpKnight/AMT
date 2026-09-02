@@ -76,11 +76,11 @@ struct StructuredDocument: Codable, Equatable, Hashable {
                 kind = .heading(level: 1)
             } else if upper.hasPrefix("PASAL ") {
                 kind = .heading(level: 2)
-            } else if let font = attributes[.font] as? NSFont, font.pointSize >= 26 {
+            } else if let font = attributes[.font] as? NSFont, font.pointSize >= EditorTypography.heading1PointSize - 2 {
                 kind = .heading(level: 1)
-            } else if let font = attributes[.font] as? NSFont, font.pointSize >= 21 {
+            } else if let font = attributes[.font] as? NSFont, font.pointSize >= EditorTypography.heading2PointSize - 1 {
                 kind = .heading(level: 2)
-            } else if let font = attributes[.font] as? NSFont, font.pointSize >= 18 {
+            } else if let font = attributes[.font] as? NSFont, font.pointSize >= EditorTypography.heading3PointSize {
                 kind = .heading(level: 3)
             } else {
                 kind = .paragraph
@@ -194,8 +194,14 @@ struct StructuredDocument: Codable, Equatable, Hashable {
     private func font(for block: StructuredBlock, run: StructuredRun) -> NSFont {
         let defaultSize: CGFloat
         switch block.kind {
-        case .heading(let level): defaultSize = level == 1 ? 16 : 14
-        default: defaultSize = 12
+        case .heading(let level):
+            switch level {
+            case 1: defaultSize = EditorTypography.heading1PointSize
+            case 2: defaultSize = EditorTypography.heading2PointSize
+            case 3: defaultSize = EditorTypography.heading3PointSize
+            default: defaultSize = EditorTypography.bodyPointSize
+            }
+        default: defaultSize = EditorTypography.bodyPointSize
         }
         let size = CGFloat(run.fontSize ?? Double(defaultSize))
         let baseName = run.fontName ?? run.fontFamily ?? "Times New Roman"

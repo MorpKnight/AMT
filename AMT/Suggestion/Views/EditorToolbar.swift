@@ -7,7 +7,7 @@ import AppKit
 import SwiftUI
 
 enum TextStyle: String, CaseIterable, Identifiable {
-    case body = "T"
+    case body = "Paragraph"
     case heading1 = "H1"
     case heading2 = "H2"
     case heading3 = "H3"
@@ -75,24 +75,83 @@ struct EditorToolbar: View {
 
     private var formattingControls: some View {
         HStack(spacing: 8) {
+            historyGroup
             textStyleGroup
             inlineStyleGroup
             listStyleGroup
+            zoomGroup
         }
+    }
+
+    private var historyGroup: some View {
+        HStack(spacing: 2) {
+            toolbarIconButton(
+                systemName: "arrow.uturn.backward",
+                help: "Undo (⌘Z)",
+                isEnabled: viewModel.canUndo
+            ) {
+                viewModel.pendingAction = .undo
+            }
+            .keyboardShortcut("z", modifiers: .command)
+            toolbarIconButton(
+                systemName: "arrow.uturn.forward",
+                help: "Redo (⇧⌘Z)",
+                isEnabled: viewModel.canRedo
+            ) {
+                viewModel.pendingAction = .redo
+            }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
+        }
+        .toolbarGroupStyle()
     }
 
     private var textStyleGroup: some View {
         HStack(spacing: 2) {
             ForEach(TextStyle.allCases) { style in
                 let isActive = viewModel.activeState.textStyle == style
-                GlassPillButton(isActive: isActive) {
+                GlassPillButton(isActive: isActive, width: style == .body ? 76 : 26) {
                     viewModel.pendingAction = .textStyle(style)
                 } label: {
                     Text(style.rawValue)
-                        .font(.system(size: 12, weight: isActive ? .bold : .medium))
+                        .font(.system(size: style == .body ? 11 : 12, weight: isActive ? .bold : .medium))
                         .foregroundStyle(isActive ? .primary : .secondary)
                 }
             }
+        }
+        .toolbarGroupStyle()
+    }
+
+    private var zoomGroup: some View {
+        HStack(spacing: 2) {
+            toolbarIconButton(
+                systemName: "minus.magnifyingglass",
+                help: "Zoom out (⌘−)",
+                isEnabled: viewModel.zoomPercent > EditorZoom.minimumPercent
+            ) {
+                viewModel.zoomOut()
+            }
+            .keyboardShortcut("-", modifiers: .command)
+
+            Button {
+                viewModel.resetZoom()
+            } label: {
+                Text("\(viewModel.zoomPercent)%")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 42, height: 24)
+            }
+            .buttonStyle(.plain)
+            .help("Reset zoom (⌘0)")
+            .keyboardShortcut("0", modifiers: .command)
+
+            toolbarIconButton(
+                systemName: "plus.magnifyingglass",
+                help: "Zoom in (⌘+)",
+                isEnabled: viewModel.zoomPercent < EditorZoom.maximumPercent
+            ) {
+                viewModel.zoomIn()
+            }
+            .keyboardShortcut("=", modifiers: [.command, .shift])
         }
         .toolbarGroupStyle()
     }
@@ -145,6 +204,19 @@ struct EditorToolbar: View {
         }
     }
 
+    private func toolbarIconButton(
+        systemName: String,
+        help: String,
+        isEnabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        GlassPillButton(isActive: false, isEnabled: isEnabled, help: help, action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(isEnabled ? .secondary : .tertiary)
+        }
+    }
+
     private var exportButton: some View {
         Button {
             onExport?()
@@ -162,6 +234,9 @@ struct EditorToolbar: View {
 
 private struct GlassPillButton<Label: View>: View {
     let isActive: Bool
+    var isEnabled = true
+    var width: CGFloat = 26
+    var help: String?
     let action: () -> Void
     @ViewBuilder let label: () -> Label
 
@@ -170,7 +245,7 @@ private struct GlassPillButton<Label: View>: View {
     var body: some View {
         Button(action: action) {
             label()
-                .frame(width: 26, height: 24)
+                .frame(width: width, height: 24)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(
@@ -181,6 +256,8 @@ private struct GlassPillButton<Label: View>: View {
                 )
         }
         .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .help(help ?? "")
         .onHover { isHovered = $0 }
     }
 }

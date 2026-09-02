@@ -22,6 +22,10 @@ final class StructuredDocumentTests: XCTestCase {
 
         let rendered = document.attributedString()
         XCTAssertEqual(rendered.string, "BAB I\nIsi")
-        XCTAssertTrue((rendered.attributes(at: 0, effectiveRange: nil)[.font] as? NSFont)?.pointSize == 16)
+        XCTAssertEqual(
+            (rendered.attributes(at: 0, effectiveRange: nil)[.font] as? NSFont)?.pointSize ?? 0,
+            EditorTypography.heading1PointSize,
+            accuracy: 0.01
+        )
     }
 }

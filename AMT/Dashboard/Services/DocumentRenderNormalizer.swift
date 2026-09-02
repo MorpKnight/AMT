@@ -18,15 +18,15 @@ struct DocumentRenderPayload {
 }
 
 enum DocumentRenderNormalizer {
-    static func fromMarkdown(_ markdown: String, defaultFont: NSFont = .systemFont(ofSize: 12)) -> DocumentRenderPayload {
+    static func fromMarkdown(_ markdown: String, defaultFont: NSFont = EditorTypography.defaultFont) -> DocumentRenderPayload {
         makePayload(MarkdownRichTextCodec.render(markdown, defaultFont: defaultFont))
     }
 
-    static func fromNative(_ native: NSAttributedString, defaultFont: NSFont = .systemFont(ofSize: 12)) -> DocumentRenderPayload {
+    static func fromNative(_ native: NSAttributedString, defaultFont: NSFont = EditorTypography.defaultFont) -> DocumentRenderPayload {
         makePayload(MarkdownRichTextCodec.render(normalizeLineSeparators(native), defaultFont: defaultFont))
     }
 
-    static func fromPlainText(_ text: String, defaultFont: NSFont = .systemFont(ofSize: 12)) -> DocumentRenderPayload {
+    static func fromPlainText(_ text: String, defaultFont: NSFont = EditorTypography.defaultFont) -> DocumentRenderPayload {
         let normalized = text
             .replacingOccurrences(of: "\u{2028}", with: "\n")
             .replacingOccurrences(of: "\u{2029}", with: "\n")
@@ -41,7 +41,7 @@ enum DocumentRenderNormalizer {
         richTextData: Data?,
         sourceFileName: String?,
         sourceURL: URL? = nil,
-        defaultFont: NSFont = .systemFont(ofSize: 12)
+        defaultFont: NSFont = EditorTypography.defaultFont
     ) -> DocumentRenderPayload {
         if let richTextData,
            let native = try? NSAttributedString(
