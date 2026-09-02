@@ -59,39 +59,67 @@ struct QuickLookDocumentViewer: NSViewRepresentable {
 
 struct DocumentSourceViewer: View {
     let originalURL: URL?
+    let isOriginalAvailable: Bool
     let fallbackText: String
     let notice: String
+    let selectedReviewItem: DocumentReviewItem?
+    let selectedSourceContext: DocumentReviewSourceContext?
+    let onClearSelectedReview: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Image(systemName: originalURL == nil ? "doc.text" : "doc.richtext")
-                    .foregroundStyle(.secondary)
-                Text(notice)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                Spacer(minLength: 0)
+        ZStack(alignment: .bottomLeading) {
+            sourcePreview
+
+            if let selectedReviewItem,
+               let selectedSourceContext {
+                DocumentReviewPreviewHighlight(
+                    item: selectedReviewItem,
+                    context: selectedSourceContext,
+                    onDismiss: onClearSelectedReview
+                )
+                .padding(16)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(.bar)
+        }
+    }
 
-            Divider()
-
-            if let originalURL {
-                QuickLookDocumentViewer(fileURL: originalURL)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
+    @ViewBuilder
+    private var sourcePreview: some View {
+        if isOriginalAvailable, let originalURL {
+            QuickLookDocumentViewer(fileURL: originalURL)
+                .accessibilityLabel("Dokumen asli")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            VStack(spacing: 0) {
+                fallbackNotice
+                Divider()
                 ScrollView {
-                    Text(fallbackText.isEmpty ? "Dokumen tidak memiliki isi teks." : fallbackText)
-                        .font(.body)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(28)
+                    Text(
+                        fallbackText.isEmpty
+                            ? "Dokumen tidak memiliki isi teks."
+                            : DocumentReviewFallbackText.plainText(from: fallbackText)
+                    )
+                    .font(.body)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(28)
                 }
                 .background(Color(nsColor: .textBackgroundColor))
             }
         }
+    }
+
+    private var fallbackNotice: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "doc.text")
+                .foregroundStyle(.secondary)
+            Text(notice)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.bar)
     }
 }

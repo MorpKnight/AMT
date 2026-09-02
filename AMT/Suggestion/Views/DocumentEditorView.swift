@@ -72,48 +72,47 @@ struct DocumentEditorView: View {
                     onExport: {
                         handleExport()
                     },
-                    onAnalyze: {
-                        reviewViewModel.analyze()
-                    },
-                    onCancelAnalysis: {
-                        reviewViewModel.cancel()
-                    },
                     onShowDebug: {
                         isDebugPanelPresented = true
                     },
-                    canAnalyze: reviewViewModel.canAnalyze,
-                    isAnalyzing: reviewViewModel.isAnalyzing,
-                    analysisState: aiConnectorViewModel.state,
-                    analysisProgressStage: aiConnectorViewModel.progressStage,
-                    analysisDownloadProgress: aiConnectorViewModel.downloadProgress,
-                    analysisGenerationProgress: aiConnectorViewModel.generationProgress,
-                    analysisSummary: aiConnectorViewModel.runSummary,
-                    analysisErrorMessage: reviewViewModel.errorMessage ?? reviewViewModel.exportErrorMessage,
                     showsFormattingControls: false,
                     canExport: reviewViewModel.canExport
                         || reviewViewModel.sourceAvailability == .legacyText
                 )
                 Divider()
 
-                HStack(spacing: 0) {
+                ZStack(alignment: .topTrailing) {
                     DocumentSourceViewer(
                         originalURL: reviewViewModel.sourceURL,
+                        isOriginalAvailable: reviewViewModel.sourceAvailability.isOriginal,
                         fallbackText: reviewViewModel.sourceText.isEmpty
                             ? activeDocument.content
                             : reviewViewModel.sourceText,
-                        notice: reviewViewModel.sourceAvailability.notice
+                        notice: reviewViewModel.sourceViewerNotice,
+                        selectedReviewItem: reviewViewModel.selectedReviewItem,
+                        selectedSourceContext: reviewViewModel.selectedReviewContext,
+                        onClearSelectedReview: {
+                            reviewViewModel.selectReviewItem(nil)
+                        }
                     )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                    Divider()
-
-                    DocumentReviewPanel(
+                    DocumentReviewPopover(
+                        documentID: reviewViewModel.documentID,
                         analysisStatus: reviewViewModel.analysisStatus,
                         progress: reviewViewModel.progress,
                         progressDetail: reviewViewModel.progressDetail,
+                        canAnalyze: reviewViewModel.canAnalyze,
                         errorMessage: reviewViewModel.errorMessage ?? reviewViewModel.exportErrorMessage,
                         reviewItems: reviewViewModel.reviewItems,
                         acceptedItemCount: reviewViewModel.acceptedItemCount,
+                        selectedReviewItemID: reviewViewModel.selectedReviewItemID,
+                        selectedSourceContext: reviewViewModel.selectedReviewContext,
+                        onSelectReview: { id in
+                            reviewViewModel.selectReviewItem(id)
+                        },
+                        onAnalyze: {
+                            reviewViewModel.analyze()
+                        },
                         onAccept: { id in
                             _ = reviewViewModel.accept(itemID: id)
                         },
@@ -127,7 +126,10 @@ struct DocumentEditorView: View {
                             reviewViewModel.cancel()
                         }
                     )
+                    .padding(.top, 12)
+                    .padding(.trailing, 12)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .navigationTitle("")
         }

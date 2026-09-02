@@ -130,6 +130,205 @@ final class DocumentReviewTests: XCTestCase {
         XCTAssertTrue(extraction.analysisText.contains("wajib untuk"))
     }
 
+    func testReviewViewModelSelectsSourceContextUsingOriginalText() async throws {
+        let target = "Pihak Kedua wajib untuk menyerahkan laporan."
+        let sourceText = "Pembukaan dengan emoji 😀 untuk menguji batas teks.\n\n"
+            + target
+            + "\n\nPenutup perjanjian."
+        let sourceURL = try writeDocx(named: "Source Context Review.docx", text: sourceText)
+        let fingerprint = try DocumentFingerprint.sha256(fileURL: sourceURL)
+        let review = makeReview(
+            segmentText: target,
+            original: "wajib untuk",
+            replacement: "wajib"
+        )
+        let viewModel = DocumentReviewViewModel(
+            document: DashboardDocument(
+                title: "Paginated Review",
+                content: sourceText,
+                originalFileName: "Paginated Review.docx",
+                originalSidecarRelativePath: "AMT_Documents/paginated.original.docx",
+                originalFingerprint: fingerprint
+            ),
+            originalURL: sourceURL,
+            analyzer: StubDocumentReviewAnalyzer(reviews: [review])
+        )
+
+        XCTAssertEqual(viewModel.sourceAvailability, .original)
+
+        viewModel.analyze()
+        await waitForAnalysis(viewModel)
+
+        XCTAssertEqual(viewModel.analysisStatus, .completed)
+        XCTAssertEqual(viewModel.reviewItems.count, 1)
+
+        viewModel.selectReviewItem(review.id)
+        let context = try XCTUnwrap(viewModel.selectedReviewContext)
+        XCTAssertEqual(context.original, "wajib untuk")
+        XCTAssertTrue(context.prefix.contains("emoji 😀"))
+        XCTAssertTrue(context.suffix.contains("Penutup"))
+    }
+
+    func testSourceContextFailsClosedForUnavailableMapping() {
+        let item = DocumentReviewItem(
+            segmentID: 1,
+            original: "tidak ada",
+            replacement: "ada",
+            category: .grammar,
+            reason: "Perbaikan bahasa.",
+            origin: .deterministic,
+            decision: .unavailable,
+            mappingIssue: .missingFromSource
+        )
+
+        XCTAssertNil(
+            DocumentReviewSourceContext.make(
+                for: item,
+                in: "Teks sumber yang berbeda."
+            )
+        )
+    }
+
+    func testSourceContextFailsClosedForMissingDuplicateAndInvalidText() {
+        let duplicateSource = "Pihak Kedua wajib dan Pihak Ketiga wajib."
+        let duplicateRange = (duplicateSource as NSString).range(of: "wajib")
+        let duplicateItem = makeReviewItem(
+            segmentID: 1,
+            original: "wajib",
+            replacement: "harus",
+            sourceRange: duplicateRange,
+            decision: .pending
+        )
+
+        XCTAssertNil(
+            DocumentReviewSourceContext.make(
+                for: duplicateItem,
+                in: duplicateSource
+            )
+        )
+
+        let missingItem = makeReviewItem(
+            segmentID: 1,
+            original: "wajib",
+            replacement: "harus",
+            sourceRange: NSRange(location: 0, length: 5),
+            decision: .pending
+        )
+        XCTAssertNil(
+            DocumentReviewSourceContext.make(
+                for: missingItem,
+                in: "Tidak ada kutipan."
+            )
+        )
+
+        let invalidItem = makeReviewItem(
+            segmentID: 1,
+            original: "wajib",
+            replacement: "harus",
+            sourceRange: NSRange(location: 999, length: 5),
+            decision: .pending
+        )
+        XCTAssertNil(
+            DocumentReviewSourceContext.make(
+                for: invalidItem,
+                in: "wajib"
+            )
+        )
+    }
+
+    func testSourceContextKeepsEmojiWholeWhenContextCutsUTF16Pair() throws {
+        let source = "😀 wajib 😀"
+        let range = (source as NSString).range(of: "wajib")
+        let item = makeReviewItem(
+            segmentID: 1,
+            original: "wajib",
+            replacement: "harus",
+            sourceRange: range,
+            decision: .pending
+        )
+
+        let context = try XCTUnwrap(
+            DocumentReviewSourceContext.make(
+                for: item,
+                in: source,
+                surroundingUTF16Length: 2
+            )
+        )
+
+        XCTAssertEqual(context.prefix, "😀 ")
+        XCTAssertEqual(context.original, "wajib")
+        XCTAssertEqual(context.suffix, " 😀")
+    }
+
+    func testLegacyFallbackRemovesMarkdownPresentationMarkers() {
+        let markdown = "### Pasal 1\n\n**Pihak Kedua** wajib *menyerahkan* laporan.\n- Lampiran"
+
+        XCTAssertEqual(
+            DocumentReviewFallbackText.plainText(from: markdown),
+            "Pasal 1\n\nPihak Kedua wajib menyerahkan laporan.\nLampiran"
+        )
+    }
+
+    func testProgressModelCarriesSegmentPosition() {
+        let progress = DocumentReviewProgress(
+            fraction: 0.65,
+            detail: "Memeriksa segmen 3 dari 5",
+            currentSegment: 3,
+            totalSegments: 5
+        )
+
+        XCTAssertEqual(progress.currentSegment, 3)
+        XCTAssertEqual(progress.totalSegments, 5)
+        XCTAssertEqual(progress.detail, "Memeriksa segmen 3 dari 5")
+    }
+
+    func testReviewViewModelProgressDoesNotRegress() async throws {
+        let sourceText = "Pihak Kedua wajib untuk menyerahkan laporan."
+        let sourceURL = try writeDocx(named: "Progress Review.docx", text: sourceText)
+        let fingerprint = try DocumentFingerprint.sha256(fileURL: sourceURL)
+        let analyzer = ControlledDocumentReviewAnalyzer(reviews: [])
+        let viewModel = DocumentReviewViewModel(
+            document: DashboardDocument(
+                title: "Progress Review",
+                content: sourceText,
+                originalSidecarRelativePath: "AMT_Documents/progress.original.docx",
+                originalFingerprint: fingerprint
+            ),
+            originalURL: sourceURL,
+            analyzer: analyzer
+        )
+
+        viewModel.analyze()
+        for _ in 0..<100 where !analyzer.isReady {
+            await Task.yield()
+        }
+        XCTAssertTrue(analyzer.isReady)
+
+        analyzer.sendProgress(
+            DocumentReviewProgress(
+                fraction: 0.7,
+                detail: "Memeriksa segmen 4 dari 5",
+                currentSegment: 4,
+                totalSegments: 5
+            )
+        )
+        XCTAssertEqual(viewModel.progress, 0.7, accuracy: 0.001)
+
+        analyzer.sendProgress(
+            DocumentReviewProgress(
+                fraction: 0.4,
+                detail: "Memeriksa segmen 2 dari 5",
+                currentSegment: 2,
+                totalSegments: 5
+            )
+        )
+        XCTAssertEqual(viewModel.progress, 0.7, accuracy: 0.001)
+
+        analyzer.finish()
+        await waitForAnalysis(viewModel)
+        XCTAssertEqual(viewModel.progress, 1, accuracy: 0.001)
+    }
+
     func testMapperUsesUTF16OffsetsAndFailsClosedForAmbiguityAndMissingText() {
         let prefix = "Pembukaan 😀.\n"
         let target = "Pihak Kedua wajib untuk menyerahkan laporan."
@@ -483,4 +682,45 @@ private final class StubDocumentReviewAnalyzer: DocumentReviewAnalyzer {
     }
 
     func cancel() {}
+}
+
+@MainActor
+private final class ControlledDocumentReviewAnalyzer: DocumentReviewAnalyzer {
+    let reviews: [AIValidatedReview]
+    private var progressHandler: ((DocumentReviewProgress) -> Void)?
+    private var continuation: CheckedContinuation<[AIValidatedReview], Error>?
+
+    var isReady: Bool {
+        progressHandler != nil && continuation != nil
+    }
+
+    init(reviews: [AIValidatedReview]) {
+        self.reviews = reviews
+    }
+
+    func analyze(
+        documentText: String,
+        progress: @escaping (DocumentReviewProgress) -> Void
+    ) async throws -> [AIValidatedReview] {
+        progressHandler = progress
+        return try await withCheckedThrowingContinuation { continuation in
+            self.continuation = continuation
+        }
+    }
+
+    func sendProgress(_ update: DocumentReviewProgress) {
+        progressHandler?(update)
+    }
+
+    func finish() {
+        let continuation = self.continuation
+        self.continuation = nil
+        continuation?.resume(returning: reviews)
+    }
+
+    func cancel() {
+        let continuation = self.continuation
+        self.continuation = nil
+        continuation?.resume(throwing: CancellationError())
+    }
 }

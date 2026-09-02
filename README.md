@@ -11,6 +11,8 @@
   - Membuat, membuka, mencari, dan menghapus dokumen.
   - Menyimpan dokumen secara lokal di folder `Documents/AMT_Documents` sebagai JSON.
   - Mengimpor `.docx`, `.doc`, `.rtf`, dan `.txt` melalui Finder. Isi file diubah menjadi teks biasa untuk kebutuhan editor saat ini.
+  - Menampilkan salinan DOCX asli melalui Quick Look sehingga layout native tetap menjadi preview utama. Panel **Review dokumen** muncul sebagai popover ringkas dari kanan atas dan dapat dipin saat meninjau temuan.
+  - Temuan menampilkan konteks teks asli dengan kutipan yang disorot. Quick Look tidak diberi nomor halaman atau navigasi palsu karena tidak menyediakan pemetaan teks-ke-koordinat yang andal.
   - Menyediakan empat dokumen bawaan AI Connector dengan kompleksitas dan domain berbeda untuk smoke test. Dokumen-dokumen ini selalu dibuat ulang saat aplikasi dibuka dan perubahan pada dokumen tersebut tidak disimpan ke disk.
 - **Dictionary / Lawtionary**
   - Memuat versioned legal corpus `hukumonline-kamus@78a2ab626c092662b0441c95904c353b2487b216` sebagai resource aplikasi tanpa PDF.
@@ -191,12 +193,14 @@ Produk yang digunakan target AMT adalah `MLXLLM`, `MLXLMCommon`, `MLXHuggingFace
 4. Jalankan dengan `⌘R`.
 5. Pilih **Dictionary** pada sidebar untuk mencari istilah atau pengertian.
 6. Pilih dokumen pada dashboard untuk membuka editor.
-7. Pada panel **Suggestion — Eksperimental** (Debug), pilih sumber input, opsional pilih dummy sample, lalu tekan **Jalankan review** untuk seluruh dokumen/fixture. Tombol sparkles pada toolbar tersedia pada Debug dan Release untuk memulai analisis dokumen aktif; panel Debug tetap tersedia dari menu opsi pada build Debug.
+7. Setelah dokumen DOCX baru diimpor, analisis berjalan otomatis satu kali. Untuk pengujian fixture atau menjalankan ulang analisis, gunakan panel **Suggestion — Eksperimental** (Debug) dan pilih **Jalankan review**; kontrol analisis utama berada di popover **Review** pada kanan atas viewer.
 8. Untuk membandingkan kualitas, pilih strategi dan model, lalu tekan **Benchmark 8 fixture**. Hasil benchmark hanya evaluasi Debug dan tidak mengubah dokumen.
 
-Panel menampilkan jumlah segmen, batch queue, progress seluruh dokumen, cache, repair, fallback, hasil yang lolos validator, hasil yang memerlukan review manusia, dan output yang ditolak. Preview Current Document dibatasi ke 4.000 karakter pertama, tetapi analisis memakai seluruh isi dokumen dan panel memberi indikator jika preview terpotong. Tidak ada hasil yang diterapkan otomatis ke dokumen; highlight dapat ditinjau melalui popover editor dan Accept tetap merupakan aksi pengguna.
+Panel Debug menampilkan jumlah segmen, batch queue, progress seluruh dokumen, cache, repair, fallback, hasil yang lolos validator, hasil yang memerlukan review manusia, dan output yang ditolak. Preview Current Document dibatasi ke 4.000 karakter pertama, tetapi analisis memakai seluruh isi dokumen dan panel memberi indikator jika preview terpotong. Tidak ada hasil yang diterapkan otomatis ke dokumen; Accept atau Reject tetap merupakan aksi pengguna.
 
 Dashboard juga selalu menampilkan empat dokumen bawaan AI Connector: PKS layanan digital, DPA dan Transfer Internasional, Financing Agreement dengan Facility/Collateral/Default, serta kontrak pengadaan sistem informasi publik. Dokumen-dokumen ini memuat contoh redundansi, typo, istilah hukum, preservasi angka, tanggal, mata uang, persentase, defined terms, negasi, pengecualian, terminologi campuran, klausul data pribadi, dan konflik instruksi yang sengaja dibuat untuk pengujian. Semuanya lebih dari 12 segmen agar pembentukan batch `12/12/...` dan hasil incremental dapat diuji. Dokumen dapat diedit untuk pengujian, tetapi akan kembali ke isi awal ketika aplikasi dijalankan ulang.
+
+Pada dokumen DOCX yang memiliki salinan asli, viewer menggunakan `QLPreviewView` Quick Look agar layout asli tetap terlihat. Tombol **Review** di kanan atas membuka daftar temuan saat hover dan mempertahankannya ketika dipin. Memilih temuan menampilkan konteks teks asli dengan kutipan yang disorot di area preview dan panel; posisi halaman tidak diklaim karena Quick Look tidak menyediakan pemetaan teks yang aman. DOCX sidecar tetap menjadi source of truth.
 
 Pada Run atau benchmark model pertama, tunggu proses download dan loading model selesai. Run berikutnya menggunakan cache Hugging Face lokal selama cache masih tersedia. Cache Qwen3.5 2B, Legal 4B, dan base 4B tetap terpisah untuk perbandingan historis.
 
@@ -352,7 +356,7 @@ AMT/
 ## Batasan MVP
 
 - Pencarian Dictionary menggunakan exact/prefix/BM25 untuk term dan hybrid BM25 + E5 untuk reverse lookup. E5 diunduh secara lazy dan BM25 tetap menjadi fallback offline. Typo correction, stemming, dan sinonim bebas belum menjadi fitur corpus.
-- Suggestion sekarang memiliki highlight inline dan popover dengan Accept/Dismiss; tidak ada auto-rewrite tanpa aksi pengguna.
+- Review menggunakan popover ringkas dengan konteks kutipan asli dan aksi Accept/Reject; tidak ada auto-rewrite tanpa aksi pengguna.
 - Thinking mode pada model kecil dapat berhenti sebelum jawaban final; aplikasi akan menampilkan error dan menyarankan non-thinking mode.
 - P0.8 memperkuat baseline deterministik dan benchmark Hybrid/Qwen, tetapi belum meluluskan Qwen-only untuk suggestion cards atau TestFlight.
 - P0.9 menguji model Legal 4B dengan metrik generation dan quality gate reproducible. Networking outbound dan tombol analisis kini diaktifkan pada Release/TestFlight untuk eksperimen terkontrol; kelulusan quality gate model tetap tidak diklaim.

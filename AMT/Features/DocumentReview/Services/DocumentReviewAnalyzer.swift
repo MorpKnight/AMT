@@ -3,10 +3,19 @@ import Foundation
 struct DocumentReviewProgress: Equatable, Sendable {
     let fraction: Double
     let detail: String
+    let currentSegment: Int?
+    let totalSegments: Int?
 
-    init(fraction: Double, detail: String) {
+    init(
+        fraction: Double,
+        detail: String,
+        currentSegment: Int? = nil,
+        totalSegments: Int? = nil
+    ) {
         self.fraction = min(max(fraction, 0), 1)
         self.detail = detail
+        self.currentSegment = currentSegment
+        self.totalSegments = totalSegments
     }
 }
 
@@ -73,26 +82,57 @@ final class AIConnectorDocumentReviewAnalyzer: DocumentReviewAnalyzer {
 
     private var currentProgress: DocumentReviewProgress {
         let fraction: Double
+        let detail: String
+        let currentSegment: Int?
+        let totalSegments: Int?
+
         switch viewModel.state {
         case .idle:
             fraction = 0
+            detail = "Menyiapkan analisis"
+            currentSegment = nil
+            totalSegments = nil
         case .segmenting:
             fraction = 0.05
+            detail = "Membaca struktur dokumen"
+            currentSegment = nil
+            totalSegments = nil
         case .loading:
             fraction = 0.15
+            detail = "Menyiapkan pemeriksaan"
+            currentSegment = nil
+            totalSegments = nil
         case let .downloading(value):
             fraction = 0.15 + min(max(value, 0), 1) * 0.25
+            detail = "Menyiapkan model lokal"
+            currentSegment = nil
+            totalSegments = nil
         case let .reviewing(current, total):
             fraction = 0.4 + (Double(current) / Double(max(total, 1))) * 0.55
+            let safeTotal = max(total, 1)
+            let safeCurrent = min(max(current, 1), safeTotal)
+            detail = "Memeriksa segmen \(safeCurrent) dari \(safeTotal)"
+            currentSegment = safeCurrent
+            totalSegments = safeTotal
         case .completed:
             fraction = 1
+            let total = viewModel.segmentationResult?.segments.count
+                ?? viewModel.processedSegmentCount
+            detail = total > 0 ? "Semua \(total) segmen selesai" : "Analisis selesai"
+            currentSegment = total > 0 ? total : nil
+            totalSegments = total > 0 ? total : nil
         case .cancelled, .failed:
             fraction = 0
+            detail = viewModel.progressStage.title
+            currentSegment = nil
+            totalSegments = nil
         }
 
         return DocumentReviewProgress(
             fraction: fraction,
-            detail: viewModel.progressStage.title
+            detail: detail,
+            currentSegment: currentSegment,
+            totalSegments: totalSegments
         )
     }
 }

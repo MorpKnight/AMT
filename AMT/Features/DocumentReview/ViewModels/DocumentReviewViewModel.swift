@@ -40,6 +40,7 @@ final class DocumentReviewViewModel {
     private(set) var sourceAvailability: DocumentReviewSourceAvailability = .missing
     private(set) var analysisStatus: DocumentReviewAnalysisStatus = .idle
     private(set) var reviewItems: [DocumentReviewItem] = []
+    private(set) var selectedReviewItemID: UUID?
     private(set) var progress = 0.0
     private(set) var progressDetail = ""
     private(set) var errorMessage: String?
@@ -105,6 +106,20 @@ final class DocumentReviewViewModel {
         return validatedAcceptedItems().isEmpty == false
     }
 
+    var sourceViewerNotice: String {
+        return sourceAvailability.notice
+    }
+
+    var selectedReviewContext: DocumentReviewSourceContext? {
+        guard let selectedReviewItemID else { return nil }
+        return sourceContext(for: selectedReviewItemID)
+    }
+
+    var selectedReviewItem: DocumentReviewItem? {
+        guard let selectedReviewItemID else { return nil }
+        return reviewItems.first(where: { $0.id == selectedReviewItemID })
+    }
+
     func load(document: DashboardDocument, originalURL: URL?) {
         cancel()
         documentID = document.id
@@ -115,6 +130,7 @@ final class DocumentReviewViewModel {
         sourceAvailability = .missing
         analysisStatus = .idle
         reviewItems = []
+        selectedReviewItemID = nil
         progress = 0
         progressDetail = ""
         errorMessage = nil
@@ -194,6 +210,7 @@ final class DocumentReviewViewModel {
     func retryAnalysis() {
         guard !isAnalyzing else { return }
         reviewItems = []
+        selectedReviewItemID = nil
         analysisStatus = .idle
         progress = 0
         progressDetail = ""
@@ -255,6 +272,22 @@ final class DocumentReviewViewModel {
         reviewItems[index].decision = .rejected
         persistSnapshot()
         return true
+    }
+
+    func selectReviewItem(_ id: UUID?) {
+        guard let id,
+              reviewItems.contains(where: { $0.id == id }) else {
+            selectedReviewItemID = nil
+            return
+        }
+        selectedReviewItemID = id
+    }
+
+    func sourceContext(for itemID: UUID) -> DocumentReviewSourceContext? {
+        guard let item = reviewItems.first(where: { $0.id == itemID }) else {
+            return nil
+        }
+        return DocumentReviewSourceContext.make(for: item, in: sourceText)
     }
 
     func exportReviewedDocument(title: String) {
@@ -338,6 +371,7 @@ final class DocumentReviewViewModel {
             do {
                 let reviews = try await analyzer.analyze(documentText: input) { [weak self] update in
                     guard let self, self.activeOperationID == operationID else { return }
+                    guard update.fraction >= self.progress else { return }
                     self.progress = update.fraction
                     self.progressDetail = update.detail
                 }
