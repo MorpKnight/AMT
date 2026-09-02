@@ -6,16 +6,18 @@
 //
 
 import SwiftUI
+import Combine
 
 struct DocumentAnalysisLoadingView: View {
     var progressStage: AIConnectorProgressStage = .idle
     var downloadProgress: Double = 0
     var generationProgress: Int = 0
 
-    @State private var isAnimating: Bool = false
+    @State private var displayedProgress: Double = 0.08
+    private let timer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
-    private var blueAccent: Color {
-        Color(red: 0.08, green: 0.38, blue: 0.85)
+    private var blackColor: Color {
+        .black
     }
 
     var body: some View {
@@ -30,13 +32,13 @@ struct DocumentAnalysisLoadingView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(blueAccent.opacity(0.08))
+                        .fill(blackColor.opacity(0.10))
                         .frame(height: 6)
 
                     Capsule()
-                        .fill(blueAccent)
-                        .frame(width: max(16, geo.size.width * effectiveProgress), height: 6)
-                        .animation(.easeInOut(duration: 0.35), value: effectiveProgress)
+                        .fill(blackColor)
+                        .frame(width: max(16, min(geo.size.width, geo.size.width * displayedProgress)), height: 6)
+                        .animation(.linear(duration: 0.05), value: displayedProgress)
                 }
             }
             .frame(width: 180, height: 6)
@@ -44,35 +46,62 @@ struct DocumentAnalysisLoadingView: View {
             // MARK: - Status Label
             Text("Dokumenmu sedang dianalisis...")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(blueAccent)
+                .foregroundStyle(blackColor)
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
-        .onAppear {
-            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                isAnimating = true
+        .onReceive(timer) { _ in
+            advanceProgress()
+        }
+        .onChange(of: progressStage) { _, newStage in
+            if newStage == .completed {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    displayedProgress = 1.0
+                }
             }
         }
     }
 
-    private var effectiveProgress: Double {
+    private var stageTarget: Double {
         if downloadProgress > 0 {
-            return downloadProgress
+            return max(0.20, min(0.70, downloadProgress))
         }
         switch progressStage {
+        case .idle:
+            return 0.12
         case .segmenting:
-            return 0.15
+            return 0.25
         case .semanticModelDownload, .modelDownload:
-            return max(0.2, downloadProgress)
+            return max(0.25, downloadProgress)
         case .semanticRetrieval, .modelLoading:
-            return 0.45
+            return 0.50
         case .generation:
-            return min(0.92, 0.50 + Double(generationProgress) / 400.0)
+            let genOffset = min(0.42, Double(generationProgress) / 400.0)
+            return min(0.95, 0.50 + genOffset)
         case .completed:
             return 1.0
         default:
-            return isAnimating ? 0.70 : 0.30
+            return 0.85
+        }
+    }
+
+    private func advanceProgress() {
+        guard progressStage != .completed else {
+            if displayedProgress < 1.0 {
+                displayedProgress = 1.0
+            }
+            return
+        }
+
+        let target = max(stageTarget, displayedProgress)
+        if target > displayedProgress {
+            // Smoothly catch up towards stage target
+            let step = max(0.003, (target - displayedProgress) * 0.1)
+            displayedProgress = min(target, displayedProgress + step)
+        } else if displayedProgress < 0.95 {
+            // Slowly crawl forward even while waiting on long tasks
+            displayedProgress = min(0.95, displayedProgress + 0.001)
         }
     }
 }
