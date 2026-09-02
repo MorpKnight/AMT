@@ -63,6 +63,7 @@ struct DashboardView: View {
                             }
                         }
                     },
+                    originalSourceURL: storageManager.importedSourceURL(for: document),
                     suggestionService: suggestionService,
                     dictionaryStore: dictionaryStore,
                     aiConnectorViewModel: aiConnectorViewModel

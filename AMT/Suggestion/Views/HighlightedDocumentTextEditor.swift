@@ -6,10 +6,10 @@
 import AppKit
 import SwiftUI
 
-/// An AppKit-backed editor that keeps the document as plain `String` while
-/// drawing suggestion highlights as temporary layout attributes.
 struct HighlightedDocumentTextEditor: NSViewRepresentable {
     @Binding var text: String
+    @Binding var richTextData: Data?
+    @Binding var structuredDocument: StructuredDocument?
 
     let suggestions: [EditorSuggestion]
     let selectedSuggestionID: UUID?
@@ -17,6 +17,8 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
     let onTextEdited: () -> Void
     let onAccept: (EditorSuggestion) -> Void
     let onDismiss: (UUID) -> Void
+
+    var formattingViewModel: EditorViewModel? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -50,12 +52,12 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         textView.allowsUndo = true
         textView.isEditable = true
         textView.isSelectable = true
-        textView.isRichText = false
+        textView.isRichText = true
         textView.importsGraphics = false
         textView.drawsBackground = false
         textView.backgroundColor = NSColor.clear
-        textView.textColor = NSColor.labelColor
-        textView.insertionPointColor = NSColor.labelColor
+        textView.textColor = NSColor.black
+        textView.insertionPointColor = NSColor.black
         textView.font = NSFont.systemFont(ofSize: 16)
         textView.textContainerInset = NSSize(width: 24, height: 24)
         textView.minSize = NSSize(width: 0, height: 0)
@@ -68,7 +70,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         textView.autoresizingMask = NSView.AutoresizingMask.width
         textView.typingAttributes = [
             NSAttributedString.Key.font: textView.font ?? NSFont.systemFont(ofSize: 16),
-            NSAttributedString.Key.foregroundColor: NSColor.labelColor
+            NSAttributedString.Key.foregroundColor: NSColor.black
         ]
         textView.setAccessibilityRole(NSAccessibility.Role.textArea)
         textView.setAccessibilityLabel("Isi dokumen")
@@ -80,13 +82,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         }
 
         textStorage.setAttributedString(
-            NSAttributedString(
-                string: text,
-                attributes: [
-                    .font: textView.font ?? NSFont.systemFont(ofSize: 16),
-                    .foregroundColor: NSColor.labelColor
-                ]
-            )
+            renderedText(defaultFont: textView.font ?? NSFont.systemFont(ofSize: 16))
         )
 
         scrollView.documentView = textView
@@ -94,23 +90,45 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             scrollView: scrollView,
             textView: textView,
             layoutManager: layoutManager,
-            textContainer: textContainer
+            textContainer: textContainer,
+            text: text,
+            richTextData: richTextData,
+            structuredDocument: structuredDocument
         )
         context.coordinator.updateHighlights(
             suggestions: suggestions,
             selectedSuggestionID: selectedSuggestionID
         )
+        context.coordinator.pushFormattingState()
 
         return scrollView
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.parent = self
-        context.coordinator.updateTextIfNeeded(text)
+        context.coordinator.updateTextIfNeeded(text, richTextData: richTextData, structuredDocument: structuredDocument)
         context.coordinator.updateHighlights(
             suggestions: suggestions,
             selectedSuggestionID: selectedSuggestionID
         )
+        if let action = formattingViewModel?.pendingAction {
+            context.coordinator.applyFormatting(action)
+            formattingViewModel?.pendingAction = nil
+        }
+    }
+
+    private func renderedText(defaultFont: NSFont) -> NSAttributedString {
+        if let structuredDocument { return structuredDocument.attributedString() }
+        guard let richTextData,
+              let richText = try? NSAttributedString(
+                data: richTextData,
+                options: [.documentType: NSAttributedString.DocumentType.rtf],
+                documentAttributes: nil
+              )
+        else {
+            return MarkdownRichTextCodec.render(text, defaultFont: defaultFont)
+        }
+        return richText
     }
 
     @MainActor
@@ -125,6 +143,9 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         private var popover: NSPopover?
         private var presentedSuggestionID: UUID?
         private var isApplyingProgrammaticMutation = false
+        private var currentText = ""
+        private var currentRichTextData: Data?
+        private var currentStructuredDocument: StructuredDocument?
 
         init(parent: HighlightedDocumentTextEditor) {
             self.parent = parent
@@ -140,12 +161,18 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             scrollView: NSScrollView,
             textView: SuggestionTextView,
             layoutManager: SuggestionLayoutManager,
-            textContainer: NSTextContainer
+            textContainer: NSTextContainer,
+            text: String,
+            richTextData: Data?,
+            structuredDocument: StructuredDocument?
         ) {
             self.scrollView = scrollView
             self.textView = textView
             self.layoutManager = layoutManager
             self.textContainer = textContainer
+            currentText = text
+            currentRichTextData = richTextData
+            currentStructuredDocument = structuredDocument
 
             boundsObserver = NotificationCenter.default.addObserver(
                 forName: NSView.boundsDidChangeNotification,
@@ -158,25 +185,24 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             }
         }
 
-        func updateTextIfNeeded(_ text: String) {
-            guard let textView, textView.string != text else { return }
+        func updateTextIfNeeded(_ text: String, richTextData: Data?, structuredDocument: StructuredDocument?) {
+            guard let textView,
+                  currentText != text || currentRichTextData != richTextData || currentStructuredDocument != structuredDocument
+            else { return }
 
             isApplyingProgrammaticMutation = true
             defer { isApplyingProgrammaticMutation = false }
 
             let font = textView.font ?? NSFont.systemFont(ofSize: 16)
-            textView.textStorage?.setAttributedString(
-                NSAttributedString(
-                    string: text,
-                    attributes: [
-                        NSAttributedString.Key.font: font,
-                        NSAttributedString.Key.foregroundColor: NSColor.labelColor
-                    ]
-                )
-            )
+            currentText = text
+            currentRichTextData = richTextData
+            currentStructuredDocument = structuredDocument
+            let rendered = parent.renderedText(defaultFont: font)
+            textView.textStorage?.setAttributedString(rendered)
             textView.setSelectedRange(
-                NSRange(location: min(textView.selectedRange().location, text.utf16.count), length: 0)
+                NSRange(location: min(textView.selectedRange().location, textView.string.utf16.count), length: 0)
             )
+            pushFormattingState()
         }
 
         func updateHighlights(
@@ -287,12 +313,38 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 return
             }
 
-            parent.text = textView.string
+            persistRichText(from: textView)
             closePopover(notifySelection: true)
             layoutManager?.update(suggestions: [], selectedSuggestionID: nil)
             parent.onTextEdited()
+            pushFormattingState()
         }
 
+        func textViewDidChangeSelection(_ notification: Notification) {
+            pushFormattingState()
+        }
+
+        /// Applies a toolbar action to the active AppKit editor selection.
+        func applyFormatting(_ action: FormattingAction) {
+            guard let textView else { return }
+
+            isApplyingProgrammaticMutation = true
+            let didChange = RichTextFormatter.apply(action, to: textView)
+            isApplyingProgrammaticMutation = false
+
+            guard didChange else { return }
+            persistRichText(from: textView)
+            closePopover(notifySelection: true)
+            layoutManager?.update(suggestions: [], selectedSuggestionID: nil)
+            parent.onTextEdited()
+            pushFormattingState()
+        }
+
+        /// Reflects the current cursor context in the toolbar.
+        func pushFormattingState() {
+            guard let textView else { return }
+            parent.formattingViewModel?.activeState = RichTextFormatter.state(for: textView)
+        }
         func accept(_ suggestion: EditorSuggestion) {
             guard let textView else { return }
 
@@ -312,9 +364,25 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             )
             isApplyingProgrammaticMutation = false
 
-            parent.text = textView.string
+            persistRichText(from: textView)
             parent.onAccept(suggestion)
             closePopover(notifySelection: true)
+        }
+
+        private func persistRichText(from textView: NSTextView) {
+            let richText = textView.attributedString()
+            let plainText = richText.string
+                .replacingOccurrences(of: "\u{2028}", with: "\n")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let rtfData = try? DocxToMarkdownConverter.rtfData(from: richText)
+
+            currentText = plainText
+            currentRichTextData = rtfData
+            parent.text = plainText
+            parent.richTextData = rtfData
+            let normalized = StructuredDocument.normalize(richText)
+            currentStructuredDocument = normalized
+            parent.structuredDocument = normalized
         }
 
         func dismiss(_ suggestion: EditorSuggestion) {
@@ -614,6 +682,8 @@ final class SuggestionLayoutManager: NSLayoutManager {
     let text = "Pihak Kedua wajib untuk menyerahkan laporan. Perjanjian ini telah ditanda tangani oleh Para Pihak."
     HighlightedDocumentTextEditor(
         text: .constant(text),
+        richTextData: .constant(nil),
+        structuredDocument: .constant(nil),
         suggestions: [
             EditorSuggestion(
                 id: UUID(),
@@ -649,6 +719,8 @@ final class SuggestionLayoutManager: NSLayoutManager {
     let text = "Pihak Kedua wajib untuk menyerahkan laporan."
     HighlightedDocumentTextEditor(
         text: .constant(text),
+        richTextData: .constant(nil),
+        structuredDocument: .constant(nil),
         suggestions: [
             EditorSuggestion(
                 id: UUID(),

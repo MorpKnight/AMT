@@ -17,6 +17,12 @@ final class DocumentStorageManager: ObservableObject {
     private let fileManager = FileManager.default
     private let folderName = "AMT_Documents"
 
+    func importedSourceURL(for document: DashboardDocument) -> URL? {
+        guard let fileName = document.importedSourceFileName else { return nil }
+        let url = storageURL.appendingPathComponent(fileName)
+        return fileManager.fileExists(atPath: url.path) ? url : nil
+    }
+
     private var storageURL: URL {
         let paths = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
         let documentsDirectory = paths[0]
@@ -89,20 +95,67 @@ final class DocumentStorageManager: ObservableObject {
 
             let title = url.deletingPathExtension().lastPathComponent
             var textContent = ""
+            var richTextData: Data?
+            var structuredDocument: StructuredDocument?
+            let documentID = UUID()
+            let sourceFileName = "\(documentID.uuidString).\(url.pathExtension.lowercased())"
 
             do {
-                textContent = try DocxToMarkdownConverter.convert(fileURL: url)
+                let ext = url.pathExtension.lowercased()
+                if ["docx", "doc", "rtf", "html", "htm"].contains(ext) {
+                    let attributedText = try DocxToMarkdownConverter.loadAttributedString(fileURL: url)
+                    let payload = DocumentRenderNormalizer.fromNative(attributedText)
+                    textContent = payload.plainText
+                    richTextData = payload.richTextData ?? (try? DocxToMarkdownConverter.rtfData(from: attributedText))
+                    structuredDocument = payload.structuredDocument
+                } else if ["md", "markdown"].contains(ext) {
+                    let markdown = try DocxToMarkdownConverter.convert(fileURL: url)
+                    let payload = DocumentRenderNormalizer.fromMarkdown(markdown)
+                    textContent = payload.plainText
+                    richTextData = payload.richTextData
+                    structuredDocument = payload.structuredDocument
+                } else if ext == "txt" || ext.isEmpty {
+                    let plainText = try String(contentsOf: url, encoding: .utf8)
+                    let payload = DocumentRenderNormalizer.fromPlainText(plainText)
+                    textContent = payload.plainText
+                    richTextData = payload.richTextData
+                    structuredDocument = payload.structuredDocument
+                } else {
+                    let text = try DocxToMarkdownConverter.convert(fileURL: url)
+                    let payload = DocumentRenderNormalizer.fromPlainText(text)
+                    textContent = payload.plainText
+                    richTextData = payload.richTextData
+                    structuredDocument = payload.structuredDocument
+                }
             } catch {
                 print("Error converting document to Markdown: \(error.localizedDescription)")
                 if let rawString = try? String(contentsOf: url, encoding: .utf8) {
                     textContent = rawString
+                    let payload = DocumentRenderNormalizer.fromPlainText(rawString)
+                    richTextData = payload.richTextData
+                    structuredDocument = payload.structuredDocument
                 }
             }
 
+            do {
+                try self.fileManager.copyItem(
+                    at: url,
+                    to: self.storageURL.appendingPathComponent(sourceFileName)
+                )
+            } catch {
+                print("Failed to preserve original imported document: \(error.localizedDescription)")
+            }
+
+            let sourceWasPreserved = self.fileManager.fileExists(
+                atPath: self.storageURL.appendingPathComponent(sourceFileName).path
+            )
             let newDoc = DashboardDocument(
-                id: UUID(),
+                id: documentID,
                 title: title.isEmpty ? "Untitled" : title,
                 content: textContent,
+                richTextData: richTextData,
+                importedSourceFileName: sourceWasPreserved ? sourceFileName : nil,
+                structuredDocument: structuredDocument,
                 createdAt: Date(),
                 updatedAt: Date()
             )
@@ -139,13 +192,19 @@ final class DocumentStorageManager: ObservableObject {
         var updatedDoc = document
         updatedDoc.updatedAt = Date()
 
+        // Built-in documents: do not persist to disk, but update the in-memory array safely
         if AIConnectorDummyDocument.isBuiltIn(updatedDoc) {
             if let index = documents.firstIndex(where: { $0.id == updatedDoc.id }) {
-                documents[index] = updatedDoc
+                let replacement = updatedDoc
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    self.documents[index] = replacement
+                }
             }
             return
         }
-        
+
+        // Persist to disk
         let encoder = JSONEncoder()
         encoder.outputFormatting = .prettyPrinted
 
@@ -154,9 +213,14 @@ final class DocumentStorageManager: ObservableObject {
             let fileURL = storageURL.appendingPathComponent("\(updatedDoc.id.uuidString).json")
             try data.write(to: fileURL, options: .atomic)
 
+            // Safely publish changes after IO completes
             if let index = documents.firstIndex(where: { $0.id == updatedDoc.id }) {
-                documents[index] = updatedDoc
-                documents.sort { $0.updatedAt > $1.updatedAt }
+                let replacement = updatedDoc
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    self.documents[index] = replacement
+                    self.documents.sort { $0.updatedAt > $1.updatedAt }
+                }
             }
         } catch {
             print("Failed to save document to Foundation storage: \(error.localizedDescription)")
@@ -168,6 +232,11 @@ final class DocumentStorageManager: ObservableObject {
 
         let fileURL = storageURL.appendingPathComponent("\(document.id.uuidString).json")
         try? fileManager.removeItem(at: fileURL)
-        documents.removeAll { $0.id == document.id }
+        if let sourceURL = importedSourceURL(for: document) {
+            try? fileManager.removeItem(at: sourceURL)
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.documents.removeAll { $0.id == document.id }
+        }
     }
 }
