@@ -13,17 +13,31 @@ struct DocumentAnalysisLoadingView: View {
     var downloadProgress: Double = 0
     var generationProgress: Int = 0
 
+    @Environment(\.colorScheme) private var colorScheme
+
     @State private var displayedProgress: Double = 0.08
     private let timer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
-    private var blackColor: Color {
-        .black
+    private var isDarkMode: Bool {
+        colorScheme == .dark
+    }
+
+    private var logoImageName: String {
+        isDarkMode ? "logo_white" : "logo_black"
+    }
+
+    private var primaryColor: Color {
+        isDarkMode ? .white : .black
+    }
+
+    private var trackColor: Color {
+        isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.10)
     }
 
     var body: some View {
         VStack(spacing: 24) {
             // MARK: - Logo Image from Assets
-            Image("logo")
+            Image(logoImageName)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 140, height: 120)
@@ -32,11 +46,11 @@ struct DocumentAnalysisLoadingView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(blackColor.opacity(0.10))
+                        .fill(trackColor)
                         .frame(height: 6)
 
                     Capsule()
-                        .fill(blackColor)
+                        .fill(primaryColor)
                         .frame(width: max(16, min(geo.size.width, geo.size.width * displayedProgress)), height: 6)
                         .animation(.linear(duration: 0.05), value: displayedProgress)
                 }
@@ -46,7 +60,7 @@ struct DocumentAnalysisLoadingView: View {
             // MARK: - Status Label
             Text("Dokumenmu sedang dianalisis...")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(blackColor)
+                .foregroundStyle(primaryColor)
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -106,10 +120,20 @@ struct DocumentAnalysisLoadingView: View {
     }
 }
 
-#Preview {
+#Preview("Light Mode") {
     DocumentAnalysisLoadingView(
         progressStage: .generation,
         downloadProgress: 0.5,
         generationProgress: 120
     )
+    .preferredColorScheme(.light)
+}
+
+#Preview("Dark Mode") {
+    DocumentAnalysisLoadingView(
+        progressStage: .generation,
+        downloadProgress: 0.5,
+        generationProgress: 120
+    )
+    .preferredColorScheme(.dark)
 }
