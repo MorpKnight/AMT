@@ -1,5 +1,149 @@
 [
   {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Badan Pangan Nasional Nomor 13 Tahun 2024 tentang Standar Mutu Produk Pangan Lokal Dalam Rangka Penganekaragaman Pangan",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bapanas-no-1-tahun-2026|amends|peraturan.go.id:peraturan-bapanas-no-13-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bapanas-no-1-tahun-2026",
+    "target_reference_id": "peraturan.go.id:peraturan-bapanas-no-13-tahun-2024"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN BADAN PANGAN NASIONAL NOMOR 2 TAHUN 2024 TENTANG PENGAWASAN TERHADAP PEMENUHAN PERSYARATAN KEAMANAN, MUTU, GIZI, LABEL, DAN IKLAN PANGAN SEGAR",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bapanas-no-9-tahun-2024|amends|peraturan.go.id:peraturan-bapanas-no-2-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bapanas-no-9-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-bapanas-no-2-tahun-2024"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN BADAN PENGAWAS TENAGA NUKLIR NOMOR 2 TAHUN 2018 TENTANG UJI KESESUAIAN PESAWAT SINAR-X RADIOLOGI DIAGNOSTIK DAN INTERVENSIONAL",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bapeten-no-2-tahun-2022|amends|peraturan.go.id:peraturan-bapeten-no-2-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bapeten-no-2-tahun-2022",
+    "target_reference_id": "peraturan.go.id:peraturan-bapeten-no-2-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN BANK INDONESIA NOMOR 4 TAHUN 2023 TENTANG PINJAMAN LIKUIDITAS JANGKA PENDEK BAGI BANK UMUM KONVENSIONAL",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-10-tahun-2023|amends|peraturan.go.id:peraturan-bi-no-4-tahun-2023",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-10-tahun-2023",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-4-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Bank Indonesia Nomor 11 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-11-tahun-2024|repeals|peraturan.go.id:peraturan-bi-no-22-14-pbi-2020-tahun-2020",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-11-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-22-14-pbi-2020-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Bank Indonesia Nomor 11 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-11-tahun-2024|repeals|peraturan.go.id:peraturan-bi-no-24-2-pbi-2022-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-11-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-24-2-pbi-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Bank Indonesia Nomor 11 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-11-tahun-2024|repeals|peraturan.go.id:peraturan-bi-no-24-20-pbi-2022-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-11-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-24-20-pbi-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN BANK INDONESIA NOMOR 22/14/PBI/2020 TENTANG OPERASI MONETER",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-13-tahun-2023|amends|peraturan.go.id:peraturan-bi-no-22-14-pbi-2020-tahun-2020",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-13-tahun-2023",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-22-14-pbi-2020-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS PERATURAN BANK INDONESIA NOMOR 22/14/PBI/2020 TENTANG OPERASI MONETER",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-15-tahun-2023|amends|peraturan.go.id:peraturan-bi-no-22-14-pbi-2020-tahun-2020",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-15-tahun-2023",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-22-14-pbi-2020-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Bank Indonesia Nomor 6 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-6-tahun-2023|repeals|peraturan.go.id:peraturan-bi-no-23-10-pbi-2021-tahun-2021",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-6-tahun-2023",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-23-10-pbi-2021-tahun-2021"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Bank Indonesia Nomor 6 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-6-tahun-2024|repeals|peraturan.go.id:peraturan-bi-no-12-tahun-2023",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-6-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-12-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Bank Indonesia Nomor 6 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-6-tahun-2024|repeals|peraturan.go.id:peraturan-bi-no-24-7-pbi-2022-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-6-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-24-7-pbi-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Bank Indonesia Nomor 6 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-6-tahun-2024|repeals|peraturan.go.id:peraturan-bi-no-6-tahun-2023",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-6-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-6-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Bank Indonesia Nomor 5 Tahun 2023 Tentang Pembiayaan Likuiditas Jangka Pendek Berdasarkan Prinsip Syariah Bagi Bank Umum Syariah",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-8-tahun-2025|amends|peraturan.go.id:peraturan-bi-no-5-tahun-2023",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-8-tahun-2025",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-5-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN BANK INDONESIA NOMOR 22/14/PBI/2020 TENTANG OPERASI MONETER",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-9-tahun-2023|amends|peraturan.go.id:peraturan-bi-no-22-14-pbi-2020-tahun-2020",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-9-tahun-2023",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-22-14-pbi-2020-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Bank Indonesia Nomor 9 Tahun 2025",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-bi-no-9-tahun-2025|repeals|peraturan.go.id:peraturan-bi-no-11-tahun-2023",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-bi-no-9-tahun-2025",
+    "target_reference_id": "peraturan.go.id:peraturan-bi-no-11-tahun-2023"
+  },
+  {
     "evidence_source": "peraturan.go.id detail status link",
     "evidence_text": "dicabut oleh Peraturan Badan Narkotika Nasional Nomor 4 Tahun 2017",
     "inverse_relation_type": "repealed_by",
@@ -9,6 +153,267 @@
     "target_reference_id": "peraturan.go.id:pp-no-60-tahun-2008"
   },
   {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN BADAN PENGAWAS OBAT DAN MAKANAN NOMOR 2 TAHUN 2022 TENTANG PELAPORAN KEGIATAN INDUSTRI FARMASI DAN PEDAGANG BESAR FARMASI",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bpom-no-14-tahun-2023|amends|peraturan.go.id:peraturan-bpom-no-2-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bpom-no-14-tahun-2023",
+    "target_reference_id": "peraturan.go.id:peraturan-bpom-no-2-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Badan Pengawas Obat dan Makanan Nomor 32 Tahun 2022 tentang Kriteria dan Tata Laksana Registrasi Suplemen Kesehatan",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bpom-no-15-tahun-2024|amends|peraturan.go.id:peraturan-bpom-no-32-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bpom-no-15-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-bpom-no-32-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Badan Pengawas Obat dan Makanan Nomor 12 Tahun 2022 tentang Pedoman Cara Pembuatan Obat yang Baik di Rumah Sakit",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bpom-no-17-tahun-2024|amends|peraturan.go.id:peraturan-bpom-no-12-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bpom-no-17-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-bpom-no-12-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Badan Pengawas Obat dan Makanan Nomor 18 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-bpom-no-18-tahun-2024|repeals|peraturan.go.id:peraturan-bpom-no-12-tahun-2023",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-bpom-no-18-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-bpom-no-12-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN BADAN PENGAWAS OBAT DAN MAKANAN NOMOR 27 TAHUN 2022 TENTANG PENGAWASAN PEMASUKAN OBAT DAN MAKANAN KE DALAM WILAYAH INDONESIA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bpom-no-28-tahun-2023|amends|peraturan.go.id:peraturan-bpom-no-27-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bpom-no-28-tahun-2023",
+    "target_reference_id": "peraturan.go.id:peraturan-bpom-no-27-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Badan Pengawas Obat dan Makanan Nomor 8 Tahun 2024 tentang Tata Laksana Persetujuan Pelaksanaan Uji Klinik",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bpom-no-34-tahun-2025|amends|peraturan.go.id:peraturan-bpom-no-8-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bpom-no-34-tahun-2025",
+    "target_reference_id": "peraturan.go.id:peraturan-bpom-no-8-tahun-2024"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Badan Pengawas Obat dan Makanan Nomor 7 Tahun 2024 tentang Standar Cara Pembuatan Obat yang Baik",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bpom-no-7-tahun-2025|amends|peraturan.go.id:peraturan-bpom-no-7-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bpom-no-7-tahun-2025",
+    "target_reference_id": "peraturan.go.id:peraturan-bpom-no-7-tahun-2024"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN BADAN PELINDUNGAN PEKERJA MIGRAN INDONESIA NOMOR 7 TAHUN 2022 TENTANG PROSES SEBELUM BEKERJA BAGI CALON PEKERJA MIGRAN INDONESIA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-bppmi-no-8-tahun-2023|amends|peraturan.go.id:peraturan-bppmi-no-7-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-bppmi-no-8-tahun-2023",
+    "target_reference_id": "peraturan.go.id:peraturan-bppmi-no-7-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN KOMISI PEMILIHAN UMUM NOMOR 7 TAHUN 2022 TENTANG PENYUSUNAN DAFTAR PEMILIH DALAM PENYELENGGARAAN PEMILIHAN UMUM DAN SISTEM INFORMASI DATA PEMILIH",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-kpu-no-7-tahun-2023|amends|peraturan.go.id:peraturan-kpu-no-7-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-kpu-no-7-tahun-2023",
+    "target_reference_id": "peraturan.go.id:peraturan-kpu-no-7-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN LEMBAGA ADMINISTRASI NEGARA NOMOR 5 TAHUN 2022 TENTANG PENYELENGGARAAN PELATIHAN STRUKTURAL KEPEMIMPINAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-lan-no-6-tahun-2022|amends|peraturan.go.id:peraturan-lan-no-5-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-lan-no-6-tahun-2022",
+    "target_reference_id": "peraturan.go.id:peraturan-lan-no-5-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Lembaga Kebijakan Pengadaan Barang/Jasa Pemerintah Nomor 5 Tahun 2022 tentang Pedoman Penyediaan Infrastruktur dan Pengadaan Barang/Jasa yang Lainnya dengan Kekhususan dalam rangka Kegiatan Persiapan, Pembangunan, dan Pemindahan Ibu Kota Negara, serta Penyelenggaraan Pemerintahan Daerah Khusus Ibu Kota Nusantara",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-lkpp-no-3-tahun-2024|amends|peraturan.go.id:peraturan-lkpp-no-5-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-lkpp-no-3-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-lkpp-no-5-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Lembaga Penjamin Simpanan Nomor 1 Tahun 2022 tentang Likuidasi Bank",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-lps-no-1-tahun-2025|amends|peraturan.go.id:peraturan-lps-no-1-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-lps-no-1-tahun-2025",
+    "target_reference_id": "peraturan.go.id:peraturan-lps-no-1-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MAHKAMAH AGUNG NOMOR 2 TAHUN 2017 TENTANG PENGADAAN HAKIM",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-ma-no-1-tahun-2021|amends|peraturan.go.id:peraturan-ma-no-2-tahun-2017",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-ma-no-1-tahun-2021",
+    "target_reference_id": "peraturan.go.id:peraturan-ma-no-2-tahun-2017"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MAHKAMAH AGUNG NOMOR 5 TAHUN 2020 TENTANG PROTOKOL PERSIDANGAN DAN KEAMANAN DALAM LINGKUNGAN PENGADILAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-ma-no-6-tahun-2020|amends|peraturan.go.id:peraturan-ma-no-5-tahun-2020",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-ma-no-6-tahun-2020",
+    "target_reference_id": "peraturan.go.id:peraturan-ma-no-5-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MAHKAMAH AGUNG NOMOR 4 TAHUN 2020 TENTANG ADMINISTRASI DAN PERSIDANGAN PERKARA PIDANA DI PENGADILAN SECARA ELEKTRONIK",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-ma-no-8-tahun-2022|amends|peraturan.go.id:peraturan-ma-no-4-tahun-2020",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-ma-no-8-tahun-2022",
+    "target_reference_id": "peraturan.go.id:peraturan-ma-no-4-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Otoritas Jasa Keuangan Nomor 10 /POJK.05/2022 Tahun 2022",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-10-pojk-05-2022-tahun-2022|repeals|peraturan.go.id:peraturan-ojk-no-77-pojk-01-2016-tahun-2016",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-10-pojk-05-2022-tahun-2022",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-77-pojk-01-2016-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Otoritas Jasa Keuangan Nomor 14 Tahun 2023 tentang Perdagangan Karbon Melalui Bursa Karbon",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-10-tahun-2026|amends|peraturan.go.id:peraturan-ojk-no-14-tahun-2023",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-10-tahun-2026",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-14-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Otoritas Jasa Keuangan Nomor 12 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-12-tahun-2024|repeals|peraturan.go.id:peraturan-ojk-no-35-pojk-05-2018-tahun-2018",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-12-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-35-pojk-05-2018-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN OTORITAS JASA KEUANGAN NOMOR 57/POJK.04/2020 TENTANG PENAWARAN EFEK MELALUI LAYANAN URUN DANA BERBASIS TEKNOLOGI INFORMASI",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-16-pojk-04-2021-tahun-2021|amends|peraturan.go.id:peraturan-ojk-no-57-pojk-04-2020-tahun-2020",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-16-pojk-04-2021-tahun-2021",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-57-pojk-04-2020-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Otoritas Jasa Keuangan Nomor 17 Tahun 2025",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-17-tahun-2025|repeals|peraturan.go.id:peraturan-ojk-no-57-pojk-04-2020-tahun-2020",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-17-tahun-2025",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-57-pojk-04-2020-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Otoritas Jasa Keuangan Nomor 22 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-22-tahun-2023|repeals|peraturan.go.id:peraturan-ojk-no-6-pojk-07-2022-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-22-tahun-2023",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-6-pojk-07-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Otoritas Jasa Keuangan Nomor 27 Tahun 2024 tentang Penyelenggaraan Perdagangan Aset Keuangan Digital Termasuk Aset Kripto",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-23-tahun-2025|amends|peraturan.go.id:peraturan-ojk-no-27-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-23-tahun-2025",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-27-tahun-2024"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Otoritas Jasa Keuangan Nomor 39 Tahun 2024 tentang Pergadaian",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-29-tahun-2025|amends|peraturan.go.id:peraturan-ojk-no-39-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-29-tahun-2025",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-39-tahun-2024"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Otoritas Jasa Keuangan Nomor 35 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-35-tahun-2024|repeals|peraturan.go.id:peraturan-ojk-no-15-pojk-05-2019-tahun-2019",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-35-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-15-pojk-05-2019-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Otoritas Jasa Keuangan Nomor 69/POJK.05/2016 tentang Penyelenggaraan Usaha Perusahaan Asuransi, Perusahaan Asuransi Syariah, Perusahaan Reasuransi, dan Perusahaan Reasuransi Syariah",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-36-tahun-2024|amends|peraturan.go.id:peraturan-ojk-no-69-pojk-05-2016-tahun-2016",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-36-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-69-pojk-05-2016-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN OTORITAS JASA KEUANGAN NOMOR 69/POJK.05/2016 TENTANG PENYELENGGARAAN USAHA PERUSAHAAN ASURANSI, PERUSAHAAN ASURANSI SYARIAH, PERUSAHAAN REASURANSI, DAN PERUSAHAAN REASURANSI SYARIAH",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-38-pojk-05-2020-tahun-2020|amends|peraturan.go.id:peraturan-ojk-no-69-pojk-05-2016-tahun-2016",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-38-pojk-05-2020-tahun-2020",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-69-pojk-05-2016-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Otoritas Jasa Keuangan Nomor 39 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-39-tahun-2024|repeals|peraturan.go.id:peraturan-ojk-no-31-pojk-05-2016-tahun-2016",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-39-tahun-2024",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-31-pojk-05-2016-tahun-2016"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN OTORITAS JASA KEUANGAN NOMOR 35/POJK.05/2018 TENTANG PENYELENGGARAAN USAHA PERUSAHAAN PEMBIAYAAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:peraturan-ojk-no-7-pojk-05-2022-tahun-2022|amends|peraturan.go.id:peraturan-ojk-no-35-pojk-05-2018-tahun-2018",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:peraturan-ojk-no-7-pojk-05-2022-tahun-2022",
+    "target_reference_id": "peraturan.go.id:peraturan-ojk-no-35-pojk-05-2018-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Agraria dan Tata Ruang/Badan Pertanahan Nasional Nomor 1 Tahun 2021",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permen-atrbpn-no-1-tahun-2021|repeals|peraturan.go.id:pp-no-24-tahun-1997",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permen-atrbpn-no-1-tahun-2021",
+    "target_reference_id": "peraturan.go.id:pp-no-24-tahun-1997"
+  },
+  {
     "evidence_source": "peraturan.go.id detail status link",
     "evidence_text": "dicabut oleh Peraturan Menteri Badan Usaha Milik Negara Nomor PER-2/MBU/03/2023 Tahun 2023",
     "inverse_relation_type": "repealed_by",
@@ -16,6 +421,15 @@
     "relation_type": "repeals",
     "source_reference_id": "peraturan.go.id:permen-bumn-no-per-2-mbu-03-2023-tahun-2023",
     "target_reference_id": "peraturan.go.id:permen-bumn-no-per-08-mbu-12-2019-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Badan Usaha Milik Negara Nomor PER-2/MBU/03/2023 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permen-bumn-no-per-2-mbu-03-2023-tahun-2023|repeals|peraturan.go.id:permen-bumn-no-per-5-mbu-09-2022-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permen-bumn-no-per-2-mbu-03-2023-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permen-bumn-no-per-5-mbu-09-2022-tahun-2022"
   },
   {
     "evidence_source": "peraturan.go.id detail status link",
@@ -45,6 +459,15 @@
     "target_reference_id": "peraturan.go.id:permen-esdm-no-4-tahun-2018"
   },
   {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Energi Dan Sumber Daya Mineral Nomor 2 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permen-esdm-no-2-tahun-2024|repeals|peraturan.go.id:permen-esdm-no-26-tahun-2021",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permen-esdm-no-2-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permen-esdm-no-26-tahun-2021"
+  },
+  {
     "evidence_source": "peraturan.go.id global search/detail metadata",
     "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN MENTERI ENERGI DAN SUMBER DAYA MINERAL NOMOR 50 TAHUN 2017 TENTANG PEMANFAATAN SUMBER ENERGI TERBARUKAN UNTUK PENYEDIAAN TENAGA LISTRIK",
     "inverse_relation_type": "amended_by",
@@ -70,6 +493,33 @@
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:permen-esdm-no-53-tahun-2018",
     "target_reference_id": "peraturan.go.id:permen-esdm-no-50-tahun-2017"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Lingkungan Hidup dan Kehutanan Nomor 15 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permen-lhk-no-15-tahun-2023|repeals|peraturan.go.id:permen-lhk-no-p-22-menlhk-setjen-kum-1-5-2019-tahun-2019",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permen-lhk-no-15-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permen-lhk-no-p-22-menlhk-setjen-kum-1-5-2019-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI AGAMA NOMOR 15 TAHUN 2022 TENTANG PENDIRIAN, PERUBAHAN, DAN PENCABUTAN IZIN PERGURUAN TINGGI KEAGAMAAN SWASTA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenag-no-15-tahun-2023|amends|peraturan.go.id:permenag-no-15-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenag-no-15-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permenag-no-15-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Menteri Agama Nomor 2 Tahun 2024 tentang Penyelenggaraan Pendidikan Widyalaya",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenag-no-51-tahun-2025|amends|peraturan.go.id:permenag-no-2-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenag-no-51-tahun-2025",
+    "target_reference_id": "peraturan.go.id:permenag-no-2-tahun-2024"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
@@ -99,6 +549,249 @@
     "target_reference_id": "peraturan.go.id:permendag-no-110-tahun-2018"
   },
   {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Menteri Perdagangan Nomor 26 Tahun 2024 tentang Ketentuan Ekspor Produk Turunan Kelapa Sawit",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permendag-no-2-tahun-2025|amends|peraturan.go.id:permendag-no-26-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permendag-no-2-tahun-2025",
+    "target_reference_id": "peraturan.go.id:permendag-no-26-tahun-2024"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI PERDAGANGAN NOMOR 36 TAHUN 2023 TENTANG KEBIJAKAN DAN PENGATURAN IMPOR",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permendag-no-3-tahun-2024|amends|peraturan.go.id:permendag-no-36-tahun-2023",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permendag-no-3-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permendag-no-36-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Perdagangan Nomor 49 Tahun 2022",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permendag-no-49-tahun-2022|repeals|peraturan.go.id:permendag-no-33-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permendag-no-49-tahun-2022",
+    "target_reference_id": "peraturan.go.id:permendag-no-33-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Perdagangan Nomor 49 Tahun 2022",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permendag-no-49-tahun-2022|repeals|peraturan.go.id:permendag-no-41-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permendag-no-49-tahun-2022",
+    "target_reference_id": "peraturan.go.id:permendag-no-41-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Kedua atas Peraturan Menteri Perdagangan Nomor 36 Tahun 2023 tentang Kebijakan dan Pengaturan Impor",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permendag-no-7-tahun-2024|amends|peraturan.go.id:permendag-no-36-tahun-2023",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permendag-no-7-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permendag-no-36-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS PERATURAN MENTERI PERDAGANGAN NOMOR 36 TAHUN 2023 TENTANG KEBIJAKAN DAN PENGATURAN IMPOR",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permendag-no-8-tahun-2024|amends|peraturan.go.id:permendag-no-36-tahun-2023",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permendag-no-8-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permendag-no-36-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Pendidikan dan Kebudayaan Nomor 43 Tahun 2019",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permendikbud-no-43-tahun-2019|repeals|peraturan.go.id:permendikbudristek-no-17-tahun-2021",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permendikbud-no-43-tahun-2019",
+    "target_reference_id": "peraturan.go.id:permendikbudristek-no-17-tahun-2021"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI NOMOR 26 TAHUN 2022 TENTANG PENDIDIKAN GURU PENGGERAK",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permendikbudristek-no-52-tahun-2023|amends|peraturan.go.id:permendikbudristek-no-26-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permendikbudristek-no-52-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permendikbudristek-no-26-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Pendidikan, Kebudayaan, Riset, dan Teknologi Nomor 53 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permendikbudristek-no-53-tahun-2023|repeals|peraturan.go.id:permendikbudristek-no-56-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permendikbudristek-no-53-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permendikbudristek-no-56-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI PERHUBUNGAN NOMOR PM 4 TAHUN 2022 TENTANG PELAYANAN KAPAL WISATA (YACHT) ASING DAN KAPAL PESIAR (CRUISESHIP) ASING DI PERAIRAN INDONESIA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenhub-no-pm-14-tahun-2023|amends|peraturan.go.id:permenhub-no-pm-4-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenhub-no-pm-14-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permenhub-no-pm-4-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Perhubungan Nomor PM 17 Tahun 2021",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permenhub-no-pm-17-tahun-2021|repeals|peraturan.go.id:permenhub-no-pm-75-tahun-2015",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permenhub-no-pm-17-tahun-2021",
+    "target_reference_id": "peraturan.go.id:permenhub-no-pm-75-tahun-2015"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Kesehatan Nomor 19 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permenkes-no-19-tahun-2024|repeals|peraturan.go.id:permenkes-no-43-tahun-2019",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permenkes-no-19-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permenkes-no-43-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI KESEHATAN NOMOR 45 TAHUN 2019 TENTANG KLASIFIKASI ORGANISASI RUMAH SAKIT DI LINGKUNGAN KEMENTERIAN KESEHATAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkes-no-25-tahun-2022|amends|peraturan.go.id:permenkes-no-45-tahun-2019",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkes-no-25-tahun-2022",
+    "target_reference_id": "peraturan.go.id:permenkes-no-45-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Kesehatan Nomor 26 Tahun 2018",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permenkes-no-26-tahun-2018|repeals|peraturan.go.id:permenkes-no-9-tahun-2017",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permenkes-no-26-tahun-2018",
+    "target_reference_id": "peraturan.go.id:permenkes-no-9-tahun-2017"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN MENTERI KEUANGAN NOMOR 39/PMK.010/2022 TENTANG PENETAPAN BARANG EKSPOR YANG DIKENAKAN BEA KELUAR DAN TARIF BEA KELUAR",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkeu-no-123-pmk-010-2022-tahun-2022|amends|peraturan.go.id:permenkeu-no-39-pmk-010-2022-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkeu-no-123-pmk-010-2022-tahun-2022",
+    "target_reference_id": "peraturan.go.id:permenkeu-no-39-pmk-010-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI KEUANGAN NOMOR 174/PMK.04/2022 TENTANG TEMPAT PENYELENGGARAAN PAMERAN BERIKAT",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkeu-no-33-tahun-2023|amends|peraturan.go.id:permenkeu-no-174-pmk-04-2022-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkeu-no-33-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permenkeu-no-174-pmk-04-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Keuangan Nomor 38 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permenkeu-no-38--tahun-2024|repeals|peraturan.go.id:permenkeu-no-39-pmk-010-2022-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permenkeu-no-38--tahun-2024",
+    "target_reference_id": "peraturan.go.id:permenkeu-no-39-pmk-010-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Kedua Atas Peraturan Menteri Keuangan Nomor 48 Tahun 2023 Tentang Pajak Penghasilan Dan/Atau Pajak Pertambahan Nilai Atas Penjualan/Penyerahan Emas Perhiasan, Emas Batangan, Perhiasan Yang Bahan Seluruhnya Bukan Dari Emas, Batu Permata Dan/Atau",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkeu-no-52--tahun-2025|amends|peraturan.go.id:permenkeu-no-48-tahun-2023",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkeu-no-52--tahun-2025",
+    "target_reference_id": "peraturan.go.id:permenkeu-no-48-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KETIGA ATAS PERATURAN MENTERI KEUANGAN NOMOR 39/PMK.010/2022 TENTANG PENETAPAN BARANG EKSPOR YANG DIKENAKAN BEA KELUAR DAN TARIF BEA KELUAR",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkeu-no-71-tahun-2023|amends|peraturan.go.id:permenkeu-no-39-pmk-010-2022-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkeu-no-71-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permenkeu-no-39-pmk-010-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Keuangan Nomor 84 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permenkeu-no-84-tahun-2023|repeals|peraturan.go.id:permenkeu-no-193-pmk-07-2022-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permenkeu-no-84-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permenkeu-no-193-pmk-07-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI KEUANGAN NOMOR 22/PMK.05/2022 TENTANG KEBIJAKAN AKUNTANSI PEMERINTAH PUSAT",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkeu-no-85-pmk-05-2022-tahun-2022|amends|peraturan.go.id:permenkeu-no-22-pmk-05-2022-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkeu-no-85-pmk-05-2022-tahun-2022",
+    "target_reference_id": "peraturan.go.id:permenkeu-no-22-pmk-05-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Menteri Keuangan Nomor 237/PMK.04/2022 tentang Penelitian Dugaan Pelanggaran di Bidang Cukai",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkeu-no-96--tahun-2025|amends|peraturan.go.id:permenkeu-no-237-pmk-04-2022-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkeu-no-96--tahun-2025",
+    "target_reference_id": "peraturan.go.id:permenkeu-no-237-pmk-04-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI KEUANGAN NOMOR 39/PMK.010/2022 TENTANG PENETAPAN BARANG EKSPOR YANG DIKENAKAN BEA KELUAR DAN TARIF BEA KELUAR",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkeu-no-98-pmk-010-2022-tahun-2022|amends|peraturan.go.id:permenkeu-no-39-pmk-010-2022-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkeu-no-98-pmk-010-2022-tahun-2022",
+    "target_reference_id": "peraturan.go.id:permenkeu-no-39-pmk-010-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Keuangan Nomor pmk91 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permenkeu-no-pmk91+-tahun-2024|repeals|peraturan.go.id:permenkeu-no-208-pmk-07-2022-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permenkeu-no-pmk91+-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permenkeu-no-208-pmk-07-2022-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Menteri Kelautan dan Perikanan Nomor 6 Tahun 2023 tentang Penyusunan Neraca Komoditas Perikanan",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkkp-no-14-tahun-2024|amends|peraturan.go.id:permen-kkp-no-6-tahun-2023",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkkp-no-14-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permen-kkp-no-6-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Menteri Kelautan dan Perikanan Nomor 7 Tahun 2024 tentang Pengelolaan Lobster Panulirus Spp Kepiting Scylla Spp dan Rajungan Portunus Spp",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkkp-no-5-tahun-2026|amends|peraturan.go.id:permenkkp-no-7-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkkp-no-5-tahun-2026",
+    "target_reference_id": "peraturan.go.id:permenkkp-no-7-tahun-2024"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Menteri Komunikasi dan Informatika Nomor 2 Tahun 2023 tentang Penggunaan Spektrum Frekuensi Radio Berdasarkan Izin Kelas",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkomdigi-no-2-tahun-2025|amends|peraturan.go.id:permenkominfo-no-2-tahun-2023",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkomdigi-no-2-tahun-2025",
+    "target_reference_id": "peraturan.go.id:permenkominfo-no-2-tahun-2023"
+  },
+  {
     "evidence_source": "peraturan.go.id detail status link",
     "evidence_text": "dicabut oleh Peraturan Menteri Komunikasi dan Informatika Nomor 13 Tahun 2019",
     "inverse_relation_type": "repealed_by",
@@ -115,6 +808,132 @@
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:permenkominfo-no-7-tahun-2019",
     "target_reference_id": "peraturan.go.id:permenkominfo-no-7-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Hukum Nomor 50 Tahun 2025",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permenkum-no-50-tahun-2025|repeals|peraturan.go.id:permenkumham-no-6-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permenkum-no-50-tahun-2025",
+    "target_reference_id": "peraturan.go.id:permenkumham-no-6-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI HUKUM DAN HAK ASASI MANUSIA NOMOR 22 TAHUN 2023 TENTANG VISA DAN IZIN TINGGAL",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenkumham-no-11-tahun-2024|amends|peraturan.go.id:permenkumham-no-22-tahun-2023",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenkumham-no-11-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permenkumham-no-22-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI PENDAYAGUNAAN APARATUR NEGARA DAN REFORMASI BIROKRASI NOMOR 29 TAHUN 2022 TENTANG PEMANTAUAN DAN EVALUASI KINERJA PENYELENGGARAAN PELAYANAN PUBLIK",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenpanrb-no-4-tahun-2023|amends|peraturan.go.id:permenpanrb-no-29-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenpanrb-no-4-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permenpanrb-no-29-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Menteri Pendayagunaan Aparatur Negara dan Reformasi Birokrasi Nomor 90 Tahun 2021 tentang Pembangunan dan Evaluasi Zona INtegritas Menuju Wilayah Bebas Dari Korupsi dan Wilayah Birokrasi Bersih Dan Melayani Di Instansi Pemerintah",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenpanrb-no-5-tahun-2024|amends|peraturan.go.id:permenpanrb-no-90-tahun-2021",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenpanrb-no-5-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permenpanrb-no-90-tahun-2021"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Perindustrian Nomor 19 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permenperin-no-19-tahun-2023|repeals|peraturan.go.id:permenperin-no-11-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permenperin-no-19-tahun-2023",
+    "target_reference_id": "peraturan.go.id:permenperin-no-11-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Menteri Perindustrian Nomor 61 Tahun 2024 Tentang Pemberlakuan Standar Nasional Indonesia Untuk Tepung Terigu Sebagai Bahan Makanan Secara Wajib",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permenperin-no-21-tahun-2026|amends|peraturan.go.id:permenperin-no-61-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permenperin-no-21-tahun-2026",
+    "target_reference_id": "peraturan.go.id:permenperin-no-61-tahun-2024"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Perindustrian Nomor 5 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permenperin-no-5-tahun-2024|repeals|peraturan.go.id:permenperin-no-36-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permenperin-no-5-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permenperin-no-36-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Menteri Perindustrian Nomor 67 Tahun 2024",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:permenperin-no-67-tahun-2024|repeals|peraturan.go.id:permenperin-no-35-tahun-2019",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:permenperin-no-67-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permenperin-no-35-tahun-2019"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN MENTERI PERTANIAN NOMOR 10 TAHUN 2022 TENTANG TATA CARA PENETAPAN ALOKASI DAN HARGA ECERAN TERTINGGI PUPUK BERSUBSIDI SEKTOR PERTANIAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permentan-no-01-tahun-2024|amends|peraturan.go.id:permentan-no-10-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permentan-no-01-tahun-2024",
+    "target_reference_id": "peraturan.go.id:permentan-no-10-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Kedua atas Peraturan Menteri Pertanian Nomor 10 Tahun 2022 tentang Tata Cara Penetapan Alokasi dan Harga Eceran Tertinggi Pupuk Bersubsidi Sektor Pertanian",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permentan-no-04-tahun-2025|amends|peraturan.go.id:permentan-no-10-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permentan-no-04-tahun-2025",
+    "target_reference_id": "peraturan.go.id:permentan-no-10-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Menteri Pertanian Nomor 30 Tahun 2023 tentang Fasilitasi Asuransi Pertanian",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permentan-no-36-tahun-2025|amends|peraturan.go.id:permentan-no-30-tahun-2023",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permentan-no-36-tahun-2025",
+    "target_reference_id": "peraturan.go.id:permentan-no-30-tahun-2023"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan atas Peraturan Menteri Transmigrasi Nomor 8 Tahun 2025 Tentang Transformasi Transmigrasi",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:permentrans-no-13-tahun-2025|amends|peraturan.go.id:permentrans-no-8-tahun-2025",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:permentrans-no-13-tahun-2025",
+    "target_reference_id": "peraturan.go.id:permentrans-no-8-tahun-2025"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Presiden Nomor 121 Tahun 2022 Tentang Badan Pengarah Percepatan Pembangunan Otonomi Khusus Papua",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-102-tahun-2025|amends|peraturan.go.id:perpres-no-121-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-102-tahun-2025",
+    "target_reference_id": "peraturan.go.id:perpres-no-121-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PRESIDEN NOMOR 36 TAHUN 2020 TENTANG PENGEMBANGAN KOMPETENSI KERJA MELALUI PROGRAM KARTU PRAKERJA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-113-tahun-2022|amends|peraturan.go.id:perpres-no-36-tahun-2020",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-113-tahun-2022",
+    "target_reference_id": "peraturan.go.id:perpres-no-36-tahun-2020"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
@@ -142,6 +961,24 @@
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:perpres-no-148-tahun-2015",
     "target_reference_id": "peraturan.go.id:perpres-no-71-tahun-2012"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Presiden Nomor 17 Tahun 2025",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:perpres-no-17-tahun-2025|repeals|peraturan.go.id:perpres-no-126-tahun-2022",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:perpres-no-17-tahun-2025",
+    "target_reference_id": "peraturan.go.id:perpres-no-126-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PRESIDEN NOMOR 52 TAHUN 2022 TENTANG PENANGANAN DAMPAK SOSIAL KEMASYARAKATAN ATAS TANAH YANG DIIDENTIFIKASI SEBAGAI TANAH MUSNAH DALAM RANGKA PEMBANGUNAN UNTUK KEPENTINGAN UMUM",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-27-tahun-2023|amends|peraturan.go.id:perpres-no-52-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-27-tahun-2023",
+    "target_reference_id": "peraturan.go.id:perpres-no-52-tahun-2022"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
@@ -208,6 +1045,24 @@
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PRESIDEN NOMOR 61 TAHUN 2024 TENTANG NERACA KOMODITAS",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-7-tahun-2025|amends|peraturan.go.id:perpres-no-61-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-7-tahun-2025",
+    "target_reference_id": "peraturan.go.id:perpres-no-61-tahun-2024"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PRESIDEN NOMOR 104 TAHUN 2007 TENTANG PENYEDIAAN, PENDISTRIBUSIAN, DAN PENETAPAN HARGA LIQUEFIED PETROLEUM GAS TABUNG 3 KILOGRAM",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-70-tahun-2021|amends|peraturan.go.id:perpres-no-104-tahun-2007",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-70-tahun-2021",
+    "target_reference_id": "peraturan.go.id:perpres-no-104-tahun-2007"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
     "evidence_text": "PERUBAHAN ATAS PERATURAN PRESIDEN NOMOR 82 TAHUN 2018 TENTANG JAMINAN KESEHATAN",
     "inverse_relation_type": "amended_by",
     "relation_id": "peraturan.go.id:perpres-no-75-tahun-2019|amends|peraturan.go.id:perpres-no-82-tahun-2018",
@@ -217,12 +1072,30 @@
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PRESIDEN NOMOR 36 TAHUN 2020 TENTANG PENGEMBANGAN KOMPETENSI KERJA MELALUI PROGRAM KARTU PRAKERJA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-76-tahun-2020|amends|peraturan.go.id:perpres-no-36-tahun-2020",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-76-tahun-2020",
+    "target_reference_id": "peraturan.go.id:perpres-no-36-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
     "evidence_text": "Perubahan Atas Peraturan Presiden Nomor 62 Tahun 2018 Tentang Penanganan Dampak Sosial Kemasyarakatan Dalam Rangka Penyediaan Tanah Untuk Pembangunan Nasional",
     "inverse_relation_type": "amended_by",
     "relation_id": "peraturan.go.id:perpres-no-78-tahun-2023|amends|peraturan.go.id:perpres-no-62-tahun-2018",
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:perpres-no-78-tahun-2023",
     "target_reference_id": "peraturan.go.id:perpres-no-62-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Presiden Nomor 55 Tahun 2019 Tentang Percepatan Program Kendaraan Bermotor Listrik Berbasis Baterai (Battery Electric Vehicle) Untuk Transportasi Jalan",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:perpres-no-79-tahun-2023|amends|peraturan.go.id:perpres-no-55-tahun-2019",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:perpres-no-79-tahun-2023",
+    "target_reference_id": "peraturan.go.id:perpres-no-55-tahun-2019"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
@@ -298,6 +1171,15 @@
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 16 TAHUN 2009 TENTANG PAJAK PENGHASILAN DAN PENGHASILAN BERUPA BUNGA OBLIGASI",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-100-tahun-2013|amends|peraturan.go.id:pp-no-16-tahun-2009",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-100-tahun-2013",
+    "target_reference_id": "peraturan.go.id:pp-no-16-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
     "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 63 TAHUN 2005 TENTANG SISTEM MANAJEMEN SUMBER DAYA MANUSIA KOMISI PEMBERANTASAN KORUPSI",
     "inverse_relation_type": "amended_by",
     "relation_id": "peraturan.go.id:pp-no-103-tahun-2012|amends|peraturan.go.id:pp-no-63-tahun-2005",
@@ -313,6 +1195,15 @@
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:pp-no-105-tahun-2015",
     "target_reference_id": "peraturan.go.id:pp-no-24-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 11 Tahun 2017",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-11-tahun-2017|repeals|peraturan.go.id:pp-no-100-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-11-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-100-tahun-2000"
   },
   {
     "evidence_source": "peraturan.go.id detail status link",
@@ -460,6 +1351,15 @@
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 20 TAHUN 2010 TENTANG ANGKUTAN DI PERAIRAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-22-tahun-2011|amends|peraturan.go.id:pp-no-20-tahun-2010",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-22-tahun-2011",
+    "target_reference_id": "peraturan.go.id:pp-no-20-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
     "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 60 TAHUN 2014 TENTANG DANA DESA YANG BERSUMBER DARI ANGGARAN PENDAPATAN DAN BELANJA NEGARA",
     "inverse_relation_type": "amended_by",
     "relation_id": "peraturan.go.id:pp-no-22-tahun-2015|amends|peraturan.go.id:pp-no-60-tahun-2014",
@@ -567,6 +1467,15 @@
     "target_reference_id": "peraturan.go.id:pp-no-50-tahun-2007"
   },
   {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 28 Tahun 2025",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-28-tahun-2025|repeals|peraturan.go.id:pp-no-5-tahun-2021",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-28-tahun-2025",
+    "target_reference_id": "peraturan.go.id:pp-no-5-tahun-2021"
+  },
+  {
     "evidence_source": "peraturan.go.id global search/detail metadata",
     "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 18 TAHUN 2013 TENTANG TATA CARA PENGUNDURAN DIRI KEPALA DAERAH, WAKIL KEPALA DAERAH, DAN PEGAWAI NEGERI YANG AKAN MENJADI BAKAL CALON ANGGOTA DPR, DPD, DPRD PROVINSI, DAN DPRD KABUPATEN/KOTA, SERTA PELAKSANAAN CUT",
     "inverse_relation_type": "amended_by",
@@ -604,6 +1513,15 @@
   },
   {
     "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 30 Tahun 2014",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-30-tahun-2014|repeals|peraturan.go.id:pp-no-30-tahun-2006",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-30-tahun-2014",
+    "target_reference_id": "peraturan.go.id:pp-no-30-tahun-2006"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
     "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 30 Tahun 2020",
     "inverse_relation_type": "repealed_by",
     "relation_id": "peraturan.go.id:pp-no-30-tahun-2020|repeals|peraturan.go.id:pp-no-77-tahun-2013",
@@ -637,6 +1555,15 @@
     "relation_type": "repeals",
     "source_reference_id": "peraturan.go.id:pp-no-32-tahun-2018",
     "target_reference_id": "peraturan.go.id:pp-no-18-tahun-2013"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 33 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-33-tahun-2023|repeals|peraturan.go.id:pp-no-70-tahun-2009",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-33-tahun-2023",
+    "target_reference_id": "peraturan.go.id:pp-no-70-tahun-2009"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
@@ -736,6 +1663,24 @@
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:pp-no-4-tahun-2024",
     "target_reference_id": "peraturan.go.id:pp-no-13-tahun-2005"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 28 TAHUN 2022 TENTANG PENGURUSAN PIUTANG NEGARA OLEH PANITIA URUSAN PIUTANG NEGARA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-4-tahun-2026|amends|peraturan.go.id:pp-no-28-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-4-tahun-2026",
+    "target_reference_id": "peraturan.go.id:pp-no-28-tahun-2022"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Pemerintah Nomor 51 Tahun 2008 tentang Pajak Penghasilan Atas Penghasilan Dari Usaha Jasa Konstruksi",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-40-tahun-2009|amends|peraturan.go.id:pp-no-51-tahun-2008",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-40-tahun-2009",
+    "target_reference_id": "peraturan.go.id:pp-no-51-tahun-2008"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
@@ -882,6 +1827,15 @@
     "target_reference_id": "peraturan.go.id:pp-no-102-tahun-2015"
   },
   {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 55 Tahun 2005",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-55-tahun-2005|repeals|peraturan.go.id:pp-no-115-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-55-tahun-2005",
+    "target_reference_id": "peraturan.go.id:pp-no-115-tahun-2000"
+  },
+  {
     "evidence_source": "peraturan.go.id global search/detail metadata",
     "evidence_text": "Perubahan Kedua Atas Peraturan Pemerintah Nomor 35 Tahun 2004 tentang Kegiatan Usaha Hulu Minyak dan Gas Bumi",
     "inverse_relation_type": "amended_by",
@@ -889,6 +1843,24 @@
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:pp-no-55-tahun-2009",
     "target_reference_id": "peraturan.go.id:pp-no-35-tahun-2004"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PEMERINTAH NOMOR 16 TAHUN 2009 TENTANG PAJAK PENGHASILAN ATAS PENGHASILAN BERUPA BUNGA OBLIGASI",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-55-tahun-2019|amends|peraturan.go.id:pp-no-16-tahun-2009",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-55-tahun-2019",
+    "target_reference_id": "peraturan.go.id:pp-no-16-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PEMERINTAH NOMOR 48 TAHUN 2005 TENTANG PENGANGKATAN TENAGA HONORER MENJADI CALON PEGAWAI NEGERI SIPIL",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-56-tahun-2012|amends|peraturan.go.id:pp-no-48-tahun-2005",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-56-tahun-2012",
+    "target_reference_id": "peraturan.go.id:pp-no-48-tahun-2005"
   },
   {
     "evidence_source": "peraturan.go.id detail status link",
@@ -907,6 +1879,15 @@
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:pp-no-57-tahun-2019",
     "target_reference_id": "peraturan.go.id:pp-no-48-tahun-2018"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Peraturan Pemerintah Nomor 58 Tahun 2005",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:pp-no-58-tahun-2005|repeals|peraturan.go.id:pp-no-105-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:pp-no-58-tahun-2005",
+    "target_reference_id": "peraturan.go.id:pp-no-105-tahun-2000"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
@@ -928,6 +1909,15 @@
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 37 TAHUN 2021 TENTANG PENYELENGGARAAN PROGRAM JAMINAN KEHILANGAN PEKERJAAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-6-tahun-2025|amends|peraturan.go.id:pp-no-37-tahun-2021",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-6-tahun-2025",
+    "target_reference_id": "peraturan.go.id:pp-no-37-tahun-2021"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
     "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 46 TAHUN 2015 TENTANG PENYELENGGARAAN PROGRAM JAMINAN HARI TUA",
     "inverse_relation_type": "amended_by",
     "relation_id": "peraturan.go.id:pp-no-60-tahun-2015|amends|peraturan.go.id:pp-no-46-tahun-2015",
@@ -943,6 +1933,15 @@
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:pp-no-61-tahun-2012",
     "target_reference_id": "peraturan.go.id:pp-no-24-tahun-2010"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Pemerintah Nomor 72 Tahun 2009 Tentang Lalu Lintas Dan Angkutan Kereta Api",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-61-tahun-2016|amends|peraturan.go.id:pp-no-72-tahun-2009",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-61-tahun-2016",
+    "target_reference_id": "peraturan.go.id:pp-no-72-tahun-2009"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
@@ -970,6 +1969,15 @@
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:pp-no-64-tahun-2015",
     "target_reference_id": "peraturan.go.id:pp-no-61-tahun-2009"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Pemerintah Nomor 70 Tahun 2015 tentang Jaminan Kecelakaan Kerja dan Jaminan Kematian Bagi Pegawai Aparatur Sipil Negara",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-66-tahun-2017|amends|peraturan.go.id:pp-no-70-tahun-2015",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-66-tahun-2017",
+    "target_reference_id": "peraturan.go.id:pp-no-70-tahun-2015"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
@@ -1081,6 +2089,15 @@
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Peraturan Pemerintah Nomor 23 Tahun 2021 Tentang Penyelenggaraan Kehutanan",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-8-tahun-2026|amends|peraturan.go.id:pp-no-23-tahun-2021",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-8-tahun-2026",
+    "target_reference_id": "peraturan.go.id:pp-no-23-tahun-2021"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
     "evidence_text": "PERUBAHAN ATAS PERATURAN PEMERINTAH NOMOR 44 TAHUN 2015 TENTANG PENYELENGGARAAN PROGRAM JAMINAN KECELAKAAN KERJA DAN JAMINAN KEMATIAN",
     "inverse_relation_type": "amended_by",
     "relation_id": "peraturan.go.id:pp-no-82-tahun-2019|amends|peraturan.go.id:pp-no-44-tahun-2015",
@@ -1105,6 +2122,24 @@
     "relation_type": "repeals",
     "source_reference_id": "peraturan.go.id:pp-no-9-tahun-2003",
     "target_reference_id": "peraturan.go.id:pp-no-96-tahun-2000"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PEMERINTAH NOMOR 51 TAHUN 2008 TENTANG PAJAK PENGHASILAN ATAS PENGHASILAN DARI USAHA JASA KONSTRUKSI",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-9-tahun-2022|amends|peraturan.go.id:pp-no-51-tahun-2008",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-9-tahun-2022",
+    "target_reference_id": "peraturan.go.id:pp-no-51-tahun-2008"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN KEDUA ATAS PERATURAN PEMERINTAH NOMOR 32 TAHUN 1999 TENTANG SYARAT DAN TATA CARA PELAKSANAAN HAK WARGA BINAAN PEMASYARATAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:pp-no-99-tahun-2012|amends|peraturan.go.id:pp-no-32-tahun-1999",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:pp-no-99-tahun-2012",
+    "target_reference_id": "peraturan.go.id:pp-no-32-tahun-1999"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
@@ -1225,12 +2260,39 @@
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 2 TAHUN 2024 TENTANG PROVINSI DAERAH KHUSUS JAKARTA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-151-tahun-2024|amends|peraturan.go.id:uu-no-2-tahun-2024",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-151-tahun-2024",
+    "target_reference_id": "peraturan.go.id:uu-no-2-tahun-2024"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 1 TAHUN 1974 TENTANG PERKAWINAN",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-16-tahun-2019|amends|peraturan.go.id:uu-no-1-tahun-1974",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-16-tahun-2019",
+    "target_reference_id": "peraturan.go.id:uu-no-1-tahun-1974"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
     "evidence_text": "Perubahan Keempat atas Undang-undang nomor 19 tahun 2003 tentang badan usaha milik negara",
     "inverse_relation_type": "amended_by",
     "relation_id": "peraturan.go.id:uu-no-16-tahun-2025|amends|peraturan.go.id:uu-no-19-tahun-2003",
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:uu-no-16-tahun-2025",
     "target_reference_id": "peraturan.go.id:uu-no-19-tahun-2003"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 17 Tahun 2012",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-17-tahun-2012|repeals|peraturan.go.id:uu-no-25-tahun-1992",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-17-tahun-2012",
+    "target_reference_id": "peraturan.go.id:uu-no-25-tahun-1992"
   },
   {
     "evidence_source": "peraturan.go.id detail status link",
@@ -1449,6 +2511,15 @@
     "target_reference_id": "peraturan.go.id:uu-no-27-tahun-2003"
   },
   {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "Perubahan Atas Undang-undang Nomor 3 Tahun 2022 Tentang Ibu Kota Negara",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-21-tahun-2023|amends|peraturan.go.id:uu-no-3-tahun-2022",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-21-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-3-tahun-2022"
+  },
+  {
     "evidence_source": "peraturan.go.id detail status link",
     "evidence_text": "dicabut oleh Undang-Undang Nomor 23 Tahun 2014",
     "inverse_relation_type": "repealed_by",
@@ -1549,6 +2620,15 @@
   },
   {
     "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 39 Tahun 2009",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-39-tahun-2009|repeals|peraturan.go.id:uu-no-36-tahun-2000",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-39-tahun-2009",
+    "target_reference_id": "peraturan.go.id:uu-no-36-tahun-2000"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
     "evidence_text": "dicabut oleh Undang-Undang Nomor 39 Tahun 2014",
     "inverse_relation_type": "repealed_by",
     "relation_id": "peraturan.go.id:uu-no-39-tahun-2014|repeals|peraturan.go.id:uu-no-18-tahun-2004",
@@ -1564,6 +2644,15 @@
     "relation_type": "amends",
     "source_reference_id": "peraturan.go.id:uu-no-4-tahun-2012",
     "target_reference_id": "peraturan.go.id:uu-no-22-tahun-2011"
+  },
+  {
+    "evidence_source": "peraturan.go.id detail status link",
+    "evidence_text": "dicabut oleh Undang-Undang Nomor 4 Tahun 2023",
+    "inverse_relation_type": "repealed_by",
+    "relation_id": "peraturan.go.id:uu-no-4-tahun-2023|repeals|peraturan.go.id:uu-no-11-tahun-1992",
+    "relation_type": "repeals",
+    "source_reference_id": "peraturan.go.id:uu-no-4-tahun-2023",
+    "target_reference_id": "peraturan.go.id:uu-no-11-tahun-1992"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",
@@ -1600,6 +2689,15 @@
     "relation_type": "repeals",
     "source_reference_id": "peraturan.go.id:uu-no-6-tahun-2023",
     "target_reference_id": "peraturan.go.id:uu-no-11-tahun-2020"
+  },
+  {
+    "evidence_source": "peraturan.go.id global search/detail metadata",
+    "evidence_text": "PERUBAHAN ATAS UNDANG-UNDANG NOMOR 39 TAHUN 2OO8 TENTANG KEMENTERIAN NEGARA",
+    "inverse_relation_type": "amended_by",
+    "relation_id": "peraturan.go.id:uu-no-61-tahun-2024|amends|peraturan.go.id:uu-no-39-tahun-2008",
+    "relation_type": "amends",
+    "source_reference_id": "peraturan.go.id:uu-no-61-tahun-2024",
+    "target_reference_id": "peraturan.go.id:uu-no-39-tahun-2008"
   },
   {
     "evidence_source": "peraturan.go.id global search/detail metadata",

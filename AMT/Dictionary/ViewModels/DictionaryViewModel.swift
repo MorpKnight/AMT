@@ -138,7 +138,9 @@ final class DictionaryViewModel {
             DefinitionItem(
                 id: index + 1,
                 text: entry.definition,
-                reference: makeReference(from: entry)
+                reference: makeReference(from: entry),
+                sources: entry.sources,
+                sourceURLs: entry.sourceURLs
             )
         }
         let authority = entries.contains { $0.authority == .verified }

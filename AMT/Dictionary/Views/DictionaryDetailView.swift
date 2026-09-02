@@ -233,6 +233,31 @@ struct DictionaryDetailView: View {
                 .padding(.vertical, 2)
                 .fixedSize(horizontal: false, vertical: true)
 
+            if !def.sources.isEmpty || !def.sourceURLs.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Sumber kamus")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(sectionHeaderColor)
+
+                    if !def.sources.isEmpty {
+                        Label(
+                            def.sources.joined(separator: " • "),
+                            systemImage: "books.vertical"
+                        )
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                    }
+
+                    ForEach(def.sourceURLs, id: \.self) { sourceURL in
+                        Link(destination: sourceURL) {
+                            Label("Buka halaman sumber", systemImage: "arrow.up.right.square")
+                                .font(.system(size: 11))
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+
             // Inner "Referensi Hukum" Card
             if let ref = def.reference {
                 VStack(alignment: .leading, spacing: 6) {

@@ -74,14 +74,7 @@ struct DashboardView: View {
                     case .document, .none:
                         if let vm = aiConnectorViewModel, analyzingDocument != nil, vm.isRunning {
                             DocumentAnalysisLoadingView(
-                                progressStage: vm.progressStage,
-                                downloadProgress: vm.downloadProgress,
-                                generationProgress: vm.generationProgress,
-                                analysisProgress: vm.analysisProgress,
-                                completedSegmentCount: vm.completedSegmentCount,
-                                totalSegmentCount: vm.totalSegmentCount,
-                                analysisStartedAt: vm.analysisStartedAt,
-                                lastActivityAt: vm.lastProgressActivityAt,
+                                progress: vm.progressSnapshot,
                                 onCancel: {
                                     vm.cancel()
                                 }

@@ -18,10 +18,20 @@ struct SuggestionPopoverView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Image(systemName: suggestion.kind.iconName)
-                    .foregroundStyle(suggestion.kind == .definition ? .orange : .blue)
+                    .foregroundStyle(
+                        suggestion.isDebugOnly
+                            ? Color.green
+                            : suggestion.kind == .definition
+                                ? Color.orange
+                                : Color.blue
+                    )
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(suggestion.kind.title)
+                    Text(
+                        suggestion.isDebugOnly
+                            ? "Definisi selaras (Debug)"
+                            : suggestion.kind.title
+                    )
                         .font(.system(size: 13, weight: .semibold))
                     if !suggestion.category.displayTitle.isEmpty {
                         Text(suggestion.category.displayTitle)
@@ -33,35 +43,52 @@ struct SuggestionPopoverView: View {
                 Spacer(minLength: 0)
             }
 
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if let prefix = suggestion.prefixContext, !prefix.isEmpty {
-                    Text(prefix)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(.secondary)
+            if suggestion.isDebugOnly {
+                if let term = suggestion.reference?.term, !term.isEmpty {
+                    detailCard(title: "Istilah", text: term)
+                }
+                if let definition = suggestion.reference?.definition,
+                   !definition.isEmpty {
+                    detailCard(title: "Definisi terverifikasi", text: definition)
+                }
+                detailCard(title: "Penilaian", text: suggestion.reason)
+                Label(
+                    "Makna dinilai selaras dengan evidence terverifikasi.",
+                    systemImage: "checkmark.circle.fill"
+                )
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.green)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    if let prefix = suggestion.prefixContext, !prefix.isEmpty {
+                        Text(prefix)
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text(suggestion.original)
+                        .font(.system(size: 13, weight: .bold))
+                        .strikethrough(true, color: .primary.opacity(0.7))
+                        .foregroundStyle(.primary)
+
+                    Text(suggestion.replacement)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color(red: 0.12, green: 0.65, blue: 0.28))
+
+                    if let suffix = suggestion.suffixContext, !suffix.isEmpty {
+                        Text(suffix)
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
-                Text(suggestion.original)
-                    .font(.system(size: 13, weight: .bold))
-                    .strikethrough(true, color: .primary.opacity(0.7))
-                    .foregroundStyle(.primary)
+                detailCard(title: "Alasan", text: suggestion.reason)
 
-                Text(suggestion.replacement)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Color(red: 0.12, green: 0.65, blue: 0.28))
-
-                if let suffix = suggestion.suffixContext, !suffix.isEmpty {
-                    Text(suffix)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(.secondary)
+                if suggestion.kind == .definition,
+                   let definition = suggestion.reference?.definition,
+                   !definition.isEmpty {
+                    detailCard(title: "Acuan pengertian", text: definition)
                 }
-            }
-
-            detailCard(title: "Alasan", text: suggestion.reason)
-
-            if suggestion.kind == .definition,
-               let definition = suggestion.reference?.definition,
-               !definition.isEmpty {
-                detailCard(title: "Acuan pengertian", text: definition)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -116,35 +143,37 @@ struct SuggestionPopoverView: View {
             }
 
             // MARK: - Bottom Action Buttons (Accept / Dismiss)
-            HStack(spacing: 16) {
-                Button(action: onAccept) {
-                    Text("Accept")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(colorScheme == .dark ? Color.white.opacity(0.15) : Color.white)
-                        )
-                        .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
-                }
-                .buttonStyle(.plain)
-                .disabled(isStale)
+            if !suggestion.isDebugOnly {
+                HStack(spacing: 16) {
+                    Button(action: onAccept) {
+                        Text("Accept")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(colorScheme == .dark ? Color.white.opacity(0.15) : Color.white)
+                            )
+                            .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isStale)
 
-                Button(action: onDismiss) {
-                    Text("Dismiss")
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
+                    Button(action: onDismiss) {
+                        Text("Dismiss")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
 
-                Spacer()
+                    Spacer()
+                }
+                .padding(.top, 4)
             }
-            .padding(.top, 4)
         }
         .padding(16)
-        .frame(width: 360)
+        .frame(width: 400)
         .background(colorScheme == .dark ? Color(red: 0.15, green: 0.16, blue: 0.18) : Color(red: 0.96, green: 0.96, blue: 0.97))
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }

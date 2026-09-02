@@ -8,8 +8,14 @@ final class LegalCorpusP012Tests: XCTestCase {
 
         XCTAssertEqual(
             corpus.manifest.corpusVersion,
-            "hukumonline-kamus@78a2ab626c092662b0441c95904c353b2487b216"
+            "hukumonline-kamus-combined-deduplicated@78a2ab626c092662b0441c95904c353b2487b216"
         )
+        XCTAssertEqual(corpus.manifest.sourceDatasetView, "combined-deduplicated")
+        XCTAssertEqual(corpus.concepts.count, 8_272)
+        XCTAssertEqual(corpus.regulations.count, 1_591)
+        XCTAssertEqual(corpus.relations.count, 315)
+        XCTAssertEqual(corpus.sourcePassages.count, 628)
+        XCTAssertEqual(corpus.manifest.actionableConceptCount, 2_238)
         XCTAssertEqual(corpus.concepts.count, corpus.manifest.conceptCount)
         XCTAssertEqual(corpus.regulations.count, corpus.manifest.regulationCount)
         XCTAssertEqual(corpus.relations.count, corpus.manifest.relationCount)
@@ -26,7 +32,7 @@ final class LegalCorpusP012Tests: XCTestCase {
         XCTAssertTrue(corpus.manifest.embedding.normalized)
         XCTAssertEqual(
             corpus.manifest.embedding.conceptOrderSHA256,
-            "3fa2e60171821d664a2f141417ae44bd3d3c6129d132c24c4dcd80e7cd267cb0"
+            "3b9e8320a31dfee5dffbed433ea594e5cb137285f1fbdb2a862e3d1d3ac85f84"
         )
     }
 
@@ -60,6 +66,35 @@ final class LegalCorpusP012Tests: XCTestCase {
 
         XCTAssertGreaterThanOrEqual(entries.count, 2)
         XCTAssertEqual(Set(entries.map(\.term)).count, 1)
+        XCTAssertTrue(entries.contains(where: { $0.isActionable }))
+        XCTAssertTrue(entries.contains(where: { !$0.isActionable }))
+    }
+
+    func testCombinedCorpusExposesParalegalProvenanceWithoutSuggestionAuthority() throws {
+        let store = LegalDictionaryStore()
+        let entry = try XCTUnwrap(store.entries(forTerm: "Kosmetika Impor").first)
+
+        XCTAssertEqual(entry.sources, ["Paralegal.id"])
+        XCTAssertEqual(
+            entry.sourceURLs.map(\.absoluteString),
+            ["https://paralegal.id/pengertian/kosmetika-impor/"]
+        )
+        XCTAssertEqual(entry.corpusVersion, store.activeCorpusVersion)
+        XCTAssertEqual(entry.authority, .legacy)
+        XCTAssertFalse(entry.isActionable)
+        XCTAssertNil(entry.sourcePassageID)
+        XCTAssertEqual(entry.applicabilityStatus, .inForce)
+        XCTAssertNotNil(entry.officialDocumentURL)
+    }
+
+    func testCombinedCorpusRetainsDistinctDefinitionsAndSourceProvenance() {
+        let store = LegalDictionaryStore()
+        let entries = store.entries(forTerm: "Adat")
+        let sources = Set(entries.flatMap(\.sources))
+
+        XCTAssertGreaterThanOrEqual(entries.count, 3)
+        XCTAssertTrue(sources.contains("Hukumonline Kamus"))
+        XCTAssertTrue(sources.contains("Paralegal.id"))
         XCTAssertTrue(entries.contains(where: { $0.isActionable }))
         XCTAssertTrue(entries.contains(where: { !$0.isActionable }))
     }
@@ -149,7 +184,7 @@ final class LegalCorpusP012Tests: XCTestCase {
         XCTAssertThrowsError(try LegalCorpusStore(directory: temporaryDirectory)) { error in
             XCTAssertEqual(error as? LegalCorpusStoreError, .hashMismatch("concepts.json"))
         }
-        XCTAssertEqual(corpus.manifest.conceptCount, 3_144)
+        XCTAssertEqual(corpus.manifest.conceptCount, 8_272)
     }
 
     func testLocalToolsExposeCorpusEvidenceWithoutWriteCapability() async throws {

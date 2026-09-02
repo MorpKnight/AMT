@@ -20,6 +20,8 @@ nonisolated struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
     let regulationTitle: String
     let sourceURL: URL?
     let officialDocumentURL: URL?
+    let sources: [String]
+    let sourceURLs: [URL]
     let referenceID: String?
     let authority: LegalDictionaryEntryAuthority
     let corpusVersion: String
@@ -38,6 +40,8 @@ nonisolated struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
         regulationTitle: String,
         sourceURL: URL?,
         officialDocumentURL: URL? = nil,
+        sources: [String] = [],
+        sourceURLs: [URL] = [],
         referenceID: String? = nil,
         authority: LegalDictionaryEntryAuthority = .legacy,
         corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy,
@@ -55,6 +59,8 @@ nonisolated struct LegalDictionaryEntry: Identifiable, Hashable, Sendable {
         self.regulationTitle = regulationTitle
         self.sourceURL = sourceURL
         self.officialDocumentURL = officialDocumentURL
+        self.sources = sources
+        self.sourceURLs = sourceURLs
         self.referenceID = referenceID
         self.authority = authority
         self.corpusVersion = corpusVersion
@@ -508,7 +514,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
             )
             guard effectiveLimit > 0 else { return [] }
             let queries = Self.retrievalQueries(for: text)
-            let queryCount = max(1, queries.count)
+            let semanticModelAlreadyLoaded = await semanticRetriever?.isLoaded ?? true
             var matchesByEntryID: [String: LegalDictionaryMatch] = [:]
 
             for (queryIndex, query) in queries.enumerated() {
@@ -526,8 +532,13 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 guard let hybrid = try? await hybridMatches(
                     request,
                     semanticProgress: { progress in
-                        let overall = (Double(queryIndex) + progress) / Double(queryCount)
-                        semanticProgress(overall)
+                        // This callback is reserved for the actual semantic
+                        // model download. Retrieval itself remains
+                        // indeterminate because embedding and BM25 fusion do
+                        // not expose a reliable fraction.
+                        if queryIndex == 0, !semanticModelAlreadyLoaded {
+                            semanticProgress(progress)
+                        }
                     }
                 ) else {
                     continue
@@ -551,7 +562,6 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 }
             }
 
-            semanticProgress(1)
             return matchesByEntryID.values
                 .sorted { lhs, rhs in
                     if lhs.score != rhs.score { return lhs.score > rhs.score }
@@ -838,7 +848,15 @@ nonisolated struct LegalDictionaryStore: Sendable {
         let queryTokens = Self.tokenize(text)
         guard !queryTokens.isEmpty, !entries.isEmpty else { return [] }
 
-        let uniqueTermIndices = Dictionary(grouping: entries.indices, by: { index in
+        // The combined Dictionary intentionally includes source provenance
+        // that is useful for reading but is not sufficient authority for a
+        // Suggestion candidate. Keep this boundary closed to verified,
+        // actionable evidence.
+        let eligibleIndices = entries.indices.filter { index in
+            entries[index].authority == .verified
+                && entries[index].isActionable
+        }
+        let uniqueTermIndices = Dictionary(grouping: eligibleIndices, by: { index in
             Self.normalize(entries[index].term)
         })
             .compactMapValues { indices in

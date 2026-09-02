@@ -20,6 +20,11 @@ DATASET_REVISION = "78a2ab626c092662b0441c95904c353b2487b216"
 EMBEDDING_MODEL = "intfloat/multilingual-e5-small"
 EMBEDDING_REVISION = "614241f622f53c4eeff9890bdc4f31cfecc418b3"
 EMBEDDING_DIMENSION = 384
+DATASET_VIEW_LABELS = {
+    "hukumonline": "hukumonline-kamus",
+    "combined": "hukumonline-kamus-combined",
+    "combined-deduplicated": "hukumonline-kamus-combined-deduplicated",
+}
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -52,15 +57,27 @@ def atomic_replace(path: Path, content: bytes) -> None:
     temporary.replace(path)
 
 
-def reference_summary(reference: dict[str, Any]) -> dict[str, Any]:
+def reference_summary(
+    reference: dict[str, Any],
+    regulation: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    regulation = regulation or {}
     return {
         "reference_id": reference.get("reference_id", ""),
         "display_name": reference.get("display_name", ""),
-        "official_detail_url": reference.get("official_detail_url"),
-        "official_document_url": reference.get("official_document_url"),
-        "official_title": reference.get("official_title", ""),
-        "official_status": reference.get("official_status") or "",
-        "official_status_code": reference.get("official_status_code") or "",
+        "official_detail_url": reference.get("official_detail_url")
+        or regulation.get("official_detail_url"),
+        "official_document_url": reference.get("official_document_url")
+        or regulation.get("official_document_url"),
+        "official_title": reference.get("official_title")
+        or regulation.get("official_title")
+        or "",
+        "official_status": reference.get("official_status")
+        or regulation.get("official_status_raw")
+        or "",
+        "official_status_code": reference.get("official_status_code")
+        or regulation.get("official_status_code")
+        or "",
     }
 
 
@@ -112,14 +129,51 @@ def is_actionable(
     return bool(passage.get("text_clean", "").strip())
 
 
-def build_pack(source_root: Path, output_root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def definition_source_record_ids(definition: dict[str, Any]) -> list[str]:
+    source_records = definition.get("source_records")
+    if isinstance(source_records, list):
+        record_ids = [
+            str(row.get("record_id"))
+            for row in source_records
+            if isinstance(row, dict) and row.get("record_id")
+        ]
+        if record_ids:
+            return sorted(set(record_ids))
+
+    source_record_id = definition.get("source_record_id")
+    if source_record_id:
+        return [str(source_record_id)]
+    return [str(definition["record_id"])]
+
+
+def build_pack(
+    source_root: Path,
+    output_root: Path,
+    dataset_view: str = "hukumonline",
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    if dataset_view not in DATASET_VIEW_LABELS:
+        raise ValueError(f"Unsupported dataset view: {dataset_view}")
+
     data_root = source_root / "hukumonline_kamus_hf" / "data"
     full_root = source_root / "hukumonline_kamus_hf" / "stage_4_6_full"
     full_data = full_root / "data"
 
-    definitions_path = data_root / "definitions.jsonl"
-    regulations_path = data_root / "regulations.jsonl"
-    relations_path = data_root / "regulation_relations.jsonl"
+    if dataset_view == "hukumonline":
+        definitions_filename = "definitions.jsonl"
+        regulations_filename = "regulations.jsonl"
+        relations_filename = "regulation_relations.jsonl"
+    elif dataset_view == "combined":
+        definitions_filename = "combined_definitions.jsonl"
+        regulations_filename = "combined_regulations.jsonl"
+        relations_filename = "combined_regulation_relations.jsonl"
+    else:
+        definitions_filename = "combined_definitions_deduplicated.jsonl"
+        regulations_filename = "combined_regulations.jsonl"
+        relations_filename = "combined_regulation_relations.jsonl"
+
+    definitions_path = data_root / definitions_filename
+    regulations_path = data_root / regulations_filename
+    relations_path = data_root / relations_filename
     links_path = full_data / "definition_passage_links.jsonl"
     passages_path = full_data / "regulation_passages.jsonl"
     documents_path = full_data / "regulation_documents.jsonl"
@@ -152,8 +206,17 @@ def build_pack(source_root: Path, output_root: Path) -> tuple[list[dict[str, Any
     for definition in sorted(definitions, key=lambda row: row["record_id"]):
         evidences: list[dict[str, Any]] = []
         actionable_evidences: list[dict[str, Any]] = []
+        source_links = [
+            link
+            for source_record_id in definition_source_record_ids(definition)
+            for link in links_by_record.get(source_record_id, [])
+        ]
+        unique_links = {
+            str(link.get("definition_passage_link_id") or link.get("passage_id")): link
+            for link in source_links
+        }
         for link in sorted(
-            links_by_record.get(definition["record_id"], []),
+            unique_links.values(),
             key=lambda row: (
                 row["passage_id"],
                 row.get("definition_passage_link_id", ""),
@@ -197,7 +260,10 @@ def build_pack(source_root: Path, output_root: Path) -> tuple[list[dict[str, Any
                 "definition": definition.get("definition", ""),
                 "definition_index": definition.get("definition_index", 1),
                 "references": [
-                    reference_summary(row)
+                    reference_summary(
+                        row,
+                        regulation_by_id.get(row.get("reference_id")),
+                    )
                     for row in sorted(
                         definition.get("references", []),
                         key=lambda row: row.get("reference_id", ""),
@@ -206,6 +272,30 @@ def build_pack(source_root: Path, output_root: Path) -> tuple[list[dict[str, Any
                 "evidence": evidences,
                 "actionable": bool(actionable_evidences),
                 "actionable_evidence": actionable_evidences[0] if actionable_evidences else None,
+                "sources": sorted(
+                    {
+                        str(source)
+                        for source in (
+                            definition.get("sources")
+                            or [
+                                record.get("source")
+                                for record in definition.get("source_records", [])
+                                if isinstance(record, dict)
+                            ]
+                        )
+                        if str(source).strip()
+                    }
+                ),
+                "source_urls": sorted(
+                    {
+                        str(source_url)
+                        for source_url in (
+                            definition.get("source_urls")
+                            or [definition.get("source_url", "")]
+                        )
+                        if str(source_url).strip()
+                    }
+                ),
             }
         )
 
@@ -215,6 +305,12 @@ def build_pack(source_root: Path, output_root: Path) -> tuple[list[dict[str, Any
         for concept in concepts
         for evidence in concept["evidence"]
     }
+    used_reference_ids.update(
+        reference["reference_id"]
+        for concept in concepts
+        for reference in concept["references"]
+        if reference.get("reference_id") in regulation_by_id
+    )
 
     # Relations are useful for a regulation already represented by evidence,
     # but they must never introduce a dangling foreign key. Include a related
@@ -274,8 +370,9 @@ def build_pack(source_root: Path, output_root: Path) -> tuple[list[dict[str, Any
     )
     manifest = {
         "schema_version": "amt-legal-corpus-v1",
-        "corpus_version": f"hukumonline-kamus@{DATASET_REVISION}",
+        "corpus_version": f"{DATASET_VIEW_LABELS[dataset_view]}@{DATASET_REVISION}",
         "source_dataset_revision": DATASET_REVISION,
+        "source_dataset_view": dataset_view,
         "source_input_sha256": inputs,
         "concept_count": len(concepts),
         "regulation_count": len(selected_regulations),
@@ -372,6 +469,12 @@ def main() -> None:
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--embedding-model", default=EMBEDDING_MODEL)
+    parser.add_argument(
+        "--dataset-view",
+        choices=sorted(DATASET_VIEW_LABELS),
+        default="hukumonline",
+        help="Definition/reference view to export into the AMT pack.",
+    )
     parser.add_argument("--skip-embeddings", action="store_true")
     args = parser.parse_args()
 
@@ -388,7 +491,11 @@ def main() -> None:
                     "--skip-embeddings membutuhkan manifest lama yang valid"
                 ) from error
 
-    concepts, manifest = build_pack(args.source_root, args.output_root)
+    concepts, manifest = build_pack(
+        args.source_root,
+        args.output_root,
+        dataset_view=args.dataset_view,
+    )
     if not args.skip_embeddings:
         write_embeddings(concepts, args.output_root, args.embedding_model)
     else:

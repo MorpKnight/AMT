@@ -232,8 +232,7 @@ private struct AIConnectorNativeDebugContent: View {
 
                 AIConnectorNativeProgressView(
                     state: viewModel.state,
-                    progressStage: viewModel.progressStage,
-                    generationProgress: viewModel.generationProgress
+                    progress: viewModel.progressSnapshot
                 )
 
                 if let errorMessage = viewModel.errorMessage {
@@ -524,38 +523,49 @@ private struct AIConnectorNativeStatusLine: View {
 
 private struct AIConnectorNativeProgressView: View {
     let state: AIConnectorRunState
-    let progressStage: AIConnectorProgressStage
-    let generationProgress: Int
+    let progress: AIConnectorProgressSnapshot
 
     @ViewBuilder
     var body: some View {
         switch state {
-        case let .downloading(progress):
+        case .downloading:
             VStack(alignment: .leading, spacing: 6) {
-                ProgressView(value: progress)
-                LabeledContent(progressStage == .semanticModelDownload
+                if let phaseFraction = progress.phaseFraction {
+                    ProgressView(value: phaseFraction)
+                } else {
+                    ProgressView()
+                }
+                LabeledContent(progress.stage == .semanticModelDownload
                     ? "Model semantik"
                     : "Model Qwen") {
-                    Text("\(Int(progress * 100))%")
+                    Text(progress.phaseFraction.map { "\(Int($0 * 100))%" } ?? "…")
                         .monospacedDigit()
                 }
-                Text(progressStage.title)
+                Text(progress.stage.title)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         case let .reviewing(current, total):
             VStack(alignment: .leading, spacing: 6) {
-                ProgressView(value: Double(current), total: Double(max(total, 1)))
-                LabeledContent("Meninjau") {
-                    Text("\(current) dari \(total)")
-                        .monospacedDigit()
+                if let overallFraction = progress.overallFraction {
+                    ProgressView(value: overallFraction)
+                    LabeledContent("Meninjau") {
+                        Text("\(progress.completedSegmentCount) dari \(progress.totalSegmentCount)")
+                            .monospacedDigit()
+                    }
+                } else {
+                    ProgressView()
+                    LabeledContent("Meninjau") {
+                        Text("\(current) dari \(total)")
+                            .monospacedDigit()
+                    }
                 }
-                Text("\(progressStage.title) · \(generationProgress) karakter keluaran · hasil ditampilkan setelah pemeriksaan")
+                Text("\(progress.stage.title) · \(progress.generationCharacters) karakter keluaran · hasil ditampilkan setelah pemeriksaan")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         case .segmenting:
-            ProgressView(progressStage.title)
+            ProgressView(progress.stage.title)
         case .loading:
             ProgressView("Memuat model")
         default:

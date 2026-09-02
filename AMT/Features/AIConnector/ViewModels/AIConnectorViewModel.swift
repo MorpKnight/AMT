@@ -20,10 +20,13 @@ final class AIConnectorViewModel {
     private(set) var lastProgressActivityAt: Date
     private(set) var errorMessage: String?
     private(set) var downloadProgress = 0.0
+    private(set) var semanticDownloadProgress = 0.0
+    private(set) var modelDownloadProgress = 0.0
     private(set) var generationProgress = 0
     private(set) var analysisProgress = 0.0
     private(set) var latestGenerationMetrics: AIConnectorGenerationMetrics?
     private(set) var currentSegmentPreview = ""
+    private(set) var currentSegmentID: Int? = nil
     private(set) var currentGlossaryMatches: [LegalDictionaryMatch] = []
     private(set) var currentCandidates: [AIConnectorReviewCandidate] = []
     private(set) var currentCandidateDecisions: [AIConnectorCandidateDecisionRecord] = []
@@ -55,6 +58,7 @@ final class AIConnectorViewModel {
     private(set) var benchmarkSummary: AIConnectorBenchmarkSummary?
     private(set) var benchmarkReport: AIConnectorBenchmarkReport?
     private(set) var editorSuggestions: [EditorSuggestion] = []
+    private(set) var definitionDebugSuggestions: [EditorSuggestion] = []
     private(set) var selectedSuggestionID: UUID?
 
     private let service: QwenSuggestionService
@@ -72,6 +76,8 @@ final class AIConnectorViewModel {
     private var lastQueueProgressCurrent: Int?
     private var lastQueueProgressTotal: Int?
     private var progressTracker = AIConnectorProgressTracker()
+    private static let generationProgressUpdateInterval: TimeInterval = 0.1
+    private var lastGenerationProgressPublicationAt: Date?
     private var exposesEditorSuggestions = false
     private var editorSourceText = ""
 
@@ -111,6 +117,30 @@ final class AIConnectorViewModel {
 
     var totalSegmentCount: Int {
         segmentationResult?.segments.count ?? 0
+    }
+
+    var progressSnapshot: AIConnectorProgressSnapshot {
+        let phaseFraction: Double?
+        switch progressStage {
+        case .semanticModelDownload:
+            phaseFraction = clamped(semanticDownloadProgress)
+        case .modelDownload:
+            phaseFraction = clamped(modelDownloadProgress)
+        default:
+            phaseFraction = nil
+        }
+
+        return AIConnectorProgressSnapshot(
+            stage: progressStage,
+            overallFraction: totalSegmentCount > 0 ? analysisProgress : nil,
+            phaseFraction: phaseFraction,
+            completedSegmentCount: completedSegmentCount,
+            totalSegmentCount: totalSegmentCount,
+            currentSegmentID: currentSegmentID,
+            generationCharacters: generationProgress,
+            startedAt: analysisStartedAt,
+            lastActivityAt: lastProgressActivityAt
+        )
     }
 
     var selectedSample: AIConnectorSample {
@@ -236,14 +266,8 @@ final class AIConnectorViewModel {
         setProgressStage(.segmenting)
         benchmarkRunner.onSemanticProgress = { [weak self] progress in
             guard let self, self.activeOperationID == operationID else { return }
-            if self.downloadProgress != progress {
-                self.downloadProgress = progress
-                self.recordProgressActivity()
-            }
-            self.setProgressStage(progress < 1
-                ? .semanticModelDownload
-                : .semanticRetrieval)
-            self.state = progress < 1
+            self.updateSemanticDownloadProgress(progress)
+            self.state = self.progressStage == .semanticModelDownload
                 ? .downloading(progress)
                 : .reviewing(
                     current: self.currentReviewIndex(
@@ -254,12 +278,18 @@ final class AIConnectorViewModel {
         }
         benchmarkRunner.onDownloadProgress = { [weak self] progress in
             guard let self, self.activeOperationID == operationID else { return }
-            if self.downloadProgress != progress {
-                self.downloadProgress = progress
-                self.recordProgressActivity()
+            self.updateModelDownloadProgress(progress)
+            if self.progressStage != .definitionReview {
+                self.setProgressStage(.modelDownload)
+                self.state = .downloading(progress)
+            } else {
+                self.state = .reviewing(
+                    current: self.currentReviewIndex(
+                        fallback: max(self.processedSegmentCount + 1, 1)
+                    ),
+                    total: samples.count
+                )
             }
-            self.setProgressStage(.modelDownload)
-            self.state = .downloading(progress)
         }
         benchmarkRunner.onProgressStage = { [weak self] stage in
             guard let self, self.activeOperationID == operationID else { return }
@@ -267,7 +297,8 @@ final class AIConnectorViewModel {
             switch stage {
             case .semanticModelDownload:
                 self.state = .downloading(self.downloadProgress)
-            case .semanticRetrieval, .modelLoading, .generation:
+            case .semanticRetrieval, .modelLoading, .generation,
+                 .definitionReview, .deterministicReview:
                 self.state = .reviewing(
                     current: self.currentReviewIndex(
                         fallback: max(self.processedSegmentCount + 1, 1)
@@ -280,16 +311,10 @@ final class AIConnectorViewModel {
         }
         benchmarkRunner.onGenerationProgress = { [weak self] characters in
             guard let self, self.activeOperationID == operationID else { return }
-            if self.generationProgress != characters {
-                self.generationProgress = characters
-                self.recordProgressActivity()
-            }
-            self.setProgressStage(.generation)
-            self.state = .reviewing(
-                current: self.currentReviewIndex(
-                    fallback: max(self.processedSegmentCount + 1, 1)
-                ),
-                total: samples.count
+            self.publishGenerationProgress(
+                characters: characters,
+                total: samples.count,
+                fallback: max(self.processedSegmentCount + 1, 1)
             )
         }
 
@@ -396,42 +421,41 @@ final class AIConnectorViewModel {
                     downloadProgress: { [weak self] progress in
                         Task { @MainActor [weak self] in
                             guard let self, self.activeOperationID == operationID else { return }
-                            if self.downloadProgress != progress {
-                                self.downloadProgress = progress
-                                self.recordProgressActivity()
+                            self.updateModelDownloadProgress(progress)
+                            if self.progressStage != .definitionReview {
+                                self.setProgressStage(.modelDownload)
+                                self.state = .downloading(progress)
+                            } else {
+                                self.state = .reviewing(
+                                    current: self.currentReviewIndex(
+                                        fallback: max(
+                                            self.processedSegmentCount
+                                                + self.skippedSegmentCount
+                                                + 1,
+                                            1
+                                        )
+                                    ),
+                                    total: total
+                                )
                             }
-                            self.setProgressStage(.modelDownload)
-                            self.state = .downloading(progress)
                         }
                     },
                     generationProgress: { [weak self] characters in
                         guard let self, self.activeOperationID == operationID else { return }
-                        if self.generationProgress != characters {
-                            self.generationProgress = characters
-                            self.recordProgressActivity()
-                        }
-                        self.setProgressStage(.generation)
-                        self.state = .reviewing(
-                            current: self.currentReviewIndex(
-                                fallback: max(
-                                    self.processedSegmentCount + self.skippedSegmentCount + 1,
-                                    1
-                                )
-                            ),
-                            total: total
+                        self.publishGenerationProgress(
+                            characters: characters,
+                            total: total,
+                            fallback: max(
+                                self.processedSegmentCount + self.skippedSegmentCount + 1,
+                                1
+                            )
                         )
                     },
                     semanticProgress: { [weak self] progress in
                         Task { @MainActor [weak self] in
                             guard let self, self.activeOperationID == operationID else { return }
-                            if self.downloadProgress != progress {
-                                self.downloadProgress = progress
-                                self.recordProgressActivity()
-                            }
-                            self.setProgressStage(progress < 1
-                                ? .semanticModelDownload
-                                : .semanticRetrieval)
-                            self.state = progress < 1
+                            self.updateSemanticDownloadProgress(progress)
+                            self.state = self.progressStage == .semanticModelDownload
                                 ? .downloading(progress)
                                 : .reviewing(
                                     current: self.currentReviewIndex(
@@ -450,7 +474,8 @@ final class AIConnectorViewModel {
                         switch stage {
                         case .semanticModelDownload:
                             self.state = .downloading(self.downloadProgress)
-                        case .semanticRetrieval, .modelLoading, .generation:
+                        case .semanticRetrieval, .modelLoading, .generation,
+                             .definitionReview, .deterministicReview:
                             self.state = .reviewing(
                                 current: self.currentReviewIndex(
                                     fallback: max(
@@ -480,6 +505,7 @@ final class AIConnectorViewModel {
                             || lastQueueState != segmentState
                         lastQueueSegmentID = segmentID
                         lastQueueState = segmentState
+                        currentSegmentID = segmentID
                         currentQueueState = segmentState
                         if queueStateChanged {
                             recordProgressActivity()
@@ -495,12 +521,26 @@ final class AIConnectorViewModel {
                             currentSegmentPreview = segment.targetText
                         }
                         switch segmentState {
-                        case .generating, .parsing, .validating, .preparing, .retrieving:
-                            if segmentState == .preparing || segmentState == .retrieving {
-                                setProgressStage(.semanticRetrieval)
-                            } else if progressStage != .modelDownload {
-                                setProgressStage(.modelLoading)
-                            }
+                        case .preparing, .retrieving:
+                            setProgressStage(
+                                runMode == .deterministic || circuitBreakerActivated
+                                    ? .deterministicReview
+                                    : .semanticRetrieval
+                            )
+                            state = .reviewing(
+                                current: max(processedSegmentCount + skippedSegmentCount + 1, 1),
+                                total: total
+                            )
+                        case .validating:
+                            setProgressStage(.deterministicReview)
+                            state = .reviewing(
+                                current: max(processedSegmentCount + skippedSegmentCount + 1, 1),
+                                total: total
+                            )
+                        case .generating, .parsing:
+                            // The processor reports model loading/generation
+                            // through the dedicated callbacks. Queue states
+                            // must not overwrite those more precise phases.
                             state = .reviewing(
                                 current: max(processedSegmentCount + skippedSegmentCount + 1, 1),
                                 total: total
@@ -522,6 +562,7 @@ final class AIConnectorViewModel {
                         if queueProgressChanged {
                             recordProgressActivity()
                         }
+                        updateAnalysisProgressForCompletedSegments()
                         state = .reviewing(current: min(current + 1, total), total: total)
 
                     case .circuitBreakerActivated:
@@ -533,6 +574,7 @@ final class AIConnectorViewModel {
                         runSummary = summary
                         currentQueueState = summary.wasPartial ? .cancelled : .completed
                         currentSegmentPreview = summary.wasPartial ? currentSegmentPreview : ""
+                        currentSegmentID = summary.wasPartial ? currentSegmentID : nil
                         if let sampleForRun {
                             fixtureEvaluation = fixtureEvaluator.evaluate(
                                 sample: sampleForRun,
@@ -591,6 +633,7 @@ final class AIConnectorViewModel {
     func selectSuggestion(_ id: UUID?) {
         guard let id,
               editorSuggestions.contains(where: { $0.id == id })
+                || definitionDebugSuggestions.contains(where: { $0.id == id })
         else {
             selectedSuggestionID = nil
             return
@@ -617,6 +660,7 @@ final class AIConnectorViewModel {
 
     func clearEditorSuggestions() {
         editorSuggestions = []
+        definitionDebugSuggestions = []
         selectedSuggestionID = nil
     }
 
@@ -659,10 +703,11 @@ final class AIConnectorViewModel {
         let startDate = now()
         analysisStartedAt = startDate
         lastProgressActivityAt = startDate
+        lastGenerationProgressPublicationAt = nil
     }
 
-    private func recordProgressActivity() {
-        lastProgressActivityAt = now()
+    private func recordProgressActivity(at date: Date? = nil) {
+        lastProgressActivityAt = date ?? now()
     }
 
     private func setProgressStage(_ stage: AIConnectorProgressStage) {
@@ -670,44 +715,22 @@ final class AIConnectorViewModel {
             progressStage = stage
             recordProgressActivity()
         }
-        updateAnalysisProgressForCurrentStage()
+        updateAnalysisProgressForCompletedSegments()
     }
 
-    private func updateAnalysisProgressForCurrentStage() {
-        let candidate: Double?
-        switch progressStage {
-        case .idle:
-            candidate = 0
-        case .segmenting:
-            candidate = 0.12
-        case .semanticModelDownload:
-            candidate = 0.12 + clamped(downloadProgress) * 0.20
-        case .semanticRetrieval:
-            candidate = 0.32
-        case .modelDownload:
-            candidate = 0.32 + clamped(downloadProgress) * 0.23
-        case .modelLoading:
-            candidate = 0.55
-        case .generation:
-            guard totalSegmentCount > 0 else {
-                candidate = 0.55
-                break
-            }
+    private func updateAnalysisProgressForCompletedSegments() {
+        let candidate: Double
+        if progressStage == .completed {
+            candidate = 1
+        } else {
+            guard totalSegmentCount > 0 else { return }
             let completed = min(
                 max(completedSegmentCount, 0),
                 totalSegmentCount
             )
-            let fraction = Double(completed) / Double(totalSegmentCount)
-            candidate = 0.55 + fraction * 0.44
-        case .completed:
-            candidate = 1
-        case .cancelled, .failed:
-            // Keep the last real value. The loading view is hidden as soon as
-            // the run leaves its running state.
-            candidate = nil
+            candidate = Double(completed) / Double(totalSegmentCount)
         }
 
-        guard let candidate else { return }
         let previousValue = progressTracker.value
         progressTracker.advance(to: candidate)
         guard progressTracker.value != previousValue else { return }
@@ -715,7 +738,55 @@ final class AIConnectorViewModel {
     }
 
     private func clamped(_ value: Double) -> Double {
-        min(max(value, 0), 1)
+        guard value.isFinite else { return 0 }
+        return min(max(value, 0), 1)
+    }
+
+    private func updateSemanticDownloadProgress(_ progress: Double) {
+        let nextProgress = max(semanticDownloadProgress, clamped(progress))
+        guard semanticDownloadProgress != nextProgress else { return }
+        semanticDownloadProgress = nextProgress
+        downloadProgress = nextProgress
+        recordProgressActivity()
+    }
+
+    private func updateModelDownloadProgress(_ progress: Double) {
+        let nextProgress = max(modelDownloadProgress, clamped(progress))
+        guard modelDownloadProgress != nextProgress else { return }
+        modelDownloadProgress = nextProgress
+        downloadProgress = nextProgress
+        recordProgressActivity()
+    }
+
+    private func publishGenerationProgress(
+        characters: Int,
+        total: Int,
+        fallback: Int
+    ) {
+        let nextCharacters = max(characters, 0)
+        guard generationProgress != nextCharacters else { return }
+
+        let timestamp = now()
+        let isNewGeneration = nextCharacters < generationProgress
+        if !isNewGeneration,
+           let lastPublication = lastGenerationProgressPublicationAt,
+           timestamp.timeIntervalSince(lastPublication)
+            < Self.generationProgressUpdateInterval {
+            return
+        }
+
+        generationProgress = nextCharacters
+        lastGenerationProgressPublicationAt = timestamp
+        recordProgressActivity(at: timestamp)
+        if progressStage != .definitionReview {
+            setProgressStage(.generation)
+        } else {
+            updateAnalysisProgressForCompletedSegments()
+        }
+        state = .reviewing(
+            current: currentReviewIndex(fallback: fallback),
+            total: total
+        )
     }
 
     private func clearBenchmarkCallbacks() {
@@ -775,10 +846,14 @@ final class AIConnectorViewModel {
                 definitionAssessments: definitionAssessments,
                 documentText: editorSourceText
             )
+            definitionDebugSuggestions = EditorSuggestionMapper.makeDefinitionDebugSuggestions(
+                assessments: definitionAssessments,
+                documentText: editorSourceText
+            )
         }
         updateOutput()
         runSummary = currentPartialSummary()
-        updateAnalysisProgressForCurrentStage()
+        updateAnalysisProgressForCompletedSegments()
     }
 
     private func currentPartialSummary() -> AIConnectorRunSummary {
@@ -820,11 +895,15 @@ final class AIConnectorViewModel {
         let resetDate = now()
         analysisStartedAt = resetDate
         lastProgressActivityAt = resetDate
+        lastGenerationProgressPublicationAt = nil
         errorMessage = nil
         downloadProgress = 0
+        semanticDownloadProgress = 0
+        modelDownloadProgress = 0
         generationProgress = 0
         latestGenerationMetrics = nil
         currentSegmentPreview = ""
+        currentSegmentID = nil
         currentGlossaryMatches = []
         currentCandidates = []
         currentCandidateDecisions = []
