@@ -14,6 +14,7 @@ struct DashboardDocument: Identifiable, Codable, Equatable, Hashable {
     var createdAt: Date
     var updatedAt: Date
     var fingerprint: DocumentFingerprint?
+    var analysisSnapshot: DocumentAnalysisSnapshot?
 
     init(
         id: UUID = UUID(),
@@ -21,7 +22,8 @@ struct DashboardDocument: Identifiable, Codable, Equatable, Hashable {
         content: String = "",
         createdAt: Date = Date(),
         updatedAt: Date = Date(),
-        fingerprint: DocumentFingerprint? = nil
+        fingerprint: DocumentFingerprint? = nil,
+        analysisSnapshot: DocumentAnalysisSnapshot? = nil
     ) {
         self.id = id
         self.title = title
@@ -29,6 +31,7 @@ struct DashboardDocument: Identifiable, Codable, Equatable, Hashable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.fingerprint = fingerprint
+        self.analysisSnapshot = analysisSnapshot
     }
 
     var formattedRelativeDate: String {

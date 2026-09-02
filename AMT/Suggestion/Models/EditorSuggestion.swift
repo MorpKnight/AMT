@@ -6,7 +6,7 @@
 import CryptoKit
 import Foundation
 
-enum EditorSuggestionKind: String, Hashable, Sendable {
+enum EditorSuggestionKind: String, Codable, Hashable, Sendable {
     case language
     case definition
 
@@ -33,7 +33,7 @@ enum EditorSuggestionKind: String, Hashable, Sendable {
 ///
 /// `sourceRange` uses UTF-16 offsets because AppKit's text system and
 /// `NSRange` use the same indexing model.
-struct EditorSuggestion: Identifiable, Hashable {
+struct EditorSuggestion: Codable, Identifiable, Hashable {
     let id: UUID
     var sourceRange: NSRange
     let original: String
@@ -74,9 +74,86 @@ struct EditorSuggestion: Identifiable, Hashable {
         self.prefixContext = prefixContext
         self.suffixContext = suffixContext
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case sourceRangeLocation = "source_range_location"
+        case sourceRangeLength = "source_range_length"
+        case original
+        case replacement
+        case category
+        case kind
+        case isDebugOnly
+        case reason
+        case origin
+        case reference
+        case prefixContext
+        case suffixContext
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let location = try container.decode(Int.self, forKey: .sourceRangeLocation)
+        let length = try container.decode(Int.self, forKey: .sourceRangeLength)
+        guard location >= 0, length >= 0 else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .sourceRangeLocation,
+                in: container,
+                debugDescription: "Suggestion range must not be negative."
+            )
+        }
+
+        self.id = try container.decode(UUID.self, forKey: .id)
+        self.sourceRange = NSRange(location: location, length: length)
+        self.original = try container.decode(String.self, forKey: .original)
+        self.replacement = try container.decode(String.self, forKey: .replacement)
+        self.category = try container.decode(AIReviewCategory.self, forKey: .category)
+        self.kind = try container.decodeIfPresent(EditorSuggestionKind.self, forKey: .kind)
+            ?? .language
+        self.isDebugOnly = try container.decodeIfPresent(Bool.self, forKey: .isDebugOnly)
+            ?? false
+        self.reason = try container.decode(String.self, forKey: .reason)
+        self.origin = try container.decode(AIReviewOrigin.self, forKey: .origin)
+        self.reference = try container.decodeIfPresent(
+            EditorSuggestionReference.self,
+            forKey: .reference
+        )
+        self.prefixContext = try container.decodeIfPresent(String.self, forKey: .prefixContext)
+        self.suffixContext = try container.decodeIfPresent(String.self, forKey: .suffixContext)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(sourceRange.location, forKey: .sourceRangeLocation)
+        try container.encode(sourceRange.length, forKey: .sourceRangeLength)
+        try container.encode(original, forKey: .original)
+        try container.encode(replacement, forKey: .replacement)
+        try container.encode(category, forKey: .category)
+        try container.encode(kind, forKey: .kind)
+        try container.encode(isDebugOnly, forKey: .isDebugOnly)
+        try container.encode(reason, forKey: .reason)
+        try container.encode(origin, forKey: .origin)
+        try container.encodeIfPresent(reference, forKey: .reference)
+        try container.encodeIfPresent(prefixContext, forKey: .prefixContext)
+        try container.encodeIfPresent(suffixContext, forKey: .suffixContext)
+    }
+
+    /// Ensures a restored range still points to the same text in the document.
+    func isAnchored(to documentText: String) -> Bool {
+        let documentLength = documentText.utf16.count
+        guard sourceRange.location >= 0,
+              sourceRange.length > 0,
+              sourceRange.location <= documentLength,
+              sourceRange.length <= documentLength - sourceRange.location else {
+            return false
+        }
+
+        return (documentText as NSString).substring(with: sourceRange) == original
+    }
 }
 
-struct EditorSuggestionReference: Hashable {
+struct EditorSuggestionReference: Codable, Hashable {
     let term: String
     let regulation: String
     let regulationTitle: String

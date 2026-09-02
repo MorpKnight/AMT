@@ -6,6 +6,19 @@ import Observation
 final class AIConnectorViewModel {
     private static let previewCharacters = 2_000
     static let maximumDocumentCharacters = 4_000
+    private static let analysisPipelineVersion = [
+        "document-analysis-v1",
+        "fingerprint-v\(DocumentFingerprint.currentVersion)",
+        "snapshot-v\(DocumentAnalysisSnapshot.currentVersion)",
+        QwenSuggestionService.promptVersion,
+        QwenSuggestionService.outputSchemaVersion,
+        QwenSuggestionService.candidatePromptVersion,
+        QwenSuggestionService.candidateOutputSchemaVersion,
+        QwenSuggestionService.definitionPromptVersion,
+        QwenSuggestionService.definitionOutputSchemaVersion,
+        AIConnectorSuggestionValidator.version,
+        AIConnectorRuleStore.currentVersion
+    ].joined(separator: "|")
 
     var inputSource: AIConnectorInputSource = .currentDocument
     var selectedSampleID = "redundant-wajib-untuk"
@@ -184,6 +197,20 @@ final class AIConnectorViewModel {
 
     var semanticRetrievalConfiguration: LegalCorpusRetrievalConfiguration? {
         dictionaryStore.semanticRetrievalConfiguration
+    }
+
+    var currentAnalysisProfile: AIConnectorAnalysisProfile {
+        AIConnectorAnalysisProfile(
+            pipelineVersion: Self.analysisPipelineVersion,
+            reviewMode: reviewMode,
+            modelVariant: modelVariant,
+            thinkingEnabled: thinkingEnabled,
+            generationProfilePreset: generationProfilePreset,
+            corpusVersion: dictionaryStore.activeCorpusVersion,
+            semanticModelRevision: dictionaryStore.semanticModelRevision,
+            semanticEmbeddingSchema: dictionaryStore.semanticEmbeddingSchema,
+            semanticRetrievalProfile: dictionaryStore.semanticRetrievalProfile
+        )
     }
 
     func inputPreview(documentText: String) -> String {
@@ -604,6 +631,55 @@ final class AIConnectorViewModel {
                 task = nil
             }
         }
+    }
+
+    /// Creates the compact result that can be restored without loading Qwen.
+    /// A snapshot is only valid after a complete current-document run.
+    func makeAnalysisSnapshot(
+        documentText: String,
+        completedAt: Date? = nil
+    ) -> DocumentAnalysisSnapshot? {
+        guard inputSource == .currentDocument,
+              exposesEditorSuggestions,
+              state == .completed else {
+            return nil
+        }
+
+        return DocumentAnalysisSnapshot(
+            analyzedContentSHA256: DocumentFingerprinting.contentSHA256(documentText),
+            analysisProfile: currentAnalysisProfile,
+            completedAt: completedAt ?? now(),
+            runSummary: runSummary,
+            editorSuggestions: editorSuggestions,
+            definitionDebugSuggestions: definitionDebugSuggestions
+        )
+    }
+
+    /// Restores user-facing analysis output when the document and pipeline
+    /// still match the snapshot. This method never starts a model run.
+    @discardableResult
+    func restoreAnalysisSnapshot(
+        _ snapshot: DocumentAnalysisSnapshot,
+        documentText: String
+    ) -> Bool {
+        guard snapshot.isCompatible(
+            with: documentText,
+            profile: currentAnalysisProfile
+        ) else {
+            resetInputMetadata()
+            return false
+        }
+
+        resetInputMetadata()
+        editorSourceText = documentText
+        exposesEditorSuggestions = true
+        editorSuggestions = snapshot.editorSuggestions
+        definitionDebugSuggestions = snapshot.definitionDebugSuggestions
+        runSummary = snapshot.runSummary
+        progressStage = .completed
+        analysisProgress = 1
+        state = .completed
+        return true
     }
 
     func resetInputMetadata() {

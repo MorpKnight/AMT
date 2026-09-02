@@ -571,7 +571,7 @@ struct AIReviewRejection: Identifiable, Hashable, Sendable {
     var segmentID: Int { segment.id }
 }
 
-struct AIConnectorRunSummary: Hashable, Sendable {
+struct AIConnectorRunSummary: Codable, Hashable, Sendable {
     let reviewMode: AIConnectorReviewMode
     let modelVariant: AIConnectorModelVariant
     let processedSegmentCount: Int

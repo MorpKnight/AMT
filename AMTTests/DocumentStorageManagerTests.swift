@@ -315,6 +315,106 @@ final class DocumentStorageManagerTests: XCTestCase {
         XCTAssertTrue(try jsonFiles().isEmpty)
     }
 
+    func testCompletedAnalysisSnapshotPersistsWithDocumentAndReloads() throws {
+        let storage = makeStorage()
+        let sourceURL = try writeFile(
+            named: "analyzed.txt",
+            data: Data("Pihak Kedua wajib untuk membayar.\n".utf8)
+        )
+        let imported = try requireImportedDocument(
+            from: storage.importDocument(at: sourceURL)
+        )
+        let suggestion = makeSuggestion(
+            in: imported.content,
+            original: "wajib untuk",
+            replacement: "wajib"
+        )
+        let snapshot = DocumentAnalysisSnapshot(
+            analyzedContentSHA256: DocumentFingerprinting.contentSHA256(imported.content),
+            analysisProfile: makeAnalysisProfile(),
+            completedAt: Date(timeIntervalSince1970: 123),
+            editorSuggestions: [suggestion]
+        )
+
+        let saved = try XCTUnwrap(
+            storage.saveAnalysisSnapshot(snapshot, for: imported)
+        )
+        XCTAssertEqual(saved.analysisSnapshot, snapshot)
+
+        let reloaded = makeStorage()
+        XCTAssertEqual(
+            reloaded.documents.first?.analysisSnapshot,
+            snapshot
+        )
+        XCTAssertEqual(
+            reloaded.documents.first?.analysisSnapshot?.editorSuggestions,
+            [suggestion]
+        )
+    }
+
+    func testMismatchedAnalysisSnapshotIsNotAttachedToDocument() throws {
+        let storage = makeStorage()
+        let sourceURL = try writeFile(
+            named: "mismatched.txt",
+            data: Data("Isi asli.".utf8)
+        )
+        let imported = try requireImportedDocument(
+            from: storage.importDocument(at: sourceURL)
+        )
+        let snapshot = DocumentAnalysisSnapshot(
+            analyzedContentSHA256: DocumentFingerprinting.contentSHA256("Isi berbeda."),
+            analysisProfile: makeAnalysisProfile(),
+            completedAt: Date(timeIntervalSince1970: 456),
+            editorSuggestions: []
+        )
+
+        XCTAssertNil(storage.saveAnalysisSnapshot(snapshot, for: imported))
+        XCTAssertNil(storage.documents.first?.analysisSnapshot)
+        XCTAssertEqual(try jsonFiles().count, 1)
+    }
+
+    func testEditingContentInvalidatesPersistedAnalysisSnapshot() throws {
+        let storage = makeStorage()
+        let sourceURL = try writeFile(
+            named: "editable-analysis.txt",
+            data: Data("Pihak Kedua wajib untuk membayar.".utf8)
+        )
+        let imported = try requireImportedDocument(
+            from: storage.importDocument(at: sourceURL)
+        )
+        let snapshot = DocumentAnalysisSnapshot(
+            analyzedContentSHA256: DocumentFingerprinting.contentSHA256(imported.content),
+            analysisProfile: makeAnalysisProfile(),
+            completedAt: Date(timeIntervalSince1970: 789),
+            editorSuggestions: [
+                makeSuggestion(
+                    in: imported.content,
+                    original: "wajib untuk",
+                    replacement: "wajib"
+                )
+            ]
+        )
+        let saved = try XCTUnwrap(
+            storage.saveAnalysisSnapshot(snapshot, for: imported)
+        )
+
+        var edited = saved
+        edited.content = "Pihak Kedua dapat membayar."
+        let persistedEdited = try XCTUnwrap(storage.saveDocument(edited))
+
+        XCTAssertNil(persistedEdited.analysisSnapshot)
+        XCTAssertNil(storage.documents.first?.analysisSnapshot)
+        XCTAssertEqual(
+            persistedEdited.fingerprint?.sourceFileSHA256,
+            imported.fingerprint?.sourceFileSHA256
+        )
+        XCTAssertNotEqual(
+            persistedEdited.fingerprint?.normalizedContentSHA256,
+            imported.fingerprint?.normalizedContentSHA256
+        )
+        XCTAssertNil(makeStorage().documents.first?.analysisSnapshot)
+    }
+
     private func makeStorage() -> DocumentStorageManager {
         DocumentStorageManager(storageDirectoryURL: storageDirectory)
     }
@@ -365,6 +465,38 @@ final class DocumentStorageManagerTests: XCTestCase {
         SHA256.hash(data: data)
             .map { String(format: "%02x", $0) }
             .joined()
+    }
+
+    private func makeAnalysisProfile() -> AIConnectorAnalysisProfile {
+        AIConnectorAnalysisProfile(
+            pipelineVersion: "test-pipeline-v1",
+            reviewMode: .hybrid,
+            modelVariant: .qwen35Base4B,
+            thinkingEnabled: false,
+            generationProfilePreset: .greedy,
+            corpusVersion: "test-corpus-v1",
+            semanticModelRevision: "test-semantic-revision",
+            semanticEmbeddingSchema: "test-embedding-schema",
+            semanticRetrievalProfile: "test-retrieval-profile"
+        )
+    }
+
+    private func makeSuggestion(
+        in text: String,
+        original: String,
+        replacement: String
+    ) -> EditorSuggestion {
+        let range = (text as NSString).range(of: original)
+        XCTAssertNotEqual(range.location, NSNotFound)
+        return EditorSuggestion(
+            id: UUID(),
+            sourceRange: range,
+            original: original,
+            replacement: replacement,
+            category: .grammar,
+            reason: "Perbaikan tata bahasa.",
+            origin: .deterministic
+        )
     }
 }
 
