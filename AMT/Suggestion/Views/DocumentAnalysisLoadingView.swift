@@ -5,18 +5,23 @@
 //  Created by Antigravity on 2026/09/01.
 //
 
+import Foundation
 import SwiftUI
-import Combine
 
 struct DocumentAnalysisLoadingView: View {
     var progressStage: AIConnectorProgressStage = .idle
     var downloadProgress: Double = 0
     var generationProgress: Int = 0
+    var analysisProgress: Double = 0
+    var completedSegmentCount: Int = 0
+    var totalSegmentCount: Int = 0
+    var analysisStartedAt: Date = Date()
+    var lastActivityAt: Date = Date()
+    var onCancel: () -> Void = {}
+
+    private static let stalledThreshold: TimeInterval = 60
 
     @Environment(\.colorScheme) private var colorScheme
-
-    @State private var displayedProgress: Double = 0.08
-    private let timer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
     private var isDarkMode: Bool {
         colorScheme == .dark
@@ -30,110 +35,168 @@ struct DocumentAnalysisLoadingView: View {
         isDarkMode ? .white : .black
     }
 
-    private var trackColor: Color {
-        isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.10)
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            content(currentDate: context.date)
+        }
     }
 
-    var body: some View {
+    @ViewBuilder
+    private func content(currentDate: Date) -> some View {
         VStack(spacing: 24) {
-            // MARK: - Logo Image from Assets
             Image(logoImageName)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 140, height: 120)
 
-            // MARK: - Progress Bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(trackColor)
-                        .frame(height: 6)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 10) {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .controlSize(.small)
+                        .accessibilityLabel("Analisis sedang berjalan")
 
-                    Capsule()
-                        .fill(primaryColor)
-                        .frame(width: max(16, min(geo.size.width, geo.size.width * displayedProgress)), height: 6)
-                        .animation(.linear(duration: 0.05), value: displayedProgress)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Dokumen sedang dianalisis")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(primaryColor)
+
+                        Text(progressStage.title)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                ProgressView(value: clamped(analysisProgress))
+                    .tint(primaryColor)
+                    .animation(.easeInOut(duration: 0.25), value: analysisProgress)
+                    .accessibilityValue("\(Int(clamped(analysisProgress) * 100)) persen")
+
+                HStack(spacing: 8) {
+                    Text("Berjalan")
+                    Spacer()
+                    Text(formattedDuration(analysisDuration(at: currentDate)))
+                        .monospacedDigit()
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+                if let progressDetail {
+                    Text(progressDetail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if isStalled(at: currentDate) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label(
+                            "Belum ada aktivitas selama 60 detik. Proses mungkin masih berjalan.",
+                            systemImage: "exclamationmark.triangle"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+
+                        Button("Hentikan dan buka dokumen", action: onCancel)
+                            .buttonStyle(.bordered)
+                    }
+                    .padding(.top, 4)
                 }
             }
-            .frame(width: 180, height: 6)
-
-            // MARK: - Status Label
-            Text("Dokumenmu sedang dianalisis...")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(primaryColor)
+            .frame(maxWidth: 360)
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
-        .onReceive(timer) { _ in
-            advanceProgress()
-        }
-        .onChange(of: progressStage) { _, newStage in
-            if newStage == .completed {
-                withAnimation(.easeOut(duration: 0.25)) {
-                    displayedProgress = 1.0
-                }
-            }
-        }
     }
 
-    private var stageTarget: Double {
-        if downloadProgress > 0 {
-            return max(0.20, min(0.70, downloadProgress))
-        }
+    private var progressDetail: String? {
         switch progressStage {
-        case .idle:
-            return 0.12
-        case .segmenting:
-            return 0.25
         case .semanticModelDownload, .modelDownload:
-            return max(0.25, downloadProgress)
-        case .semanticRetrieval, .modelLoading:
-            return 0.50
+            return "Unduhan \(Int(clamped(downloadProgress) * 100))%"
         case .generation:
-            let genOffset = min(0.42, Double(generationProgress) / 400.0)
-            return min(0.95, 0.50 + genOffset)
-        case .completed:
-            return 1.0
+            if totalSegmentCount > 0 {
+                return "\(min(max(completedSegmentCount, 0), totalSegmentCount)) dari \(totalSegmentCount) segmen selesai · \(generationProgress) karakter keluaran"
+            }
+            return "\(generationProgress) karakter keluaran"
         default:
-            return 0.85
+            guard totalSegmentCount > 0 else { return nil }
+            return "\(min(max(completedSegmentCount, 0), totalSegmentCount)) dari \(totalSegmentCount) segmen selesai"
         }
     }
 
-    private func advanceProgress() {
-        guard progressStage != .completed else {
-            if displayedProgress < 1.0 {
-                displayedProgress = 1.0
-            }
-            return
-        }
+    private func analysisDuration(at date: Date) -> TimeInterval {
+        max(0, date.timeIntervalSince(analysisStartedAt))
+    }
 
-        let target = max(stageTarget, displayedProgress)
-        if target > displayedProgress {
-            // Smoothly catch up towards stage target
-            let step = max(0.003, (target - displayedProgress) * 0.1)
-            displayedProgress = min(target, displayedProgress + step)
-        } else if displayedProgress < 0.95 {
-            // Slowly crawl forward even while waiting on long tasks
-            displayedProgress = min(0.95, displayedProgress + 0.001)
+    private func isStalled(at date: Date) -> Bool {
+        date.timeIntervalSince(lastActivityAt) >= Self.stalledThreshold
+    }
+
+    private func clamped(_ value: Double) -> Double {
+        min(max(value, 0), 1)
+    }
+
+    private func formattedDuration(_ duration: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(duration.rounded(.down)))
+        let hours = totalSeconds / 3_600
+        let minutes = (totalSeconds % 3_600) / 60
+        let seconds = totalSeconds % 60
+
+        if hours > 0 {
+            return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         }
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 }
 
-#Preview("Light Mode") {
+#Preview("Normal · Light") {
     DocumentAnalysisLoadingView(
         progressStage: .generation,
-        downloadProgress: 0.5,
-        generationProgress: 120
+        generationProgress: 120,
+        analysisProgress: 0.66,
+        completedSegmentCount: 2,
+        totalSegmentCount: 8,
+        analysisStartedAt: Date().addingTimeInterval(-18),
+        lastActivityAt: Date().addingTimeInterval(-2)
     )
     .preferredColorScheme(.light)
 }
 
-#Preview("Dark Mode") {
+#Preview("Stalled · Light") {
     DocumentAnalysisLoadingView(
         progressStage: .generation,
-        downloadProgress: 0.5,
-        generationProgress: 120
+        generationProgress: 120,
+        analysisProgress: 0.66,
+        completedSegmentCount: 2,
+        totalSegmentCount: 8,
+        analysisStartedAt: Date().addingTimeInterval(-78),
+        lastActivityAt: Date().addingTimeInterval(-60)
+    )
+    .preferredColorScheme(.light)
+}
+
+#Preview("Normal · Dark") {
+    DocumentAnalysisLoadingView(
+        progressStage: .semanticRetrieval,
+        analysisProgress: 0.32,
+        completedSegmentCount: 1,
+        totalSegmentCount: 8,
+        analysisStartedAt: Date().addingTimeInterval(-18),
+        lastActivityAt: Date().addingTimeInterval(-2)
+    )
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Stalled · Dark") {
+    DocumentAnalysisLoadingView(
+        progressStage: .modelLoading,
+        analysisProgress: 0.55,
+        completedSegmentCount: 1,
+        totalSegmentCount: 8,
+        analysisStartedAt: Date().addingTimeInterval(-78),
+        lastActivityAt: Date().addingTimeInterval(-60)
     )
     .preferredColorScheme(.dark)
 }

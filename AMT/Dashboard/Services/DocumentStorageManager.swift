@@ -13,24 +13,44 @@ import UniformTypeIdentifiers
 @MainActor
 final class DocumentStorageManager: ObservableObject {
     @Published var documents: [DashboardDocument] = []
-    
-    private let fileManager = FileManager.default
+
+    private let fileManager: FileManager
+    private let storageDirectoryURL: URL?
     private let folderName = "AMT_Documents"
 
+    init(
+        fileManager: FileManager = .default,
+        storageDirectoryURL: URL? = nil
+    ) {
+        self.fileManager = fileManager
+        self.storageDirectoryURL = storageDirectoryURL
+        loadDocuments()
+    }
+
     private var storageURL: URL {
-        let paths = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
-        let documentsDirectory = paths[0]
-        let folderURL = documentsDirectory.appendingPathComponent(folderName, isDirectory: true)
-        
+        let folderURL: URL
+        if let storageDirectoryURL {
+            folderURL = storageDirectoryURL
+        } else if let documentsDirectory = fileManager.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first {
+            folderURL = documentsDirectory.appendingPathComponent(
+                folderName,
+                isDirectory: true
+            )
+        } else {
+            folderURL = fileManager.temporaryDirectory.appendingPathComponent(
+                folderName,
+                isDirectory: true
+            )
+        }
+
         if !fileManager.fileExists(atPath: folderURL.path) {
             try? fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true, attributes: nil)
         }
-        
-        return folderURL
-    }
 
-    init() {
-        loadDocuments()
+        return folderURL
     }
 
     // MARK: - Foundation Persistence Operations
@@ -48,11 +68,22 @@ final class DocumentStorageManager: ObservableObject {
             let decoder = JSONDecoder()
 
             for fileURL in fileURLs {
-                if let data = try? Data(contentsOf: fileURL),
-                   let document = try? decoder.decode(DashboardDocument.self, from: data),
-                   !AIConnectorDummyDocument.isBuiltIn(document) {
-                    loadedDocs.append(document)
+                guard let data = try? Data(contentsOf: fileURL),
+                      var document = try? decoder.decode(DashboardDocument.self, from: data),
+                      !AIConnectorDummyDocument.isBuiltIn(document)
+                else {
+                    continue
                 }
+
+                // Older JSON files do not have a fingerprint. Compute a
+                // fallback in memory so they participate in duplicate checks;
+                // the value is persisted the next time that document is saved.
+                if document.fingerprint == nil {
+                    document.fingerprint = DocumentFingerprinting.forStoredContent(
+                        document.content
+                    )
+                }
+                loadedDocs.append(document)
             }
 
             // Sort by latest updated first
@@ -66,7 +97,7 @@ final class DocumentStorageManager: ObservableObject {
 
     // MARK: - Import Document from Finder (.docx, .doc, .rtf, .md, .txt)
 
-    func importWordDocumentFromFinder(completion: @escaping (DashboardDocument?) -> Void) {
+    func importWordDocumentFromFinder(completion: @escaping (DocumentImportResult) -> Void) {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -83,56 +114,92 @@ final class DocumentStorageManager: ObservableObject {
 
         panel.begin { response in
             guard response == .OK, let url = panel.url else {
-                completion(nil)
+                completion(.cancelled)
                 return
             }
 
-            let title = url.deletingPathExtension().lastPathComponent
-            var textContent = ""
-
-            do {
-                textContent = try DocxToMarkdownConverter.convert(fileURL: url)
-            } catch {
-                print("Error converting document to Markdown: \(error.localizedDescription)")
-                if let rawString = try? String(contentsOf: url, encoding: .utf8) {
-                    textContent = rawString
-                }
-            }
-
-            let newDoc = DashboardDocument(
-                id: UUID(),
-                title: title.isEmpty ? "Untitled" : title,
-                content: textContent,
-                createdAt: Date(),
-                updatedAt: Date()
-            )
-
-            self.saveDocument(newDoc)
-            self.documents.insert(newDoc, at: 0)
-            completion(newDoc)
+            completion(self.importDocument(at: url))
         }
+    }
+
+    /// Imports a supported document without presenting Finder. This is the
+    /// testable boundary used by the UI panel callback.
+    func importDocument(at url: URL) -> DocumentImportResult {
+        let textContent: String
+        do {
+            textContent = try DocxToMarkdownConverter.convert(fileURL: url)
+        } catch {
+            guard let fallbackContent = try? String(contentsOf: url, encoding: .utf8) else {
+                return .failed("Dokumen tidak dapat dibaca: \(error.localizedDescription)")
+            }
+            textContent = fallbackContent
+        }
+
+        guard !textContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return .failed("Dokumen tidak memiliki isi yang dapat diimpor.")
+        }
+
+        let fingerprint: DocumentFingerprint
+        do {
+            fingerprint = try DocumentFingerprinting.make(
+                fileURL: url,
+                convertedContent: textContent
+            )
+        } catch {
+            return .failed("Fingerprint dokumen tidak dapat dibuat: \(error.localizedDescription)")
+        }
+
+        if let duplicate = duplicateMatch(for: fingerprint) {
+            return .duplicate(
+                existing: duplicate.document,
+                matchKind: duplicate.matchKind
+            )
+        }
+
+        let title = url.deletingPathExtension().lastPathComponent
+        let newDocument = DashboardDocument(
+            title: title.isEmpty ? "Untitled" : title,
+            content: textContent,
+            createdAt: Date(),
+            updatedAt: Date(),
+            fingerprint: fingerprint
+        )
+
+        do {
+            try persist(newDocument)
+        } catch {
+            return .failed("Dokumen tidak dapat disimpan: \(error.localizedDescription)")
+        }
+
+        documents.insert(newDocument, at: 0)
+        return .imported(newDocument)
     }
 
     @discardableResult
     func createNewDocument(title: String = "Untitled", content: String = "") -> DashboardDocument {
-        var newDoc = DashboardDocument(
+        var newDocument = DashboardDocument(
             id: UUID(),
             title: title,
             content: content,
             createdAt: Date(),
-            updatedAt: Date()
+            updatedAt: Date(),
+            fingerprint: DocumentFingerprinting.forStoredContent(content)
         )
-        
+
         if title == "Untitled" {
             let untitledCount = documents.filter { $0.title.hasPrefix("Untitled") }.count
             if untitledCount > 0 {
-                newDoc.title = "Untitled \(untitledCount + 1)"
+                newDocument.title = "Untitled \(untitledCount + 1)"
             }
         }
 
-        saveDocument(newDoc)
-        documents.insert(newDoc, at: 0)
-        return newDoc
+        do {
+            try persist(newDocument)
+            documents.insert(newDocument, at: 0)
+        } catch {
+            print("Failed to create document in Foundation storage: \(error.localizedDescription)")
+        }
+        return newDocument
     }
 
     func saveDocument(_ document: DashboardDocument) {
@@ -145,14 +212,14 @@ final class DocumentStorageManager: ObservableObject {
             }
             return
         }
-        
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
+
+        updatedDoc.fingerprint = DocumentFingerprinting.refreshingContent(
+            updatedDoc.fingerprint,
+            content: updatedDoc.content
+        )
 
         do {
-            let data = try encoder.encode(updatedDoc)
-            let fileURL = storageURL.appendingPathComponent("\(updatedDoc.id.uuidString).json")
-            try data.write(to: fileURL, options: .atomic)
+            try persist(updatedDoc)
 
             if let index = documents.firstIndex(where: { $0.id == updatedDoc.id }) {
                 documents[index] = updatedDoc
@@ -169,5 +236,51 @@ final class DocumentStorageManager: ObservableObject {
         let fileURL = storageURL.appendingPathComponent("\(document.id.uuidString).json")
         try? fileManager.removeItem(at: fileURL)
         documents.removeAll { $0.id == document.id }
+    }
+
+    private func persist(_ document: DashboardDocument) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        let data = try encoder.encode(document)
+        let fileURL = storageURL.appendingPathComponent(
+            "\(document.id.uuidString).json"
+        )
+        try data.write(to: fileURL, options: .atomic)
+    }
+
+    private func duplicateMatch(
+        for fingerprint: DocumentFingerprint
+    ) -> (document: DashboardDocument, matchKind: DocumentDuplicateMatchKind)? {
+        let orderedDocuments = documents.sorted(by: canonicalDocumentOrder)
+
+        if let sourceFileSHA256 = fingerprint.sourceFileSHA256,
+           let existing = orderedDocuments.first(where: { document in
+               effectiveFingerprint(for: document).sourceFileSHA256 == sourceFileSHA256
+           }) {
+            return (existing, .sourceFile)
+        }
+
+        if let existing = orderedDocuments.first(where: { document in
+            effectiveFingerprint(for: document).normalizedContentSHA256
+                == fingerprint.normalizedContentSHA256
+        }) {
+            return (existing, .normalizedContent)
+        }
+
+        return nil
+    }
+
+    private func effectiveFingerprint(for document: DashboardDocument) -> DocumentFingerprint {
+        document.fingerprint ?? DocumentFingerprinting.forStoredContent(document.content)
+    }
+
+    private func canonicalDocumentOrder(
+        _ lhs: DashboardDocument,
+        _ rhs: DashboardDocument
+    ) -> Bool {
+        if lhs.createdAt != rhs.createdAt {
+            return lhs.createdAt < rhs.createdAt
+        }
+        return lhs.id.uuidString < rhs.id.uuidString
     }
 }

@@ -13,19 +13,22 @@ struct DashboardDocument: Identifiable, Codable, Equatable, Hashable {
     var content: String
     var createdAt: Date
     var updatedAt: Date
+    var fingerprint: DocumentFingerprint?
 
     init(
         id: UUID = UUID(),
         title: String = "Untitled",
         content: String = "",
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        fingerprint: DocumentFingerprint? = nil
     ) {
         self.id = id
         self.title = title
         self.content = content
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.fingerprint = fingerprint
     }
 
     var formattedRelativeDate: String {
