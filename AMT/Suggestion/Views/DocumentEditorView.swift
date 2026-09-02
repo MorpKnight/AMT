@@ -133,6 +133,16 @@ struct DocumentEditorView: View {
                 selectedDocumentID = newID
             }
         }
+        .sheet(isPresented: $isDebugPanelPresented) {
+            AIConnectorDebugPanel(
+                documentText: activeDocument.content,
+                viewModel: aiConnectorViewModel
+            )
+            .frame(minWidth: 760, minHeight: 620)
+        }
+        .focusedSceneValue(\.showAIConnectorDebugPanel) {
+            isDebugPanelPresented = true
+        }
     }
 }
 

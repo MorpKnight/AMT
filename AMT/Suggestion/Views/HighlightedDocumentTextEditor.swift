@@ -345,7 +345,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                     }
                 )
             )
-            popover.contentSize = NSSize(width: 380, height: 300)
+            popover.contentSize = NSSize(width: 400, height: 460)
             self.popover = popover
             presentedSuggestionID = suggestion.id
 

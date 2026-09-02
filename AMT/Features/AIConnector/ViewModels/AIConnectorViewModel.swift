@@ -772,6 +772,7 @@ final class AIConnectorViewModel {
         if exposesEditorSuggestions {
             editorSuggestions = EditorSuggestionMapper.make(
                 reviews: validatedReviews,
+                definitionAssessments: definitionAssessments,
                 documentText: editorSourceText
             )
         }
