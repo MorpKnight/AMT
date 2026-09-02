@@ -3,6 +3,116 @@ import XCTest
 @testable import AMT
 
 final class EditorSuggestionTests: XCTestCase {
+    @MainActor
+    func testDefinitionMapperOnlyEmitsMismatchWithSourceGroundedReplacement() throws {
+        let entry = makeDefinitionEntry(
+            definition: "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi.",
+            sourcePassageID: "passage-data-pribadi"
+        )
+        let target = "Data Pribadi adalah informasi mengenai perusahaan."
+        let segment = makeSegment(target: target)
+        let candidate = AIConnectorDefinitionCandidate(
+            id: "D1",
+            match: LegalDictionaryMatch(
+                entry: entry,
+                score: 1_000,
+                rank: 1,
+                matchedDefinitionTokenCount: 3,
+                isDirectTermMatch: true,
+                retrievalOrigin: .exact
+            ),
+            statementText: "informasi mengenai perusahaan.",
+            detection: .explicitPattern
+        )
+        let assessment = makeDefinitionAssessment(
+            segment: segment,
+            statementText: candidate.statementText,
+            candidate: candidate,
+            classification: .explicitDefinition,
+            alignment: .mismatch
+        )
+
+        let first = try XCTUnwrap(
+            EditorSuggestionMapper.makeDefinitionSuggestions(
+                assessments: [assessment],
+                documentText: target
+            ).first
+        )
+        let second = try XCTUnwrap(
+            EditorSuggestionMapper.makeDefinitionSuggestions(
+                assessments: [assessment],
+                documentText: target
+            ).first
+        )
+
+        XCTAssertEqual(first.kind, .definition)
+        XCTAssertEqual(first.category, .terminology)
+        XCTAssertEqual(first.original, "informasi mengenai perusahaan.")
+        XCTAssertEqual(
+            first.replacement,
+            "data tentang orang perseorangan yang teridentifikasi."
+        )
+        XCTAssertEqual(
+            (target as NSString).substring(with: first.sourceRange),
+            first.original
+        )
+        XCTAssertEqual(first.reference?.term, "Data Pribadi")
+        XCTAssertEqual(first.reference?.definition, first.replacement)
+        XCTAssertEqual(first.reference?.sourcePassageID, "passage-data-pribadi")
+        XCTAssertEqual(first.id, second.id)
+    }
+
+    @MainActor
+    func testDefinitionMapperHidesMatchesUncertaintyAndUnanchoredFindings() {
+        let entry = makeDefinitionEntry(
+            definition: "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi."
+        )
+        let target = "Data Pribadi digunakan dalam perjanjian ini."
+        let segment = makeSegment(target: target)
+        let candidate = AIConnectorDefinitionCandidate(
+            id: "D1",
+            match: LegalDictionaryMatch(
+                entry: entry,
+                score: 1_000,
+                rank: 1,
+                matchedDefinitionTokenCount: 3,
+                isDirectTermMatch: true,
+                retrievalOrigin: .exact
+            ),
+            statementText: target,
+            detection: .retrievedCandidate
+        )
+
+        let matching = makeDefinitionAssessment(
+            segment: segment,
+            statementText: target,
+            candidate: candidate,
+            classification: .explicitDefinition,
+            alignment: .matches
+        )
+        let uncertain = makeDefinitionAssessment(
+            segment: segment,
+            statementText: target,
+            candidate: candidate,
+            classification: .needsReview,
+            alignment: .needsReview
+        )
+        let unanchoredMismatch = makeDefinitionAssessment(
+            segment: segment,
+            statementText: target,
+            candidate: candidate,
+            classification: .implicitDefinition,
+            alignment: .mismatch
+        )
+
+        XCTAssertTrue(
+            EditorSuggestionMapper.makeDefinitionSuggestions(
+                assessments: [matching, uncertain, unanchoredMismatch],
+                documentText: target
+            ).isEmpty
+        )
+    }
+
     func testMapperUsesAbsoluteUTF16OffsetForUnicodeText() throws {
         let prefix = "Pembukaan 😀.\n"
         let target = "Pihak Kedua wajib untuk menyerahkan laporan."
@@ -220,6 +330,67 @@ final class EditorSuggestionTests: XCTestCase {
             reason: "Perbaikan bahasa.",
             origin: .deterministic,
             reference: nil
+        )
+    }
+
+    @MainActor
+    private func makeDefinitionAssessment(
+        segment: AIReviewSegment,
+        statementText: String,
+        candidate: AIConnectorDefinitionCandidate,
+        classification: AIConnectorDefinitionClassification,
+        alignment: AIConnectorDefinitionAlignment
+    ) -> AIConnectorDefinitionAssessment {
+        AIConnectorDefinitionAssessment(
+            segment: segment,
+            term: candidate.term,
+            statementText: statementText,
+            candidate: candidate,
+            candidateCount: 1,
+            detection: candidate.detection,
+            classification: classification,
+            alignment: alignment,
+            reason: "Definisi tidak selaras dengan evidence corpus.",
+            origin: .qwen,
+            modelReviewed: true,
+            retrievalOrigin: candidate.match.retrievalOrigin,
+            semanticScore: candidate.match.semanticScore,
+            requiresHumanReview: true
+        )
+    }
+
+    @MainActor
+    private func makeDefinitionEntry(
+        definition: String,
+        sourcePassageID: String? = nil
+    ) -> LegalDictionaryEntry {
+        LegalDictionaryEntry(
+            id: "data-pribadi-definition",
+            term: "Data Pribadi",
+            definition: definition,
+            regulation: "Undang-Undang Nomor 27 Tahun 2022",
+            regulationTitle: "Pelindungan Data Pribadi",
+            sourceURL: URL(string: "https://example.invalid/detail"),
+            officialDocumentURL: URL(string: "https://example.invalid/document"),
+            referenceID: "reference-data-pribadi",
+            authority: .verified,
+            corpusVersion: "definition-test-v1",
+            applicabilityStatus: .inForce,
+            sourcePassageID: sourcePassageID,
+            articleLocator: "Pasal 1 angka 1",
+            isActionable: true
+        )
+    }
+
+    @MainActor
+    private func makeSegment(target: String) -> AIReviewSegment {
+        AIReviewSegment(
+            id: 1,
+            sourceLocation: 0,
+            sourceLength: target.utf16.count,
+            targetText: target,
+            previousContext: nil,
+            nextContext: nil
         )
     }
 }

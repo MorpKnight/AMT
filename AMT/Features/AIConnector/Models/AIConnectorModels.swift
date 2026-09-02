@@ -679,6 +679,8 @@ struct AIConnectorSegmentResult: Sendable {
     let candidateDecisions: [AIConnectorCandidateDecisionRecord]
     let modelCallCount: Int
     let challengeCount: Int
+    let definitionAssessment: AIConnectorDefinitionAssessment?
+    let definitionModelCallCount: Int
 
     init(
         segment: AIReviewSegment,
@@ -701,7 +703,9 @@ struct AIConnectorSegmentResult: Sendable {
         candidates: [AIConnectorReviewCandidate] = [],
         candidateDecisions: [AIConnectorCandidateDecisionRecord] = [],
         modelCallCount: Int = 0,
-        challengeCount: Int = 0
+        challengeCount: Int = 0,
+        definitionAssessment: AIConnectorDefinitionAssessment? = nil,
+        definitionModelCallCount: Int = 0
     ) {
         self.segment = segment
         self.glossaryMatches = glossaryMatches
@@ -724,6 +728,38 @@ struct AIConnectorSegmentResult: Sendable {
         self.candidateDecisions = candidateDecisions
         self.modelCallCount = modelCallCount
         self.challengeCount = challengeCount
+        self.definitionAssessment = definitionAssessment
+        self.definitionModelCallCount = definitionModelCallCount
+    }
+
+    func withDefinitionAnalysis(
+        _ analysis: AIConnectorDefinitionAnalysisResult
+    ) -> AIConnectorSegmentResult {
+        AIConnectorSegmentResult(
+            segment: segment,
+            glossaryMatches: glossaryMatches,
+            reviews: reviews,
+            parsedStatus: parsedStatus,
+            parsedCategory: parsedCategory,
+            rejections: rejections,
+            cacheHit: cacheHit,
+            modelAttempts: modelAttempts,
+            repairAttempted: repairAttempted,
+            usedFallback: usedFallback,
+            firstPassSucceeded: firstPassSucceeded,
+            skipped: skipped,
+            generationMetrics: generationMetrics,
+            repeatedSixGramRatio: repeatedSixGramRatio,
+            outputWasTruncated: outputWasTruncated,
+            reasoningMarkerDetected: reasoningMarkerDetected,
+            sourceClaimDetected: sourceClaimDetected,
+            candidates: candidates,
+            candidateDecisions: candidateDecisions,
+            modelCallCount: modelCallCount,
+            challengeCount: challengeCount,
+            definitionAssessment: analysis.assessment,
+            definitionModelCallCount: analysis.modelCallCount
+        )
     }
 }
 

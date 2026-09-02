@@ -16,17 +16,23 @@ struct SuggestionPopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            // MARK: - Header (Correctness Suggestion)
-            HStack(spacing: 4) {
-                Text("Correctness")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(.secondary)
-                Text("Suggestion")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Image(systemName: suggestion.kind.iconName)
+                    .foregroundStyle(suggestion.kind == .definition ? .orange : .blue)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(suggestion.kind.title)
+                        .font(.system(size: 13, weight: .semibold))
+                    if !suggestion.category.displayTitle.isEmpty {
+                        Text(suggestion.category.displayTitle)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer(minLength: 0)
             }
 
-            // MARK: - Diff Preview (e.g. Kedua wajib untuk wajib memproses...)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 if let prefix = suggestion.prefixContext, !prefix.isEmpty {
                     Text(prefix)
@@ -50,55 +56,56 @@ struct SuggestionPopoverView: View {
                 }
             }
 
-            // MARK: - Example Box Card
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Example")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
+            detailCard(title: "Alasan", text: suggestion.reason)
 
-                Text(exampleSentence)
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(.primary.opacity(0.9))
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
+            if suggestion.kind == .definition,
+               let definition = suggestion.reference?.definition,
+               !definition.isEmpty {
+                detailCard(title: "Acuan pengertian", text: definition)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.white)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-            )
 
-            // MARK: - References Section
             VStack(alignment: .leading, spacing: 8) {
                 Text("References")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
 
-                HStack(spacing: 12) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "link")
+                if let reference = suggestion.reference {
+                    if !reference.regulation.isEmpty {
+                        Text(reference.regulation)
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.blue)
-
-                        Text(referenceLabel)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.blue)
+                            .foregroundStyle(.primary)
+                    }
+                    if !reference.regulationTitle.isEmpty {
+                        Text(reference.regulationTitle)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    if let articleLocator = reference.articleLocator,
+                       !articleLocator.isEmpty {
+                        Text(articleLocator)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+                    if let passageID = reference.sourcePassageID,
+                       !passageID.isEmpty {
+                        Text("Evidence: \(passageID)")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(.secondary)
                     }
 
-                    HStack(spacing: 4) {
-                        Image(systemName: "link")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.blue)
-
-                        Text(referenceLabel)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.blue)
+                    HStack(spacing: 12) {
+                        if let sourceURL = reference.sourceURL {
+                            Link(destination: sourceURL) {
+                                Label("Sumber detail", systemImage: "link")
+                            }
+                        }
+                        if let officialDocumentURL = reference.officialDocumentURL {
+                            Link(destination: officialDocumentURL) {
+                                Label("Dokumen resmi", systemImage: "doc.text")
+                            }
+                        }
                     }
+                    .font(.system(size: 11, weight: .semibold))
                 }
             }
 
@@ -142,18 +149,28 @@ struct SuggestionPopoverView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    private var exampleSentence: String {
-        if !suggestion.reason.isEmpty {
-            return suggestion.reason
-        }
-        return "Perusahaan logistik itu melakukan wanprestasi karena terlambat mengirimkan barang pesanan hingga melewati batas waktu di kontrak."
-    }
+    private func detailCard(title: String, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
 
-    private var referenceLabel: String {
-        if let ref = suggestion.reference {
-            return "\(ref.regulation)"
+            Text(text)
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.primary.opacity(0.9))
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        return "Pasal 1234 KUH Perdata"
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.white)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+        )
     }
 }
 
