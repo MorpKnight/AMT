@@ -223,10 +223,7 @@ final class DocumentReviewViewModel {
     func cancel() {
         guard isAnalyzing || analysisTask != nil else { return }
 
-        activeOperationID = nil
-        analysisTask?.cancel()
-        analysisTask = nil
-        analyzer.cancel()
+        stopAnalysisWithoutPersisting()
         analysisStatus = .cancelled
         progressDetail = "Analisis dibatalkan"
         persistSnapshot()
@@ -281,6 +278,26 @@ final class DocumentReviewViewModel {
             return
         }
         selectedReviewItemID = id
+    }
+
+    /// Invalidates findings after the editable preview changes its draft text.
+    /// The imported original remains the source of truth for safe mapping/export.
+    func updateDraftText(_ text: String) {
+        stopAnalysisWithoutPersisting()
+        analysisText = text
+        if sourceAvailability == .legacyText {
+            sourceText = text
+        }
+        reviewItems = []
+        selectedReviewItemID = nil
+        analysisStatus = .idle
+        progress = 0
+        progressDetail = ""
+        errorMessage = nil
+        exportErrorMessage = nil
+        didRestoreSnapshot = false
+        didRejectStaleSnapshot = false
+        automaticAnalysisStarted = true
     }
 
     func sourceContext(for itemID: UUID) -> DocumentReviewSourceContext? {
@@ -398,6 +415,13 @@ final class DocumentReviewViewModel {
                 persistSnapshot()
             }
         }
+    }
+
+    private func stopAnalysisWithoutPersisting() {
+        activeOperationID = nil
+        analysisTask?.cancel()
+        analysisTask = nil
+        analyzer.cancel()
     }
 
     private func restoreSnapshotIfValid(

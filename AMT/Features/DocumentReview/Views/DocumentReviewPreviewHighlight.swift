@@ -42,7 +42,7 @@ struct DocumentReviewPreviewHighlight: View {
                     in: RoundedRectangle(cornerRadius: 7)
                 )
 
-            Text("Konteks teks asli; Quick Look tidak memetakan nomor halaman.")
+            Text("Konteks teks sumber; editor menampilkan teks analisis untuk debugging.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

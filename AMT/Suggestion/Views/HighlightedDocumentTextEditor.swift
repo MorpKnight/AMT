@@ -14,7 +14,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
     let suggestions: [EditorSuggestion]
     let selectedSuggestionID: UUID?
     let onSelect: (UUID?) -> Void
-    let onTextEdited: () -> Void
+    let onTextEdited: (String) -> Void
     let onAccept: (EditorSuggestion) -> Void
     let onDismiss: (UUID) -> Void
 
@@ -248,7 +248,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             parent.text = textView.string
             closePopover(notifySelection: true)
             layoutManager?.update(suggestions: [], selectedSuggestionID: nil)
-            parent.onTextEdited()
+            parent.onTextEdited(textView.string)
         }
 
         func accept(_ suggestion: EditorSuggestion) {
@@ -583,7 +583,7 @@ final class SuggestionLayoutManager: NSLayoutManager {
         ],
         selectedSuggestionID: nil,
         onSelect: { _ in },
-        onTextEdited: {},
+        onTextEdited: { _ in },
         onAccept: { _ in },
         onDismiss: { _ in }
     )
@@ -608,7 +608,7 @@ final class SuggestionLayoutManager: NSLayoutManager {
         ],
         selectedSuggestionID: nil,
         onSelect: { _ in },
-        onTextEdited: {},
+        onTextEdited: { _ in },
         onAccept: { _ in },
         onDismiss: { _ in }
     )

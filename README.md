@@ -11,8 +11,8 @@
   - Membuat, membuka, mencari, dan menghapus dokumen.
   - Menyimpan dokumen secara lokal di folder `Documents/AMT_Documents` sebagai JSON.
   - Mengimpor `.docx`, `.doc`, `.rtf`, dan `.txt` melalui Finder. Isi file diubah menjadi teks biasa untuk kebutuhan editor saat ini.
-  - Menampilkan salinan DOCX asli melalui Quick Look sehingga layout native tetap menjadi preview utama. Panel **Review dokumen** muncul sebagai popover ringkas dari kanan atas dan dapat dipin saat meninjau temuan.
-  - Temuan menampilkan konteks teks asli dengan kutipan yang disorot. Quick Look tidak diberi nomor halaman atau navigasi palsu karena tidak menyediakan pemetaan teks-ke-koordinat yang andal.
+  - Menampilkan isi dokumen melalui editor teks dengan highlight suggestion agar proses debug dan inspeksi range lebih mudah. Panel **Review dokumen** muncul sebagai popover ringkas dari kanan atas dan dapat dipin saat meninjau temuan.
+  - Temuan menampilkan konteks teks sumber dengan kutipan yang disorot; salinan DOCX asli tetap menjadi source of truth untuk pemetaan aman dan ekspor.
   - Menyediakan empat dokumen bawaan AI Connector dengan kompleksitas dan domain berbeda untuk smoke test. Dokumen-dokumen ini selalu dibuat ulang saat aplikasi dibuka dan perubahan pada dokumen tersebut tidak disimpan ke disk.
 - **Dictionary / Lawtionary**
   - Memuat versioned legal corpus `hukumonline-kamus@78a2ab626c092662b0441c95904c353b2487b216` sebagai resource aplikasi tanpa PDF.
@@ -200,7 +200,7 @@ Panel Debug menampilkan jumlah segmen, batch queue, progress seluruh dokumen, ca
 
 Dashboard juga selalu menampilkan empat dokumen bawaan AI Connector: PKS layanan digital, DPA dan Transfer Internasional, Financing Agreement dengan Facility/Collateral/Default, serta kontrak pengadaan sistem informasi publik. Dokumen-dokumen ini memuat contoh redundansi, typo, istilah hukum, preservasi angka, tanggal, mata uang, persentase, defined terms, negasi, pengecualian, terminologi campuran, klausul data pribadi, dan konflik instruksi yang sengaja dibuat untuk pengujian. Semuanya lebih dari 12 segmen agar pembentukan batch `12/12/...` dan hasil incremental dapat diuji. Dokumen dapat diedit untuk pengujian, tetapi akan kembali ke isi awal ketika aplikasi dijalankan ulang.
 
-Pada dokumen DOCX yang memiliki salinan asli, viewer menggunakan `QLPreviewView` Quick Look agar layout asli tetap terlihat. Tombol **Review** di kanan atas membuka daftar temuan saat hover dan mempertahankannya ketika dipin. Memilih temuan menampilkan konteks teks asli dengan kutipan yang disorot di area preview dan panel; posisi halaman tidak diklaim karena Quick Look tidak menyediakan pemetaan teks yang aman. DOCX sidecar tetap menjadi source of truth.
+Pada dokumen DOCX yang memiliki salinan asli, preview menggunakan editor teks agar teks analisis dan range suggestion dapat diperiksa langsung. Tombol **Review** di kanan atas membuka daftar temuan saat hover dan mempertahankannya ketika dipin. Memilih temuan menyelaraskan highlight di editor dengan konteks teks sumber pada panel; DOCX sidecar tetap menjadi source of truth untuk ekspor.
 
 Pada Run atau benchmark model pertama, tunggu proses download dan loading model selesai. Run berikutnya menggunakan cache Hugging Face lokal selama cache masih tersedia. Cache Qwen3.5 2B, Legal 4B, dan base 4B tetap terpisah untuk perbandingan historis.
 

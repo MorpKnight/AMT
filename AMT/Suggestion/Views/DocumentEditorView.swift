@@ -82,19 +82,43 @@ struct DocumentEditorView: View {
                 Divider()
 
                 ZStack(alignment: .topTrailing) {
-                    DocumentSourceViewer(
-                        originalURL: reviewViewModel.sourceURL,
-                        isOriginalAvailable: reviewViewModel.sourceAvailability.isOriginal,
-                        fallbackText: reviewViewModel.sourceText.isEmpty
-                            ? activeDocument.content
-                            : reviewViewModel.sourceText,
-                        notice: reviewViewModel.sourceViewerNotice,
-                        selectedReviewItem: reviewViewModel.selectedReviewItem,
-                        selectedSourceContext: reviewViewModel.selectedReviewContext,
-                        onClearSelectedReview: {
-                            reviewViewModel.selectReviewItem(nil)
+                    HighlightedDocumentTextEditor(
+                        text: $activeDocument.content,
+                        suggestions: editorSuggestions,
+                        selectedSuggestionID: selectedEditorSuggestionID,
+                        onSelect: { id in
+                            handleReviewSelection(id)
+                        },
+                        onTextEdited: { text in
+                            aiConnectorViewModel.resetInputMetadata()
+                            reviewViewModel.updateDraftText(text)
+                        },
+                        onAccept: { suggestion in
+                            handleInlineAccept(suggestion)
+                        },
+                        onDismiss: { id in
+                            handleInlineDismiss(id)
                         }
                     )
+                    .accessibilityLabel("Isi dokumen")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    if let selectedReviewItem = reviewViewModel.selectedReviewItem,
+                       let selectedSourceContext = reviewViewModel.selectedReviewContext {
+                        DocumentReviewPreviewHighlight(
+                            item: selectedReviewItem,
+                            context: selectedSourceContext,
+                            onDismiss: {
+                                handleReviewSelection(nil)
+                            }
+                        )
+                        .padding(16)
+                        .frame(
+                            maxWidth: .infinity,
+                            maxHeight: .infinity,
+                            alignment: .bottomLeading
+                        )
+                    }
 
                     DocumentReviewPopover(
                         documentID: reviewViewModel.documentID,
@@ -108,16 +132,16 @@ struct DocumentEditorView: View {
                         selectedReviewItemID: reviewViewModel.selectedReviewItemID,
                         selectedSourceContext: reviewViewModel.selectedReviewContext,
                         onSelectReview: { id in
-                            reviewViewModel.selectReviewItem(id)
+                            handleReviewSelection(id)
                         },
                         onAnalyze: {
                             reviewViewModel.analyze()
                         },
                         onAccept: { id in
-                            _ = reviewViewModel.accept(itemID: id)
+                            handleReviewAccept(id)
                         },
                         onReject: { id in
-                            _ = reviewViewModel.reject(itemID: id)
+                            handleReviewReject(id)
                         },
                         onRetry: {
                             reviewViewModel.retryAnalysis()
@@ -177,6 +201,57 @@ struct DocumentEditorView: View {
         case .missing, .changed, .unreadable:
             reviewViewModel.exportReviewedDocument(title: activeDocument.title)
         }
+    }
+
+    private var editorSuggestions: [EditorSuggestion] {
+        let pendingActionableIDs = Set(
+            reviewViewModel.reviewItems.compactMap { item in
+                item.decision == .pending && item.isActionable ? item.id : nil
+            }
+        )
+
+        return aiConnectorViewModel.editorSuggestions.filter {
+            pendingActionableIDs.contains($0.id)
+        }
+    }
+
+    private var selectedEditorSuggestionID: UUID? {
+        guard let selectedSuggestionID = aiConnectorViewModel.selectedSuggestionID,
+              editorSuggestions.contains(where: { $0.id == selectedSuggestionID })
+        else {
+            return nil
+        }
+        return selectedSuggestionID
+    }
+
+    private func handleReviewSelection(_ id: UUID?) {
+        reviewViewModel.selectReviewItem(id)
+        aiConnectorViewModel.selectSuggestion(id)
+    }
+
+    private func handleReviewAccept(_ id: UUID) {
+        guard reviewViewModel.accept(itemID: id) else { return }
+        aiConnectorViewModel.dismissSuggestion(id)
+    }
+
+    private func handleReviewReject(_ id: UUID) {
+        guard reviewViewModel.reject(itemID: id) else { return }
+        aiConnectorViewModel.dismissSuggestion(id)
+    }
+
+    private func handleInlineAccept(_ suggestion: EditorSuggestion) {
+        let delta = suggestion.replacement.utf16.count
+            - suggestion.original.utf16.count
+        aiConnectorViewModel.reconcileAfterAccept(
+            suggestion.id,
+            replacementDelta: delta
+        )
+        _ = reviewViewModel.accept(itemID: suggestion.id)
+    }
+
+    private func handleInlineDismiss(_ id: UUID) {
+        aiConnectorViewModel.dismissSuggestion(id)
+        _ = reviewViewModel.reject(itemID: id)
     }
 }
 

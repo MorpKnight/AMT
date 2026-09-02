@@ -356,7 +356,7 @@ private struct DocumentReviewSourceContextView: View {
                 .padding(8)
                 .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
 
-            Text("Posisi halaman tidak dipetakan oleh Quick Look.")
+            Text("Konteks berasal dari teks sumber; preview menggunakan editor teks.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
