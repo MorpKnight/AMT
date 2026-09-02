@@ -23,14 +23,21 @@ enum DashboardTab: String, CaseIterable, Identifiable {
 
 struct DashboardSidebar: View {
     @Binding var selectedTab: DashboardTab?
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var logoImageName: String {
+        colorScheme == .dark ? "logo_white" : "logo_black"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Header Branding
             HStack(spacing: 8) {
-                Image(systemName: "doc.text.fill")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color.brandPrimary)
+                Image(logoImageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 22, height: 22)
+
                 Text("Lawtionary")
                     .appFont(.titleMedium, weight: .bold)
                     .foregroundStyle(Color.textPrimary)
