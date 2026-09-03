@@ -21,7 +21,8 @@ struct AIConnectorCandidateBuilder: Sendable {
 
     func build(
         for segment: AIReviewSegment,
-        glossaryMatches: [LegalDictionaryMatch]
+        glossaryMatches: [LegalDictionaryMatch],
+        spellingCandidates: [AIConnectorSpellingCandidate] = []
     ) -> [AIConnectorReviewCandidate] {
         let verifiedMatches = glossaryMatches.filter {
             $0.entry.authority == .verified
@@ -97,6 +98,69 @@ struct AIConnectorCandidateBuilder: Sendable {
             )
         }
 
+        let spellingProposals = spellingCandidates
+            .filter { candidate in
+                guard let evidence = candidate.evidence else { return false }
+                return AIConnectorLanguageScorePolicy.isEligible(evidence)
+            }
+            .sorted { lhs, rhs in
+                let lhsDelta = lhs.evidence?.delta ?? -.greatestFiniteMagnitude
+                let rhsDelta = rhs.evidence?.delta ?? -.greatestFiniteMagnitude
+                if lhsDelta != rhsDelta { return lhsDelta > rhsDelta }
+                if lhs.sourceLocation != rhs.sourceLocation {
+                    return lhs.sourceLocation < rhs.sourceLocation
+                }
+                return lhs.sourceRank < rhs.sourceRank
+            }
+            .prefix(1)
+            .compactMap { candidate -> Proposal? in
+                guard let evidence = candidate.evidence,
+                      AIConnectorLanguageScorePolicy.isEligible(evidence),
+                      candidate.sourceLocation >= 0,
+                      candidate.sourceLength == candidate.original.utf16.count,
+                      candidate.sourceLocation + candidate.sourceLength
+                          <= segment.targetText.utf16.count,
+                      (segment.targetText as NSString).substring(
+                          with: NSRange(
+                              location: candidate.sourceLocation,
+                              length: candidate.sourceLength
+                          )
+                      ) == candidate.original,
+                      candidate.original != candidate.replacement,
+                      !candidate.replacement.isEmpty,
+                      isAllowedRange(
+                          NSRange(
+                              location: candidate.sourceLocation,
+                              length: candidate.sourceLength
+                          ),
+                          category: .spelling,
+                          in: segment.targetText
+                      ) else {
+                return nil
+            }
+
+            let parsedReview = AIParsedReview(
+                status: .suggestion,
+                category: .spelling,
+                original: candidate.original,
+                replacement: candidate.replacement,
+                glossaryID: nil,
+                reason: "TataKata menilai penggantian \(candidate.original) menjadi \(candidate.replacement) lebih sesuai dengan konteks kalimat."
+            )
+            return Proposal(
+                parsedReview: parsedReview,
+                range: NSRange(
+                    location: candidate.sourceLocation,
+                    length: candidate.sourceLength
+                ),
+                priority: 50,
+                glossaryMatch: nil,
+                confidenceTier: .tataKataScored,
+                languageScoreEvidence: evidence
+            )
+        }
+        proposals.append(contentsOf: spellingProposals)
+
         proposals.sort { lhs, rhs in
             if lhs.priority != rhs.priority {
                 return lhs.priority < rhs.priority
@@ -140,7 +204,8 @@ struct AIConnectorCandidateBuilder: Sendable {
                 ruleID: proposal.parsedReview.ruleID,
                 glossaryMatch: proposal.glossaryMatch,
                 explanation: proposal.parsedReview.reason,
-                confidenceTier: proposal.confidenceTier
+                confidenceTier: proposal.confidenceTier,
+                languageScoreEvidence: proposal.languageScoreEvidence
             )
         }
     }
@@ -348,5 +413,22 @@ struct AIConnectorCandidateBuilder: Sendable {
         let priority: Int
         let glossaryMatch: LegalDictionaryMatch?
         let confidenceTier: AIConnectorCandidateConfidence
+        let languageScoreEvidence: AIConnectorLanguageScoreEvidence?
+
+        init(
+            parsedReview: AIParsedReview,
+            range: NSRange,
+            priority: Int,
+            glossaryMatch: LegalDictionaryMatch?,
+            confidenceTier: AIConnectorCandidateConfidence,
+            languageScoreEvidence: AIConnectorLanguageScoreEvidence? = nil
+        ) {
+            self.parsedReview = parsedReview
+            self.range = range
+            self.priority = priority
+            self.glossaryMatch = glossaryMatch
+            self.confidenceTier = confidenceTier
+            self.languageScoreEvidence = languageScoreEvidence
+        }
     }
 }
