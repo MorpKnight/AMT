@@ -60,6 +60,7 @@ struct DashboardView: View {
                     onCreateNewDocument: {
                         importDocumentFromFinder()
                     },
+                    originalSourceURL: storageManager.importedSourceURL(for: document),
                     suggestionService: suggestionService,
                     dictionaryStore: dictionaryStore,
                     aiConnectorViewModel: aiConnectorViewModel
