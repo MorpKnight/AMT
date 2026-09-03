@@ -1,16 +1,16 @@
 import Foundation
 
 enum AIConnectorGenerationDiagnostics {
-    static let repetitionThreshold = 0.2
+    nonisolated static let repetitionThreshold = 0.2
 
-    private static let reasoningMarkers = [
+    nonisolated private static let reasoningMarkers = [
         "<think>",
         "</think>",
         "<|im_start|>",
         "<|im_end|>"
     ]
 
-    static func repeatedSixGramRatio(in output: String) -> Double {
+    nonisolated static func repeatedSixGramRatio(in output: String) -> Double {
         let tokens = normalizedTokens(in: output)
         guard tokens.count >= 6 else { return 0 }
 
@@ -28,11 +28,25 @@ enum AIConnectorGenerationDiagnostics {
         return Double(repeated) / Double(total)
     }
 
-    static func containsReasoningMarkers(in output: String) -> Bool {
+    /// Measures repetition within each contract value. ORIGINAL and
+    /// REPLACEMENT intentionally share text, so combining all six lines would
+    /// misclassify ordinary edits as generation loops.
+    nonisolated static func repeatedSixGramRatio(in review: AIParsedReview) -> Double {
+        [
+            review.original,
+            review.replacement,
+            review.reason
+        ]
+        .compactMap { $0 }
+        .map(repeatedSixGramRatio(in:))
+        .max() ?? 0
+    }
+
+    nonisolated static func containsReasoningMarkers(in output: String) -> Bool {
         reasoningMarkers.contains { output.localizedCaseInsensitiveContains($0) }
     }
 
-    static func sanitizedDiagnosticOutput(_ output: String) -> String {
+    nonisolated static func sanitizedDiagnosticOutput(_ output: String) -> String {
         if containsReasoningMarkers(in: output) {
             return "[REDACTED: reasoning atau token template terdeteksi]"
         }
@@ -42,7 +56,7 @@ enum AIConnectorGenerationDiagnostics {
         return String(output.prefix(limit)) + "… [output dipotong untuk diagnosis]"
     }
 
-    private static func normalizedTokens(in text: String) -> [String] {
+    nonisolated private static func normalizedTokens(in text: String) -> [String] {
         text.lowercased()
             .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
             .map(String.init)

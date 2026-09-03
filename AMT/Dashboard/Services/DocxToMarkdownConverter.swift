@@ -30,7 +30,13 @@ nonisolated struct DocxToMarkdownConverter: Sendable {
             return try String(contentsOf: fileURL, encoding: .isoLatin1)
         }
 
-        // 2. Rich Text & Word Document loading via NSAttributedString
+        return try convert(attributedString: loadAttributedString(fileURL: fileURL))
+    }
+
+    /// Loads a document as AppKit rich text. This is the fidelity-preserving
+    /// representation used by the WYSIWYG editor for Word and RTF imports.
+    static func loadAttributedString(fileURL: URL) throws -> NSAttributedString {
+        let ext = fileURL.pathExtension.lowercased()
         var options: [NSAttributedString.DocumentReadingOptionKey: Any] = [:]
         if ext == "docx" || ext == "doc" {
             options[.documentType] = NSAttributedString.DocumentType.wordML
@@ -52,14 +58,16 @@ nonisolated struct DocxToMarkdownConverter: Sendable {
         }
 
         guard let attrString = attributedString, attrString.length > 0 else {
-            // Fallback to raw string if attributed loading is unavailable
-            if let rawText = try? String(contentsOf: fileURL, encoding: .utf8) {
-                return rawText
-            }
             throw CocoaError(.fileReadCorruptFile)
         }
+        return attrString
+    }
 
-        return convert(attributedString: attrString)
+    static func rtfData(from attributedString: NSAttributedString) throws -> Data {
+        try attributedString.data(
+            from: NSRange(location: 0, length: attributedString.length),
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+        )
     }
 
     /// Converts an NSAttributedString into structured Markdown.
@@ -69,13 +77,15 @@ nonisolated struct DocxToMarkdownConverter: Sendable {
 
         var markdownParagraphs: [String] = []
         let nsString = fullString as NSString
-        let fullRange = NSRange(location: 0, length: nsString.length)
 
-        // Enumerate paragraphs
-        nsString.enumerateSubstrings(in: fullRange, options: .byParagraphs) { substring, paragraphRange, _, _ in
-            guard let rawPara = substring else { return }
+        // AppKit's Word importer uses U+2028 for Word paragraph boundaries and
+        // ordinary newlines for line breaks inside table cells. `byParagraphs`
+        // does not reliably recognize U+2028, which previously collapsed an
+        // entire Word document into one Markdown paragraph.
+        for paragraphRange in documentParagraphRanges(in: nsString) {
+            let rawPara = nsString.substring(with: paragraphRange)
             let trimmedPara = rawPara.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmedPara.isEmpty else { return }
+            guard !trimmedPara.isEmpty else { continue }
 
             let paraMarkdown = convertParagraph(
                 attributedString: attributedString,
@@ -89,6 +99,32 @@ nonisolated struct DocxToMarkdownConverter: Sendable {
         }
 
         return formatMarkdownDocument(paragraphs: markdownParagraphs)
+    }
+
+    private static func documentParagraphRanges(in text: NSString) -> [NSRange] {
+        let fullRange = NSRange(location: 0, length: text.length)
+        let wordParagraphSeparator = "\u{2028}"
+
+        guard text.range(of: wordParagraphSeparator).location != NSNotFound else {
+            var ranges: [NSRange] = []
+            text.enumerateSubstrings(in: fullRange, options: .byParagraphs) { _, range, _, _ in
+                ranges.append(range)
+            }
+            return ranges
+        }
+
+        var ranges: [NSRange] = []
+        var start = 0
+        while start < text.length {
+            let remainingRange = NSRange(location: start, length: text.length - start)
+            let separatorRange = text.range(of: wordParagraphSeparator, options: [], range: remainingRange)
+            let end = separatorRange.location == NSNotFound ? text.length : separatorRange.location
+            ranges.append(NSRange(location: start, length: end - start))
+
+            guard separatorRange.location != NSNotFound else { break }
+            start = NSMaxRange(separatorRange)
+        }
+        return ranges
     }
 
     // MARK: - Paragraph Processing
@@ -139,7 +175,9 @@ nonisolated struct DocxToMarkdownConverter: Sendable {
         )
 
         // Handle list bullet normalization
-        let cleanText = formattedContent.trimmingCharacters(in: .whitespaces)
+        let cleanText = formatInternalLineBreaks(
+            formattedContent.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
 
         // Check if paragraph starts with bullet symbol
         if cleanText.hasPrefix("• ") || cleanText.hasPrefix("⁃ ") || cleanText.hasPrefix("– ") {
@@ -156,6 +194,17 @@ nonisolated struct DocxToMarkdownConverter: Sendable {
         }
 
         return cleanText
+    }
+
+    /// Keeps line breaks inside imported Word table cells visible in the rich
+    /// editor, while joining the common label / colon / value cell pattern.
+    private static func formatInternalLineBreaks(_ content: String) -> String {
+        let normalized = content
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+            .replacingOccurrences(of: "\n:\n", with: ": ")
+
+        return normalized.replacingOccurrences(of: "\n", with: "  \n")
     }
 
     // MARK: - Inline Formatting Conversion

@@ -1,0 +1,9 @@
+{
+  "model": "BAAI/bge-m3",
+  "dimension": 1024,
+  "document_count": 3146,
+  "normalized": true,
+  "similarity": "inner_product",
+  "top_k": 5,
+  "threshold": 0.6
+}

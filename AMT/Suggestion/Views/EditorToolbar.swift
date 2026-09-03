@@ -2,13 +2,12 @@
 //  EditorToolbar.swift
 //  AMT
 //
-//  Created by Giovan Christoffel Sihombing on 2026/08/25.
-//
 
+import AppKit
 import SwiftUI
 
 enum TextStyle: String, CaseIterable, Identifiable {
-    case body = "T"
+    case body = "Paragraph"
     case heading1 = "H1"
     case heading2 = "H2"
     case heading3 = "H3"
@@ -23,271 +22,306 @@ enum ListStyle: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-enum TextAlignment: String, CaseIterable, Identifiable {
-    case leading = "text.alignleft"
-    case center = "text.aligncenter"
-    case trailing = "text.alignright"
+enum DocumentPresentationMode: String, CaseIterable, Identifiable {
+    case preview
+    case editing
 
-    var id: String { rawValue }
+    var id: Self { self }
+    var title: String {
+        switch self {
+        case .preview: "Dokumen"
+        case .editing: "Edit & Suggestion"
+        }
+    }
 }
 
 struct EditorToolbar: View {
     @Binding var documentTitle: String
-    var onExport: (() -> Void)? = nil
-    var onAnalyze: (() -> Void)? = nil
-    var onCancelAnalysis: (() -> Void)? = nil
-    var onShowDebug: (() -> Void)? = nil
-    var canAnalyze = false
-    var isAnalyzing = false
-    var analysisState: AIConnectorRunState = .idle
-    var analysisDownloadProgress = 0.0
-    var analysisGenerationProgress = 0
-    var analysisSummary: AIConnectorRunSummary?
-    var analysisErrorMessage: String?
-
-    @State private var selectedTextStyle: TextStyle = .body
-    @State private var isBold = false
-    @State private var isItalic = false
-    @State private var isUnderline = false
-    @State private var isStrikethrough = false
-    @State private var selectedListStyle: ListStyle?
-    @State private var selectedAlignment: TextAlignment = .leading
-    @State private var isAnalysisStatusPresented = false
+    @Binding var presentationMode: DocumentPresentationMode
+    let viewModel: EditorViewModel
+    let canPreviewOriginal: Bool
+    var onExport: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 0) {
-            leadingControls
+        HStack(spacing: 12) {
+            documentTitleField
             Spacer()
-            centerControls
+            if canPreviewOriginal {
+                Picker("Mode", selection: $presentationMode) {
+                    ForEach(DocumentPresentationMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 220)
+            }
+            if presentationMode == .editing {
+                formattingControls
+            }
             Spacer()
-            trailingControls
+            exportButton
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(.bar, ignoresSafeAreaEdges: .all)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 
-    // MARK: - Left Section
+    private var documentTitleField: some View {
+        TextField("Untitled", text: $documentTitle)
+            .textFieldStyle(.plain)
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(.primary)
+            .frame(minWidth: 100, maxWidth: 220)
+    }
 
-    private var leadingControls: some View {
+    private var formattingControls: some View {
         HStack(spacing: 8) {
-            TextField("Document Title", text: $documentTitle)
-                .textFieldStyle(.plain)
-                .font(.headline)
-                .frame(minWidth: 120, maxWidth: 200)
+            historyGroup
+            textStyleGroup
+            inlineStyleGroup
+            listStyleGroup
+            zoomGroup
         }
     }
 
-    // MARK: - Center Section
-
-    private var centerControls: some View {
+    private var historyGroup: some View {
         HStack(spacing: 2) {
-            textStyleGroup
-            formattingGroup
-            listGroup
-            alignmentGroup
+            toolbarIconButton(
+                systemName: "arrow.uturn.backward",
+                help: "Undo (⌘Z)",
+                isEnabled: viewModel.canUndo
+            ) {
+                viewModel.pendingAction = .undo
+            }
+            .keyboardShortcut("z", modifiers: .command)
+            toolbarIconButton(
+                systemName: "arrow.uturn.forward",
+                help: "Redo (⇧⌘Z)",
+                isEnabled: viewModel.canRedo
+            ) {
+                viewModel.pendingAction = .redo
+            }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
         }
+        .toolbarGroupStyle()
     }
 
     private var textStyleGroup: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 2) {
             ForEach(TextStyle.allCases) { style in
-                Button(action: { selectedTextStyle = style }) {
+                let isActive = viewModel.activeState.textStyle == style
+                GlassPillButton(isActive: isActive, width: style == .body ? 76 : 26) {
+                    viewModel.pendingAction = .textStyle(style)
+                } label: {
                     Text(style.rawValue)
-                        .font(style == .body ? .body : .caption)
-                        .fontWeight(.semibold)
-                        .frame(width: 32, height: 24)
-                        .background(
-                            selectedTextStyle == style
-                                ? Color.accentColor.opacity(0.15)
-                                : Color.clear
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .font(.system(size: style == .body ? 11 : 12, weight: isActive ? .bold : .medium))
+                        .foregroundStyle(isActive ? .primary : .secondary)
                 }
-                .buttonStyle(.plain)
             }
         }
-        .padding(2)
-        .background(Color.primary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .toolbarGroupStyle()
     }
 
-    private var formattingGroup: some View {
-        HStack(spacing: 0) {
-            FormatButton(
-                symbolName: "bold",
-                isActive: isBold,
-                action: { isBold.toggle() }
-            )
-            FormatButton(
-                symbolName: "italic",
-                isActive: isItalic,
-                action: { isItalic.toggle() }
-            )
-            FormatButton(
-                symbolName: "underline",
-                isActive: isUnderline,
-                action: { isUnderline.toggle() }
-            )
-            FormatButton(
-                symbolName: "strikethrough",
-                isActive: isStrikethrough,
-                action: { isStrikethrough.toggle() }
-            )
-        }
-        .padding(2)
-        .background(Color.primary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-    }
-
-    private var listGroup: some View {
-        HStack(spacing: 0) {
-            ForEach(ListStyle.allCases) { style in
-                Button(action: {
-                    selectedListStyle = selectedListStyle == style ? nil : style
-                }) {
-                    Image(systemName: style.rawValue)
-                        .font(.system(size: 13))
-                        .frame(width: 28, height: 24)
-                        .background(
-                            selectedListStyle == style
-                                ? Color.accentColor.opacity(0.15)
-                                : Color.clear
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-                .buttonStyle(.plain)
+    private var zoomGroup: some View {
+        HStack(spacing: 2) {
+            toolbarIconButton(
+                systemName: "minus.magnifyingglass",
+                help: "Zoom out (⌘−)",
+                isEnabled: viewModel.zoomPercent > EditorZoom.minimumPercent
+            ) {
+                viewModel.zoomOut()
             }
-        }
-        .padding(2)
-        .background(Color.primary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-    }
+            .keyboardShortcut("-", modifiers: .command)
 
-    private var alignmentGroup: some View {
-        HStack(spacing: 0) {
-            ForEach(TextAlignment.allCases) { alignment in
-                Button(action: { selectedAlignment = alignment }) {
-                    Image(systemName: alignment.rawValue)
-                        .font(.system(size: 13))
-                        .frame(width: 28, height: 24)
-                        .background(
-                            selectedAlignment == alignment
-                                ? Color.accentColor.opacity(0.15)
-                                : Color.clear
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(2)
-        .background(Color.primary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-    }
-
-    // MARK: - Right Section
-
-    private var trailingControls: some View {
-        HStack(spacing: 8) {
-            Button(action: {
-                onExport?()
-            }) {
-                Image(systemName: "square.and.arrow.up")
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .help("Ekspor Dokumen (.docx)")
-
-            #if DEBUG
-            if onAnalyze != nil {
-                Button {
-                    if isAnalyzing {
-                        onCancelAnalysis?()
-                    } else if canAnalyze {
-                        onAnalyze?()
-                        isAnalysisStatusPresented = true
-                    }
-                } label: {
-                    if isAnalyzing {
-                        HStack(spacing: 5) {
-                            ProgressView()
-                                .controlSize(.small)
-                            Image(systemName: "stop.fill")
-                        }
-                    } else {
-                        Image(systemName: "wand.and.sparkles")
-                    }
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(isAnalyzing ? .red : .secondary)
-                .opacity(canAnalyze || isAnalyzing ? 1 : 0.45)
-                .disabled(!canAnalyze && !isAnalyzing)
-                .help(isAnalyzing ? "Batalkan analisis" : "Analisis dokumen")
-                .popover(isPresented: $isAnalysisStatusPresented, arrowEdge: .bottom) {
-                    AIConnectorToolbarStatusView(
-                        state: analysisState,
-                        downloadProgress: analysisDownloadProgress,
-                        generationProgress: analysisGenerationProgress,
-                        summary: analysisSummary,
-                        errorMessage: analysisErrorMessage,
-                        onRetry: {
-                            onAnalyze?()
-                            isAnalysisStatusPresented = true
-                        }
-                    )
-                }
-            }
-            #endif
-
-            #if DEBUG
-            Menu {
-                Button {
-                    onShowDebug?()
-                } label: {
-                    Label("Buka panel Debug", systemImage: "ladybug")
-                }
+            Button {
+                viewModel.resetZoom()
             } label: {
-                Image(systemName: "ellipsis.circle")
+                Text("\(viewModel.zoomPercent)%")
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
-            }
-            .menuStyle(.borderlessButton)
-            .help("Opsi lainnya")
-            #else
-            Button(action: {}) {
-                Image(systemName: "ellipsis.circle")
-                    .foregroundStyle(.secondary)
+                    .frame(width: 42, height: 24)
             }
             .buttonStyle(.plain)
-            .help("More Options")
-            #endif
+            .help("Reset zoom (⌘0)")
+            .keyboardShortcut("0", modifiers: .command)
+
+            toolbarIconButton(
+                systemName: "plus.magnifyingglass",
+                help: "Zoom in (⌘+)",
+                isEnabled: viewModel.zoomPercent < EditorZoom.maximumPercent
+            ) {
+                viewModel.zoomIn()
+            }
+            .keyboardShortcut("=", modifiers: [.command, .shift])
         }
+        .toolbarGroupStyle()
+    }
+
+    private var inlineStyleGroup: some View {
+        HStack(spacing: 2) {
+            inlineButton("B", action: .bold, isActive: viewModel.activeState.isBold) {
+                $0.font(.system(size: 13, weight: .bold))
+            }
+            inlineButton("I", action: .italic, isActive: viewModel.activeState.isItalic) {
+                $0.font(.system(size: 13, weight: .bold)).italic()
+            }
+            inlineButton("U", action: .underline, isActive: viewModel.activeState.isUnderline) {
+                $0.font(.system(size: 13, weight: .semibold)).underline()
+            }
+            inlineButton("S", action: .strikethrough, isActive: viewModel.activeState.isStrikethrough) {
+                $0.font(.system(size: 13, weight: .semibold)).strikethrough()
+            }
+        }
+        .toolbarGroupStyle()
+    }
+
+    private var listStyleGroup: some View {
+        HStack(spacing: 2) {
+            ForEach(ListStyle.allCases) { style in
+                let isActive = viewModel.activeState.listStyle == style
+                GlassPillButton(isActive: isActive) {
+                    viewModel.pendingAction = .listStyle(style)
+                } label: {
+                    Image(systemName: style.rawValue)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(isActive ? .primary : .secondary)
+                }
+            }
+        }
+        .toolbarGroupStyle()
+    }
+
+    private func inlineButton(
+        _ title: String,
+        action: FormattingAction,
+        isActive: Bool,
+        textStyle: @escaping (Text) -> Text
+    ) -> some View {
+        GlassPillButton(isActive: isActive) {
+            viewModel.pendingAction = action
+        } label: {
+            textStyle(Text(title))
+                .foregroundStyle(isActive ? .primary : .secondary)
+        }
+    }
+
+    private func toolbarIconButton(
+        systemName: String,
+        help: String,
+        isEnabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        GlassPillButton(isActive: false, isEnabled: isEnabled, help: help, action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(isEnabled ? .secondary : .tertiary)
+        }
+    }
+
+    private var exportButton: some View {
+        Button {
+            onExport?()
+        } label: {
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.primary.opacity(0.85))
+                .frame(width: 32, height: 32)
+        }
+        .buttonStyle(.plain)
+        .liquidGlass(cornerRadius: 10)
+        .help("Ekspor Dokumen (.docx)")
     }
 }
 
-// MARK: - Format Button
-
-private struct FormatButton: View {
-    let symbolName: String
+private struct GlassPillButton<Label: View>: View {
     let isActive: Bool
+    var isEnabled = true
+    var width: CGFloat = 26
+    var help: String?
     let action: () -> Void
+    @ViewBuilder let label: () -> Label
+
+    @State private var isHovered = false
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbolName)
-                .font(.system(size: 13))
-                .frame(width: 28, height: 24)
+            label()
+                .frame(width: width, height: 24)
                 .background(
-                    isActive
-                        ? Color.accentColor.opacity(0.15)
-                        : Color.clear
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(
+                            isActive
+                                ? Color.primary.opacity(0.12)
+                                : (isHovered ? Color.primary.opacity(0.06) : Color.clear)
+                        )
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .help(help ?? "")
+        .onHover { isHovered = $0 }
+    }
+}
+
+private struct LiquidGlassModifier: ViewModifier {
+    var cornerRadius: CGFloat = 16
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.white.opacity(0.70))
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [
+                                        colorScheme == .dark ? Color.white.opacity(0.22) : Color.white.opacity(0.85),
+                                        colorScheme == .dark ? Color.white.opacity(0.04) : Color.white.opacity(0.35)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                ),
+                                lineWidth: 0.8
+                            )
+                    }
+                    .shadow(
+                        color: colorScheme == .dark ? Color.black.opacity(0.4) : Color.black.opacity(0.06),
+                        radius: 6,
+                        x: 0,
+                        y: 2
+                    )
+            }
+    }
+}
+
+private extension View {
+    func toolbarGroupStyle() -> some View {
+        padding(.horizontal, 4)
+            .padding(.vertical, 3)
+            .liquidGlass(cornerRadius: 16)
+    }
+
+    func liquidGlass(cornerRadius: CGFloat = 16) -> some View {
+        modifier(LiquidGlassModifier(cornerRadius: cornerRadius))
     }
 }
 
 #Preview {
-    EditorToolbar(documentTitle: .constant("Untitled"))
+    ZStack {
+        Color(nsColor: .windowBackgroundColor)
+            .ignoresSafeArea()
+
+        EditorToolbar(
+            documentTitle: .constant("Untitled"),
+            presentationMode: .constant(.editing),
+            viewModel: EditorViewModel(),
+            canPreviewOriginal: true
+        )
+    }
+    .frame(width: 850, height: 100)
 }

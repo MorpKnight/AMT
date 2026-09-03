@@ -13,7 +13,7 @@ struct NewDocumentCardView: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            HStack(spacing: 8) {
                 Spacer()
                 Image(systemName: "plus")
                     .font(.system(size: 28, weight: .light))
@@ -32,6 +32,7 @@ struct NewDocumentCardView: View {
             .scaleEffect(isHovered ? 1.02 : 1.0)
             .animation(.easeInOut(duration: 0.15), value: isHovered)
         }
+        .padding(1)
         .buttonStyle(.plain)
         .onHover { hovering in
             isHovered = hovering
@@ -44,3 +45,4 @@ struct NewDocumentCardView: View {
     NewDocumentCardView(action: {})
         .padding()
 }
+

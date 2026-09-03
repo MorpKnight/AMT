@@ -21,5 +21,8 @@ struct AMTApp: App {
                 .navigationTitle("")
         }
         .windowToolbarStyle(.unified(showsTitle: false))
+        .commands {
+            AIConnectorDebugPanelCommands()
+        }
     }
 }

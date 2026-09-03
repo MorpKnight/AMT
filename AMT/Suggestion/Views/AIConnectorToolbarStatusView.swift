@@ -7,6 +7,7 @@ import SwiftUI
 
 struct AIConnectorToolbarStatusView: View {
     let state: AIConnectorRunState
+    let progressStage: AIConnectorProgressStage
     let downloadProgress: Double
     let generationProgress: Int
     let summary: AIConnectorRunSummary?
@@ -31,7 +32,7 @@ struct AIConnectorToolbarStatusView: View {
             if case .downloading = state {
                 VStack(alignment: .leading, spacing: 5) {
                     ProgressView(value: clampedDownloadProgress)
-                    Text("Mengunduh model lokal • " + String(Int(clampedDownloadProgress * 100)) + "%")
+                    Text(progressStage.title + " • " + String(Int(clampedDownloadProgress * 100)) + "%")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -39,20 +40,29 @@ struct AIConnectorToolbarStatusView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     ProgressView()
                         .controlSize(.small)
-                    Text("Karakter keluaran: " + String(generationProgress))
+                    Text(progressStage.title)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if progressStage == .generation {
+                        Text("Karakter keluaran: " + String(generationProgress))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             } else if case .loading = state {
                 Label(
-                    "Model sedang disiapkan di perangkat ini.",
+                    progressStage.title + ".",
                     systemImage: "cpu"
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            } else if case .segmenting = state {
+                Label(progressStage.title + ".", systemImage: "text.magnifyingglass")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
-            if let summary, !state.isRunning {
+            if let summary {
                 summaryView(summary)
             }
 
@@ -82,6 +92,12 @@ struct AIConnectorToolbarStatusView: View {
                 SummaryPill(value: summary.rejectedCount, label: "ditahan", tint: .red)
             }
 
+            HStack(spacing: 6) {
+                SummaryPill(value: summary.cacheHitCount, label: "cache", tint: .blue)
+                SummaryPill(value: summary.repairAttemptCount, label: "repair", tint: .purple)
+                SummaryPill(value: summary.fallbackCount, label: "fallback", tint: .orange)
+            }
+
             if summary.suggestionCount == 0 {
                 Label(
                     "Tidak ada saran yang siap ditampilkan.",
@@ -93,6 +109,22 @@ struct AIConnectorToolbarStatusView: View {
                 Text("Klik bagian yang disorot untuk melihat detail.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            if summary.wasPartial {
+                Label(
+                    "Ringkasan sementara; hasil parsial dipertahankan.",
+                    systemImage: "pause.circle"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            } else if summary.circuitBreakerActivated {
+                Label(
+                    "Model dilewati untuk sisa dokumen; pemulihan deterministik digunakan.",
+                    systemImage: "shield.lefthalf.filled"
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
         }
         .padding(10)
@@ -156,6 +188,7 @@ private struct SummaryPill: View {
 #Preview("Completed") {
     AIConnectorToolbarStatusView(
         state: .completed,
+        progressStage: .completed,
         downloadProgress: 1,
         generationProgress: 0,
         summary: AIConnectorRunSummary(
