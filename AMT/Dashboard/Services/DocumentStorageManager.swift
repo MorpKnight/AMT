@@ -18,6 +18,12 @@ final class DocumentStorageManager: ObservableObject {
     private let storageDirectoryURL: URL?
     private let folderName = "AMT_Documents"
 
+    func importedSourceURL(for document: DashboardDocument) -> URL? {
+        guard let fileName = document.importedSourceFileName else { return nil }
+        let url = storageURL.appendingPathComponent(fileName)
+        return fileManager.fileExists(atPath: url.path) ? url : nil
+    }
+
     init(
         fileManager: FileManager = .default,
         storageDirectoryURL: URL? = nil
@@ -131,16 +137,35 @@ final class DocumentStorageManager: ObservableObject {
     /// Imports a supported document without presenting Finder. This is the
     /// testable boundary used by the UI panel callback.
     func importDocument(at url: URL) -> DocumentImportResult {
-        let textContent: String
+        let payload: DocumentRenderPayload
+        let fileExtension = url.pathExtension.lowercased()
+
         do {
-            textContent = try DocxToMarkdownConverter.convert(fileURL: url)
+            switch fileExtension {
+            case "docx", "doc", "rtf", "html", "htm":
+                // Word/RTF is imported from the native attributed string so
+                // its fonts, colors, paragraph layout, tables, and uncommon
+                // AppKit attributes remain available to the editor/exporter.
+                let native = try DocxToMarkdownConverter.loadAttributedString(fileURL: url)
+                payload = DocumentRenderNormalizer.fromNative(native)
+            case "md", "markdown":
+                let markdown = try String(contentsOf: url, encoding: .utf8)
+                payload = DocumentRenderNormalizer.fromMarkdown(markdown)
+            case "txt", "":
+                let plainText = try String(contentsOf: url, encoding: .utf8)
+                payload = DocumentRenderNormalizer.fromPlainText(plainText)
+            default:
+                let converted = try DocxToMarkdownConverter.convert(fileURL: url)
+                payload = DocumentRenderNormalizer.fromPlainText(converted)
+            }
         } catch {
             guard let fallbackContent = try? String(contentsOf: url, encoding: .utf8) else {
                 return .failed("Dokumen tidak dapat dibaca: \(error.localizedDescription)")
             }
-            textContent = fallbackContent
+            payload = DocumentRenderNormalizer.fromPlainText(fallbackContent)
         }
 
+        let textContent = payload.plainText
         guard !textContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return .failed("Dokumen tidak memiliki isi yang dapat diimpor.")
         }
@@ -163,9 +188,32 @@ final class DocumentStorageManager: ObservableObject {
         }
 
         let title = url.deletingPathExtension().lastPathComponent
+        let documentID = UUID()
+        let sourceFileName = fileExtension.isEmpty
+            ? documentID.uuidString
+            : "\(documentID.uuidString).\(fileExtension)"
+
+        do {
+            try fileManager.copyItem(
+                at: url,
+                to: storageURL.appendingPathComponent(sourceFileName)
+            )
+        } catch {
+            // The editable payload is still usable if the original file is
+            // unavailable for copying; keep the source reference nil below.
+            print("Failed to preserve original imported document: \(error.localizedDescription)")
+        }
+
+        let sourceURL = storageURL.appendingPathComponent(sourceFileName)
         let newDocument = DashboardDocument(
+            id: documentID,
             title: title.isEmpty ? "Untitled" : title,
             content: textContent,
+            richTextData: payload.richTextData,
+            importedSourceFileName: fileManager.fileExists(atPath: sourceURL.path)
+                ? sourceFileName
+                : nil,
+            structuredDocument: payload.structuredDocument,
             createdAt: Date(),
             updatedAt: Date(),
             fingerprint: fingerprint
@@ -213,6 +261,7 @@ final class DocumentStorageManager: ObservableObject {
         var updatedDoc = document
         updatedDoc.updatedAt = Date()
 
+        // Built-in documents: do not persist to disk, but update the in-memory array safely
         if AIConnectorDummyDocument.isBuiltIn(updatedDoc) {
             if let index = documents.firstIndex(where: { $0.id == updatedDoc.id }) {
                 documents[index] = updatedDoc
@@ -233,6 +282,7 @@ final class DocumentStorageManager: ObservableObject {
         do {
             try persist(updatedDoc)
 
+            // Safely publish changes after IO completes
             if let index = documents.firstIndex(where: { $0.id == updatedDoc.id }) {
                 documents[index] = updatedDoc
                 documents.sort { $0.updatedAt > $1.updatedAt }
@@ -281,6 +331,9 @@ final class DocumentStorageManager: ObservableObject {
 
         let fileURL = storageURL.appendingPathComponent("\(document.id.uuidString).json")
         try? fileManager.removeItem(at: fileURL)
+        if let sourceURL = importedSourceURL(for: document) {
+            try? fileManager.removeItem(at: sourceURL)
+        }
         documents.removeAll { $0.id == document.id }
     }
 
