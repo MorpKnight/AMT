@@ -76,9 +76,11 @@ struct EditorToolbar: View {
     private var formattingControls: some View {
         HStack(spacing: 8) {
             historyGroup
-            textStyleGroup
-            inlineStyleGroup
-            listStyleGroup
+            // Formatting controls are temporarily disabled while the editor
+            // uses the document's native typography and attributes.
+            // textStyleGroup
+            // inlineStyleGroup
+            // listStyleGroup
             zoomGroup
         }
     }

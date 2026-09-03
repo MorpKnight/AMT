@@ -163,6 +163,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         private var textContainer: NSTextContainer?
         private var boundsObserver: NSObjectProtocol?
         private var magnificationObserver: NSObjectProtocol?
+        private var scheduledZoomPercent: Int?
         private var popover: NSPopover?
         private var presentedSuggestionID: UUID?
         private var isApplyingProgrammaticMutation = false
@@ -307,19 +308,57 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             let clampedPercent = EditorZoom.clamp(percent)
             let magnification = EditorZoom.magnification(for: clampedPercent)
             let currentMagnification = scrollView.magnification
+
             guard !currentMagnification.isFinite
                     || abs(currentMagnification - magnification) > 0.001
-            else { return }
+            else {
+                scheduledZoomPercent = nil
+                return
+            }
 
-            // Use AppKit's centered setter rather than mutating the property
-            // during a SwiftUI representable update. It clips to the scroll
-            // view's limits and avoids leaving the clip view in a transient
-            // invalid state while its bounds are being recalculated.
-            let visibleRect = scrollView.documentVisibleRect
-            scrollView.setMagnification(
-                magnification,
-                centeredAt: NSPoint(x: visibleRect.midX, y: visibleRect.midY)
-            )
+            // A SwiftUI representable update can run from inside AppKit's
+            // layout transaction. Mutating NSScrollView.magnification here
+            // synchronously re-enters layout and AppKit raises an
+            // NSException (which appears in Xcode as EXC_BREAKPOINT at
+            // _crashOnException). Defer the mutation until the current
+            // layout pass has completed and discard stale requests when the
+            // user clicks the zoom controls repeatedly.
+            scheduledZoomPercent = clampedPercent
+            DispatchQueue.main.async { [weak self] in
+                guard let self,
+                      self.scheduledZoomPercent == clampedPercent,
+                      let scrollView = self.scrollView else {
+                    return
+                }
+                self.scheduledZoomPercent = nil
+
+                guard scrollView.window != nil,
+                      scrollView.bounds.width.isFinite,
+                      scrollView.bounds.height.isFinite,
+                      scrollView.bounds.width > 0,
+                      scrollView.bounds.height > 0 else {
+                    return
+                }
+
+                let visibleRect = scrollView.documentVisibleRect
+                guard visibleRect.origin.x.isFinite,
+                      visibleRect.origin.y.isFinite,
+                      visibleRect.size.width.isFinite,
+                      visibleRect.size.height.isFinite else {
+                    return
+                }
+
+                let currentMagnification = scrollView.magnification
+                guard !currentMagnification.isFinite
+                        || abs(currentMagnification - magnification) > 0.001 else {
+                    return
+                }
+
+                scrollView.setMagnification(
+                    magnification,
+                    centeredAt: NSPoint(x: visibleRect.midX, y: visibleRect.midY)
+                )
+            }
         }
 
         func handleZoomCommand(_ command: EditorZoomCommand) -> Bool {
