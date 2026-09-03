@@ -53,10 +53,7 @@ final class RAGTests: XCTestCase {
         let results = await store.searchRAG("Data Pribadi", limit: 5)
 
         XCTAssertEqual(results.first?.term, "Data Pribadi")
-        XCTAssertEqual(
-            results.first?.corpusVersion,
-            "hukumonline-kamus@78a2ab626c092662b0441c95904c353b2487b216"
-        )
+        XCTAssertEqual(results.first?.corpusVersion, store.activeCorpusVersion)
         XCTAssertEqual(results.first?.authority, .verified)
     }
 

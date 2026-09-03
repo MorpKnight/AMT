@@ -5,18 +5,16 @@
 //  Created by Antigravity on 2026/09/01.
 //
 
+import Foundation
 import SwiftUI
-import Combine
 
 struct DocumentAnalysisLoadingView: View {
-    var progressStage: AIConnectorProgressStage = .idle
-    var downloadProgress: Double = 0
-    var generationProgress: Int = 0
+    let progress: AIConnectorProgressSnapshot
+    var onCancel: () -> Void = {}
+
+    private static let stalledThreshold: TimeInterval = 60
 
     @Environment(\.colorScheme) private var colorScheme
-
-    @State private var displayedProgress: Double = 0.08
-    private let timer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
     private var isDarkMode: Bool {
         colorScheme == .dark
@@ -30,110 +28,162 @@ struct DocumentAnalysisLoadingView: View {
         isDarkMode ? .white : .black
     }
 
-    private var trackColor: Color {
-        isDarkMode ? Color.white.opacity(0.12) : Color.black.opacity(0.10)
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            content(currentDate: context.date)
+        }
     }
 
-    var body: some View {
+    @ViewBuilder
+    private func content(currentDate: Date) -> some View {
         VStack(spacing: 24) {
-            // MARK: - Logo Image from Assets
             Image(logoImageName)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 140, height: 120)
 
-            // MARK: - Progress Bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(trackColor)
-                        .frame(height: 6)
+            VStack(alignment: .center, spacing: 14) {
+                VStack(alignment: .center, spacing: 5) {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .controlSize(.small)
+                            .accessibilityLabel("Analisis sedang berjalan")
 
-                    Capsule()
-                        .fill(primaryColor)
-                        .frame(width: max(16, min(geo.size.width, geo.size.width * displayedProgress)), height: 6)
-                        .animation(.linear(duration: 0.05), value: displayedProgress)
+                        Text("Dokumen sedang dianalisis")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(primaryColor)
+                    }
+
+                    Text(progress.stage.title)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .animation(.easeInOut(duration: 0.2), value: progress.stage)
+                }
+                .frame(maxWidth: .infinity)
+
+                overallProgress
+
+                if isStalled(at: currentDate) {
+                    VStack(alignment: .center, spacing: 10) {
+                        Label {
+                            Text("Belum ada aktivitas selama 60 detik. Proses mungkin masih berjalan.")
+                                .multilineTextAlignment(.center)
+                        } icon: {
+                            Image(systemName: "exclamationmark.triangle")
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+
+                        Button("Hentikan dan buka dokumen", action: onCancel)
+                            .buttonStyle(.bordered)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 4)
                 }
             }
-            .frame(width: 180, height: 6)
-
-            // MARK: - Status Label
-            Text("Dokumenmu sedang dianalisis...")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(primaryColor)
+            .frame(maxWidth: 360)
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
-        .onReceive(timer) { _ in
-            advanceProgress()
-        }
-        .onChange(of: progressStage) { _, newStage in
-            if newStage == .completed {
-                withAnimation(.easeOut(duration: 0.25)) {
-                    displayedProgress = 1.0
-                }
-            }
+    }
+
+    @ViewBuilder
+    private var overallProgress: some View {
+        if let fraction = progress.overallFraction {
+            ProgressView(value: fraction)
+                .frame(maxWidth: .infinity)
+                .tint(primaryColor)
+                .animation(.easeOut(duration: 0.2), value: fraction)
+                .accessibilityLabel("Kemajuan analisis dokumen")
+                .accessibilityValue("\(Int(fraction * 100)) persen")
+        } else {
+            ProgressView()
+                .frame(maxWidth: .infinity)
+                .tint(primaryColor)
+                .accessibilityLabel("Kemajuan analisis dokumen sedang disiapkan")
         }
     }
 
-    private var stageTarget: Double {
-        if downloadProgress > 0 {
-            return max(0.20, min(0.70, downloadProgress))
-        }
-        switch progressStage {
-        case .idle:
-            return 0.12
-        case .segmenting:
-            return 0.25
-        case .semanticModelDownload, .modelDownload:
-            return max(0.25, downloadProgress)
-        case .semanticRetrieval, .modelLoading:
-            return 0.50
-        case .generation:
-            let genOffset = min(0.42, Double(generationProgress) / 400.0)
-            return min(0.95, 0.50 + genOffset)
-        case .completed:
-            return 1.0
+    private func isStalled(at date: Date) -> Bool {
+        switch progress.stage {
+        case .completed, .cancelled, .failed:
+            return false
         default:
-            return 0.85
-        }
-    }
-
-    private func advanceProgress() {
-        guard progressStage != .completed else {
-            if displayedProgress < 1.0 {
-                displayedProgress = 1.0
-            }
-            return
-        }
-
-        let target = max(stageTarget, displayedProgress)
-        if target > displayedProgress {
-            // Smoothly catch up towards stage target
-            let step = max(0.003, (target - displayedProgress) * 0.1)
-            displayedProgress = min(target, displayedProgress + step)
-        } else if displayedProgress < 0.95 {
-            // Slowly crawl forward even while waiting on long tasks
-            displayedProgress = min(0.95, displayedProgress + 0.001)
+            return date.timeIntervalSince(progress.lastActivityAt)
+                >= Self.stalledThreshold
         }
     }
 }
 
-#Preview("Light Mode") {
+#Preview("Definition Review · Light") {
     DocumentAnalysisLoadingView(
-        progressStage: .generation,
-        downloadProgress: 0.5,
-        generationProgress: 120
+        progress: AIConnectorProgressSnapshot(
+            stage: .definitionReview,
+            overallFraction: 0.25,
+            phaseFraction: nil,
+            completedSegmentCount: 2,
+            totalSegmentCount: 8,
+            currentSegmentID: 3,
+            generationCharacters: 120,
+            startedAt: Date().addingTimeInterval(-18),
+            lastActivityAt: Date().addingTimeInterval(-2)
+        )
     )
     .preferredColorScheme(.light)
 }
 
-#Preview("Dark Mode") {
+#Preview("Stalled · Light") {
     DocumentAnalysisLoadingView(
-        progressStage: .generation,
-        downloadProgress: 0.5,
-        generationProgress: 120
+        progress: AIConnectorProgressSnapshot(
+            stage: .generation,
+            overallFraction: 0.25,
+            phaseFraction: nil,
+            completedSegmentCount: 2,
+            totalSegmentCount: 8,
+            currentSegmentID: 3,
+            generationCharacters: 120,
+            startedAt: Date().addingTimeInterval(-78),
+            lastActivityAt: Date().addingTimeInterval(-60)
+        )
+    )
+    .preferredColorScheme(.light)
+}
+
+#Preview("Semantic Download · Dark") {
+    DocumentAnalysisLoadingView(
+        progress: AIConnectorProgressSnapshot(
+            stage: .semanticModelDownload,
+            overallFraction: 0,
+            phaseFraction: 0.42,
+            completedSegmentCount: 0,
+            totalSegmentCount: 8,
+            currentSegmentID: 1,
+            generationCharacters: 0,
+            startedAt: Date().addingTimeInterval(-18),
+            lastActivityAt: Date().addingTimeInterval(-2)
+        )
+    )
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Deterministic · Dark") {
+    DocumentAnalysisLoadingView(
+        progress: AIConnectorProgressSnapshot(
+            stage: .deterministicReview,
+            overallFraction: 0.5,
+            phaseFraction: nil,
+            completedSegmentCount: 4,
+            totalSegmentCount: 8,
+            currentSegmentID: 5,
+            generationCharacters: 0,
+            startedAt: Date().addingTimeInterval(-18),
+            lastActivityAt: Date().addingTimeInterval(-2)
+        )
     )
     .preferredColorScheme(.dark)
 }

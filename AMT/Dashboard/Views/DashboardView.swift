@@ -19,6 +19,7 @@ struct DashboardView: View {
     @State private var documentViewModels: [UUID: AIConnectorViewModel] = [:]
     @State private var analyzingDocument: DashboardDocument?
     @State private var aiConnectorViewModel: AIConnectorViewModel?
+    @State private var importNotice: DocumentImportNotice?
 
     private var filteredDocuments: [DashboardDocument] {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -44,8 +45,8 @@ struct DashboardView: View {
                     activeDocument: Binding(
                         get: { document },
                         set: { updatedDoc in
-                            activeDocument = updatedDoc
-                            storageManager.saveDocument(updatedDoc)
+                            let savedDocument = storageManager.saveDocument(updatedDoc)
+                            activeDocument = savedDocument ?? updatedDoc
                         }
                     ),
                     onBackToDashboard: {
@@ -57,11 +58,7 @@ struct DashboardView: View {
                         aiConnectorViewModel = nil
                     },
                     onCreateNewDocument: {
-                        storageManager.importWordDocumentFromFinder { importedDoc in
-                            if let doc = importedDoc {
-                                startAnalyzingDocument(doc)
-                            }
-                        }
+                        importDocumentFromFinder()
                     },
                     originalSourceURL: storageManager.importedSourceURL(for: document),
                     suggestionService: suggestionService,
@@ -78,9 +75,10 @@ struct DashboardView: View {
                     case .document, .none:
                         if let vm = aiConnectorViewModel, analyzingDocument != nil, vm.isRunning {
                             DocumentAnalysisLoadingView(
-                                progressStage: vm.progressStage,
-                                downloadProgress: vm.downloadProgress,
-                                generationProgress: vm.generationProgress
+                                progress: vm.progressSnapshot,
+                                onCancel: {
+                                    vm.cancel()
+                                }
                             )
                             .transition(.opacity)
                         } else {
@@ -95,10 +93,40 @@ struct DashboardView: View {
         }
         .navigationTitle("")
         .frame(minWidth: 900, minHeight: 600)
+        .alert(item: $importNotice) { notice in
+            if let existingDocument = notice.existingDocument {
+                return Alert(
+                    title: Text(notice.title),
+                    message: Text(notice.message),
+                    primaryButton: .default(Text("Buka Dokumen")) {
+                        openDocument(existingDocument)
+                    },
+                    secondaryButton: .cancel(Text("Tutup"))
+                )
+            }
+
+            return Alert(
+                title: Text(notice.title),
+                message: Text(notice.message),
+                dismissButton: .default(Text("Tutup"))
+            )
+        }
         .onChange(of: aiConnectorViewModel?.isRunning) { _, isRunning in
             if isRunning == false, let doc = analyzingDocument {
+                let analyzedDocument: DashboardDocument
+                if let vm = aiConnectorViewModel,
+                   let snapshot = vm.makeAnalysisSnapshot(documentText: doc.content),
+                   let persistedDocument = storageManager.saveAnalysisSnapshot(
+                       snapshot,
+                       for: doc
+                   ) {
+                    analyzedDocument = persistedDocument
+                } else {
+                    analyzedDocument = doc
+                }
+
                 withAnimation(.easeInOut(duration: 0.22)) {
-                    self.activeDocument = doc
+                    self.activeDocument = analyzedDocument
                     self.analyzingDocument = nil
                 }
             }
@@ -111,6 +139,65 @@ struct DashboardView: View {
         self.aiConnectorViewModel = vm
         self.analyzingDocument = doc
         vm.run(documentText: doc.content)
+    }
+
+    private func importDocumentFromFinder() {
+        storageManager.importWordDocumentFromFinder { result in
+            handleImportResult(result)
+        }
+    }
+
+    private func handleImportResult(_ result: DocumentImportResult) {
+        switch result {
+        case let .imported(document):
+            startAnalyzingDocument(document)
+        case let .duplicate(existing, matchKind):
+            let title: String
+            let message: String
+            switch matchKind {
+            case .sourceFile:
+                title = "Dokumen sudah diimpor"
+                message = "File yang sama sudah tersedia sebagai \(existing.title)."
+            case .normalizedContent:
+                title = "Konten dokumen sudah tersedia"
+                message = "Dokumen dengan konten yang sama sudah tersedia sebagai \(existing.title)."
+            }
+            importNotice = DocumentImportNotice(
+                title: title,
+                message: message,
+                existingDocument: existing
+            )
+        case .cancelled:
+            break
+        case let .failed(message):
+            importNotice = DocumentImportNotice(
+                title: "Impor dokumen gagal",
+                message: message,
+                existingDocument: nil
+            )
+        }
+    }
+
+    private func openDocument(_ document: DashboardDocument) {
+        let vm = documentViewModels[document.id]
+            ?? AIConnectorViewModel(
+                service: suggestionService,
+                dictionaryStore: dictionaryStore
+            )
+        if let snapshot = document.analysisSnapshot {
+            _ = vm.restoreAnalysisSnapshot(
+                snapshot,
+                documentText: document.content
+            )
+        } else {
+            vm.resetInputMetadata()
+        }
+        documentViewModels[document.id] = vm
+        aiConnectorViewModel = vm
+        analyzingDocument = nil
+        withAnimation(.easeInOut(duration: 0.22)) {
+            activeDocument = document
+        }
     }
 
     // MARK: - Document Grid Dashboard View
@@ -150,11 +237,7 @@ struct DashboardView: View {
                 LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
                     // Import Word Document Button Card (+)
                     NewDocumentCardView {
-                        storageManager.importWordDocumentFromFinder { importedDoc in
-                            if let doc = importedDoc {
-                                startAnalyzingDocument(doc)
-                            }
-                        }
+                        importDocumentFromFinder()
                     }
                     .frame(maxHeight: .infinity, alignment: .top)
                     // Existing Document Cards
@@ -162,9 +245,7 @@ struct DashboardView: View {
                         DocumentCardView(
                             document: doc,
                             onSelect: {
-                                let vm = documentViewModels[doc.id] ?? AIConnectorViewModel(service: suggestionService, dictionaryStore: dictionaryStore)
-                                self.aiConnectorViewModel = vm
-                                self.activeDocument = doc
+                                openDocument(doc)
                             },
                             onDelete: {
                                 storageManager.deleteDocument(doc)
@@ -179,6 +260,13 @@ struct DashboardView: View {
         .navigationTitle("")
         .background(Color(nsColor: .windowBackgroundColor))
     }
+}
+
+private struct DocumentImportNotice: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
+    let existingDocument: DashboardDocument?
 }
 
 #Preview {

@@ -16,89 +16,123 @@ struct SuggestionPopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            // MARK: - Header (Correctness Suggestion)
-            HStack(spacing: 4) {
-                Text("Correctness")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(.secondary)
-                Text("Suggestion")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(.secondary)
-            }
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Image(systemName: suggestion.kind.iconName)
+                    .foregroundStyle(
+                        suggestion.isDebugOnly
+                            ? Color.green
+                            : suggestion.kind == .definition
+                                ? Color.orange
+                                : Color.blue
+                    )
 
-            // MARK: - Diff Preview (e.g. Kedua wajib untuk wajib memproses...)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if let prefix = suggestion.prefixContext, !prefix.isEmpty {
-                    Text(prefix)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(
+                        suggestion.isDebugOnly
+                            ? "Definisi selaras (Debug)"
+                            : suggestion.kind.title
+                    )
+                        .font(.system(size: 13, weight: .semibold))
+                    if !suggestion.category.displayTitle.isEmpty {
+                        Text(suggestion.category.displayTitle)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
-                Text(suggestion.original)
-                    .font(.system(size: 13, weight: .bold))
-                    .strikethrough(true, color: .primary.opacity(0.7))
-                    .foregroundStyle(.primary)
+                Spacer(minLength: 0)
+            }
 
-                Text(suggestion.replacement)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Color(red: 0.12, green: 0.65, blue: 0.28))
+            if suggestion.isDebugOnly {
+                if let term = suggestion.reference?.term, !term.isEmpty {
+                    detailCard(title: "Istilah", text: term)
+                }
+                if let definition = suggestion.reference?.definition,
+                   !definition.isEmpty {
+                    detailCard(title: "Definisi terverifikasi", text: definition)
+                }
+                detailCard(title: "Penilaian", text: suggestion.reason)
+                Label(
+                    "Makna dinilai selaras dengan evidence terverifikasi.",
+                    systemImage: "checkmark.circle.fill"
+                )
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.green)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    if let prefix = suggestion.prefixContext, !prefix.isEmpty {
+                        Text(prefix)
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(.secondary)
+                    }
 
-                if let suffix = suggestion.suffixContext, !suffix.isEmpty {
-                    Text(suffix)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(.secondary)
+                    Text(suggestion.original)
+                        .font(.system(size: 13, weight: .bold))
+                        .strikethrough(true, color: .primary.opacity(0.7))
+                        .foregroundStyle(.primary)
+
+                    Text(suggestion.replacement)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color(red: 0.12, green: 0.65, blue: 0.28))
+
+                    if let suffix = suggestion.suffixContext, !suffix.isEmpty {
+                        Text(suffix)
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                detailCard(title: "Alasan", text: suggestion.reason)
+
+                if suggestion.kind == .definition,
+                   let definition = suggestion.reference?.definition,
+                   !definition.isEmpty {
+                    detailCard(title: "Acuan pengertian", text: definition)
                 }
             }
 
-            // MARK: - Example Box Card
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Example")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
-
-                Text(exampleSentence)
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(.primary.opacity(0.9))
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.white)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-            )
-
-            // MARK: - References Section
             VStack(alignment: .leading, spacing: 8) {
                 Text("References")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
 
-                HStack(spacing: 12) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "link")
+                if let reference = suggestion.reference {
+                    if !reference.regulation.isEmpty {
+                        Text(reference.regulation)
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.blue)
-
-                        Text(referenceLabel)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.blue)
+                            .foregroundStyle(.primary)
+                    }
+                    if !reference.regulationTitle.isEmpty {
+                        Text(reference.regulationTitle)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    if let articleLocator = reference.articleLocator,
+                       !articleLocator.isEmpty {
+                        Text(articleLocator)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+                    if let passageID = reference.sourcePassageID,
+                       !passageID.isEmpty {
+                        Text("Evidence: \(passageID)")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(.secondary)
                     }
 
-                    HStack(spacing: 4) {
-                        Image(systemName: "link")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.blue)
-
-                        Text(referenceLabel)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.blue)
+                    HStack(spacing: 12) {
+                        if let sourceURL = reference.sourceURL {
+                            Link(destination: sourceURL) {
+                                Label("Sumber detail", systemImage: "link")
+                            }
+                        }
+                        if let officialDocumentURL = reference.officialDocumentURL {
+                            Link(destination: officialDocumentURL) {
+                                Label("Dokumen resmi", systemImage: "doc.text")
+                            }
+                        }
                     }
+                    .font(.system(size: 11, weight: .semibold))
                 }
             }
 
@@ -109,51 +143,63 @@ struct SuggestionPopoverView: View {
             }
 
             // MARK: - Bottom Action Buttons (Accept / Dismiss)
-            HStack(spacing: 16) {
-                Button(action: onAccept) {
-                    Text("Accept")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(colorScheme == .dark ? Color.white.opacity(0.15) : Color.white)
-                        )
-                        .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
-                }
-                .buttonStyle(.plain)
-                .disabled(isStale)
+            if !suggestion.isDebugOnly {
+                HStack(spacing: 16) {
+                    Button(action: onAccept) {
+                        Text("Accept")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(colorScheme == .dark ? Color.white.opacity(0.15) : Color.white)
+                            )
+                            .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isStale)
 
-                Button(action: onDismiss) {
-                    Text("Dismiss")
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
+                    Button(action: onDismiss) {
+                        Text("Dismiss")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
 
-                Spacer()
+                    Spacer()
+                }
+                .padding(.top, 4)
             }
-            .padding(.top, 4)
         }
         .padding(16)
-        .frame(width: 360)
+        .frame(width: 400)
         .background(colorScheme == .dark ? Color(red: 0.15, green: 0.16, blue: 0.18) : Color(red: 0.96, green: 0.96, blue: 0.97))
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    private var exampleSentence: String {
-        if !suggestion.reason.isEmpty {
-            return suggestion.reason
-        }
-        return "Perusahaan logistik itu melakukan wanprestasi karena terlambat mengirimkan barang pesanan hingga melewati batas waktu di kontrak."
-    }
+    private func detailCard(title: String, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
 
-    private var referenceLabel: String {
-        if let ref = suggestion.reference {
-            return "\(ref.regulation)"
+            Text(text)
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.primary.opacity(0.9))
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        return "Pasal 1234 KUH Perdata"
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.white)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+        )
     }
 }
 

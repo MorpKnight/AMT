@@ -22,6 +22,8 @@ struct DashboardDocument: Identifiable, Codable, Equatable, Hashable {
     var structuredDocument: StructuredDocument?
     var createdAt: Date
     var updatedAt: Date
+    var fingerprint: DocumentFingerprint?
+    var analysisSnapshot: DocumentAnalysisSnapshot?
 
     init(
         id: UUID = UUID(),
@@ -31,7 +33,9 @@ struct DashboardDocument: Identifiable, Codable, Equatable, Hashable {
         importedSourceFileName: String? = nil,
         structuredDocument: StructuredDocument? = nil,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        fingerprint: DocumentFingerprint? = nil,
+        analysisSnapshot: DocumentAnalysisSnapshot? = nil
     ) {
         self.id = id
         self.title = title
@@ -41,6 +45,8 @@ struct DashboardDocument: Identifiable, Codable, Equatable, Hashable {
         self.structuredDocument = structuredDocument
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.fingerprint = fingerprint
+        self.analysisSnapshot = analysisSnapshot
     }
 
     var formattedRelativeDate: String {

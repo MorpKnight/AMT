@@ -63,6 +63,7 @@ final class AIConnectorSegmentProcessor {
     private let candidateBuilder: AIConnectorCandidateBuilder
     private let conflictResolver = AIConnectorSuggestionConflictResolver()
     private let protectionContextBuilder = AIConnectorDocumentProtectionContextBuilder()
+    private let definitionAnalyzer: AIConnectorDefinitionAnalyzer
 
     private let modelReviewHandler: AIConnectorModelReviewHandler
     private let candidateDecisionHandler: AIConnectorCandidateDecisionHandler
@@ -74,7 +75,8 @@ final class AIConnectorSegmentProcessor {
         ruleStore: AIConnectorRuleStore,
         segmentCache: AIConnectorSegmentCache = AIConnectorSegmentCache(),
         modelReviewHandler: AIConnectorModelReviewHandler? = nil,
-        candidateDecisionHandler: AIConnectorCandidateDecisionHandler? = nil
+        candidateDecisionHandler: AIConnectorCandidateDecisionHandler? = nil,
+        definitionReviewHandler: AIConnectorDefinitionReviewHandler? = nil
     ) {
         self.service = service
         self.dictionaryStore = dictionaryStore
@@ -86,6 +88,18 @@ final class AIConnectorSegmentProcessor {
         self.candidateBuilder = AIConnectorCandidateBuilder(
             ruleStore: ruleStore,
             retrievalConfiguration: dictionaryStore.semanticRetrievalConfiguration
+        )
+        let defaultDefinitionHandler: AIConnectorDefinitionReviewHandler = {
+            @MainActor [service] request, downloadProgress, generationProgress in
+            try await service.reviewDefinition(
+                request: request,
+                downloadProgress: downloadProgress,
+                generationProgress: generationProgress
+            )
+        }
+        self.definitionAnalyzer = AIConnectorDefinitionAnalyzer(
+            dictionaryStore: dictionaryStore,
+            reviewHandler: definitionReviewHandler ?? defaultDefinitionHandler
         )
         self.usesLegacyModelReviewHandler = modelReviewHandler != nil
         let defaultHandler: AIConnectorModelReviewHandler = { @MainActor [service] request in
@@ -132,8 +146,9 @@ final class AIConnectorSegmentProcessor {
         progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void = { _ in },
         generationProfile: AIConnectorGenerationProfile? = nil
     ) async throws -> AIConnectorSegmentResult {
+        let result: AIConnectorSegmentResult
         if usesLegacyModelReviewHandler {
-            return try await processLegacy(
+            result = try await processLegacy(
                 segment: segment,
                 documentProtectionContext: documentProtectionContext,
                 mode: mode,
@@ -145,21 +160,41 @@ final class AIConnectorSegmentProcessor {
                 semanticProgress: semanticProgress,
                 progressStage: progressStage
             )
+        } else {
+            result = try await processCandidateFirst(
+                segment: segment,
+                documentProtectionContext: documentProtectionContext,
+                mode: mode,
+                modelVariant: modelVariant,
+                thinkingEnabled: thinkingEnabled,
+                forceDeterministic: forceDeterministic,
+                downloadProgress: downloadProgress,
+                generationProgress: generationProgress,
+                semanticProgress: semanticProgress,
+                progressStage: progressStage,
+                generationProfile: generationProfile
+            )
         }
 
-        return try await processCandidateFirst(
-            segment: segment,
-            documentProtectionContext: documentProtectionContext,
+        let effectiveGenerationProfile = generationProfile
+            ?? AIConnectorGenerationProfilePreset.greedy.profile(
+                for: modelVariant,
+                thinkingEnabled: thinkingEnabled
+            )
+        let definitionAnalysis = try await definitionAnalyzer.analyze(
+            segment: result.segment,
+            glossaryMatches: result.glossaryMatches,
             mode: mode,
             modelVariant: modelVariant,
             thinkingEnabled: thinkingEnabled,
             forceDeterministic: forceDeterministic,
+            generationProfile: effectiveGenerationProfile,
             downloadProgress: downloadProgress,
             generationProgress: generationProgress,
             semanticProgress: semanticProgress,
-            progressStage: progressStage,
-            generationProfile: generationProfile
+            progressStage: progressStage
         )
+        return result.withDefinitionAnalysis(definitionAnalysis)
     }
 
     private func processLegacy(
@@ -192,6 +227,13 @@ final class AIConnectorSegmentProcessor {
 
         let glossaryMatches: [LegalDictionaryMatch]
         if mode.usesModel, !forceDeterministic {
+            if dictionaryStore.corpusStore != nil,
+               dictionaryStore.semanticRetriever != nil {
+                let semanticModelLoaded = await dictionaryStore.isSemanticModelLoaded()
+                progressStage(semanticModelLoaded ? .semanticRetrieval : .semanticModelDownload)
+            } else {
+                progressStage(.semanticRetrieval)
+            }
             glossaryMatches = await dictionaryStore.suggestionCandidatesAsync(
                 for: segment.targetText,
                 limit: 1,
@@ -199,6 +241,7 @@ final class AIConnectorSegmentProcessor {
                     semanticProgress(progress)
                 }
             )
+            progressStage(.semanticRetrieval)
         } else {
             glossaryMatches = dictionaryStore.suggestionCandidates(
                 for: segment.targetText,
@@ -495,6 +538,13 @@ final class AIConnectorSegmentProcessor {
             && dictionaryStore.semanticRetriever != nil
         let glossaryMatches: [LegalDictionaryMatch]
         if mode.usesModel, !forceDeterministic {
+            if dictionaryStore.corpusStore != nil,
+               dictionaryStore.semanticRetriever != nil {
+                let semanticModelLoaded = await dictionaryStore.isSemanticModelLoaded()
+                progressStage(semanticModelLoaded ? .semanticRetrieval : .semanticModelDownload)
+            } else {
+                progressStage(.semanticRetrieval)
+            }
             glossaryMatches = await dictionaryStore.suggestionCandidatesAsync(
                 for: segment.targetText,
                 limit: 3,
@@ -502,6 +552,7 @@ final class AIConnectorSegmentProcessor {
                     semanticProgress(progress)
                 }
             )
+            progressStage(.semanticRetrieval)
         } else {
             glossaryMatches = dictionaryStore.suggestionCandidates(
                 for: segment.targetText,

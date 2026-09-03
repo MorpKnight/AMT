@@ -708,7 +708,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                     }
                 )
             )
-            popover.contentSize = NSSize(width: 380, height: 300)
+            popover.contentSize = NSSize(width: 400, height: 460)
             self.popover = popover
             presentedSuggestionID = suggestion.id
 
@@ -907,6 +907,7 @@ final class SuggestionLayoutManager: NSLayoutManager {
         let id: UUID
         let range: NSRange
         let isSelected: Bool
+        let isDebugOnly: Bool
     }
 
     private(set) var drawingRanges: [DrawingRange] = []
@@ -919,7 +920,8 @@ final class SuggestionLayoutManager: NSLayoutManager {
             DrawingRange(
                 id: $0.id,
                 range: $0.sourceRange,
-                isSelected: $0.id == selectedSuggestionID
+                isSelected: $0.id == selectedSuggestionID,
+                isDebugOnly: $0.isDebugOnly
             )
         }
 
@@ -929,6 +931,7 @@ final class SuggestionLayoutManager: NSLayoutManager {
         removeTemporaryAttribute(.foregroundColor, forCharacterRange: fullRange)
         removeTemporaryAttribute(.underlineStyle, forCharacterRange: fullRange)
         removeTemporaryAttribute(.underlineColor, forCharacterRange: fullRange)
+        removeTemporaryAttribute(.font, forCharacterRange: fullRange)
 
         for item in drawingRanges {
             guard item.range.location >= 0,
@@ -939,7 +942,9 @@ final class SuggestionLayoutManager: NSLayoutManager {
 
             addTemporaryAttribute(
                 .foregroundColor,
-                value: NSColor(red: 0.65, green: 0.12, blue: 0.18, alpha: 1.0),
+                value: item.isDebugOnly
+                    ? NSColor.systemGreen
+                    : NSColor(red: 0.65, green: 0.12, blue: 0.18, alpha: 1.0),
                 forCharacterRange: item.range
             )
             addTemporaryAttribute(
@@ -986,7 +991,9 @@ final class SuggestionLayoutManager: NSLayoutManager {
                 let drawRect = rect
                     .offsetBy(dx: origin.x, dy: origin.y)
                     .insetBy(dx: -4, dy: 1)
-                let color = NSColor(red: 0.98, green: 0.88, blue: 0.90, alpha: 1.0)
+                let color = item.isDebugOnly
+                    ? NSColor(red: 0.86, green: 0.96, blue: 0.88, alpha: 1.0)
+                    : NSColor(red: 0.98, green: 0.88, blue: 0.90, alpha: 1.0)
                 color.setFill()
                 NSBezierPath(
                     roundedRect: drawRect,

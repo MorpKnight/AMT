@@ -153,6 +153,8 @@ nonisolated struct LegalConcept: Identifiable, Codable, Hashable, Sendable {
     let evidence: [LegalSourceEvidence]
     let actionable: Bool
     let actionableEvidence: LegalSourceEvidence?
+    let sources: [String]
+    let sourceURLs: [URL]
 
     var id: String { recordID }
 
@@ -166,6 +168,26 @@ nonisolated struct LegalConcept: Identifiable, Codable, Hashable, Sendable {
         case evidence
         case actionable
         case actionableEvidence = "actionable_evidence"
+        case sources
+        case sourceURLs = "source_urls"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        recordID = try container.decode(String.self, forKey: .recordID)
+        termID = try container.decode(String.self, forKey: .termID)
+        term = try container.decode(String.self, forKey: .term)
+        definition = try container.decode(String.self, forKey: .definition)
+        definitionIndex = try container.decode(Int.self, forKey: .definitionIndex)
+        references = try container.decode([LegalCorpusReference].self, forKey: .references)
+        evidence = try container.decode([LegalSourceEvidence].self, forKey: .evidence)
+        actionable = try container.decode(Bool.self, forKey: .actionable)
+        actionableEvidence = try container.decodeIfPresent(
+            LegalSourceEvidence.self,
+            forKey: .actionableEvidence
+        )
+        sources = try container.decodeIfPresent([String].self, forKey: .sources) ?? []
+        sourceURLs = try container.decodeIfPresent([URL].self, forKey: .sourceURLs) ?? []
     }
 }
 
@@ -350,6 +372,7 @@ nonisolated struct LegalCorpusManifest: Codable, Hashable, Sendable {
     let schemaVersion: String
     let corpusVersion: String
     let sourceDatasetRevision: String
+    let sourceDatasetView: String?
     let sourceInputSHA256: [String: String]
     let conceptCount: Int
     let regulationCount: Int
@@ -365,6 +388,7 @@ nonisolated struct LegalCorpusManifest: Codable, Hashable, Sendable {
         case schemaVersion = "schema_version"
         case corpusVersion = "corpus_version"
         case sourceDatasetRevision = "source_dataset_revision"
+        case sourceDatasetView = "source_dataset_view"
         case sourceInputSHA256 = "source_input_sha256"
         case conceptCount = "concept_count"
         case regulationCount = "regulation_count"

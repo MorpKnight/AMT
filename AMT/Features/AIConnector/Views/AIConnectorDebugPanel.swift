@@ -232,8 +232,7 @@ private struct AIConnectorNativeDebugContent: View {
 
                 AIConnectorNativeProgressView(
                     state: viewModel.state,
-                    progressStage: viewModel.progressStage,
-                    generationProgress: viewModel.generationProgress
+                    progress: viewModel.progressSnapshot
                 )
 
                 if let errorMessage = viewModel.errorMessage {
@@ -253,6 +252,24 @@ private struct AIConnectorNativeDebugContent: View {
                 Section("Rekomendasi") {
                     ForEach(actionableReviews) { review in
                         AIConnectorNativeValidatedReviewRow(review: review)
+                    }
+                }
+            }
+
+            if !viewModel.definitionAssessments.isEmpty {
+                Section("Analisis definisi istilah") {
+                    Text("RAG menyediakan pengertian dan evidence; Qwen hanya menilai fungsi kalimat serta keselarasan makna. Hasil ini bukan keputusan hukum dan tetap memerlukan review manusia.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+
+                    LabeledContent("Hasil") {
+                        Text("\(viewModel.definitionMatchCount) selaras · \(viewModel.definitionMismatchCount) tidak selaras · \(viewModel.definitionNeedsReviewCount) perlu review · Qwen \(viewModel.definitionModelCallCount) call")
+                            .font(.caption.monospacedDigit())
+                    }
+
+                    ForEach(viewModel.definitionAssessments) { assessment in
+                        AIConnectorNativeDefinitionAssessmentRow(assessment: assessment)
                     }
                 }
             }
@@ -506,38 +523,49 @@ private struct AIConnectorNativeStatusLine: View {
 
 private struct AIConnectorNativeProgressView: View {
     let state: AIConnectorRunState
-    let progressStage: AIConnectorProgressStage
-    let generationProgress: Int
+    let progress: AIConnectorProgressSnapshot
 
     @ViewBuilder
     var body: some View {
         switch state {
-        case let .downloading(progress):
+        case .downloading:
             VStack(alignment: .leading, spacing: 6) {
-                ProgressView(value: progress)
-                LabeledContent(progressStage == .semanticModelDownload
+                if let phaseFraction = progress.phaseFraction {
+                    ProgressView(value: phaseFraction)
+                } else {
+                    ProgressView()
+                }
+                LabeledContent(progress.stage == .semanticModelDownload
                     ? "Model semantik"
                     : "Model Qwen") {
-                    Text("\(Int(progress * 100))%")
+                    Text(progress.phaseFraction.map { "\(Int($0 * 100))%" } ?? "…")
                         .monospacedDigit()
                 }
-                Text(progressStage.title)
+                Text(progress.stage.title)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         case let .reviewing(current, total):
             VStack(alignment: .leading, spacing: 6) {
-                ProgressView(value: Double(current), total: Double(max(total, 1)))
-                LabeledContent("Meninjau") {
-                    Text("\(current) dari \(total)")
-                        .monospacedDigit()
+                if let overallFraction = progress.overallFraction {
+                    ProgressView(value: overallFraction)
+                    LabeledContent("Meninjau") {
+                        Text("\(progress.completedSegmentCount) dari \(progress.totalSegmentCount)")
+                            .monospacedDigit()
+                    }
+                } else {
+                    ProgressView()
+                    LabeledContent("Meninjau") {
+                        Text("\(current) dari \(total)")
+                            .monospacedDigit()
+                    }
                 }
-                Text("\(progressStage.title) · \(generationProgress) karakter keluaran · hasil ditampilkan setelah pemeriksaan")
+                Text("\(progress.stage.title) · \(progress.generationCharacters) karakter keluaran · hasil ditampilkan setelah pemeriksaan")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         case .segmenting:
-            ProgressView(progressStage.title)
+            ProgressView(progress.stage.title)
         case .loading:
             ProgressView("Memuat model")
         default:
@@ -713,6 +741,103 @@ private struct AIConnectorNativeRejectionRow: View {
             }
         }
         .padding(.vertical, 4)
+    }
+}
+
+private struct AIConnectorNativeDefinitionAssessmentRow: View {
+    let assessment: AIConnectorDefinitionAssessment
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: iconName)
+                    .foregroundStyle(tint)
+                Text("Segmen \(assessment.segment.id)")
+                    .font(.subheadline.weight(.semibold))
+                Text(assessment.origin.displayTitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+            }
+
+            LabeledContent("Klasifikasi") {
+                Text(assessment.classification.displayTitle)
+                    .foregroundStyle(tint)
+            }
+            LabeledContent("Kesesuaian") {
+                Text(assessment.alignment.displayTitle)
+            }
+            LabeledContent("Istilah") {
+                Text(assessment.term ?? "Tidak ditemukan")
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Text("Kalimat: \(assessment.segment.targetText)")
+                .font(.caption)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let candidate = assessment.candidate {
+                Text("Pengertian corpus: \(candidate.sourceDefinition)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                if !candidate.match.entry.regulation.isEmpty {
+                    Text("Regulasi: \(candidate.match.entry.regulation)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+
+                if let passageID = candidate.match.entry.sourcePassageID {
+                    Text("Evidence: \(passageID) · corpus \(candidate.match.entry.corpusVersion)")
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            }
+
+            Text("Alasan: \(assessment.reason)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+
+            if assessment.requiresHumanReview {
+                Label("Tetap perlu verifikasi manusia", systemImage: "person.crop.circle.badge.questionmark")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var iconName: String {
+        switch assessment.alignment {
+        case .matches:
+            "checkmark.seal.fill"
+        case .mismatch:
+            "xmark.seal.fill"
+        case .needsReview:
+            "exclamationmark.triangle.fill"
+        case .notApplicable:
+            "questionmark.circle"
+        }
+    }
+
+    private var tint: Color {
+        switch assessment.alignment {
+        case .matches:
+            .green
+        case .mismatch:
+            .red
+        case .needsReview:
+            .orange
+        case .notApplicable:
+            .secondary
+        }
     }
 }
 

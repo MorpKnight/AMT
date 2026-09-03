@@ -21,6 +21,7 @@ struct DocumentEditorView: View {
     @State private var isDebugPanelPresented = false
     @State private var editorViewModel = EditorViewModel()
     @State private var presentationMode: DocumentPresentationMode
+    @State private var showDefinitionDiagnostics = false
 
     init(
         documents: [DashboardDocument],
@@ -75,7 +76,6 @@ struct DocumentEditorView: View {
                         }
                     }
                 )
-
                 GeometryReader { proxy in
                     ZStack {
                         Color(nsColor: .underPageBackgroundColor)
@@ -97,7 +97,7 @@ struct DocumentEditorView: View {
                                 richTextData: $activeDocument.richTextData,
                                 structuredDocument: $activeDocument.structuredDocument,
                                 zoomPercent: $editorViewModel.zoomPercent,
-                                suggestions: aiConnectorViewModel.editorSuggestions,
+                                suggestions: displayedEditorSuggestions,
                                 selectedSuggestionID: aiConnectorViewModel.selectedSuggestionID,
                                 onSelect: { id in
                                     aiConnectorViewModel.selectSuggestion(id)
@@ -135,6 +135,7 @@ struct DocumentEditorView: View {
         .onChange(of: selectedDocumentID) { _, newID in
             aiConnectorViewModel.resetInputMetadata()
             isDebugPanelPresented = false
+            showDefinitionDiagnostics = false
             if let newID = newID,
                let doc = documents.first(where: { $0.id == newID }) {
                 activeDocument = doc
@@ -163,6 +164,31 @@ struct DocumentEditorView: View {
             activeDocument.richTextData = payload.richTextData ?? activeDocument.richTextData
             activeDocument.content = payload.plainText
         }
+        .onChange(of: showDefinitionDiagnostics) { _, _ in
+            aiConnectorViewModel.selectSuggestion(nil)
+        }
+        .sheet(isPresented: $isDebugPanelPresented) {
+            AIConnectorDebugPanel(
+                documentText: activeDocument.content,
+                viewModel: aiConnectorViewModel
+            )
+            .frame(minWidth: 760, minHeight: 620)
+        }
+        .focusedSceneValue(\.showAIConnectorDebugPanel) {
+            isDebugPanelPresented = true
+        }
+        .focusedSceneValue(\.showAIConnectorDefinitionDiagnostics, $showDefinitionDiagnostics)
+    }
+
+    private var displayedEditorSuggestions: [EditorSuggestion] {
+        guard showDefinitionDiagnostics else {
+            return aiConnectorViewModel.editorSuggestions
+        }
+
+        return EditorSuggestionMapper.merge(
+            aiConnectorViewModel.definitionDebugSuggestions
+                + aiConnectorViewModel.editorSuggestions
+        )
     }
 }
 

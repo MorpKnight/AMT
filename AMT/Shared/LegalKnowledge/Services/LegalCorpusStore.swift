@@ -367,10 +367,11 @@ nonisolated struct LegalCorpusStore: Sendable {
     func dictionaryEntries() -> [LegalDictionaryEntry] {
         concepts.map { concept in
             let evidence = concept.actionableEvidence ?? concept.evidence.first
-            let regulation = evidence.flatMap { regulationByID[$0.referenceID] }
             let reference = concept.references.first {
                 $0.referenceID == evidence?.referenceID
             } ?? concept.references.first
+            let regulation = evidence.flatMap { regulationByID[$0.referenceID] }
+                ?? reference.flatMap { regulationByID[$0.referenceID] }
 
             let status = regulation?.applicabilityStatus
                 ?? reference?.officialStatusCode
@@ -399,6 +400,8 @@ nonisolated struct LegalCorpusStore: Sendable {
                 officialDocumentURL: evidence?.officialDocumentURL
                     ?? regulation?.officialDocumentURL
                     ?? reference?.officialDocumentURL,
+                sources: concept.sources,
+                sourceURLs: concept.sourceURLs,
                 referenceID: evidence?.referenceID ?? reference?.referenceID,
                 authority: hasVerifiedEvidence ? .verified : .legacy,
                 corpusVersion: manifest.corpusVersion,
