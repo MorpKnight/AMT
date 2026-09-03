@@ -358,16 +358,85 @@ struct QwenReviewResult: Sendable {
 
 enum AIConnectorCandidateConfidence: String, Codable, Hashable, Sendable {
     case deterministicRule
+    case tataKataScored
     case verifiedGlossary
 
     var displayTitle: String {
         switch self {
         case .deterministicRule:
             "rule lokal"
+        case .tataKataScored:
+            "TataKata scored"
         case .verifiedGlossary:
             "glossary verified"
         }
     }
+}
+
+/// Evidence produced after TataKata scores a bounded spelling candidate.
+/// This is diagnostic data only; it does not make a candidate authoritative.
+nonisolated struct AIConnectorLanguageScoreEvidence: Hashable, Sendable {
+    let modelID: String
+    let revision: String
+    let sourceWindow: String
+    let originalScore: Double
+    let replacementScore: Double
+    let delta: Double
+    let tokenizerVocabularyCount: Int
+    let configuredVocabularyCount: Int
+}
+
+/// A spelling replacement proposed by a trusted local candidate source.
+/// Candidates are not user-visible suggestions until a language scorer, Qwen,
+/// and the normal suggestion validator have all accepted them.
+nonisolated struct AIConnectorSpellingCandidate: Hashable, Sendable {
+    let original: String
+    let replacement: String
+    let sourceLocation: Int
+    let sourceLength: Int
+    let sourceRank: Int
+    let evidence: AIConnectorLanguageScoreEvidence?
+
+    init(
+        original: String,
+        replacement: String,
+        sourceLocation: Int,
+        sourceLength: Int,
+        sourceRank: Int = 0,
+        evidence: AIConnectorLanguageScoreEvidence? = nil
+    ) {
+        self.original = original
+        self.replacement = replacement
+        self.sourceLocation = sourceLocation
+        self.sourceLength = sourceLength
+        self.sourceRank = sourceRank
+        self.evidence = evidence
+    }
+}
+
+nonisolated enum AIConnectorLanguageScoringProgress: Sendable {
+    case downloading(Double)
+    case loading
+    case scoring(Double)
+}
+
+@MainActor
+protocol AIConnectorSpellingCandidateProviding {
+    func candidates(
+        for segment: AIReviewSegment,
+        protectionContext: AIConnectorDocumentProtectionContext,
+        excludedOriginals: Set<String>
+    ) -> [AIConnectorSpellingCandidate]
+}
+
+protocol AIConnectorLanguageCandidateScoring: Sendable {
+    var isLoaded: Bool { get async }
+
+    func score(
+        segment: AIReviewSegment,
+        candidates: [AIConnectorSpellingCandidate],
+        progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void
+    ) async throws -> [AIConnectorSpellingCandidate]
 }
 
 /// A proposal created entirely by local rules or verified glossary data.
@@ -384,6 +453,7 @@ struct AIConnectorReviewCandidate: Identifiable, Hashable, Sendable {
     let glossaryMatch: LegalDictionaryMatch?
     let explanation: String
     let confidenceTier: AIConnectorCandidateConfidence
+    let languageScoreEvidence: AIConnectorLanguageScoreEvidence?
 }
 
 enum AIConnectorCandidateDecision: String, Codable, Hashable, Sendable {
@@ -1285,6 +1355,9 @@ nonisolated enum AIConnectorProgressStage: String, Hashable, Sendable {
     case segmenting
     case semanticModelDownload
     case semanticRetrieval
+    case languageModelDownload
+    case languageModelLoading
+    case languageScoring
     case modelDownload
     case modelLoading
     case generation
@@ -1304,6 +1377,12 @@ nonisolated enum AIConnectorProgressStage: String, Hashable, Sendable {
             "Mengunduh model pencarian semantik"
         case .semanticRetrieval:
             "Mencari evidence yang relevan"
+        case .languageModelDownload:
+            "Mengunduh model TataKata"
+        case .languageModelLoading:
+            "Memuat model TataKata"
+        case .languageScoring:
+            "Menilai ejaan dengan TataKata"
         case .modelDownload:
             "Mengunduh model Qwen"
         case .modelLoading:

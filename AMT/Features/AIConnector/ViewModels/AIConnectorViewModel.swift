@@ -17,7 +17,8 @@ final class AIConnectorViewModel {
         QwenSuggestionService.definitionPromptVersion,
         QwenSuggestionService.definitionOutputSchemaVersion,
         AIConnectorSuggestionValidator.version,
-        AIConnectorRuleStore.currentVersion
+        AIConnectorRuleStore.currentVersion,
+        AIConnectorLanguageScorerConfiguration.pipelineVersion
     ].joined(separator: "|")
 
     var inputSource: AIConnectorInputSource = .currentDocument
@@ -35,6 +36,7 @@ final class AIConnectorViewModel {
     private(set) var downloadProgress = 0.0
     private(set) var semanticDownloadProgress = 0.0
     private(set) var modelDownloadProgress = 0.0
+    private(set) var languageModelProgress = 0.0
     private(set) var generationProgress = 0
     private(set) var analysisProgress = 0.0
     private(set) var latestGenerationMetrics: AIConnectorGenerationMetrics?
@@ -139,6 +141,8 @@ final class AIConnectorViewModel {
             phaseFraction = clamped(semanticDownloadProgress)
         case .modelDownload:
             phaseFraction = clamped(modelDownloadProgress)
+        case .languageModelDownload, .languageModelLoading, .languageScoring:
+            phaseFraction = clamped(languageModelProgress)
         default:
             phaseFraction = nil
         }
@@ -324,6 +328,8 @@ final class AIConnectorViewModel {
             switch stage {
             case .semanticModelDownload:
                 self.state = .downloading(self.downloadProgress)
+            case .languageModelDownload, .languageModelLoading, .languageScoring:
+                self.state = .loading
             case .semanticRetrieval, .modelLoading, .generation,
                  .definitionReview, .deterministicReview:
                 self.state = .reviewing(
@@ -495,12 +501,24 @@ final class AIConnectorViewModel {
                                 )
                         }
                     },
+                    languageProgress: { [weak self] progress in
+                        guard let self,
+                              self.activeOperationID == operationID,
+                              self.progressStage == .languageModelDownload
+                                || self.progressStage == .languageModelLoading
+                                || self.progressStage == .languageScoring else {
+                            return
+                        }
+                        self.updateLanguageModelProgress(progress)
+                    },
                     progressStage: { [weak self] stage in
                         guard let self, self.activeOperationID == operationID else { return }
                         self.setProgressStage(stage)
                         switch stage {
                         case .semanticModelDownload:
                             self.state = .downloading(self.downloadProgress)
+                        case .languageModelDownload, .languageModelLoading, .languageScoring:
+                            self.state = .loading
                         case .semanticRetrieval, .modelLoading, .generation,
                              .definitionReview, .deterministicReview:
                             self.state = .reviewing(
@@ -789,6 +807,11 @@ final class AIConnectorViewModel {
     private func setProgressStage(_ stage: AIConnectorProgressStage) {
         if progressStage != stage {
             progressStage = stage
+            if stage == .languageModelDownload
+                || stage == .languageModelLoading
+                || stage == .languageScoring {
+                languageModelProgress = 0
+            }
             recordProgressActivity()
         }
         updateAnalysisProgressForCompletedSegments()
@@ -831,6 +854,13 @@ final class AIConnectorViewModel {
         guard modelDownloadProgress != nextProgress else { return }
         modelDownloadProgress = nextProgress
         downloadProgress = nextProgress
+        recordProgressActivity()
+    }
+
+    private func updateLanguageModelProgress(_ progress: Double) {
+        let nextProgress = max(languageModelProgress, clamped(progress))
+        guard languageModelProgress != nextProgress else { return }
+        languageModelProgress = nextProgress
         recordProgressActivity()
     }
 
@@ -976,6 +1006,7 @@ final class AIConnectorViewModel {
         downloadProgress = 0
         semanticDownloadProgress = 0
         modelDownloadProgress = 0
+        languageModelProgress = 0
         generationProgress = 0
         latestGenerationMetrics = nil
         currentSegmentPreview = ""

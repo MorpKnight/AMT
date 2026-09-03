@@ -64,6 +64,8 @@ final class AIConnectorSegmentProcessor {
     private let conflictResolver = AIConnectorSuggestionConflictResolver()
     private let protectionContextBuilder = AIConnectorDocumentProtectionContextBuilder()
     private let definitionAnalyzer: AIConnectorDefinitionAnalyzer
+    private let spellingCandidateProvider: any AIConnectorSpellingCandidateProviding
+    private let languageScorer: any AIConnectorLanguageCandidateScoring
 
     private let modelReviewHandler: AIConnectorModelReviewHandler
     private let candidateDecisionHandler: AIConnectorCandidateDecisionHandler
@@ -76,7 +78,9 @@ final class AIConnectorSegmentProcessor {
         segmentCache: AIConnectorSegmentCache = AIConnectorSegmentCache(),
         modelReviewHandler: AIConnectorModelReviewHandler? = nil,
         candidateDecisionHandler: AIConnectorCandidateDecisionHandler? = nil,
-        definitionReviewHandler: AIConnectorDefinitionReviewHandler? = nil
+        definitionReviewHandler: AIConnectorDefinitionReviewHandler? = nil,
+        spellingCandidateProvider: (any AIConnectorSpellingCandidateProviding)? = nil,
+        languageScorer: (any AIConnectorLanguageCandidateScoring)? = nil
     ) {
         self.service = service
         self.dictionaryStore = dictionaryStore
@@ -101,6 +105,9 @@ final class AIConnectorSegmentProcessor {
             dictionaryStore: dictionaryStore,
             reviewHandler: definitionReviewHandler ?? defaultDefinitionHandler
         )
+        self.spellingCandidateProvider = spellingCandidateProvider
+            ?? SystemIndonesianSpellingCandidateProvider()
+        self.languageScorer = languageScorer ?? TataKataLanguageScorer()
         self.usesLegacyModelReviewHandler = modelReviewHandler != nil
         let defaultHandler: AIConnectorModelReviewHandler = { @MainActor [service] request in
             try await service.review(
@@ -143,6 +150,7 @@ final class AIConnectorSegmentProcessor {
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
         semanticProgress: @escaping @Sendable (Double) -> Void = { _ in },
+        languageProgress: @escaping @MainActor @Sendable (Double) -> Void = { _ in },
         progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void = { _ in },
         generationProfile: AIConnectorGenerationProfile? = nil
     ) async throws -> AIConnectorSegmentResult {
@@ -171,6 +179,7 @@ final class AIConnectorSegmentProcessor {
                 downloadProgress: downloadProgress,
                 generationProgress: generationProgress,
                 semanticProgress: semanticProgress,
+                languageProgress: languageProgress,
                 progressStage: progressStage,
                 generationProfile: generationProfile
             )
@@ -513,6 +522,7 @@ final class AIConnectorSegmentProcessor {
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
         semanticProgress: @escaping @Sendable (Double) -> Void,
+        languageProgress: @escaping @MainActor @Sendable (Double) -> Void,
         progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void,
         generationProfile: AIConnectorGenerationProfile? = nil
     ) async throws -> AIConnectorSegmentResult {
@@ -570,9 +580,52 @@ final class AIConnectorSegmentProcessor {
             $0.entry.authority == .verified
         }
 
+        var scoredSpellingCandidates: [AIConnectorSpellingCandidate] = []
+        if mode.usesModel, !forceDeterministic {
+            let excludedOriginals = Set(ruleStore.activeRules.map(\.value))
+            let rawSpellingCandidates = spellingCandidateProvider.candidates(
+                for: segment,
+                protectionContext: documentProtectionContext,
+                excludedOriginals: excludedOriginals
+            )
+            if !rawSpellingCandidates.isEmpty {
+                let languageModelLoaded = await languageScorer.isLoaded
+                if !languageModelLoaded {
+                    progressStage(.languageModelDownload)
+                }
+                do {
+                    scoredSpellingCandidates = try await languageScorer.score(
+                        segment: segment,
+                        candidates: rawSpellingCandidates,
+                        progress: { @MainActor event in
+                            switch event {
+                            case let .downloading(progress):
+                                progressStage(.languageModelDownload)
+                                languageProgress(progress)
+                            case .loading:
+                                progressStage(.languageModelLoading)
+                                languageProgress(0)
+                            case let .scoring(progress):
+                                progressStage(.languageScoring)
+                                languageProgress(progress)
+                            }
+                        }
+                    )
+                } catch is CancellationError {
+                    throw CancellationError()
+                } catch {
+                    // TataKata is an optional precision filter. A failed
+                    // download, load, tokenization, or inference must not
+                    // suppress deterministic or verified-glossary work.
+                    scoredSpellingCandidates = []
+                }
+            }
+        }
+
         let candidates = candidateBuilder.build(
             for: segment,
-            glossaryMatches: actionableGlossaryMatches
+            glossaryMatches: actionableGlossaryMatches,
+            spellingCandidates: scoredSpellingCandidates
         )
         let profile = generationProfile ?? AIConnectorGenerationProfilePreset.greedy.profile(
             for: modelVariant,
@@ -1290,7 +1343,19 @@ final class AIConnectorSegmentProcessor {
                 candidate.ruleID ?? "-",
                 candidate.glossaryMatch?.entry.id ?? "-",
                 candidate.glossaryMatch?.entry.definition ?? "-",
-                candidate.confidenceTier.rawValue
+                candidate.confidenceTier.rawValue,
+                candidate.languageScoreEvidence.map { evidence in
+                    [
+                        evidence.modelID,
+                        evidence.revision,
+                        evidence.sourceWindow,
+                        String(evidence.originalScore),
+                        String(evidence.replacementScore),
+                        String(evidence.delta),
+                        String(evidence.tokenizerVocabularyCount),
+                        String(evidence.configuredVocabularyCount)
+                    ].joined(separator: ":")
+                } ?? "-"
             ].joined(separator: "\u{1E}")
         }
         .joined(separator: "\u{1D}")
@@ -1802,6 +1867,7 @@ actor AIConnectorWorkQueue {
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
         semanticProgress: @escaping @Sendable (Double) -> Void = { _ in },
+        languageProgress: @escaping @MainActor @Sendable (Double) -> Void = { _ in },
         progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void = { _ in },
         generationProfile: AIConnectorGenerationProfile? = nil
     ) -> AsyncStream<AIConnectorWorkQueueEvent> {
@@ -1834,6 +1900,7 @@ actor AIConnectorWorkQueue {
                 downloadProgress: downloadProgress,
                 generationProgress: generationProgress,
                 semanticProgress: semanticProgress,
+                languageProgress: languageProgress,
                 progressStage: progressStage,
                 generationProfile: generationProfile,
                 continuation: continuation
@@ -1878,6 +1945,7 @@ actor AIConnectorWorkQueue {
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
         semanticProgress: @escaping @Sendable (Double) -> Void,
+        languageProgress: @escaping @MainActor @Sendable (Double) -> Void,
         progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void,
         generationProfile: AIConnectorGenerationProfile?,
         continuation: AsyncStream<AIConnectorWorkQueueEvent>.Continuation
@@ -1946,6 +2014,7 @@ actor AIConnectorWorkQueue {
                         downloadProgress: downloadProgress,
                         generationProgress: generationProgress,
                         semanticProgress: semanticProgress,
+                        languageProgress: languageProgress,
                         progressStage: progressStage,
                         generationProfile: generationProfile
                     )

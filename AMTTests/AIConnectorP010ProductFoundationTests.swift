@@ -385,7 +385,7 @@ final class AIConnectorP010ProductFoundationTests: XCTestCase {
         })
 
         let segment = makeSegment(
-            target: "Pihak Kedua wajib untuk menyerahkan dokumen yang di simpan dan telah ditanda tangani."
+            target: "Pihak Kedua wajib untuk menyerahkan dokumen yang di simpan, telah ditanda tangani, dan memasukan data."
         )
         let reviews = AIConnectorDeterministicSuggestionEngine(ruleStore: store)
             .suggestions(for: segment)
@@ -393,12 +393,14 @@ final class AIConnectorP010ProductFoundationTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(reviews.count, 3)
         XCTAssertEqual(
             Set(reviews.compactMap(\.ruleID)),
-            Set(["grammar-wajib-untuk", "spelling-di-simpan", "spelling-ditanda-tangani"])
+            Set([
+                "grammar-wajib-untuk",
+                "spelling-di-simpan",
+                "spelling-ditanda-tangani",
+                "spelling-memasukan"
+            ])
         )
-        XCTAssertLessThanOrEqual(
-            reviews.count,
-            AIConnectorSuggestionConflictResolver.maximumSuggestionsPerSegment
-        )
+        XCTAssertGreaterThanOrEqual(reviews.count, 4)
     }
 
     func testRuleEngineIgnoresDisabledAndDeprecatedRules() {

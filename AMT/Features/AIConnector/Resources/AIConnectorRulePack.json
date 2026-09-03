@@ -1,6 +1,28 @@
 {
-  "version": "rule-pack-v1",
+  "version": "rule-pack-v2",
   "rules": [
+    {
+      "id": "spelling-memasukan",
+      "revision": 1,
+      "category": "SPELLING",
+      "matcher": "tokenSequence",
+      "value": "memasukan",
+      "replacement": "memasukkan",
+      "reason": "Memperbaiki ejaan kata menjadi bentuk baku tanpa mengubah makna hukum.",
+      "priority": 22,
+      "exceptions": [],
+      "status": "active",
+      "sourceNote": "Koreksi ejaan imbuhan yang dibatasi pada bentuk persis.",
+      "owner": "AMT",
+      "reviewer": "pending-human-review",
+      "changelog": "Add common Indonesian spelling correction for TataKata pilot",
+      "positiveFixtures": [
+        "Pihak Kedua memasukan data."
+      ],
+      "negativeFixtures": [
+        "Pihak Kedua memasukkan data."
+      ]
+    },
     {
       "id": "grammar-wajib-untuk",
       "revision": 1,

@@ -78,7 +78,7 @@ struct AIConnectorRulePack: Codable, Hashable, Sendable {
 /// The current pack is intentionally small. New rules should be added with
 /// positive and negative fixtures before they are marked active.
 struct AIConnectorRuleStore: Sendable {
-    nonisolated static let currentVersion = "rule-pack-v1"
+    nonisolated static let currentVersion = "rule-pack-v2"
 
     let version: String
     let rules: [AIConnectorRuleDefinition]
@@ -175,6 +175,28 @@ struct AIConnectorRuleStore: Sendable {
                 ],
                 negativeFixtures: [
                     "Dokumen disimpan oleh Pihak Kedua."
+                ]
+            ),
+            AIConnectorRuleDefinition(
+                id: "spelling-memasukan",
+                revision: 1,
+                category: .spelling,
+                matcher: .tokenSequence,
+                value: "memasukan",
+                replacement: "memasukkan",
+                reason: "Memperbaiki ejaan kata menjadi bentuk baku tanpa mengubah makna hukum.",
+                priority: 22,
+                exceptions: [],
+                status: .active,
+                sourceNote: "Koreksi ejaan imbuhan yang dibatasi pada bentuk persis.",
+                owner: "AMT",
+                reviewer: "pending-human-review",
+                changelog: "Add common Indonesian spelling correction for TataKata pilot",
+                positiveFixtures: [
+                    "Pihak Kedua memasukan data."
+                ],
+                negativeFixtures: [
+                    "Pihak Kedua memasukkan data."
                 ]
             )
         ]
