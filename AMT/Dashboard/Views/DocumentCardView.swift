@@ -37,6 +37,7 @@ struct DocumentCardView: View {
                 .scaleEffect(isHovered ? 1.02 : 1.0)
                 .animation(.easeInOut(duration: 0.15), value: isHovered)
             }
+            .padding(1)
             .buttonStyle(.plain)
             .onHover { hovering in
                 isHovered = hovering

@@ -77,7 +77,11 @@ struct EditorSidebar: View {
     EditorSidebar(
         documents: [
             DashboardDocument(title: "Dokumen 1", content: "Isi dokumen 1"),
-            DashboardDocument(title: "Dokumen 2", content: "Isi dokumen 2")
+            DashboardDocument(title: "Dokumen 2", content: "Isi dokumen 2"),
+                DashboardDocument(title: "Dokumen 1", content: "Isi dokumen 1"),
+                DashboardDocument(title: "Dokumen 2", content: "Isi dokumen 2"),
+                DashboardDocument(title: "Dokumen 1", content: "Isi dokumen 1"),
+                DashboardDocument(title: "Dokumen 2", content: "Isi dokumen 2"),
         ],
         selectedDocumentID: .constant(nil),
         onBackToDashboard: {},

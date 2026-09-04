@@ -17,6 +17,13 @@ nonisolated struct LegalReference: Hashable, Sendable {
     let dateEnacted: String?
     let dateEffective: String?
     let sourceURL: URL?
+    let officialDocumentURL: URL?
+    let referenceID: String?
+    let applicabilityStatus: LegalCorpusApplicabilityStatus
+    let articleLocator: String?
+    let pageStart: Int?
+    let pageEnd: Int?
+    let sourcePassageID: String?
 
     init(
         lawName: String,
@@ -24,7 +31,14 @@ nonisolated struct LegalReference: Hashable, Sendable {
         institution: String? = nil,
         dateEnacted: String? = nil,
         dateEffective: String? = nil,
-        sourceURL: URL? = nil
+        sourceURL: URL? = nil,
+        officialDocumentURL: URL? = nil,
+        referenceID: String? = nil,
+        applicabilityStatus: LegalCorpusApplicabilityStatus = .unknown,
+        articleLocator: String? = nil,
+        pageStart: Int? = nil,
+        pageEnd: Int? = nil,
+        sourcePassageID: String? = nil
     ) {
         self.lawName = lawName
         self.lawTitle = lawTitle
@@ -32,6 +46,13 @@ nonisolated struct LegalReference: Hashable, Sendable {
         self.dateEnacted = dateEnacted
         self.dateEffective = dateEffective
         self.sourceURL = sourceURL
+        self.officialDocumentURL = officialDocumentURL
+        self.referenceID = referenceID
+        self.applicabilityStatus = applicabilityStatus
+        self.articleLocator = articleLocator
+        self.pageStart = pageStart
+        self.pageEnd = pageEnd
+        self.sourcePassageID = sourcePassageID
     }
 }
 
@@ -42,15 +63,21 @@ nonisolated struct DefinitionItem: Identifiable, Hashable, Sendable {
     var id: Int
     let text: String
     let reference: LegalReference?
+    let sources: [String]
+    let sourceURLs: [URL]
 
     init(
         id: Int,
         text: String,
-        reference: LegalReference? = nil
+        reference: LegalReference? = nil,
+        sources: [String] = [],
+        sourceURLs: [URL] = []
     ) {
         self.id = id
         self.text = text
         self.reference = reference
+        self.sources = sources
+        self.sourceURLs = sourceURLs
     }
 }
 
@@ -62,15 +89,30 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
     let term: String
     let definitions: [DefinitionItem]
     let seeAlso: [String]
+    let authority: LegalDictionaryEntryAuthority
+    let corpusVersion: String
+    let applicabilityStatus: LegalCorpusApplicabilityStatus
+    let isActionable: Bool
+    let regulationRelations: [LegalRegulationRelation]
 
     init(
         term: String,
         definitions: [DefinitionItem],
-        seeAlso: [String] = []
+        seeAlso: [String] = [],
+        authority: LegalDictionaryEntryAuthority = .legacy,
+        corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy,
+        applicabilityStatus: LegalCorpusApplicabilityStatus = .unknown,
+        isActionable: Bool = false,
+        regulationRelations: [LegalRegulationRelation] = []
     ) {
         self.term = term
         self.definitions = definitions
         self.seeAlso = seeAlso
+        self.authority = authority
+        self.corpusVersion = corpusVersion
+        self.applicabilityStatus = applicabilityStatus
+        self.isActionable = isActionable
+        self.regulationRelations = regulationRelations
     }
 
     /// Single-definition convenience initializer
@@ -78,13 +120,23 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
         term: String,
         singleDefinition: String,
         reference: LegalReference? = nil,
-        seeAlso: [String] = []
+        seeAlso: [String] = [],
+        authority: LegalDictionaryEntryAuthority = .legacy,
+        corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy,
+        applicabilityStatus: LegalCorpusApplicabilityStatus = .unknown,
+        isActionable: Bool = false,
+        regulationRelations: [LegalRegulationRelation] = []
     ) {
         self.term = term
         self.definitions = [
             DefinitionItem(id: 1, text: singleDefinition, reference: reference)
         ]
         self.seeAlso = seeAlso
+        self.authority = authority
+        self.corpusVersion = corpusVersion
+        self.applicabilityStatus = applicabilityStatus
+        self.isActionable = isActionable
+        self.regulationRelations = regulationRelations
     }
 }
 
@@ -103,15 +155,49 @@ nonisolated struct PopularTerm: Identifiable, Hashable, Sendable {
         self.score = score
     }
 
-    // MARK: - Default Mock Data
-    // TODO: [AI Team] Connect this list to the AI recommendation / trending legal terms algorithm.
-    static let defaultPopularTerms: [PopularTerm] = [
+    // MARK: - Popular Term Random Selection
+
+    static let candidatePopularTerms: [PopularTerm] = [
         PopularTerm(name: "Korporasi"),
         PopularTerm(name: "Perusahaan"),
         PopularTerm(name: "Ex Officio"),
         PopularTerm(name: "Pelaku Usaha"),
-        PopularTerm(name: "Data Pribadi")
+        PopularTerm(name: "Data Pribadi"),
+        PopularTerm(name: "Hukum Adat"),
+        PopularTerm(name: "Jaksa"),
+        PopularTerm(name: "Beban Pembuktian"),
+        PopularTerm(name: "Ganti Rugi"),
+        PopularTerm(name: "Wanprestasi"),
+        PopularTerm(name: "Tindak Pidana"),
+        PopularTerm(name: "Hak Cipta"),
+        PopularTerm(name: "Arbitrase"),
+        PopularTerm(name: "Badan Hukum"),
+        PopularTerm(name: "Subjek Hukum")
     ]
+
+    /// Selects `count` random popular terms from candidates or store entries.
+    static func randomPopularTerms(count: Int = 3, from entries: [LegalDictionaryEntry] = []) -> [PopularTerm] {
+        var pool: [PopularTerm] = candidatePopularTerms
+        if !entries.isEmpty {
+            let entryTerms = entries.compactMap { entry -> PopularTerm? in
+                let name = entry.term.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !name.isEmpty, name.count <= 25, !name.contains(";") else { return nil }
+                return PopularTerm(name: name)
+            }
+            if !entryTerms.isEmpty {
+                var uniqueDict = [String: PopularTerm]()
+                for term in pool + entryTerms {
+                    uniqueDict[term.name.lowercased()] = term
+                }
+                pool = Array(uniqueDict.values)
+            }
+        }
+        return Array(pool.shuffled().prefix(max(0, count)))
+    }
+
+    static var defaultPopularTerms: [PopularTerm] {
+        randomPopularTerms(count: 3)
+    }
 
     // MARK: - Curated Legal Glossary Samples
     // TODO: [AI Team] Replace or enrich these mock entries with model inferences or a full vector/lexical database.

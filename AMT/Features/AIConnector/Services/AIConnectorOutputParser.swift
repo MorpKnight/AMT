@@ -1,7 +1,8 @@
 import Foundation
 
-enum AIConnectorOutputParserError: Error, Equatable {
+enum AIConnectorOutputParserError: Error, Equatable, Sendable {
     case reasoningOrTemplateToken
+    case codeFence
     case wrongLineCount
     case malformedLine
     case unexpectedKey
@@ -9,10 +10,25 @@ enum AIConnectorOutputParserError: Error, Equatable {
     case emptyReason
     case reasonTooLong
 
+    /// Only shape errors may be sent through the one-shot repair prompt.
+    /// Semantic and safety failures must never be repaired by asking the model
+    /// to reinterpret the text.
+    var isRecoverable: Bool {
+        switch self {
+        case .reasoningOrTemplateToken, .reasonTooLong:
+            false
+        case .codeFence, .wrongLineCount, .malformedLine, .unexpectedKey,
+             .invalidValue, .emptyReason:
+            true
+        }
+    }
+
     var message: String {
         switch self {
         case .reasoningOrTemplateToken:
             "Output mengandung reasoning atau token template."
+        case .codeFence:
+            "Output menggunakan code fence yang tidak diizinkan."
         case .wrongLineCount:
             "Output tidak memiliki tepat enam baris."
         case .malformedLine:
@@ -47,6 +63,10 @@ struct AIConnectorOutputParser: Sendable {
 
         guard !AIConnectorGenerationDiagnostics.containsReasoningMarkers(in: normalizedOutput) else {
             throw AIConnectorOutputParserError.reasoningOrTemplateToken
+        }
+
+        guard !normalizedOutput.contains("```") else {
+            throw AIConnectorOutputParserError.codeFence
         }
 
         let lines = normalizedOutput.components(separatedBy: "\n")
@@ -103,5 +123,28 @@ struct AIConnectorOutputParser: Sendable {
     private static func optionalValue(_ value: String?) -> String? {
         guard let value, !value.isEmpty, value != "-" else { return nil }
         return value
+    }
+}
+
+/// Repairs only a decision-preserving representation mistake after parsing.
+/// It never invents a suggestion, replacement, category, or glossary link.
+struct AIConnectorOutputCanonicalizer: Sendable {
+    func canonicalize(_ review: AIParsedReview) -> AIParsedReview {
+        guard review.status == .noSuggestion,
+              review.category == .none,
+              review.replacement == nil,
+              review.glossaryID == nil else {
+            return review
+        }
+
+        return AIParsedReview(
+            status: .noSuggestion,
+            category: .none,
+            original: nil,
+            replacement: nil,
+            glossaryID: nil,
+            reason: review.reason,
+            ruleID: review.ruleID
+        )
     }
 }

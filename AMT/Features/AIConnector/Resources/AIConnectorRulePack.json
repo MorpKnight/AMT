@@ -1,0 +1,81 @@
+{
+  "version": "rule-pack-v2",
+  "rules": [
+    {
+      "id": "spelling-memasukan",
+      "revision": 1,
+      "category": "SPELLING",
+      "matcher": "tokenSequence",
+      "value": "memasukan",
+      "replacement": "memasukkan",
+      "reason": "Memperbaiki ejaan kata menjadi bentuk baku tanpa mengubah makna hukum.",
+      "priority": 22,
+      "exceptions": [],
+      "status": "active",
+      "sourceNote": "Koreksi ejaan imbuhan yang dibatasi pada bentuk persis.",
+      "owner": "AMT",
+      "reviewer": "pending-human-review",
+      "changelog": "Add common Indonesian spelling correction for TataKata pilot",
+      "positiveFixtures": [
+        "Pihak Kedua memasukan data."
+      ],
+      "negativeFixtures": [
+        "Pihak Kedua memasukkan data."
+      ]
+    },
+    {
+      "id": "grammar-wajib-untuk",
+      "revision": 1,
+      "category": "GRAMMAR",
+      "matcher": "tokenSequence",
+      "value": "wajib untuk",
+      "replacement": "wajib",
+      "reason": "Menghapus kata yang tidak diperlukan tanpa mengubah makna kewajiban.",
+      "priority": 10,
+      "exceptions": [],
+      "status": "active",
+      "sourceNote": "Koreksi frasa baku yang dibatasi pada bentuk persis.",
+      "owner": "AMT",
+      "reviewer": "pending-human-review",
+      "changelog": "Initial rule pack migration",
+      "positiveFixtures": ["Pihak Kedua wajib untuk menyerahkan laporan."],
+      "negativeFixtures": ["Pihak Kedua wajib menyerahkan laporan."]
+    },
+    {
+      "id": "spelling-ditanda-tangani",
+      "revision": 1,
+      "category": "SPELLING",
+      "matcher": "tokenSequence",
+      "value": "ditanda tangani",
+      "replacement": "ditandatangani",
+      "reason": "Memperbaiki ejaan kata menjadi bentuk baku tanpa mengubah makna hukum.",
+      "priority": 20,
+      "exceptions": [],
+      "status": "active",
+      "sourceNote": "Koreksi ejaan yang tidak mengubah proposisi hukum.",
+      "owner": "AMT",
+      "reviewer": "pending-human-review",
+      "changelog": "Initial rule pack migration",
+      "positiveFixtures": ["Perjanjian telah ditanda tangani oleh Para Pihak."],
+      "negativeFixtures": ["Perjanjian telah ditandatangani oleh Para Pihak."]
+    },
+    {
+      "id": "spelling-di-simpan",
+      "revision": 1,
+      "category": "SPELLING",
+      "matcher": "tokenSequence",
+      "value": "di simpan",
+      "replacement": "disimpan",
+      "reason": "Memperbaiki pemisahan imbuhan tanpa mengubah makna hukum.",
+      "priority": 21,
+      "exceptions": [],
+      "status": "active",
+      "sourceNote": "Koreksi ejaan imbuhan yang dibatasi pada bentuk persis.",
+      "owner": "AMT",
+      "reviewer": "pending-human-review",
+      "changelog": "Initial rule pack migration",
+      "positiveFixtures": ["Dokumen di simpan oleh Pihak Kedua."],
+      "negativeFixtures": ["Dokumen disimpan oleh Pihak Kedua."]
+    }
+  ]
+}

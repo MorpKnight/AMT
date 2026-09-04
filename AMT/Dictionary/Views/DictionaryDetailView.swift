@@ -98,9 +98,70 @@ struct DictionaryDetailView: View {
                             .foregroundStyle(.primary)
                             .padding(.top, 4)
 
+                        // Top 5 RAG Matches Bar
+                        if !viewModel.topMatches.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 10) {
+                                        ForEach(Array(viewModel.topMatches.prefix(5).enumerated()), id: \.offset) { index, match in
+                                            Button(action: {
+                                                viewModel.selectMatch(match)
+                                            }) {
+                                                HStack(spacing: 6) {
+                                                    Text("#\(index + 1)")
+                                                        .font(.system(size: 11, weight: .bold))
+                                                        .foregroundStyle(viewModel.selectedEntry?.term == match.term ? Color.white : Color.accentColor)
+                                                    Text(match.term)
+                                                        .font(.system(size: 12, weight: .medium))
+                                                        .foregroundStyle(viewModel.selectedEntry?.term == match.term ? Color.white : Color.primary)
+                                                }
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(viewModel.selectedEntry?.term == match.term ? Color.accentColor : Color.primary.opacity(0.06))
+                                                )
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+
+
+
                         // Definition Cards (Numbered: 1, 2, ...)
                         ForEach(entry.definitions) { def in
                             definitionCard(def: def)
+                        }
+
+                        if !entry.regulationRelations.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("Relasi Peraturan")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(sectionHeaderColor)
+
+                                ForEach(entry.regulationRelations) { relation in
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(relation.relationType)
+                                            .font(.system(size: 12, weight: .semibold))
+                                        Text("\(relation.sourceReferenceID) → \(relation.targetReferenceID)")
+                                            .font(.system(size: 11, design: .monospaced))
+                                            .foregroundStyle(.secondary)
+                                        if !relation.evidenceText.isEmpty {
+                                            Text(relation.evidenceText)
+                                                .font(.system(size: 11))
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(10)
+                                    .background(innerBoxBackground)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                }
+                            }
                         }
 
                         // "Lihat Juga" Section
@@ -111,16 +172,19 @@ struct DictionaryDetailView: View {
                                     .foregroundStyle(sectionHeaderColor)
 
                                 // Chips Flow / Row
-                                HStack(spacing: 10) {
-                                    ForEach(entry.seeAlso, id: \.self) { term in
-                                        SeeAlsoChip(term: term) {
-                                            viewModel.lookupTerm(term)
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 10) {
+                                        ForEach(entry.seeAlso, id: \.self) { term in
+                                            SeeAlsoChip(term: term) {
+                                                viewModel.lookupTerm(term)
+                                            }
                                         }
                                     }
                                 }
                             }
-                            .padding(.top, 8)
+                            .padding(.top, 16)
                         }
+
                     }
                     .padding(.horizontal, 40)
                     .padding(.bottom, 48)
@@ -133,7 +197,6 @@ struct DictionaryDetailView: View {
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
-    // MARK: - Definition Card View
     @ViewBuilder
     private func definitionCard(def: DefinitionItem) -> some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -169,6 +232,31 @@ struct DictionaryDetailView: View {
                 .padding(.horizontal, 4)
                 .padding(.vertical, 2)
                 .fixedSize(horizontal: false, vertical: true)
+
+            if !def.sources.isEmpty || !def.sourceURLs.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Sumber kamus")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(sectionHeaderColor)
+
+                    if !def.sources.isEmpty {
+                        Label(
+                            def.sources.joined(separator: " • "),
+                            systemImage: "books.vertical"
+                        )
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                    }
+
+                    ForEach(def.sourceURLs, id: \.self) { sourceURL in
+                        Link(destination: sourceURL) {
+                            Label("Buka halaman sumber", systemImage: "arrow.up.right.square")
+                                .font(.system(size: 11))
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
 
             // Inner "Referensi Hukum" Card
             if let ref = def.reference {
@@ -226,9 +314,32 @@ struct DictionaryDetailView: View {
                     .font(.system(size: 11))
                     .padding(.top, 2)
 
+                    if let articleLocator = ref.articleLocator {
+                        Label("Pasal \(articleLocator)", systemImage: "text.book.closed")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if let pageStart = ref.pageStart {
+                        let pageText = ref.pageEnd.map { "Halaman \(pageStart)–\($0)" }
+                            ?? "Halaman \(pageStart)"
+                        Label(pageText, systemImage: "doc.text")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+
                     if let sourceURL = ref.sourceURL {
                         Link(destination: sourceURL) {
                             Label("Buka sumber", systemImage: "arrow.up.right.square")
+                                .font(.system(size: 11))
+                        }
+                        .padding(.top, 2)
+                    }
+
+                    if let officialDocumentURL = ref.officialDocumentURL,
+                       officialDocumentURL != ref.sourceURL {
+                        Link(destination: officialDocumentURL) {
+                            Label("Buka dokumen resmi", systemImage: "arrow.up.right.square")
                                 .font(.system(size: 11))
                         }
                         .padding(.top, 2)
