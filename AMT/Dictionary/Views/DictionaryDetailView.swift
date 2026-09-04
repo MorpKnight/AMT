@@ -134,34 +134,7 @@ struct DictionaryDetailView: View {
 
                         // Definition Cards (Numbered: 1, 2, ...)
                         ForEach(entry.definitions) { def in
-                            definitionCard(def: def)
-                        }
-
-                        if !entry.regulationRelations.isEmpty {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Relasi Peraturan")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundStyle(sectionHeaderColor)
-
-                                ForEach(entry.regulationRelations) { relation in
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(relation.relationType)
-                                            .font(.system(size: 12, weight: .semibold))
-                                        Text("\(relation.sourceReferenceID) → \(relation.targetReferenceID)")
-                                            .font(.system(size: 11, design: .monospaced))
-                                            .foregroundStyle(.secondary)
-                                        if !relation.evidenceText.isEmpty {
-                                            Text(relation.evidenceText)
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(10)
-                                    .background(innerBoxBackground)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                }
-                            }
+                            definitionCard(def: def, entry: entry)
                         }
 
                         // "Lihat Juga" Section
@@ -198,7 +171,10 @@ struct DictionaryDetailView: View {
     }
 
     @ViewBuilder
-    private func definitionCard(def: DefinitionItem) -> some View {
+    private func definitionCard(
+        def: DefinitionItem,
+        entry: LegalGlossaryEntry
+    ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             // Header Blue Ribbon with Number Badge
             HStack(spacing: 8) {
@@ -232,6 +208,8 @@ struct DictionaryDetailView: View {
                 .padding(.horizontal, 4)
                 .padding(.vertical, 2)
                 .fixedSize(horizontal: false, vertical: true)
+
+            definitionHistory(for: def, in: entry)
 
             if !def.sources.isEmpty || !def.sourceURLs.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
@@ -364,6 +342,237 @@ struct DictionaryDetailView: View {
                 .strokeBorder(cardBorder, lineWidth: 1)
         )
     }
+
+    @ViewBuilder
+    private func definitionHistory(
+        for definition: DefinitionItem,
+        in entry: LegalGlossaryEntry
+    ) -> some View {
+        let events = historyEvents(for: definition, in: entry)
+        if !events.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Riwayat & status sumber")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(sectionHeaderColor)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(events.indices, id: \.self) { index in
+                        definitionHistoryRow(
+                            events[index],
+                            isLast: index == events.count - 1
+                        )
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 2)
+        }
+    }
+
+    private func historyEvents(
+        for definition: DefinitionItem,
+        in entry: LegalGlossaryEntry
+    ) -> [DefinitionHistoryEvent] {
+        let references = definition.allReferences
+        let referenceIDs = Set(references.compactMap(\.referenceID))
+        let relations = entry.regulationRelations.filter { relation in
+            referenceIDs.contains(relation.sourceReferenceID)
+                || referenceIDs.contains(relation.targetReferenceID)
+        }
+
+        var events: [DefinitionHistoryEvent] = []
+
+        for (index, reference) in references.enumerated() {
+            let hasKnownStatus = referenceStatus(for: reference) != nil
+            let hasRelation = relations.contains {
+                $0.sourceReferenceID == reference.referenceID
+                    || $0.targetReferenceID == reference.referenceID
+            }
+            guard hasKnownStatus || hasRelation || references.count > 1 else {
+                continue
+            }
+
+            events.append(
+                DefinitionHistoryEvent(
+                    id: "reference-\(index)-\(reference.referenceID ?? reference.lawName)",
+                    label: referenceStatus(for: reference) ?? "Sumber definisi",
+                    sourceName: reference.lawName,
+                    metadata: referenceMetadata(for: reference),
+                    explanation: nil,
+                    isInactive: isInactive(reference)
+                )
+            )
+        }
+
+        for relation in relations {
+            let isSource = referenceIDs.contains(relation.sourceReferenceID)
+            let isTarget = referenceIDs.contains(relation.targetReferenceID)
+            let relatedReferenceID: String
+            let rawRelationType: String
+
+            if isSource {
+                relatedReferenceID = relation.targetReferenceID
+                rawRelationType = relation.relationType
+            } else if isTarget {
+                relatedReferenceID = relation.sourceReferenceID
+                rawRelationType = relation.inverseRelationType
+            } else {
+                continue
+            }
+
+            let relatedRegulation = viewModel.regulation(for: relatedReferenceID)
+            events.append(
+                DefinitionHistoryEvent(
+                    id: "relation-\(relation.relationID)",
+                    label: relationTitle(for: rawRelationType),
+                    sourceName: regulationName(relatedRegulation),
+                    metadata: regulationMetadata(for: relatedRegulation),
+                    explanation: nonEmpty(relation.evidenceText),
+                    isInactive: false
+                )
+            )
+        }
+
+        return events
+    }
+
+    private func definitionHistoryRow(
+        _ event: DefinitionHistoryEvent,
+        isLast: Bool
+    ) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            VStack(spacing: 0) {
+                Circle()
+                    .fill(event.isInactive ? Color.secondary.opacity(0.35) : Color.accentColor)
+                    .frame(width: 7, height: 7)
+                    .padding(.top, 4)
+
+                if !isLast {
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.12))
+                        .frame(width: 1)
+                        .frame(maxHeight: .infinity)
+                }
+            }
+                .frame(maxHeight: .infinity, alignment: .top)
+                .frame(width: 8)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(event.label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(event.isInactive ? .secondary : .primary)
+
+                Text(event.sourceName)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(event.isInactive ? .secondary : lawTitleColor)
+
+                if let metadata = event.metadata {
+                    Text(metadata)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+
+                if let explanation = event.explanation {
+                    Text(explanation)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+            }
+            .padding(.bottom, 10)
+        }
+    }
+
+    private func nonEmpty(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private func referenceStatus(for reference: LegalReference) -> String? {
+        if let officialStatus = nonEmpty(reference.officialStatus) {
+            return officialStatus
+        }
+        return reference.applicabilityStatus == .unknown
+            ? nil
+            : reference.applicabilityStatus.displayTitle
+    }
+
+    private func isInactive(_ reference: LegalReference) -> Bool {
+        if reference.applicabilityStatus == .notInForce {
+            return true
+        }
+        guard let status = nonEmpty(reference.officialStatus)?.lowercased() else {
+            return false
+        }
+        return status.contains("tidak berlaku") || status.contains("dicabut")
+    }
+
+    private func referenceMetadata(for reference: LegalReference) -> String? {
+        var parts: [String] = []
+
+        if let number = nonEmpty(reference.number), let year = reference.year {
+            parts.append("Nomor \(number) Tahun \(year)")
+        } else if let number = nonEmpty(reference.number) {
+            parts.append("Nomor \(number)")
+        } else if let year = reference.year {
+            parts.append("Tahun \(year)")
+        }
+
+        if let articleLocator = nonEmpty(reference.articleLocator) {
+            parts.append("Pasal \(articleLocator)")
+        }
+
+        return parts.isEmpty ? nil : parts.joined(separator: " • ")
+    }
+
+    private func regulationMetadata(for regulation: LegalRegulation?) -> String? {
+        guard let regulation else { return nil }
+
+        if let number = nonEmpty(regulation.number), let year = regulation.year {
+            return "Nomor \(number) Tahun \(year)"
+        }
+        if let number = nonEmpty(regulation.number) {
+            return "Nomor \(number)"
+        }
+        if let year = regulation.year {
+            return "Tahun \(year)"
+        }
+        return nil
+    }
+
+    private func regulationName(_ regulation: LegalRegulation?) -> String {
+        guard let regulation else { return "Sumber hukum terkait" }
+        return nonEmpty(regulation.referenceName)
+            ?? nonEmpty(regulation.officialTitle)
+            ?? "Sumber hukum terkait"
+    }
+
+    private func relationTitle(for rawValue: String) -> String {
+        switch rawValue {
+        case "amends":
+            return "Mengubah"
+        case "amended_by":
+            return "Diubah oleh"
+        case "repeals":
+            return "Mencabut"
+        case "repealed_by":
+            return "Dicabut oleh"
+        default:
+            return rawValue
+                .replacingOccurrences(of: "_", with: " ")
+                .capitalized
+        }
+    }
+}
+
+private struct DefinitionHistoryEvent {
+    let id: String
+    let label: String
+    let sourceName: String
+    let metadata: String?
+    let explanation: String?
+    let isInactive: Bool
 }
 
 // MARK: - "Lihat Juga" Chip Component
