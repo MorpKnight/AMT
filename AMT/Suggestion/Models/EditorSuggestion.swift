@@ -29,6 +29,63 @@ enum EditorSuggestionKind: String, Codable, Hashable, Sendable {
     }
 }
 
+/// A read-only diagnostic state for a definition finding shown in the editor.
+/// This is intentionally separate from an actionable suggestion so a finding
+/// can be highlighted without implying that the application may rewrite it.
+enum EditorDefinitionDiagnosticStatus: String, CaseIterable, Codable, Hashable, Sendable {
+    case matches
+    case mismatch
+    case needsReview
+
+    var title: String {
+        switch self {
+        case .matches:
+            "Definisi selaras"
+        case .mismatch:
+            "Definisi tidak selaras"
+        case .needsReview:
+            "Definisi perlu review"
+        }
+    }
+
+    var shortTitle: String {
+        switch self {
+        case .matches:
+            "Selaras"
+        case .mismatch:
+            "Tidak selaras"
+        case .needsReview:
+            "Perlu review"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .matches:
+            "checkmark.seal.fill"
+        case .mismatch:
+            "xmark.seal.fill"
+        case .needsReview:
+            "exclamationmark.triangle.fill"
+        }
+    }
+}
+
+private extension EditorDefinitionDiagnosticStatus {
+    init?(alignment: AIConnectorDefinitionAlignment) {
+        switch alignment {
+        case .matches:
+            self = .matches
+        case .mismatch:
+            self = .mismatch
+        case .needsReview:
+            self = .needsReview
+        case .notApplicable:
+            return nil
+        }
+    }
+}
+
 /// A validated, user-facing suggestion anchored to the current document text.
 ///
 /// `sourceRange` uses UTF-16 offsets because AppKit's text system and
@@ -41,6 +98,8 @@ struct EditorSuggestion: Codable, Identifiable, Hashable {
     let category: AIReviewCategory
     let kind: EditorSuggestionKind
     let isDebugOnly: Bool
+    let definitionDiagnosticStatus: EditorDefinitionDiagnosticStatus?
+    let definitionTerm: String?
     let reason: String
     let origin: AIReviewOrigin
     let reference: EditorSuggestionReference?
@@ -55,6 +114,8 @@ struct EditorSuggestion: Codable, Identifiable, Hashable {
         category: AIReviewCategory,
         kind: EditorSuggestionKind = .language,
         isDebugOnly: Bool = false,
+        definitionDiagnosticStatus: EditorDefinitionDiagnosticStatus? = nil,
+        definitionTerm: String? = nil,
         reason: String,
         origin: AIReviewOrigin,
         reference: EditorSuggestionReference? = nil,
@@ -68,6 +129,8 @@ struct EditorSuggestion: Codable, Identifiable, Hashable {
         self.category = category
         self.kind = kind
         self.isDebugOnly = isDebugOnly
+        self.definitionDiagnosticStatus = definitionDiagnosticStatus
+        self.definitionTerm = definitionTerm
         self.reason = reason
         self.origin = origin
         self.reference = reference
@@ -84,6 +147,8 @@ struct EditorSuggestion: Codable, Identifiable, Hashable {
         case category
         case kind
         case isDebugOnly
+        case definitionDiagnosticStatus
+        case definitionTerm
         case reason
         case origin
         case reference
@@ -112,6 +177,14 @@ struct EditorSuggestion: Codable, Identifiable, Hashable {
             ?? .language
         self.isDebugOnly = try container.decodeIfPresent(Bool.self, forKey: .isDebugOnly)
             ?? false
+        self.definitionDiagnosticStatus = try container.decodeIfPresent(
+            EditorDefinitionDiagnosticStatus.self,
+            forKey: .definitionDiagnosticStatus
+        )
+        self.definitionTerm = try container.decodeIfPresent(
+            String.self,
+            forKey: .definitionTerm
+        )
         self.reason = try container.decode(String.self, forKey: .reason)
         self.origin = try container.decode(AIReviewOrigin.self, forKey: .origin)
         self.reference = try container.decodeIfPresent(
@@ -132,6 +205,11 @@ struct EditorSuggestion: Codable, Identifiable, Hashable {
         try container.encode(category, forKey: .category)
         try container.encode(kind, forKey: .kind)
         try container.encode(isDebugOnly, forKey: .isDebugOnly)
+        try container.encodeIfPresent(
+            definitionDiagnosticStatus,
+            forKey: .definitionDiagnosticStatus
+        )
+        try container.encodeIfPresent(definitionTerm, forKey: .definitionTerm)
         try container.encode(reason, forKey: .reason)
         try container.encode(origin, forKey: .origin)
         try container.encodeIfPresent(reference, forKey: .reference)
@@ -273,6 +351,8 @@ enum EditorSuggestionMapper {
                 replacement: replacement,
                 category: .terminology,
                 kind: .definition,
+                definitionDiagnosticStatus: .mismatch,
+                definitionTerm: candidate.term,
                 reason: assessment.reason,
                 origin: assessment.origin,
                 reference: definitionReference(
@@ -291,10 +371,9 @@ enum EditorSuggestionMapper {
         }
     }
 
-    /// Creates read-only annotations for definitions that were found to be
-    /// semantically aligned with verified evidence. These are intentionally
-    /// separate from normal suggestions so they can be shown only in debug
-    /// mode and can never be accepted as an edit.
+    /// Creates read-only annotations for definition findings. These are
+    /// intentionally separate from normal suggestions so they can be shown
+    /// only in debug mode and can never be accepted as an edit.
     static func makeDefinitionDebugSuggestions(
         assessments: [AIConnectorDefinitionAssessment],
         documentText: String
@@ -302,10 +381,10 @@ enum EditorSuggestionMapper {
         let documentLength = documentText.utf16.count
 
         return assessments.compactMap { assessment in
-            guard assessment.alignment == .matches,
-                  assessment.classification == .explicitDefinition
-                    || assessment.classification == .implicitDefinition,
-                  let candidate = assessment.candidate,
+            guard let diagnosticStatus = EditorDefinitionDiagnosticStatus(
+                alignment: assessment.alignment
+            ),
+                  assessment.classification != .notDefinition,
                   let localRange = definitionDebugSourceRange(for: assessment),
                   localRange.location >= 0 else {
                 return nil
@@ -322,13 +401,12 @@ enum EditorSuggestionMapper {
             }
 
             let original = (documentText as NSString).substring(with: absoluteRange)
-            let sourceDefinition = sourceDefinitionBody(
-                from: candidate.sourceDefinition,
-                term: candidate.term
-            )
-            guard !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                  !sourceDefinition.isEmpty else {
+            guard !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 return nil
+            }
+
+            let sourceDefinition = assessment.candidate.map {
+                sourceDefinitionBody(from: $0.sourceDefinition, term: $0.term)
             }
 
             let (prefixContext, suffixContext) = extractSurroundingContext(
@@ -344,12 +422,16 @@ enum EditorSuggestionMapper {
                 category: .terminology,
                 kind: .definition,
                 isDebugOnly: true,
+                definitionDiagnosticStatus: diagnosticStatus,
+                definitionTerm: assessment.term ?? assessment.candidate?.term,
                 reason: assessment.reason,
                 origin: assessment.origin,
-                reference: definitionReference(
-                    for: candidate,
-                    sourceDefinition: sourceDefinition
-                ),
+                reference: assessment.candidate.map {
+                    definitionReference(
+                        for: $0,
+                        sourceDefinition: sourceDefinition ?? $0.sourceDefinition
+                    )
+                },
                 prefixContext: prefixContext,
                 suffixContext: suffixContext
             )

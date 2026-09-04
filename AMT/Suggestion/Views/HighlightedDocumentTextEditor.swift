@@ -14,6 +14,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
     @Binding var zoomPercent: Int
 
     let suggestions: [EditorSuggestion]
+    let diagnosticSuggestions: [EditorSuggestion]
     let selectedSuggestionID: UUID?
     let onSelect: (UUID?) -> Void
     let onTextEdited: () -> Void
@@ -107,6 +108,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         )
         context.coordinator.updateHighlights(
             suggestions: suggestions,
+            diagnosticSuggestions: diagnosticSuggestions,
             selectedSuggestionID: selectedSuggestionID
         )
         context.coordinator.pushFormattingState()
@@ -125,6 +127,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         context.coordinator.updateZoom(to: zoomPercent)
         context.coordinator.updateHighlights(
             suggestions: suggestions,
+            diagnosticSuggestions: diagnosticSuggestions,
             selectedSuggestionID: selectedSuggestionID
         )
         if let action = formattingViewModel?.pendingAction {
@@ -348,15 +351,19 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
 
         func updateHighlights(
             suggestions: [EditorSuggestion],
+            diagnosticSuggestions: [EditorSuggestion],
             selectedSuggestionID: UUID?
         ) {
             layoutManager?.update(
                 suggestions: suggestions,
+                diagnosticSuggestions: diagnosticSuggestions,
                 selectedSuggestionID: selectedSuggestionID
             )
 
             if let presentedSuggestionID,
-               !suggestions.contains(where: { $0.id == presentedSuggestionID }) {
+               !(suggestions + diagnosticSuggestions).contains(where: {
+                   $0.id == presentedSuggestionID
+               }) {
                 closePopover(notifySelection: true)
             }
         }
@@ -365,7 +372,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             guard let textView,
                   let layoutManager,
                   let textContainer,
-                  !parent.suggestions.isEmpty
+                  !allSuggestions.isEmpty
             else {
                 return
             }
@@ -381,9 +388,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             )
 
             guard characterIndex != NSNotFound,
-                  let suggestion = parent.suggestions.first(where: {
-                      NSLocationInRange(characterIndex, $0.sourceRange)
-                  })
+                  let suggestion = suggestion(at: characterIndex)
             else {
                 return
             }
@@ -392,6 +397,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 parent.onSelect(suggestion.id)
                 layoutManager.update(
                     suggestions: parent.suggestions,
+                    diagnosticSuggestions: parent.diagnosticSuggestions,
                     selectedSuggestionID: suggestion.id
                 )
                 presentPopover(
@@ -406,7 +412,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             guard let textView,
                   let layoutManager,
                   let textContainer,
-                  !parent.suggestions.isEmpty
+                  !allSuggestions.isEmpty
             else {
                 closePopover(notifySelection: true)
                 return
@@ -423,9 +429,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             )
 
             guard characterIndex != NSNotFound,
-                  let suggestion = parent.suggestions.first(where: {
-                      NSLocationInRange(characterIndex, $0.sourceRange)
-                  })
+                  let suggestion = suggestion(at: characterIndex)
             else {
                 closePopover(notifySelection: true)
                 return
@@ -434,6 +438,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             parent.onSelect(suggestion.id)
             layoutManager.update(
                 suggestions: parent.suggestions,
+                diagnosticSuggestions: parent.diagnosticSuggestions,
                 selectedSuggestionID: suggestion.id
             )
             presentPopover(
@@ -441,6 +446,18 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 anchor: anchor(for: suggestion),
                 isStale: !rangeContainsOriginal(suggestion)
             )
+        }
+
+        private var allSuggestions: [EditorSuggestion] {
+            parent.suggestions + parent.diagnosticSuggestions
+        }
+
+        private func suggestion(at characterIndex: Int) -> EditorSuggestion? {
+            parent.suggestions.first(where: {
+                NSLocationInRange(characterIndex, $0.sourceRange)
+            }) ?? parent.diagnosticSuggestions.first(where: {
+                NSLocationInRange(characterIndex, $0.sourceRange)
+            })
         }
 
         func handleScroll() {
@@ -908,20 +925,23 @@ final class SuggestionLayoutManager: NSLayoutManager {
         let range: NSRange
         let isSelected: Bool
         let isDebugOnly: Bool
+        let definitionDiagnosticStatus: EditorDefinitionDiagnosticStatus?
     }
 
     private(set) var drawingRanges: [DrawingRange] = []
 
     func update(
         suggestions: [EditorSuggestion],
+        diagnosticSuggestions: [EditorSuggestion] = [],
         selectedSuggestionID: UUID?
     ) {
-        drawingRanges = suggestions.map {
+        drawingRanges = (diagnosticSuggestions + suggestions).map {
             DrawingRange(
                 id: $0.id,
                 range: $0.sourceRange,
                 isSelected: $0.id == selectedSuggestionID,
-                isDebugOnly: $0.isDebugOnly
+                isDebugOnly: $0.isDebugOnly,
+                definitionDiagnosticStatus: $0.definitionDiagnosticStatus
             )
         }
 
@@ -942,9 +962,7 @@ final class SuggestionLayoutManager: NSLayoutManager {
 
             addTemporaryAttribute(
                 .foregroundColor,
-                value: item.isDebugOnly
-                    ? NSColor.systemGreen
-                    : NSColor(red: 0.65, green: 0.12, blue: 0.18, alpha: 1.0),
+                value: foregroundColor(for: item),
                 forCharacterRange: item.range
             )
             addTemporaryAttribute(
@@ -991,9 +1009,7 @@ final class SuggestionLayoutManager: NSLayoutManager {
                 let drawRect = rect
                     .offsetBy(dx: origin.x, dy: origin.y)
                     .insetBy(dx: -4, dy: 1)
-                let color = item.isDebugOnly
-                    ? NSColor(red: 0.86, green: 0.96, blue: 0.88, alpha: 1.0)
-                    : NSColor(red: 0.98, green: 0.88, blue: 0.90, alpha: 1.0)
+                let color = self.backgroundColor(for: item)
                 color.setFill()
                 NSBezierPath(
                     roundedRect: drawRect,
@@ -1001,6 +1017,36 @@ final class SuggestionLayoutManager: NSLayoutManager {
                     yRadius: 6
                 ).fill()
             }
+        }
+    }
+
+    private func foregroundColor(for item: DrawingRange) -> NSColor {
+        guard item.isDebugOnly else {
+            return NSColor(red: 0.65, green: 0.12, blue: 0.18, alpha: 1.0)
+        }
+
+        switch item.definitionDiagnosticStatus ?? .matches {
+        case .matches:
+            return NSColor(red: 0.12, green: 0.52, blue: 0.24, alpha: 1.0)
+        case .mismatch:
+            return NSColor(red: 0.72, green: 0.10, blue: 0.14, alpha: 1.0)
+        case .needsReview:
+            return NSColor(red: 0.70, green: 0.40, blue: 0.02, alpha: 1.0)
+        }
+    }
+
+    private func backgroundColor(for item: DrawingRange) -> NSColor {
+        guard item.isDebugOnly else {
+            return NSColor(red: 0.98, green: 0.88, blue: 0.90, alpha: 1.0)
+        }
+
+        switch item.definitionDiagnosticStatus ?? .matches {
+        case .matches:
+            return NSColor(red: 0.86, green: 0.96, blue: 0.88, alpha: 1.0)
+        case .mismatch:
+            return NSColor(red: 0.99, green: 0.86, blue: 0.88, alpha: 1.0)
+        case .needsReview:
+            return NSColor(red: 0.99, green: 0.94, blue: 0.78, alpha: 1.0)
         }
     }
 }
@@ -1035,6 +1081,7 @@ final class SuggestionLayoutManager: NSLayoutManager {
                 reference: nil
             )
         ],
+        diagnosticSuggestions: [],
         selectedSuggestionID: nil,
         onSelect: { _ in },
         onTextEdited: {},
@@ -1064,6 +1111,7 @@ final class SuggestionLayoutManager: NSLayoutManager {
                 reference: nil
             )
         ],
+        diagnosticSuggestions: [],
         selectedSuggestionID: nil,
         onSelect: { _ in },
         onTextEdited: {},
