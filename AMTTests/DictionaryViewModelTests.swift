@@ -28,6 +28,31 @@ final class DictionaryViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.topMatches.isEmpty)
     }
 
+    func testKnownTermDetailRetainsMultipleOfficialReferences() async {
+        let viewModel = DictionaryViewModel(dictionaryStore: LegalDictionaryStore())
+
+        viewModel.lookupTerm("Pelayanan Terpadu Satu Pintu")
+        await waitForLookupToFinish(viewModel)
+
+        let enrichedDefinition = viewModel.selectedEntry?.definitions.first {
+            $0.allReferences.count >= 2
+        }
+        let referenceIDs = Set(
+            enrichedDefinition?.allReferences.compactMap(\.referenceID) ?? []
+        )
+
+        XCTAssertGreaterThanOrEqual(enrichedDefinition?.allReferences.count ?? 0, 2)
+        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-1-tahun-2020"))
+        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-64-tahun-2016"))
+    }
+
+    func testCorpusSummaryIsAvailableToDictionaryPresentation() {
+        let viewModel = DictionaryViewModel(dictionaryStore: LegalDictionaryStore())
+
+        XCTAssertTrue(viewModel.corpusSummary.isEnriched)
+        XCTAssertEqual(viewModel.corpusSummary.sourceDatasetView, "combined-deduplicated")
+    }
+
     func testPopularTermsCountIsThree() async {
         let viewModel = DictionaryViewModel(dictionaryStore: LegalDictionaryStore())
         XCTAssertEqual(viewModel.popularTerms.count, 3)

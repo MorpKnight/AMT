@@ -21,6 +21,17 @@ nonisolated enum LegalCorpusReviewStatus: String, Codable, Hashable, Sendable {
     case machineExact = "machine_exact_unreviewed"
     case humanVerified = "human_verified"
     case needsReview = "needs_human_review"
+
+    var displayTitle: String {
+        switch self {
+        case .machineExact:
+            "Terverifikasi otomatis"
+        case .humanVerified:
+            "Diverifikasi manusia"
+        case .needsReview:
+            "Perlu ditinjau"
+        }
+    }
 }
 
 nonisolated struct LegalCorpusReference: Codable, Hashable, Sendable {

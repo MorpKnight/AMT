@@ -24,6 +24,10 @@ final class DictionaryViewModel {
     /// Array of popular legal terms displayed in the "Istilah Populer" section.
     var popularTerms: [PopularTerm] = []
 
+    var corpusSummary: LegalDictionaryCorpusSummary {
+        dictionaryStore.corpusSummary
+    }
+
     private let dictionaryStore: LegalDictionaryStore
     @ObservationIgnored private var lookupTask: Task<Void, Never>?
     @ObservationIgnored private var activeLookupID: UUID?
@@ -110,6 +114,10 @@ final class DictionaryViewModel {
         }
     }
 
+    func regulation(for referenceID: String) -> LegalRegulation? {
+        dictionaryStore.regulation(id: referenceID)
+    }
+
     private func relatedTerms(count: Int = 4, excluding currentTerm: String) -> [String] {
         let related = dictionaryStore.relatedTerms(excluding: currentTerm, limit: count)
         if !related.isEmpty { return related }
@@ -124,7 +132,15 @@ final class DictionaryViewModel {
             "Bursa Efek",
             "Badan Hukum"
         ]
-        return Array(fallbackTerms.filter { $0.lowercased() != currentTerm.lowercased() }.shuffled().prefix(count))
+        return Array(
+            fallbackTerms
+                .filter {
+                    $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                        .caseInsensitiveCompare(currentTerm.trimmingCharacters(in: .whitespacesAndNewlines))
+                        != .orderedSame
+                }
+                .prefix(count)
+        )
     }
 
     private func makeGlossaryEntry(forTerm term: String) -> LegalGlossaryEntry {
@@ -135,10 +151,13 @@ final class DictionaryViewModel {
         let canonicalTerm = entries.first?.term ?? term
 
         let definitions = entries.enumerated().map { index, entry in
-            DefinitionItem(
+            let resolvedReferences = dictionaryStore.references(for: entry)
+            let primaryReference = resolvedReferences.first ?? makeReference(from: entry)
+            return DefinitionItem(
                 id: index + 1,
                 text: entry.definition,
-                reference: makeReference(from: entry),
+                reference: primaryReference,
+                additionalReferences: Array(resolvedReferences.dropFirst()),
                 sources: entry.sources,
                 sourceURLs: entry.sourceURLs
             )

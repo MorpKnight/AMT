@@ -99,6 +99,55 @@ final class LegalCorpusP012Tests: XCTestCase {
         XCTAssertTrue(entries.contains(where: { !$0.isActionable }))
     }
 
+    func testDictionaryCorpusSummaryExposesEnrichmentScope() {
+        let store = LegalDictionaryStore()
+        let summary = store.corpusSummary
+
+        XCTAssertEqual(summary.sourceDatasetView, "combined-deduplicated")
+        XCTAssertEqual(summary.conceptCount, 8_272)
+        XCTAssertEqual(summary.regulationCount, 1_591)
+        XCTAssertEqual(summary.relationCount, 315)
+        XCTAssertEqual(summary.sourcePassageCount, 628)
+        XCTAssertTrue(summary.isEnriched)
+        XCTAssertTrue(summary.sourceNames.contains("Hukumonline Kamus"))
+    }
+
+    func testDictionaryReferencesRetainOfficialMetadataAndSourcePassage() throws {
+        let store = LegalDictionaryStore()
+        let entry = try XCTUnwrap(
+            store.entries.first {
+                $0.isActionable
+                    && $0.referenceID != nil
+                    && $0.sourcePassageID != nil
+            }
+        )
+        let references = store.references(for: entry)
+        let reference = try XCTUnwrap(
+            references.first { $0.referenceID == entry.referenceID }
+        )
+
+        XCTAssertNotNil(reference.sourcePassageText)
+        XCTAssertNotNil(reference.officialStatus)
+        XCTAssertNotNil(reference.number)
+        XCTAssertNotNil(reference.year)
+        XCTAssertNotNil(reference.officialDocumentURL)
+        XCTAssertNotNil(reference.verificationStatus)
+    }
+
+    func testDictionaryPreservesMultipleOfficialReferencesForOneDefinition() throws {
+        let store = LegalDictionaryStore()
+        let entry = try XCTUnwrap(
+            store.entries(forTerm: "Pelayanan Terpadu Satu Pintu")
+                .first { $0.isActionable }
+        )
+        let references = store.references(for: entry)
+        let referenceIDs = Set(references.compactMap(\.referenceID))
+
+        XCTAssertGreaterThanOrEqual(references.count, 2)
+        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-1-tahun-2020"))
+        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-64-tahun-2016"))
+    }
+
     func testExactTermLookupDoesNotLoadSemanticModel() async {
         let store = LegalDictionaryStore()
 

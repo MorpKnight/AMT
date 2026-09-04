@@ -7,6 +7,34 @@
 
 import Foundation
 
+/// Read-only summary of the corpus that powers Dictionary.
+nonisolated struct LegalDictionaryCorpusSummary: Hashable, Sendable {
+    let corpusVersion: String?
+    let sourceDatasetView: String?
+    let conceptCount: Int
+    let regulationCount: Int
+    let relationCount: Int
+    let sourcePassageCount: Int
+    let sourceNames: [String]
+
+    var isEnriched: Bool {
+        regulationCount > 0 || relationCount > 0 || sourcePassageCount > 0
+    }
+
+    var datasetLabel: String {
+        switch sourceDatasetView {
+        case "combined-deduplicated":
+            "Korpus gabungan terkurasi"
+        case "combined":
+            "Korpus gabungan"
+        case let .some(view):
+            "Korpus versi \(view)"
+        default:
+            "Kamus lokal"
+        }
+    }
+}
+
 // MARK: - Legal Reference Model
 
 /// Detailed statutory or institutional reference for a legal definition.
@@ -24,6 +52,11 @@ nonisolated struct LegalReference: Hashable, Sendable {
     let pageStart: Int?
     let pageEnd: Int?
     let sourcePassageID: String?
+    let officialStatus: String?
+    let number: String?
+    let year: Int?
+    let sourcePassageText: String?
+    let verificationStatus: LegalCorpusReviewStatus?
 
     init(
         lawName: String,
@@ -38,7 +71,12 @@ nonisolated struct LegalReference: Hashable, Sendable {
         articleLocator: String? = nil,
         pageStart: Int? = nil,
         pageEnd: Int? = nil,
-        sourcePassageID: String? = nil
+        sourcePassageID: String? = nil,
+        officialStatus: String? = nil,
+        number: String? = nil,
+        year: Int? = nil,
+        sourcePassageText: String? = nil,
+        verificationStatus: LegalCorpusReviewStatus? = nil
     ) {
         self.lawName = lawName
         self.lawTitle = lawTitle
@@ -53,6 +91,11 @@ nonisolated struct LegalReference: Hashable, Sendable {
         self.pageStart = pageStart
         self.pageEnd = pageEnd
         self.sourcePassageID = sourcePassageID
+        self.officialStatus = officialStatus
+        self.number = number
+        self.year = year
+        self.sourcePassageText = sourcePassageText
+        self.verificationStatus = verificationStatus
     }
 }
 
@@ -63,6 +106,7 @@ nonisolated struct DefinitionItem: Identifiable, Hashable, Sendable {
     var id: Int
     let text: String
     let reference: LegalReference?
+    let additionalReferences: [LegalReference]
     let sources: [String]
     let sourceURLs: [URL]
 
@@ -70,14 +114,27 @@ nonisolated struct DefinitionItem: Identifiable, Hashable, Sendable {
         id: Int,
         text: String,
         reference: LegalReference? = nil,
+        additionalReferences: [LegalReference] = [],
         sources: [String] = [],
         sourceURLs: [URL] = []
     ) {
         self.id = id
         self.text = text
         self.reference = reference
+        self.additionalReferences = additionalReferences
         self.sources = sources
         self.sourceURLs = sourceURLs
+    }
+
+    var allReferences: [LegalReference] {
+        var seen: Set<String> = []
+        return ([reference] + additionalReferences).compactMap { candidate in
+            guard let candidate else { return nil }
+            let key = candidate.referenceID
+                ?? "\(candidate.lawName)|\(candidate.lawTitle ?? "")"
+            guard seen.insert(key).inserted else { return nil }
+            return candidate
+        }
     }
 }
 
