@@ -20,7 +20,7 @@ struct SuggestionPopoverView: View {
                 Image(systemName: suggestion.kind.iconName)
                     .foregroundStyle(
                         suggestion.isDebugOnly
-                            ? Color.green
+                            ? diagnosticTint
                             : suggestion.kind == .definition
                                 ? Color.orange
                                 : Color.blue
@@ -29,7 +29,7 @@ struct SuggestionPopoverView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(
                         suggestion.isDebugOnly
-                            ? "Definisi selaras (Debug)"
+                            ? "\(diagnosticStatus.title) (Debug)"
                             : suggestion.kind.title
                     )
                         .font(.system(size: 13, weight: .semibold))
@@ -44,20 +44,28 @@ struct SuggestionPopoverView: View {
             }
 
             if suggestion.isDebugOnly {
-                if let term = suggestion.reference?.term, !term.isEmpty {
+                detailCard(title: "Bagian dokumen", text: suggestion.original)
+
+                if let term = suggestion.definitionTerm ?? suggestion.reference?.term,
+                   !term.isEmpty {
                     detailCard(title: "Istilah", text: term)
                 }
                 if let definition = suggestion.reference?.definition,
                    !definition.isEmpty {
                     detailCard(title: "Definisi terverifikasi", text: definition)
+                } else {
+                    detailCard(
+                        title: "Definisi terverifikasi",
+                        text: "Belum tersedia evidence definisi yang dapat dibandingkan."
+                    )
                 }
                 detailCard(title: "Penilaian", text: suggestion.reason)
                 Label(
-                    "Makna dinilai selaras dengan evidence terverifikasi.",
-                    systemImage: "checkmark.circle.fill"
+                    diagnosticMessage,
+                    systemImage: diagnosticStatus.iconName
                 )
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.green)
+                .foregroundStyle(diagnosticTint)
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     if let prefix = suggestion.prefixContext, !prefix.isEmpty {
@@ -176,6 +184,32 @@ struct SuggestionPopoverView: View {
         .frame(width: 400)
         .background(colorScheme == .dark ? Color(red: 0.15, green: 0.16, blue: 0.18) : Color(red: 0.96, green: 0.96, blue: 0.97))
         .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var diagnosticStatus: EditorDefinitionDiagnosticStatus {
+        suggestion.definitionDiagnosticStatus ?? .matches
+    }
+
+    private var diagnosticTint: Color {
+        switch diagnosticStatus {
+        case .matches:
+            .green
+        case .mismatch:
+            .red
+        case .needsReview:
+            .orange
+        }
+    }
+
+    private var diagnosticMessage: String {
+        switch diagnosticStatus {
+        case .matches:
+            "Makna dinilai selaras dengan evidence terverifikasi."
+        case .mismatch:
+            "Makna dinilai tidak selaras dengan evidence terverifikasi."
+        case .needsReview:
+            "Kesetaraan makna belum dapat dipastikan; verifikasi diperlukan."
+        }
     }
 
     private func detailCard(title: String, text: String) -> some View {

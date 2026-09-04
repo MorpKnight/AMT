@@ -34,7 +34,7 @@ struct AIConnectorDebugPanelCommands: Commands {
             .keyboardShortcut("d", modifiers: [.command, .option])
 
             Toggle(
-                "Tampilkan definisi selaras (Debug)",
+                "Tampilkan highlight definisi (Debug)",
                 isOn: showDefinitionDiagnostics ?? .constant(false)
             )
             .disabled(showDefinitionDiagnostics == nil)

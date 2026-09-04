@@ -59,7 +59,131 @@ final class EditorSuggestionTests: XCTestCase {
         XCTAssertEqual(first.reference?.term, "Data Pribadi")
         XCTAssertEqual(first.reference?.definition, first.replacement)
         XCTAssertEqual(first.reference?.sourcePassageID, "passage-data-pribadi")
+        XCTAssertEqual(first.definitionDiagnosticStatus, .mismatch)
+        XCTAssertEqual(first.definitionTerm, "Data Pribadi")
         XCTAssertEqual(first.id, second.id)
+    }
+
+    @MainActor
+    func testDefinitionDebugMapperShowsMismatchAsReadOnlyDiagnostic() throws {
+        let entry = makeDefinitionEntry(
+            definition: "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi.",
+            sourcePassageID: "passage-data-pribadi"
+        )
+        let target = "Data Pribadi adalah informasi mengenai perusahaan."
+        let segment = makeSegment(target: target)
+        let candidate = AIConnectorDefinitionCandidate(
+            id: "D1",
+            match: LegalDictionaryMatch(
+                entry: entry,
+                score: 1_000,
+                rank: 1,
+                matchedDefinitionTokenCount: 3,
+                isDirectTermMatch: true,
+                retrievalOrigin: .exact
+            ),
+            statementText: "informasi mengenai perusahaan.",
+            detection: .explicitPattern
+        )
+        let assessment = makeDefinitionAssessment(
+            segment: segment,
+            statementText: candidate.statementText,
+            candidate: candidate,
+            classification: .explicitDefinition,
+            alignment: .mismatch
+        )
+
+        let suggestion = try XCTUnwrap(
+            EditorSuggestionMapper.makeDefinitionDebugSuggestions(
+                assessments: [assessment],
+                documentText: target
+            ).first
+        )
+
+        XCTAssertTrue(suggestion.isDebugOnly)
+        XCTAssertEqual(suggestion.definitionDiagnosticStatus, .mismatch)
+        XCTAssertEqual(suggestion.definitionTerm, "Data Pribadi")
+        XCTAssertEqual(suggestion.original, target)
+        XCTAssertEqual(suggestion.replacement, target)
+        XCTAssertEqual(suggestion.reference?.definition, "data tentang orang perseorangan yang teridentifikasi.")
+    }
+
+    @MainActor
+    func testDefinitionDebugMapperShowsNeedsReviewWithoutEvidence() throws {
+        let target = "Data Pribadi adalah informasi mengenai perusahaan."
+        let segment = makeSegment(target: target)
+        let assessment = AIConnectorDefinitionAssessment(
+            segment: segment,
+            term: "Data Pribadi",
+            statementText: "informasi mengenai perusahaan.",
+            candidate: nil,
+            candidateCount: 0,
+            detection: .explicitPattern,
+            classification: .needsReview,
+            alignment: .needsReview,
+            reason: "Pola definisi ditemukan, tetapi evidence belum tersedia.",
+            origin: .deterministic,
+            modelReviewed: false,
+            retrievalOrigin: nil,
+            semanticScore: nil,
+            requiresHumanReview: true
+        )
+
+        let suggestion = try XCTUnwrap(
+            EditorSuggestionMapper.makeDefinitionDebugSuggestions(
+                assessments: [assessment],
+                documentText: target
+            ).first
+        )
+
+        XCTAssertTrue(suggestion.isDebugOnly)
+        XCTAssertEqual(suggestion.definitionDiagnosticStatus, .needsReview)
+        XCTAssertEqual(suggestion.definitionTerm, "Data Pribadi")
+        XCTAssertNil(suggestion.reference)
+        XCTAssertEqual(suggestion.original, target)
+    }
+
+    @MainActor
+    func testDefinitionDebugMapperShowsCandidateNeedsReviewWithReference() throws {
+        let entry = makeDefinitionEntry(
+            definition: "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi."
+        )
+        let target = "Data Pribadi adalah informasi mengenai perusahaan."
+        let segment = makeSegment(target: target)
+        let candidate = AIConnectorDefinitionCandidate(
+            id: "D1",
+            match: LegalDictionaryMatch(
+                entry: entry,
+                score: 1_000,
+                rank: 1,
+                matchedDefinitionTokenCount: 3,
+                isDirectTermMatch: true,
+                retrievalOrigin: .exact
+            ),
+            statementText: "informasi mengenai perusahaan.",
+            detection: .explicitPattern
+        )
+        let assessment = makeDefinitionAssessment(
+            segment: segment,
+            statementText: candidate.statementText,
+            candidate: candidate,
+            classification: .needsReview,
+            alignment: .needsReview
+        )
+
+        let suggestion = try XCTUnwrap(
+            EditorSuggestionMapper.makeDefinitionDebugSuggestions(
+                assessments: [assessment],
+                documentText: target
+            ).first
+        )
+
+        XCTAssertEqual(suggestion.definitionDiagnosticStatus, .needsReview)
+        XCTAssertEqual(suggestion.reference?.term, "Data Pribadi")
+        XCTAssertEqual(
+            suggestion.reference?.definition,
+            "data tentang orang perseorangan yang teridentifikasi."
+        )
     }
 
     @MainActor
@@ -120,6 +244,33 @@ final class EditorSuggestionTests: XCTestCase {
             "data tentang orang perseorangan yang teridentifikasi."
         )
         XCTAssertEqual(suggestion.reference?.sourcePassageID, "passage-data-pribadi")
+        XCTAssertEqual(suggestion.definitionDiagnosticStatus, .matches)
+        XCTAssertEqual(suggestion.definitionTerm, "Data Pribadi")
+    }
+
+    func testEditorSuggestionDecodesLegacyPayloadWithoutDefinitionDiagnostics() throws {
+        let suggestion = EditorSuggestion(
+            id: UUID(),
+            sourceRange: NSRange(location: 0, length: 4),
+            original: "Teks",
+            replacement: "kata",
+            category: .grammar,
+            reason: "Perbaikan bahasa.",
+            origin: .deterministic
+        )
+        let encoded = try JSONEncoder().encode(suggestion)
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        object.removeValue(forKey: "definitionDiagnosticStatus")
+        object.removeValue(forKey: "definitionTerm")
+        let legacyData = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try JSONDecoder().decode(EditorSuggestion.self, from: legacyData)
+
+        XCTAssertEqual(decoded, suggestion)
+        XCTAssertNil(decoded.definitionDiagnosticStatus)
+        XCTAssertNil(decoded.definitionTerm)
     }
 
     @MainActor

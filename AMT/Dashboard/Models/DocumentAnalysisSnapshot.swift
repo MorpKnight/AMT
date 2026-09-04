@@ -6,7 +6,10 @@ import Foundation
 /// stores only the suggestions needed to restore the editor, together with the
 /// exact document content and analysis profile that produced them.
 struct DocumentAnalysisSnapshot: Codable, Equatable, Hashable {
-    static let currentVersion = 1
+    // Definition diagnostics now persist their alignment status and can
+    // include read-only findings without a replacement. Re-run older
+    // snapshots so the editor receives the complete diagnostic layer.
+    static let currentVersion = 2
 
     let version: Int
     let analyzedContentSHA256: String

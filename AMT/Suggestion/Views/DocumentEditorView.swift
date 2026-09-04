@@ -91,42 +91,19 @@ struct DocumentEditorView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                                 .shadow(color: .black.opacity(0.12), radius: 12, y: 3)
                         } else {
-                            HighlightedDocumentTextEditor(
-                                documentID: activeDocument.id,
-                                text: $activeDocument.content,
-                                richTextData: $activeDocument.richTextData,
-                                structuredDocument: $activeDocument.structuredDocument,
-                                zoomPercent: $editorViewModel.zoomPercent,
-                                suggestions: displayedEditorSuggestions,
-                                selectedSuggestionID: aiConnectorViewModel.selectedSuggestionID,
-                                onSelect: { id in
-                                    aiConnectorViewModel.selectSuggestion(id)
-                                },
-                                onTextEdited: {
-                                    aiConnectorViewModel.resetInputMetadata()
-                                },
-                                onAccept: { suggestion in
-                                    let delta = suggestion.replacement.utf16.count
-                                        - suggestion.original.utf16.count
-                                    aiConnectorViewModel.reconcileAfterAccept(
-                                        suggestion.id,
-                                        replacementDelta: delta
-                                    )
-                                },
-                                onDismiss: { id in
-                                    aiConnectorViewModel.dismissSuggestion(id)
-                                },
-                                formattingViewModel: editorViewModel
-                            )
-                            .frame(
-                                width: min(max(proxy.size.width - 80, 360), 920),
-                                height: max(proxy.size.height - 48, 320)
-                            )
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
-                            .shadow(color: .black.opacity(0.12), radius: 12, y: 3)
+                            editorView(for: proxy)
                         }
                     }
+                    .overlay(alignment: .topTrailing) {
+                        if presentationMode == .editing,
+                           showDefinitionDiagnostics,
+                           !aiConnectorViewModel.definitionDebugSuggestions.isEmpty {
+                            DefinitionDiagnosticsLegend()
+                                .padding(.top, 14)
+                                .padding(.trailing, 14)
+                        }
+                    }
+
                 }
             }
             .navigationTitle("")
@@ -180,15 +157,85 @@ struct DocumentEditorView: View {
         .focusedSceneValue(\.showAIConnectorDefinitionDiagnostics, $showDefinitionDiagnostics)
     }
 
-    private var displayedEditorSuggestions: [EditorSuggestion] {
-        guard showDefinitionDiagnostics else {
-            return aiConnectorViewModel.editorSuggestions
-        }
+    private var displayedDefinitionDiagnostics: [EditorSuggestion] {
+        showDefinitionDiagnostics
+            ? aiConnectorViewModel.definitionDebugSuggestions
+            : []
+    }
 
-        return EditorSuggestionMapper.merge(
-            aiConnectorViewModel.definitionDebugSuggestions
-                + aiConnectorViewModel.editorSuggestions
+    private func reconcileAcceptedSuggestion(_ suggestion: EditorSuggestion) {
+        let replacementLength = suggestion.replacement.utf16.count
+        let originalLength = suggestion.original.utf16.count
+        aiConnectorViewModel.reconcileAfterAccept(
+            suggestion.id,
+            replacementDelta: replacementLength - originalLength
         )
+    }
+
+    private func editorView(for proxy: GeometryProxy) -> some View {
+        HighlightedDocumentTextEditor(
+            documentID: activeDocument.id,
+            text: $activeDocument.content,
+            richTextData: $activeDocument.richTextData,
+            structuredDocument: $activeDocument.structuredDocument,
+            zoomPercent: $editorViewModel.zoomPercent,
+            suggestions: aiConnectorViewModel.editorSuggestions,
+            diagnosticSuggestions: displayedDefinitionDiagnostics,
+            selectedSuggestionID: aiConnectorViewModel.selectedSuggestionID,
+            onSelect: { id in
+                aiConnectorViewModel.selectSuggestion(id)
+            },
+            onTextEdited: {
+                aiConnectorViewModel.resetInputMetadata()
+            },
+            onAccept: { suggestion in
+                reconcileAcceptedSuggestion(suggestion)
+            },
+            onDismiss: { id in
+                aiConnectorViewModel.dismissSuggestion(id)
+            },
+            formattingViewModel: editorViewModel
+        )
+        .frame(
+            width: min(max(proxy.size.width - 80, 360), 920),
+            height: max(proxy.size.height - 48, 320)
+        )
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
+        .shadow(color: .black.opacity(0.12), radius: 12, y: 3)
+    }
+
+}
+
+private struct DefinitionDiagnosticsLegend: View {
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(EditorDefinitionDiagnosticStatus.allCases, id: \.self) { status in
+                Label(status.shortTitle, systemImage: status.iconName)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(tint(for: status))
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.1), lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Legenda highlight analisis definisi")
+    }
+
+    private func tint(for status: EditorDefinitionDiagnosticStatus) -> Color {
+        switch status {
+        case .matches:
+            .green
+        case .mismatch:
+            .red
+        case .needsReview:
+            .orange
+        }
     }
 }
 
