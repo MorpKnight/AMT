@@ -204,8 +204,28 @@ nonisolated struct LegalCorpusStore: Sendable {
                     + "alternatives=\(loadedAlternatives.count)/\(loadedManifest.alternativeCount), "
                     + "regulations=\(loadedRegulations.count)/\(loadedManifest.regulationCount), "
                     + "relations=\(loadedRelations.count)/\(loadedManifest.relationCount), "
-                    + "passages=\(loadedSourcePassages.count)/\(loadedManifest.sourcePassageCount)"
+                + "passages=\(loadedSourcePassages.count)/\(loadedManifest.sourcePassageCount)"
             )
+        }
+
+        if loadedManifest.sourceDatasetView == "dictionary-official" {
+            guard loadedConcepts.allSatisfy({
+                $0.sources.isEmpty && $0.sourceURLs.isEmpty
+            }), loadedTermGroups.allSatisfy({
+                $0.sourceNames.isEmpty
+            }), loadedPrimaryRecords.allSatisfy({
+                $0.primarySource == nil
+                    && $0.primarySourceRecordID == nil
+                    && $0.primarySourceURL == nil
+            }), loadedAlternatives.allSatisfy({
+                $0.source.isEmpty
+                    && $0.sourceURL == nil
+                    && $0.sourceURLs.isEmpty
+            }) else {
+                throw LegalCorpusStoreError.invalidData(
+                    "provenance discovery masih masuk ke projection dictionary-official"
+                )
+            }
         }
 
         let sortedConceptIDs = loadedConcepts.map(\.recordID).sorted()
@@ -530,8 +550,10 @@ nonisolated struct LegalCorpusStore: Sendable {
                 officialDocumentURL: evidence?.officialDocumentURL
                     ?? regulation?.officialDocumentURL
                     ?? reference?.officialDocumentURL,
-                sources: concept.sources,
-                sourceURLs: concept.sourceURLs,
+                // Discovery provenance is intentionally not a runtime-facing
+                // field in the official dictionary projection.
+                sources: [],
+                sourceURLs: [],
                 referenceID: evidence?.referenceID ?? reference?.referenceID,
                 authority: hasVerifiedEvidence ? .verified : .legacy,
                 corpusVersion: manifest.corpusVersion,

@@ -26,7 +26,7 @@ nonisolated enum LegalCorpusReviewStatus: String, Codable, Hashable, Sendable {
     var displayTitle: String {
         switch self {
         case .machineExact:
-            "Terverifikasi otomatis"
+            "Cocok persis dengan teks peraturan"
         case .machineOCRTolerantUnreviewed:
             "Cocok OCR (belum ditinjau)"
         case .humanVerified:
@@ -38,9 +38,9 @@ nonisolated enum LegalCorpusReviewStatus: String, Codable, Hashable, Sendable {
 
     var isAcceptedEvidence: Bool {
         switch self {
-        case .machineExact, .machineOCRTolerantUnreviewed, .humanVerified:
+        case .machineExact, .humanVerified:
             true
-        case .needsReview:
+        case .machineOCRTolerantUnreviewed, .needsReview:
             false
         }
     }

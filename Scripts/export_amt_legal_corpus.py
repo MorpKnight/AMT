@@ -27,6 +27,7 @@ DATASET_VIEW_LABELS = {
     "combined": "hukumonline-kamus-combined",
     "combined-deduplicated": "hukumonline-kamus-combined-deduplicated",
     "dictionary-serving": "hukumonline-kamus-dictionary-serving",
+    "dictionary-official": "lawtionary-dictionary-official",
 }
 DATASET_VIEW_ALIASES = {"dictionary-primary": "dictionary-serving"}
 ACTIONABLE_VERIFICATION_STATUSES = {
@@ -59,6 +60,46 @@ def sha256(path: Path) -> str:
 
 def sha256_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def dataset_revision_for(
+    dataset_view: str,
+    source_root: Path,
+    input_hashes: dict[str, str],
+) -> str:
+    """Return a revision tied to the selected projection's inputs.
+
+    The legacy exports retain their historical revision for compatibility.
+    The official dictionary projection is generated locally from a separate
+    deterministic build, so its manifest must not continue to advertise the
+    old serving-pack revision.
+    """
+    if dataset_view != "dictionary-official":
+        return DATASET_REVISION
+
+    coverage_path = (
+        source_root
+        / "hukumonline_kamus_hf"
+        / "audit"
+        / "dictionary_official_coverage.json"
+    )
+    if coverage_path.is_file():
+        try:
+            coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            coverage = {}
+        build_id = coverage.get("build_id") if isinstance(coverage, dict) else None
+        if isinstance(build_id, str) and re.fullmatch(r"[0-9a-f]{64}", build_id):
+            return build_id
+
+    # Keep the fallback deterministic even when a caller supplies a
+    # projection without its coverage sidecar.
+    return sha256_text(
+        json.dumps(
+            {"dataset_view": dataset_view, "inputs": input_hashes},
+            sort_keys=True,
+        )
+    )
 
 
 def dump_json(path: Path, value: Any) -> None:
@@ -207,7 +248,7 @@ def dictionary_primary_definitions(
 ) -> list[dict[str, Any]]:
     """Convert one primary projection row into one AMT concept row.
 
-    ``dictionary-serving`` is deliberately the only serving input here. A
+    A dictionary projection is deliberately the only serving input here. A
     term with an ambiguous or missing primary selection is omitted from the
     runtime dictionary rather than silently falling back to an alternative.
     The complete alternatives remain available in the dataset bundle.
@@ -223,7 +264,8 @@ def dictionary_primary_definitions(
             continue
         primary_definition_id = str(primary.get("primary_definition_id") or "")
         source_definition = definitions_by_id.get(primary_definition_id)
-        if source_definition is None:
+        primary_definition = primary.get("primary_definition")
+        if source_definition is None and not str(primary_definition or "").strip():
             raise ValueError(
                 "dictionary_primary references missing definition "
                 + primary_definition_id
@@ -256,17 +298,17 @@ def dictionary_primary_definitions(
             # source definitions for the same term from becoming search hits.
             "record_id": primary["term_group_id"],
             "term_id": primary["term_group_id"],
-            "term": primary.get("term", source_definition.get("term", "")),
-            "definition": primary.get(
-                "primary_definition",
-                source_definition.get("definition", ""),
-            ),
-            "definition_index": source_definition.get("definition_index", 1),
+            "term": primary.get("term")
+            or (source_definition or {}).get("term", ""),
+            "definition": primary_definition
+            or (source_definition or {}).get("definition", ""),
+            "definition_index": primary.get("primary_definition_index")
+            or (source_definition or {}).get("definition_index", 1),
             "references": references,
-            "sources": [primary["primary_source"]]
-            if primary.get("primary_source")
-            else [],
-            "source_urls": [source_url] if source_url else [],
+            # Discovery provenance is retained in the dataset audit views,
+            # never in the application-facing corpus pack.
+            "sources": [],
+            "source_urls": [],
             "_primary_evidence": primary.get("primary_evidence") or [],
             "_primary_is_actionable": bool(primary.get("primary_is_actionable")),
         }
@@ -283,6 +325,10 @@ def build_pack(
     dataset_view = canonical_dataset_view(dataset_view)
     if dataset_view not in DATASET_VIEW_LABELS:
         raise ValueError(f"Unsupported dataset view: {dataset_view}")
+    dictionary_projection = dataset_view in {
+        "dictionary-serving",
+        "dictionary-official",
+    }
 
     data_root = source_root / "hukumonline_kamus_hf" / "data"
     full_root = source_root / "hukumonline_kamus_hf" / "stage_4_6_full"
@@ -300,6 +346,10 @@ def build_pack(
         definitions_filename = "dictionary_primary.jsonl"
         regulations_filename = "dictionary_regulations.jsonl"
         relations_filename = "dictionary_regulation_relations.jsonl"
+    elif dataset_view == "dictionary-official":
+        definitions_filename = "dictionary_official_primary.jsonl"
+        regulations_filename = "dictionary_regulations.jsonl"
+        relations_filename = "dictionary_regulation_relations.jsonl"
     else:
         definitions_filename = "combined_definitions_deduplicated.jsonl"
         regulations_filename = "combined_regulations.jsonl"
@@ -309,9 +359,21 @@ def build_pack(
     regulations_path = data_root / regulations_filename
     relations_path = data_root / relations_filename
     dictionary_definitions_path = data_root / "dictionary_definitions.jsonl"
-    dictionary_primary_path = data_root / "dictionary_primary.jsonl"
-    dictionary_terms_path = data_root / "dictionary_terms.jsonl"
-    dictionary_alternatives_path = data_root / "dictionary_alternatives.jsonl"
+    dictionary_primary_path = data_root / (
+        "dictionary_official_primary.jsonl"
+        if dataset_view == "dictionary-official"
+        else "dictionary_primary.jsonl"
+    )
+    dictionary_terms_path = data_root / (
+        "dictionary_official_terms.jsonl"
+        if dataset_view == "dictionary-official"
+        else "dictionary_terms.jsonl"
+    )
+    dictionary_alternatives_path = data_root / (
+        "dictionary_official_alternatives.jsonl"
+        if dataset_view == "dictionary-official"
+        else "dictionary_alternatives.jsonl"
+    )
     links_path = full_data / "definition_passage_links.jsonl"
     passages_path = full_data / "regulation_passages.jsonl"
     documents_path = full_data / "regulation_documents.jsonl"
@@ -324,7 +386,7 @@ def build_pack(
         passages_path,
         documents_path,
     ]
-    if dataset_view == "dictionary-serving":
+    if dictionary_projection:
         required.extend(
             [
                 dictionary_definitions_path,
@@ -347,7 +409,7 @@ def build_pack(
     passages = {row["passage_id"]: row for row in read_jsonl(passages_path)}
     documents = {row["document_id"]: row for row in read_jsonl(documents_path)}
     regulation_by_id = {row["reference_id"]: row for row in regulations}
-    if dataset_view == "dictionary-serving":
+    if dictionary_projection:
         dictionary_primary_rows = read_jsonl(dictionary_primary_path)
         dictionary_term_rows = read_jsonl(dictionary_terms_path)
         dictionary_alternative_rows = read_jsonl(dictionary_alternatives_path)
@@ -357,7 +419,7 @@ def build_pack(
             regulation_by_id,
         )
     links_by_record: dict[str, list[dict[str, Any]]] = {}
-    if dataset_view != "dictionary-serving":
+    if not dictionary_projection:
         for link in links:
             links_by_record.setdefault(link["record_id"], []).append(link)
 
@@ -366,7 +428,7 @@ def build_pack(
     for definition in sorted(definitions, key=lambda row: row["record_id"]):
         evidences: list[dict[str, Any]] = []
         actionable_evidences: list[dict[str, Any]] = []
-        if dataset_view == "dictionary-serving":
+        if dictionary_projection:
             source_links = [
                 dictionary_evidence_link(evidence)
                 for evidence in definition.get("_primary_evidence") or []
@@ -378,7 +440,7 @@ def build_pack(
                 for source_record_id in definition_source_record_ids(definition)
                 for link in links_by_record.get(source_record_id, [])
             ]
-        if dataset_view == "dictionary-serving":
+        if dictionary_projection:
             # Preserve the serving view's evidence order. It is meaningful
             # for deterministic primary evidence selection when a definition
             # has more than one official passage edge.
@@ -407,7 +469,7 @@ def build_pack(
             # The dictionary serving view carries both exact and OCR-tolerant
             # evidence. The latter remains explicitly labelled as unreviewed.
             if (
-                dataset_view != "dictionary-serving"
+                not dictionary_projection
                 and link.get("link_type") != "normalized_exact_text"
             ):
                 continue
@@ -419,16 +481,18 @@ def build_pack(
             evidence = source_evidence(link, passage, regulation)
             evidences.append(evidence)
             serving_evidence_is_actionable = (
-                dataset_view == "dictionary-serving"
+                dictionary_projection
                 and definition.get("_primary_is_actionable") is True
                 and regulation.get("official_status_code") == "in_force"
                 and regulation.get("official_detail_url")
                 and regulation.get("official_document_url")
+                and link.get("verification_status")
+                in {"machine_exact_unreviewed", "human_verified"}
             )
             if (
                 serving_evidence_is_actionable
                 or (
-                    dataset_view != "dictionary-serving"
+                    not dictionary_projection
                     and is_actionable(link, passage, regulation, document)
                 )
             ):
@@ -441,7 +505,7 @@ def build_pack(
                     "reference_id": link["reference_id"],
                     "article_locator": (
                         passage.get("article_number")
-                        if dataset_view == "dictionary-serving"
+                        if dictionary_projection
                         else passage.get("article_number") or link.get("article_locator")
                     ),
                     "page_start": passage.get("pdf_page_start"),
@@ -502,7 +566,7 @@ def build_pack(
             }
         )
 
-    if dataset_view == "dictionary-serving":
+    if dictionary_projection:
         # Alternatives are not search concepts, but their official passage
         # evidence must remain available for the contextual provenance UI.
         # They intentionally do not add a primary concept ID to the passage.
@@ -531,7 +595,7 @@ def build_pack(
                 )
 
     selected_regulations = []
-    if dataset_view == "dictionary-serving":
+    if dictionary_projection:
         # The serving regulation view is itself the curated provenance
         # boundary. Keep every node in that view so alternatives can resolve
         # their source context even when a node is not referenced by a primary
@@ -615,10 +679,11 @@ def build_pack(
             row.get("definition_id", ""),
         )
     )
+    dataset_revision = dataset_revision_for(dataset_view, source_root, inputs)
     manifest = {
         "schema_version": "amt-legal-corpus-v2",
-        "corpus_version": f"{DATASET_VIEW_LABELS[dataset_view]}@{DATASET_REVISION}",
-        "source_dataset_revision": DATASET_REVISION,
+        "corpus_version": f"{DATASET_VIEW_LABELS[dataset_view]}@{dataset_revision}",
+        "source_dataset_revision": dataset_revision,
         "source_dataset_view": dataset_view,
         "source_input_sha256": inputs,
         "concept_count": len(concepts),

@@ -29,6 +29,8 @@ nonisolated struct LegalDictionaryCorpusSummary: Hashable, Sendable {
             "Korpus istilah utama"
         case "dictionary-serving":
             "Korpus kamus terkurasi"
+        case "dictionary-official":
+            "Kamus dengan rujukan resmi"
         case "combined":
             "Korpus gabungan"
         case let .some(view):
@@ -173,17 +175,17 @@ nonisolated struct DefinitionItem: Identifiable, Hashable, Sendable {
     var provenanceLabel: String {
         switch attributionStatus {
         case "official_evidence":
-            "Evidence resmi"
+            "Ditemukan dalam teks peraturan"
         case "explicit_definition_source", "explicit_reference":
-            "Rujukan eksplisit"
+            "Rujukan resmi"
         case "page_related_only", "page_related_reference":
-            "Kaitan halaman"
+            "Konteks regulasi"
         case "unresolved_only", "unresolved_reference":
-            "Referensi belum dipetakan"
+            "Rujukan belum terverifikasi"
         case "single_page_reference", "source_page_single_reference":
-            "Rujukan halaman"
+            "Konteks halaman"
         case "no_reference":
-            "Belum ada rujukan"
+            "Belum ada rujukan resmi"
         default:
             role == .primary ? "Definisi utama" : "Status sumber belum diketahui"
         }

@@ -220,35 +220,11 @@ struct DictionaryDetailView: View {
                 contextualAlternatives(for: entry)
             }
 
-            if !def.sources.isEmpty || !def.sourceURLs.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Sumber kamus")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(sectionHeaderColor)
-
-                    if !def.sources.isEmpty {
-                        Label(
-                            def.sources.joined(separator: " • "),
-                            systemImage: "books.vertical"
-                        )
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                    }
-
-                    ForEach(def.sourceURLs, id: \.self) { sourceURL in
-                        Link(destination: sourceURL) {
-                            Label("Buka halaman sumber", systemImage: "arrow.up.right.square")
-                                .font(.system(size: 11))
-                        }
-                    }
-                }
-                .padding(.horizontal, 4)
-            }
-
-            // Inner "Referensi Hukum" Card
+            // Official reference card. Discovery-source provenance is kept in
+            // the audit dataset, but is deliberately not shown in Dictionary.
             if let ref = def.reference {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(ref.isDefinitionAuthority ? "Referensi Hukum" : "Referensi terkait")
+                    Text(ref.isDefinitionAuthority ? "Dasar hukum" : "Regulasi terkait")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(sectionHeaderColor)
 
@@ -371,7 +347,7 @@ struct DictionaryDetailView: View {
                 } label: {
                     HStack(spacing: 8) {
                         HStack(spacing: 6) {
-                            Text("Riwayat & status sumber")
+                            Text("Status dan riwayat regulasi")
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(sectionHeaderColor)
 
@@ -389,7 +365,7 @@ struct DictionaryDetailView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Riwayat dan status sumber")
+                .accessibilityLabel("Status dan riwayat regulasi")
                 .accessibilityValue(
                     "\(events.count) catatan, \(isExpanded ? "terbuka" : "tertutup")"
                 )
@@ -438,7 +414,7 @@ struct DictionaryDetailView: View {
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundStyle(sectionHeaderColor)
 
-                            Text("· \(entry.contextualAlternatives.count) sumber")
+                            Text("· \(entry.contextualAlternatives.count) regulasi")
                                 .font(.system(size: 11))
                                 .foregroundStyle(.secondary)
                         }
@@ -454,11 +430,11 @@ struct DictionaryDetailView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Konteks definisi lain")
                 .accessibilityValue(
-                    "\(entry.contextualAlternatives.count) sumber, \(isExpanded ? "terbuka" : "tertutup")"
+                    "\(entry.contextualAlternatives.count) regulasi, \(isExpanded ? "terbuka" : "tertutup")"
                 )
                 .accessibilityHint("Klik untuk menampilkan atau menyembunyikan definisi terkait")
 
-                Text("Variasi sumber ditampilkan terpisah dari definisi utama.")
+                Text("Definisi dari regulasi lain ditampilkan sebagai konteks.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
 
@@ -507,17 +483,9 @@ struct DictionaryDetailView: View {
             .frame(width: 8)
 
             VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(alternative.provenanceLabel)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.primary)
-
-                    if let source = alternative.sources.first {
-                        Text(source)
-                            .font(.system(size: 10.5))
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                Text(alternative.provenanceLabel)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.primary)
 
                 Text(alternative.text)
                     .font(.system(size: 12))
@@ -575,7 +543,7 @@ struct DictionaryDetailView: View {
             events.append(
                 DefinitionHistoryEvent(
                     id: "reference-\(index)-\(reference.referenceID ?? reference.lawName)",
-                    label: referenceStatus(for: reference) ?? "Sumber definisi",
+                    label: referenceStatus(for: reference) ?? "Dasar hukum",
                     sourceName: reference.lawName,
                     metadata: referenceMetadata(for: reference),
                     explanation: nil,

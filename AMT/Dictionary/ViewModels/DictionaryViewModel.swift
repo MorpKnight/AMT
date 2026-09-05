@@ -159,8 +159,10 @@ final class DictionaryViewModel {
                 text: entry.definition,
                 reference: primaryReference,
                 additionalReferences: Array(resolvedReferences.dropFirst()),
-                sources: entry.sources,
-                sourceURLs: entry.sourceURLs,
+                // Discovery provenance is retained in the dataset audit
+                // views, but never exposed through the application model.
+                sources: [],
+                sourceURLs: [],
                 role: .primary,
                 attributionStatus: dictionaryStore
                     .primaryRecord(forTerm: canonicalTerm)?
@@ -180,16 +182,15 @@ final class DictionaryViewModel {
                 let reference = resolvedReferences.first {
                     $0.isDefinitionAuthority
                 } ?? resolvedReferences.first
-                let alternativeSourceURLs = alternative.sourceURLs.isEmpty
-                    ? alternative.sourceURL.map { [$0] } ?? []
-                    : alternative.sourceURLs
                 return DefinitionItem(
                     id: index + 1,
                     text: alternative.definition,
                     reference: reference,
                     additionalReferences: Array(resolvedReferences.dropFirst()),
-                    sources: alternative.source.isEmpty ? [] : [alternative.source],
-                    sourceURLs: alternativeSourceURLs,
+                    // Official-first alternatives are identified by their
+                    // regulation reference, not by the discovery website.
+                    sources: [],
+                    sourceURLs: [],
                     role: .alternative,
                     attributionStatus: alternative.attributionStatus,
                     selectionStatus: alternative.selectionStatus,

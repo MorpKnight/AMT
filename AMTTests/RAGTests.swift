@@ -62,10 +62,10 @@ final class RAGTests: XCTestCase {
             1
         )
         XCTAssertEqual(results.first?.referenceID, "peraturan.go.id:uu-no-27-tahun-2022")
-        // The serving view marks the current primary evidence as actionable;
-        // the UI still exposes that its OCR match has not been human-reviewed.
-        XCTAssertEqual(results.first?.authority, .verified)
-        XCTAssertTrue(results.first?.isActionable == true)
+        // The official definition is readable, but its current match is OCR
+        // tolerant and therefore remains non-actionable until review.
+        XCTAssertEqual(results.first?.authority, .legacy)
+        XCTAssertFalse(results.first?.isActionable == true)
     }
 
     func testLexicalDefinitionQueryFindsDataPribadi() async {
