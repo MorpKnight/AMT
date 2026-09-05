@@ -12,8 +12,10 @@ struct DictionaryDetailView: View {
     @Bindable var viewModel: DictionaryViewModel
     @Environment(\.colorScheme) private var colorScheme
     @State private var historyExpansionByKey: [String: Bool] = [:]
+    @State private var alternativesExpansionByKey: [String: Bool] = [:]
 
     private let longHistoryThreshold = 3
+    private let longAlternativesThreshold = 2
 
     // MARK: - Adaptive Theme Colors
     private var cardBackground: Color {
@@ -192,7 +194,7 @@ struct DictionaryDetailView: View {
                         .foregroundStyle(bannerColor)
                 }
 
-                Text("Definisi")
+                Text(def.role == .primary ? "Definisi utama" : "Definisi")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.white)
 
@@ -420,37 +422,65 @@ struct DictionaryDetailView: View {
     @ViewBuilder
     private func contextualAlternatives(for entry: LegalGlossaryEntry) -> some View {
         if !entry.contextualAlternatives.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 6) {
-                    Text("Konteks definisi lain")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(sectionHeaderColor)
+            let alternativesKey = alternativesKey(for: entry)
+            let isExpanded = alternativesExpansionByKey[alternativesKey]
+                ?? (entry.contextualAlternatives.count <= longAlternativesThreshold)
 
-                    Text("\(entry.contextualAlternatives.count)")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.primary.opacity(0.06))
-                        .clipShape(Capsule())
+            VStack(alignment: .leading, spacing: 8) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        alternativesExpansionByKey[alternativesKey] = !isExpanded
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        HStack(spacing: 6) {
+                            Text("Konteks definisi lain")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(sectionHeaderColor)
+
+                            Text("· \(entry.contextualAlternatives.count) sumber")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer(minLength: 12)
+
+                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Konteks definisi lain")
+                .accessibilityValue(
+                    "\(entry.contextualAlternatives.count) sumber, \(isExpanded ? "terbuka" : "tertutup")"
+                )
+                .accessibilityHint("Klik untuk menampilkan atau menyembunyikan definisi terkait")
 
                 Text("Variasi sumber ditampilkan terpisah dari definisi utama.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
 
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(entry.contextualAlternatives.indices, id: \.self) { index in
-                        contextualAlternativeRow(
-                            entry.contextualAlternatives[index],
-                            isLast: index == entry.contextualAlternatives.count - 1
-                        )
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(entry.contextualAlternatives.indices, id: \.self) { index in
+                            contextualAlternativeRow(
+                                entry.contextualAlternatives[index],
+                                isLast: index == entry.contextualAlternatives.count - 1
+                            )
+                        }
                     }
+                    .transition(.opacity)
                 }
             }
             .padding(.horizontal, 4)
             .padding(.top, 2)
         }
+    }
+
+    private func alternativesKey(for entry: LegalGlossaryEntry) -> String {
+        entry.id
     }
 
     private func contextualAlternativeRow(
