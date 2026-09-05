@@ -11,12 +11,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import struct
+import unicodedata
 from pathlib import Path
 from typing import Any, Iterable
 
 
-DATASET_REVISION = "78a2ab626c092662b0441c95904c353b2487b216"
+DATASET_REVISION = "17a6fe91aad1b9451ecfa49d086ad086c44e6120"
 EMBEDDING_MODEL = "intfloat/multilingual-e5-small"
 EMBEDDING_REVISION = "614241f622f53c4eeff9890bdc4f31cfecc418b3"
 EMBEDDING_DIMENSION = 384
@@ -24,7 +26,23 @@ DATASET_VIEW_LABELS = {
     "hukumonline": "hukumonline-kamus",
     "combined": "hukumonline-kamus-combined",
     "combined-deduplicated": "hukumonline-kamus-combined-deduplicated",
+    "dictionary-serving": "hukumonline-kamus-dictionary-serving",
+    "dictionary-official": "lawtionary-dictionary-official",
 }
+DATASET_VIEW_ALIASES = {"dictionary-primary": "dictionary-serving"}
+ACTIONABLE_VERIFICATION_STATUSES = {
+    "machine_exact_unreviewed",
+    "machine_ocr_tolerant_unreviewed",
+    "human_verified",
+}
+DICTIONARY_EVIDENCE_LINK_TYPES = {
+    "normalized_exact_text",
+    "local_passage_ocr_tolerant",
+}
+
+
+def canonical_dataset_view(dataset_view: str) -> str:
+    return DATASET_VIEW_ALIASES.get(dataset_view, dataset_view)
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -42,6 +60,46 @@ def sha256(path: Path) -> str:
 
 def sha256_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def dataset_revision_for(
+    dataset_view: str,
+    source_root: Path,
+    input_hashes: dict[str, str],
+) -> str:
+    """Return a revision tied to the selected projection's inputs.
+
+    The legacy exports retain their historical revision for compatibility.
+    The official dictionary projection is generated locally from a separate
+    deterministic build, so its manifest must not continue to advertise the
+    old serving-pack revision.
+    """
+    if dataset_view != "dictionary-official":
+        return DATASET_REVISION
+
+    coverage_path = (
+        source_root
+        / "hukumonline_kamus_hf"
+        / "audit"
+        / "dictionary_official_coverage.json"
+    )
+    if coverage_path.is_file():
+        try:
+            coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            coverage = {}
+        build_id = coverage.get("build_id") if isinstance(coverage, dict) else None
+        if isinstance(build_id, str) and re.fullmatch(r"[0-9a-f]{64}", build_id):
+            return build_id
+
+    # Keep the fallback deterministic even when a caller supplies a
+    # projection without its coverage sidecar.
+    return sha256_text(
+        json.dumps(
+            {"dataset_view": dataset_view, "inputs": input_hashes},
+            sort_keys=True,
+        )
+    )
 
 
 def dump_json(path: Path, value: Any) -> None:
@@ -86,10 +144,10 @@ def source_evidence(
     passage: dict[str, Any],
     regulation: dict[str, Any],
 ) -> dict[str, Any]:
-    return {
+    evidence = {
         "passage_id": link["passage_id"],
         "reference_id": link["reference_id"],
-        "article_locator": passage.get("article_number"),
+        "article_locator": passage.get("article_number") or link.get("article_locator"),
         "page_start": link.get("evidence_page_start") or passage.get("pdf_page_start"),
         "page_end": link.get("evidence_page_end") or passage.get("pdf_page_end"),
         "matched_definition_text": link.get("matched_definition_text", ""),
@@ -97,6 +155,34 @@ def source_evidence(
         "official_document_url": regulation.get("official_document_url"),
         "regulation_title": regulation.get("official_title") or "",
         "verification_status": link.get("verification_status") or "",
+    }
+    for key in ("evidence_id", "edge_id", "match_method"):
+        if link.get(key):
+            evidence[key] = link[key]
+    return evidence
+
+
+def dictionary_evidence_link(evidence: dict[str, Any]) -> dict[str, Any]:
+    """Adapt a serving-view evidence row to the exporter link shape."""
+    match_method = evidence.get("match_method")
+    return {
+        "definition_passage_link_id": evidence.get("evidence_id")
+        or evidence.get("passage_id"),
+        "passage_id": evidence.get("passage_id"),
+        "reference_id": evidence.get("regulation_id"),
+        "article_locator": evidence.get("article_locator"),
+        "evidence_page_start": evidence.get("page_start"),
+        "evidence_page_end": evidence.get("page_end"),
+        "matched_definition_text": evidence.get("matched_definition_text"),
+        "verification_status": evidence.get("verification_status"),
+        "match_method": match_method,
+        "link_type": (
+            "normalized_exact_text"
+            if match_method == "nfkc_casefold_punctuation_insensitive_substring"
+            else "local_passage_ocr_tolerant"
+        ),
+        "evidence_id": evidence.get("evidence_id"),
+        "edge_id": evidence.get("edge_id"),
     }
 
 
@@ -108,9 +194,9 @@ def is_actionable(
 ) -> bool:
     if passage is None or regulation is None or document is None:
         return False
-    if link.get("link_type") != "normalized_exact_text":
+    if link.get("link_type") not in DICTIONARY_EVIDENCE_LINK_TYPES:
         return False
-    if link.get("verification_status") != "machine_exact_unreviewed":
+    if link.get("verification_status") not in ACTIONABLE_VERIFICATION_STATUSES:
         return False
     if regulation.get("official_status_code") != "in_force":
         return False
@@ -146,13 +232,103 @@ def definition_source_record_ids(definition: dict[str, Any]) -> list[str]:
     return [str(definition["record_id"])]
 
 
+def embedding_lookup_key(row: dict[str, Any]) -> tuple[str, str]:
+    """Build a stable text key for reusing an equivalent embedding row."""
+    def normalize(value: Any) -> str:
+        text = unicodedata.normalize("NFKC", str(value or ""))
+        return re.sub(r"\s+", " ", text).strip().casefold()
+
+    return normalize(row.get("term")), normalize(row.get("definition"))
+
+
+def dictionary_primary_definitions(
+    primary_rows: list[dict[str, Any]],
+    definition_rows: list[dict[str, Any]],
+    regulation_by_id: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Convert one primary projection row into one AMT concept row.
+
+    A dictionary projection is deliberately the only serving input here. A
+    term with an ambiguous or missing primary selection is omitted from the
+    runtime dictionary rather than silently falling back to an alternative.
+    The complete alternatives remain available in the dataset bundle.
+    """
+    definitions_by_id = {
+        str(row.get("definition_id")): row
+        for row in definition_rows
+        if row.get("definition_id")
+    }
+    concepts: list[dict[str, Any]] = []
+    for primary in primary_rows:
+        if not primary.get("primary_available"):
+            continue
+        primary_definition_id = str(primary.get("primary_definition_id") or "")
+        source_definition = definitions_by_id.get(primary_definition_id)
+        primary_definition = primary.get("primary_definition")
+        if source_definition is None and not str(primary_definition or "").strip():
+            raise ValueError(
+                "dictionary_primary references missing definition "
+                + primary_definition_id
+            )
+
+        references: list[dict[str, Any]] = []
+        for reference_id in primary.get("primary_reference_ids") or []:
+            reference_id = str(reference_id)
+            regulation = regulation_by_id.get(reference_id)
+            if regulation is None:
+                raise ValueError(
+                    "dictionary_primary references missing regulation "
+                    + reference_id
+                )
+            references.append(
+                {
+                    "reference_id": reference_id,
+                    "display_name": regulation.get("reference_name", ""),
+                    "official_detail_url": regulation.get("official_detail_url"),
+                    "official_document_url": regulation.get("official_document_url"),
+                    "official_title": regulation.get("official_title", ""),
+                    "official_status": regulation.get("official_status_raw", ""),
+                    "official_status_code": regulation.get("official_status_code", ""),
+                }
+            )
+
+        source_url = primary.get("primary_source_url")
+        return_row = {
+            # The term group is the runtime identity.  This prevents multiple
+            # source definitions for the same term from becoming search hits.
+            "record_id": primary["term_group_id"],
+            "term_id": primary["term_group_id"],
+            "term": primary.get("term")
+            or (source_definition or {}).get("term", ""),
+            "definition": primary_definition
+            or (source_definition or {}).get("definition", ""),
+            "definition_index": primary.get("primary_definition_index")
+            or (source_definition or {}).get("definition_index", 1),
+            "references": references,
+            # Discovery provenance is retained in the dataset audit views,
+            # never in the application-facing corpus pack.
+            "sources": [],
+            "source_urls": [],
+            "_primary_evidence": primary.get("primary_evidence") or [],
+            "_primary_is_actionable": bool(primary.get("primary_is_actionable")),
+        }
+        concepts.append(return_row)
+
+    return concepts
+
+
 def build_pack(
     source_root: Path,
     output_root: Path,
     dataset_view: str = "hukumonline",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    dataset_view = canonical_dataset_view(dataset_view)
     if dataset_view not in DATASET_VIEW_LABELS:
         raise ValueError(f"Unsupported dataset view: {dataset_view}")
+    dictionary_projection = dataset_view in {
+        "dictionary-serving",
+        "dictionary-official",
+    }
 
     data_root = source_root / "hukumonline_kamus_hf" / "data"
     full_root = source_root / "hukumonline_kamus_hf" / "stage_4_6_full"
@@ -166,6 +342,14 @@ def build_pack(
         definitions_filename = "combined_definitions.jsonl"
         regulations_filename = "combined_regulations.jsonl"
         relations_filename = "combined_regulation_relations.jsonl"
+    elif dataset_view == "dictionary-serving":
+        definitions_filename = "dictionary_primary.jsonl"
+        regulations_filename = "dictionary_regulations.jsonl"
+        relations_filename = "dictionary_regulation_relations.jsonl"
+    elif dataset_view == "dictionary-official":
+        definitions_filename = "dictionary_official_primary.jsonl"
+        regulations_filename = "dictionary_regulations.jsonl"
+        relations_filename = "dictionary_regulation_relations.jsonl"
     else:
         definitions_filename = "combined_definitions_deduplicated.jsonl"
         regulations_filename = "combined_regulations.jsonl"
@@ -174,6 +358,22 @@ def build_pack(
     definitions_path = data_root / definitions_filename
     regulations_path = data_root / regulations_filename
     relations_path = data_root / relations_filename
+    dictionary_definitions_path = data_root / "dictionary_definitions.jsonl"
+    dictionary_primary_path = data_root / (
+        "dictionary_official_primary.jsonl"
+        if dataset_view == "dictionary-official"
+        else "dictionary_primary.jsonl"
+    )
+    dictionary_terms_path = data_root / (
+        "dictionary_official_terms.jsonl"
+        if dataset_view == "dictionary-official"
+        else "dictionary_terms.jsonl"
+    )
+    dictionary_alternatives_path = data_root / (
+        "dictionary_official_alternatives.jsonl"
+        if dataset_view == "dictionary-official"
+        else "dictionary_alternatives.jsonl"
+    )
     links_path = full_data / "definition_passage_links.jsonl"
     passages_path = full_data / "regulation_passages.jsonl"
     documents_path = full_data / "regulation_documents.jsonl"
@@ -186,6 +386,15 @@ def build_pack(
         passages_path,
         documents_path,
     ]
+    if dictionary_projection:
+        required.extend(
+            [
+                dictionary_definitions_path,
+                dictionary_primary_path,
+                dictionary_terms_path,
+                dictionary_alternatives_path,
+            ]
+        )
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         raise FileNotFoundError("Missing corpus inputs: " + ", ".join(missing))
@@ -193,38 +402,76 @@ def build_pack(
     definitions = read_jsonl(definitions_path)
     regulations = read_jsonl(regulations_path)
     relations = read_jsonl(relations_path)
+    dictionary_primary_rows: list[dict[str, Any]] = []
+    dictionary_term_rows: list[dict[str, Any]] = []
+    dictionary_alternative_rows: list[dict[str, Any]] = []
     links = read_jsonl(links_path)
     passages = {row["passage_id"]: row for row in read_jsonl(passages_path)}
     documents = {row["document_id"]: row for row in read_jsonl(documents_path)}
     regulation_by_id = {row["reference_id"]: row for row in regulations}
+    if dictionary_projection:
+        dictionary_primary_rows = read_jsonl(dictionary_primary_path)
+        dictionary_term_rows = read_jsonl(dictionary_terms_path)
+        dictionary_alternative_rows = read_jsonl(dictionary_alternatives_path)
+        definitions = dictionary_primary_definitions(
+            dictionary_primary_rows,
+            read_jsonl(dictionary_definitions_path),
+            regulation_by_id,
+        )
     links_by_record: dict[str, list[dict[str, Any]]] = {}
-    for link in links:
-        links_by_record.setdefault(link["record_id"], []).append(link)
+    if not dictionary_projection:
+        for link in links:
+            links_by_record.setdefault(link["record_id"], []).append(link)
 
     source_passages: dict[str, dict[str, Any]] = {}
     concepts: list[dict[str, Any]] = []
     for definition in sorted(definitions, key=lambda row: row["record_id"]):
         evidences: list[dict[str, Any]] = []
         actionable_evidences: list[dict[str, Any]] = []
-        source_links = [
-            link
-            for source_record_id in definition_source_record_ids(definition)
-            for link in links_by_record.get(source_record_id, [])
-        ]
-        unique_links = {
-            str(link.get("definition_passage_link_id") or link.get("passage_id")): link
-            for link in source_links
-        }
-        for link in sorted(
-            unique_links.values(),
-            key=lambda row: (
-                row["passage_id"],
-                row.get("definition_passage_link_id", ""),
-            ),
-        ):
-            # Only exact definition links are bundled. This keeps the small
-            # source_passages file aligned with every evidence foreign key.
-            if link.get("link_type") != "normalized_exact_text":
+        if dictionary_projection:
+            source_links = [
+                dictionary_evidence_link(evidence)
+                for evidence in definition.get("_primary_evidence") or []
+                if evidence.get("passage_id") and evidence.get("regulation_id")
+            ]
+        else:
+            source_links = [
+                link
+                for source_record_id in definition_source_record_ids(definition)
+                for link in links_by_record.get(source_record_id, [])
+            ]
+        if dictionary_projection:
+            # Preserve the serving view's evidence order. It is meaningful
+            # for deterministic primary evidence selection when a definition
+            # has more than one official passage edge.
+            seen_link_ids: set[str] = set()
+            unique_links: list[dict[str, Any]] = []
+            for link in source_links:
+                link_id = str(
+                    link.get("definition_passage_link_id") or link.get("passage_id")
+                )
+                if link_id in seen_link_ids:
+                    continue
+                seen_link_ids.add(link_id)
+                unique_links.append(link)
+        else:
+            unique_links = sorted(
+                {
+                    str(link.get("definition_passage_link_id") or link.get("passage_id")): link
+                    for link in source_links
+                }.values(),
+                key=lambda row: (
+                    row["passage_id"],
+                    row.get("definition_passage_link_id", ""),
+                ),
+            )
+        for link in unique_links:
+            # The dictionary serving view carries both exact and OCR-tolerant
+            # evidence. The latter remains explicitly labelled as unreviewed.
+            if (
+                not dictionary_projection
+                and link.get("link_type") != "normalized_exact_text"
+            ):
                 continue
             passage = passages.get(link["passage_id"])
             regulation = regulation_by_id.get(link["reference_id"])
@@ -233,7 +480,22 @@ def build_pack(
                 continue
             evidence = source_evidence(link, passage, regulation)
             evidences.append(evidence)
-            if is_actionable(link, passage, regulation, document):
+            serving_evidence_is_actionable = (
+                dictionary_projection
+                and definition.get("_primary_is_actionable") is True
+                and regulation.get("official_status_code") == "in_force"
+                and regulation.get("official_detail_url")
+                and regulation.get("official_document_url")
+                and link.get("verification_status")
+                in {"machine_exact_unreviewed", "human_verified"}
+            )
+            if (
+                serving_evidence_is_actionable
+                or (
+                    not dictionary_projection
+                    and is_actionable(link, passage, regulation, document)
+                )
+            ):
                 actionable_evidences.append(evidence)
             source_passage_id = link["passage_id"]
             source_passages.setdefault(
@@ -241,10 +503,15 @@ def build_pack(
                 {
                     "passage_id": source_passage_id,
                     "reference_id": link["reference_id"],
-                    "article_locator": passage.get("article_number"),
+                    "article_locator": (
+                        passage.get("article_number")
+                        if dictionary_projection
+                        else passage.get("article_number") or link.get("article_locator")
+                    ),
                     "page_start": passage.get("pdf_page_start"),
                     "page_end": passage.get("pdf_page_end"),
-                    "text": passage.get("text_clean", ""),
+                    "text": passage.get("text_clean")
+                    or passage.get("text_raw", ""),
                     "official_document_url": regulation.get("official_document_url"),
                     "concept_ids": [],
                 },
@@ -299,18 +566,53 @@ def build_pack(
             }
         )
 
+    if dictionary_projection:
+        # Alternatives are not search concepts, but their official passage
+        # evidence must remain available for the contextual provenance UI.
+        # They intentionally do not add a primary concept ID to the passage.
+        for alternative in dictionary_alternative_rows:
+            for raw_evidence in alternative.get("evidence") or []:
+                link = dictionary_evidence_link(raw_evidence)
+                passage = passages.get(link.get("passage_id"))
+                regulation = regulation_by_id.get(link.get("reference_id"))
+                if passage is None or regulation is None:
+                    continue
+                source_passages.setdefault(
+                    link["passage_id"],
+                    {
+                        "passage_id": link["passage_id"],
+                        "reference_id": link["reference_id"],
+                        "article_locator": passage.get("article_number"),
+                        "page_start": passage.get("pdf_page_start"),
+                        "page_end": passage.get("pdf_page_end"),
+                        "text": passage.get("text_clean")
+                        or passage.get("text_raw", ""),
+                        "official_document_url": regulation.get(
+                            "official_document_url"
+                        ),
+                        "concept_ids": [],
+                    },
+                )
+
     selected_regulations = []
-    used_reference_ids = {
-        evidence["reference_id"]
-        for concept in concepts
-        for evidence in concept["evidence"]
-    }
-    used_reference_ids.update(
-        reference["reference_id"]
-        for concept in concepts
-        for reference in concept["references"]
-        if reference.get("reference_id") in regulation_by_id
-    )
+    if dictionary_projection:
+        # The serving regulation view is itself the curated provenance
+        # boundary. Keep every node in that view so alternatives can resolve
+        # their source context even when a node is not referenced by a primary
+        # search result.
+        used_reference_ids = set(regulation_by_id)
+    else:
+        used_reference_ids = {
+            evidence["reference_id"]
+            for concept in concepts
+            for evidence in concept["evidence"]
+        }
+        used_reference_ids.update(
+            reference["reference_id"]
+            for concept in concepts
+            for reference in concept["references"]
+            if reference.get("reference_id") in regulation_by_id
+        )
 
     # Relations are useful for a regulation already represented by evidence,
     # but they must never introduce a dangling foreign key. Include a related
@@ -365,13 +667,23 @@ def build_pack(
     ]
 
     inputs = {path.name: sha256(path) for path in required}
+    concepts.sort(key=lambda row: row["record_id"])
     concept_order_sha256 = sha256_text(
         "\n".join(row["record_id"] for row in concepts)
     )
+    dictionary_primary_rows.sort(key=lambda row: row.get("term_group_id", ""))
+    dictionary_term_rows.sort(key=lambda row: row.get("term_group_id", ""))
+    dictionary_alternative_rows.sort(
+        key=lambda row: (
+            row.get("term_group_id", ""),
+            row.get("definition_id", ""),
+        )
+    )
+    dataset_revision = dataset_revision_for(dataset_view, source_root, inputs)
     manifest = {
-        "schema_version": "amt-legal-corpus-v1",
-        "corpus_version": f"{DATASET_VIEW_LABELS[dataset_view]}@{DATASET_REVISION}",
-        "source_dataset_revision": DATASET_REVISION,
+        "schema_version": "amt-legal-corpus-v2",
+        "corpus_version": f"{DATASET_VIEW_LABELS[dataset_view]}@{dataset_revision}",
+        "source_dataset_revision": dataset_revision,
         "source_dataset_view": dataset_view,
         "source_input_sha256": inputs,
         "concept_count": len(concepts),
@@ -379,6 +691,8 @@ def build_pack(
         "relation_count": len(selected_relations),
         "source_passage_count": len(source_passages),
         "actionable_concept_count": sum(1 for concept in concepts if concept["actionable"]),
+        "term_group_count": len(dictionary_term_rows),
+        "alternative_count": len(dictionary_alternative_rows),
         "embedding": {
             "model": EMBEDDING_MODEL,
             "revision": EMBEDDING_REVISION,
@@ -406,17 +720,22 @@ def build_pack(
             "relations": "relations.json",
             "source_passages": "source_passages.json",
             "embeddings": "definition_embeddings.f16",
+            "dictionary_primary": "dictionary_primary.json",
+            "dictionary_terms": "dictionary_terms.json",
+            "dictionary_alternatives": "dictionary_alternatives.json",
         },
     }
 
     output_root.mkdir(parents=True, exist_ok=True)
     dump_json(output_root / "concepts.json", concepts)
+    dump_json(output_root / "dictionary_primary.json", dictionary_primary_rows)
+    dump_json(output_root / "dictionary_terms.json", dictionary_term_rows)
+    dump_json(output_root / "dictionary_alternatives.json", dictionary_alternative_rows)
     dump_json(output_root / "regulations.json", selected_regulations)
     dump_json(output_root / "relations.json", selected_relations)
     for passage in source_passages.values():
         passage["concept_ids"] = sorted(set(passage["concept_ids"]))
 
-    concepts.sort(key=lambda row: row["record_id"])
     dump_json(
         output_root / "source_passages.json",
         sorted(source_passages.values(), key=lambda row: row["passage_id"]),
@@ -446,6 +765,73 @@ def write_embeddings(concepts: list[dict[str, Any]], output_root: Path, model_na
     atomic_replace(output_root / "definition_embeddings.f16", payload)
 
 
+def write_reused_embeddings(
+    concepts: list[dict[str, Any]],
+    output_root: Path,
+    source_root: Path,
+) -> None:
+    """Reuse pinned vectors when the new serving view has identical text.
+
+    The primary projection changes row identity and order, but its selected
+    definition text is already present in the previous combined pack. This
+    lets a local migration avoid a model download while still proving every
+    vector came from the same pinned E5 matrix.
+    """
+    source_concepts_path = source_root / "concepts.json"
+    source_embeddings_path = source_root / "definition_embeddings.f16"
+    if not source_concepts_path.is_file() or not source_embeddings_path.is_file():
+        raise FileNotFoundError(
+            "Embedding source must contain concepts.json and "
+            "definition_embeddings.f16"
+        )
+
+    source_concepts = json.loads(source_concepts_path.read_text(encoding="utf-8"))
+    if not isinstance(source_concepts, list):
+        raise ValueError("Embedding source concepts.json must contain an array")
+    source_payload = source_embeddings_path.read_bytes()
+    expected_bytes = len(source_concepts) * EMBEDDING_DIMENSION * 2
+    if len(source_payload) != expected_bytes:
+        raise ValueError(
+            "Embedding source has an unexpected byte count: "
+            f"{len(source_payload)} != {expected_bytes}"
+        )
+
+    source_indexes: dict[tuple[str, str], int] = {}
+    source_indexes_by_term: dict[str, list[int]] = {}
+    for index, concept in enumerate(source_concepts):
+        key = embedding_lookup_key(concept)
+        if key in source_indexes:
+            raise ValueError("Embedding source has duplicate text key: " + repr(key))
+        source_indexes[key] = index
+        source_indexes_by_term.setdefault(key[0], []).append(index)
+
+    chunks: list[bytes] = []
+    missing: list[str] = []
+    row_bytes = EMBEDDING_DIMENSION * 2
+    for concept in concepts:
+        key = embedding_lookup_key(concept)
+        source_index = source_indexes.get(key)
+        if source_index is None:
+            # Some source pages prepend the term to the definition or differ
+            # only in OCR punctuation. Reuse a vector by term only when the
+            # old pack has exactly one candidate; never guess among several
+            # legal definitions with the same term.
+            same_term = source_indexes_by_term.get(key[0], [])
+            if len(same_term) == 1:
+                source_index = same_term[0]
+        if source_index is None:
+            missing.append(str(concept.get("record_id")))
+            continue
+        start = source_index * row_bytes
+        chunks.append(source_payload[start : start + row_bytes])
+    if missing:
+        sample = ", ".join(missing[:5])
+        raise ValueError(
+            f"{len(missing)} primary concepts have no reusable embedding; sample: {sample}"
+        )
+    atomic_replace(output_root / "definition_embeddings.f16", b"".join(chunks))
+
+
 def finalize_manifest(manifest: dict[str, Any], output_root: Path) -> dict[str, Any]:
     files = manifest["files"]
     missing = [
@@ -471,12 +857,21 @@ def main() -> None:
     parser.add_argument("--embedding-model", default=EMBEDDING_MODEL)
     parser.add_argument(
         "--dataset-view",
-        choices=sorted(DATASET_VIEW_LABELS),
+        choices=sorted(set(DATASET_VIEW_LABELS) | set(DATASET_VIEW_ALIASES)),
         default="hukumonline",
         help="Definition/reference view to export into the AMT pack.",
     )
     parser.add_argument("--skip-embeddings", action="store_true")
+    parser.add_argument(
+        "--reuse-embeddings-from",
+        type=Path,
+        help="Reuse vectors from another compatible AMT corpus pack by term+definition text.",
+    )
     args = parser.parse_args()
+    args.dataset_view = canonical_dataset_view(args.dataset_view)
+
+    if args.skip_embeddings and args.reuse_embeddings_from:
+        parser.error("--skip-embeddings and --reuse-embeddings-from are mutually exclusive")
 
     existing_manifest: dict[str, Any] | None = None
     if args.skip_embeddings:
@@ -496,7 +891,13 @@ def main() -> None:
         args.output_root,
         dataset_view=args.dataset_view,
     )
-    if not args.skip_embeddings:
+    if args.reuse_embeddings_from:
+        write_reused_embeddings(
+            concepts,
+            args.output_root,
+            args.reuse_embeddings_from,
+        )
+    elif not args.skip_embeddings:
         write_embeddings(concepts, args.output_root, args.embedding_model)
     else:
         # A skipped embedding build is valid only when the caller is reusing
