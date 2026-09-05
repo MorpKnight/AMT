@@ -48,6 +48,7 @@ final class DictionaryViewModelTests: XCTestCase {
         XCTAssertEqual(primary.reference?.referenceID, "peraturan.go.id:uu-no-27-tahun-2022")
         XCTAssertEqual(primary.provenanceLabel, "Ditemukan dalam teks peraturan")
         XCTAssertEqual(primary.verificationStatus, .machineOCRTolerantUnreviewed)
+        XCTAssertEqual(primary.reference?.matchedEvidenceText, primary.text)
         XCTAssertFalse(primary.isActionable)
         XCTAssertTrue(primary.sources.isEmpty)
         XCTAssertTrue(primary.sourceURLs.isEmpty)
@@ -57,6 +58,20 @@ final class DictionaryViewModelTests: XCTestCase {
         XCTAssertTrue(officialAlternative.sources.isEmpty)
         XCTAssertTrue(officialAlternative.sourceURLs.isEmpty)
         XCTAssertTrue(officialAlternative.isActionable)
+    }
+
+    func testRelatedTermsDoNotUseSyntheticFallback() {
+        let entry = LegalDictionaryEntry(
+            id: "isolated-term",
+            term: "Istilah Terisolasi",
+            definition: "Definisi untuk istilah yang tidak memiliki konteks lain.",
+            regulation: "",
+            regulationTitle: "",
+            sourceURL: nil
+        )
+        let store = LegalDictionaryStore(entries: [entry])
+
+        XCTAssertTrue(store.relatedTerms(excluding: entry.term).isEmpty)
     }
 
     func testKnownTermDetailRetainsMultipleOfficialReferences() async {

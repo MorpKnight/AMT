@@ -62,6 +62,7 @@ nonisolated struct LegalReference: Hashable, Sendable {
     let number: String?
     let year: Int?
     let sourcePassageText: String?
+    let matchedEvidenceText: String?
     let verificationStatus: LegalCorpusReviewStatus?
     let attributionStatus: String?
     let isDefinitionAuthority: Bool
@@ -84,6 +85,7 @@ nonisolated struct LegalReference: Hashable, Sendable {
         number: String? = nil,
         year: Int? = nil,
         sourcePassageText: String? = nil,
+        matchedEvidenceText: String? = nil,
         verificationStatus: LegalCorpusReviewStatus? = nil,
         attributionStatus: String? = nil,
         isDefinitionAuthority: Bool = true
@@ -105,6 +107,7 @@ nonisolated struct LegalReference: Hashable, Sendable {
         self.number = number
         self.year = year
         self.sourcePassageText = sourcePassageText
+        self.matchedEvidenceText = matchedEvidenceText
         self.verificationStatus = verificationStatus
         self.attributionStatus = attributionStatus
         self.isDefinitionAuthority = isDefinitionAuthority

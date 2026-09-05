@@ -163,6 +163,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
     private let retrievalIndex: [RetrievalIndexEntry]
     private let inverseDocumentFrequencies: [String: Double]
     private let averageDocumentLength: Double
+    private let officialReferenceIDsByTerm: [String: Set<String>]
 
     var activeCorpusVersion: String {
         corpusStore?.manifest.corpusVersion ?? LegalDictionaryCorpusVersion.legacyKamusV1
@@ -271,6 +272,42 @@ nonisolated struct LegalDictionaryStore: Sendable {
         self.localRAG = localRAG
         self.corpusStore = corpusStore
         self.semanticRetriever = semanticRetriever
+
+        var termGroupsByNormalizedTerm: [String: LegalDictionaryTermGroup] = [:]
+        var alternativesByTermGroupID: [String: [LegalDictionaryAlternative]] = [:]
+        if let corpusStore {
+            for termGroup in corpusStore.termGroups {
+                let normalizedTerm = Self.normalize(
+                    termGroup.termNormalized.isEmpty ? termGroup.term : termGroup.termNormalized
+                )
+                guard !normalizedTerm.isEmpty else { continue }
+                termGroupsByNormalizedTerm[normalizedTerm] = termGroup
+            }
+            for alternative in corpusStore.alternatives
+                where alternative.termSelectionStatus == "selected"
+                    && alternative.definitionRole == "alternative" {
+                alternativesByTermGroupID[alternative.termGroupID, default: []].append(alternative)
+            }
+        }
+
+        var officialReferencesByTerm: [String: Set<String>] = [:]
+        for entry in entries {
+            let normalizedTerm = Self.normalize(entry.term)
+            guard !normalizedTerm.isEmpty else { continue }
+
+            if let referenceID = entry.referenceID {
+                officialReferencesByTerm[normalizedTerm, default: []].insert(referenceID)
+            }
+            if let termGroup = termGroupsByNormalizedTerm[normalizedTerm] {
+                officialReferencesByTerm[normalizedTerm, default: []]
+                    .formUnion(termGroup.regulationIDs)
+                for alternative in alternativesByTermGroupID[termGroup.termGroupID] ?? [] {
+                    officialReferencesByTerm[normalizedTerm, default: []]
+                        .formUnion(alternative.allReferenceIDs)
+                }
+            }
+        }
+        officialReferenceIDsByTerm = officialReferencesByTerm
 
         let index = entries.map { entry in
             let retrievalDefinition = Self.retrievalDefinition(for: entry)
@@ -449,6 +486,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 number: nonEmpty(regulation?.number),
                 year: regulation?.year,
                 sourcePassageText: nonEmpty(passage?.text),
+                matchedEvidenceText: nonEmpty(evidence?.matchedDefinitionText),
                 verificationStatus: evidence?.verificationStatus,
                 attributionStatus: primaryRecord?.primaryAttributionStatus,
                 isDefinitionAuthority: true
@@ -526,6 +564,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 number: nonEmpty(regulation?.number),
                 year: regulation?.year,
                 sourcePassageText: nonEmpty(passage?.text),
+                matchedEvidenceText: nonEmpty(evidence?.matchedDefinitionText),
                 verificationStatus: evidence?.verificationStatus,
                 attributionStatus: attributionStatus,
                 isDefinitionAuthority: isDefinitionAuthority
@@ -1056,11 +1095,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
     ) -> [String] {
         guard limit > 0 else { return [] }
         let excluded = Self.normalize(currentTerm)
-        let currentReferenceIDs = Set(
-            entries
-                .filter { Self.normalize($0.term) == excluded }
-                .compactMap(\.referenceID)
-        )
+        let currentReferenceIDs = officialReferenceIDs(forTerm: currentTerm)
         let currentTokens = Set(Self.tokenize(currentTerm))
 
         var bestByTerm: [String: (term: String, score: Int)] = [:]
@@ -1068,9 +1103,10 @@ nonisolated struct LegalDictionaryStore: Sendable {
             let normalizedTerm = Self.normalize(entry.term)
             guard !normalizedTerm.isEmpty, normalizedTerm != excluded else { continue }
 
-            let sharedReferenceScore = entry.referenceID.map {
-                currentReferenceIDs.contains($0) ? 100 : 0
-            } ?? 0
+            let sharedReferenceCount = currentReferenceIDs
+                .intersection(officialReferenceIDs(for: entry))
+                .count
+            let sharedReferenceScore = sharedReferenceCount * 100
             let tokenOverlapScore = currentTokens
                 .intersection(Self.tokenize(entry.term))
                 .count * 10
@@ -1092,6 +1128,26 @@ nonisolated struct LegalDictionaryStore: Sendable {
             }
             .prefix(limit)
             .map(\.term)
+    }
+
+    /// Collects every official regulation attached to a canonical term,
+    /// including references carried by contextual alternatives. This keeps
+    /// "Lihat Juga" grounded in the official projection instead of only the
+    /// selected primary row.
+    private nonisolated func officialReferenceIDs(forTerm term: String) -> Set<String> {
+        officialReferenceIDsByTerm[Self.normalize(term)] ?? []
+    }
+
+    private nonisolated func officialReferenceIDs(
+        for entry: LegalDictionaryEntry
+    ) -> Set<String> {
+        if let referenceIDs = officialReferenceIDsByTerm[Self.normalize(entry.term)] {
+            return referenceIDs
+        }
+        if let referenceID = entry.referenceID {
+            return [referenceID]
+        }
+        return []
     }
 
 

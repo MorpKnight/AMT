@@ -146,6 +146,7 @@ final class LegalCorpusP012Tests: XCTestCase {
         XCTAssertNotNil(reference.number)
         XCTAssertNotNil(reference.year)
         XCTAssertNotNil(reference.officialDocumentURL)
+        XCTAssertNotNil(reference.matchedEvidenceText)
         XCTAssertNotNil(reference.verificationStatus)
     }
 

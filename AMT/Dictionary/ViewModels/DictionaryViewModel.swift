@@ -119,28 +119,7 @@ final class DictionaryViewModel {
     }
 
     private func relatedTerms(count: Int = 4, excluding currentTerm: String) -> [String] {
-        let related = dictionaryStore.relatedTerms(excluding: currentTerm, limit: count)
-        if !related.isEmpty { return related }
-
-        let fallbackTerms = [
-            "Jaksa Agung",
-            "Jabatan Fungsional",
-            "Jabatan Struktural",
-            "Jabatan Pimpinan Tinggi",
-            "Pengendali Data Pribadi",
-            "Hak Cipta",
-            "Bursa Efek",
-            "Badan Hukum"
-        ]
-        return Array(
-            fallbackTerms
-                .filter {
-                    $0.trimmingCharacters(in: .whitespacesAndNewlines)
-                        .caseInsensitiveCompare(currentTerm.trimmingCharacters(in: .whitespacesAndNewlines))
-                        != .orderedSame
-                }
-                .prefix(count)
-        )
+        dictionaryStore.relatedTerms(excluding: currentTerm, limit: count)
     }
 
     private func makeGlossaryEntry(forTerm term: String) -> LegalGlossaryEntry {

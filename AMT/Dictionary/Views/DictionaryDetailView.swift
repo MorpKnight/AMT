@@ -214,6 +214,8 @@ struct DictionaryDetailView: View {
                 .padding(.vertical, 2)
                 .fixedSize(horizontal: false, vertical: true)
 
+            definitionEvidenceSummary(for: def)
+
             definitionHistory(for: def, in: entry)
 
             if def.role == .primary {
@@ -291,6 +293,25 @@ struct DictionaryDetailView: View {
                             .foregroundStyle(.secondary)
                     }
 
+                    if let matchedEvidenceText = nonEmpty(ref.matchedEvidenceText) {
+                        DisclosureGroup {
+                            Text(matchedEvidenceText)
+                                .font(.system(size: 11.5))
+                                .lineSpacing(3)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.top, 2)
+                        } label: {
+                            Label(
+                                "Teks definisi yang terpetakan",
+                                systemImage: "quote.opening"
+                            )
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+                        }
+                        .padding(.top, 2)
+                    }
+
                     if let sourceURL = ref.sourceURL {
                         Link(destination: sourceURL) {
                             Label("Buka sumber", systemImage: "arrow.up.right.square")
@@ -326,6 +347,76 @@ struct DictionaryDetailView: View {
             RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(cardBorder, lineWidth: 1)
         )
+    }
+
+    @ViewBuilder
+    private func definitionEvidenceSummary(for definition: DefinitionItem) -> some View {
+        let hasVerificationStatus = definition.verificationStatus != nil
+        let hasSelectionReason = definition.role == .primary
+            && nonEmpty(definition.selectionReason) != nil
+
+        if hasVerificationStatus || hasSelectionReason {
+            VStack(alignment: .leading, spacing: 5) {
+                if let verificationStatus = definition.verificationStatus {
+                    Label(
+                        verificationStatus.displayTitle,
+                        systemImage: verificationStatusIcon(for: verificationStatus)
+                    )
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                }
+
+                if definition.role == .primary {
+                    Text(definition.isActionable
+                        ? "Evidence memenuhi syarat untuk kandidat Suggestion."
+                        : "Belum memenuhi syarat evidence untuk kandidat Suggestion.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+
+                if let reason = selectionReasonText(definition.selectionReason) {
+                    Text("Alasan pemilihan: \(reason)")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+    }
+
+    private func verificationStatusIcon(
+        for status: LegalCorpusReviewStatus
+    ) -> String {
+        switch status {
+        case .machineExact:
+            "checkmark.circle"
+        case .machineOCRTolerantUnreviewed:
+            "exclamationmark.circle"
+        case .humanVerified:
+            "checkmark.seal"
+        case .needsReview:
+            "questionmark.circle"
+        }
+    }
+
+    private func selectionReasonText(_ rawValue: String?) -> String? {
+        guard let rawValue = nonEmpty(rawValue) else { return nil }
+
+        switch rawValue {
+        case "higher_normative_level_same_official_term":
+            return "peraturan dengan tingkat normatif lebih tinggi untuk istilah yang sama"
+        case "stronger_evidence_same_official_scope":
+            return "evidence resmi yang lebih kuat dalam cakupan yang sama"
+        case "only_official_in_force_definition":
+            return "satu-satunya definisi resmi yang masih berlaku"
+        case "human_verified_override":
+            return "hasil verifikasi manusia"
+        default:
+            return rawValue
+                .replacingOccurrences(of: "_", with: " ")
+                .capitalized
+        }
     }
 
     @ViewBuilder
