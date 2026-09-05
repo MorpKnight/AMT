@@ -1,9 +1,10 @@
 {
-  "actionable_concept_count": 2238,
-  "concept_count": 8272,
-  "corpus_version": "hukumonline-kamus-combined-deduplicated@78a2ab626c092662b0441c95904c353b2487b216",
+  "actionable_concept_count": 2323,
+  "alternative_count": 2975,
+  "concept_count": 5416,
+  "corpus_version": "hukumonline-kamus-dictionary-serving@17a6fe91aad1b9451ecfa49d086ad086c44e6120",
   "embedding": {
-    "concept_order_sha256": "3b9e8320a31dfee5dffbed433ea594e5cb137285f1fbdb2a862e3d1d3ac85f84",
+    "concept_order_sha256": "e1faa656a6c81c4aabd36b208742be1f6793cb0d5690f369f18d4ecc69106ade",
     "dimension": 384,
     "dtype": "float16-little-endian",
     "model": "intfloat/multilingual-e5-small",
@@ -14,17 +15,23 @@
   },
   "files": {
     "concepts": "concepts.json",
+    "dictionary_alternatives": "dictionary_alternatives.json",
+    "dictionary_primary": "dictionary_primary.json",
+    "dictionary_terms": "dictionary_terms.json",
     "embeddings": "definition_embeddings.f16",
     "regulations": "regulations.json",
     "relations": "relations.json",
     "source_passages": "source_passages.json"
   },
   "files_sha256": {
-    "concepts.json": "eb4dca4f5f8f0becb28ddc98c3f6374a1797ef4613a668c9cfda94402ea989bf",
-    "definition_embeddings.f16": "2d45fedd0438c843990f8a52d88a4b8c5cfd1aeb5019dbbd4a02d1b2a27fea84",
-    "regulations.json": "161824f10942b7d4e5bef6be6f8d041e4c7419d6b561dba294b53b5897c3143f",
+    "concepts.json": "c826a346c2daac14e0f0e986741fa437e8b7447d310d7bc5add03d32e59ed837",
+    "definition_embeddings.f16": "c7e7f0ecab30a84743f70b7408163e0227233eba9bdb7b1b0ba7add5e4913564",
+    "dictionary_alternatives.json": "309135b7865e24e01f20f884eaa5e25196c25eaa553535e927d316ed46c9c3ec",
+    "dictionary_primary.json": "16d2f0e1dfbdc8ac8cd7fe2ee6d0e27d0ae843d73f33b5615ffe247f88ef1880",
+    "dictionary_terms.json": "878a9771fc2e3513a27efcbe5cce01d492667165ef0b2594aa77940b4016d17b",
+    "regulations.json": "b75a3df15250c0f201ad43958118fa6aa98f8e3ebb3f485c25df7814c1d30f0b",
     "relations.json": "d82d0e3ec0ee14cc205cd2af32beb3cd644c53c1a4eec6f158d2d40f07fab144",
-    "source_passages.json": "dae9eaca2a0d5df90649bc1457e044474238331e824131d1b763866923da930e"
+    "source_passages.json": "d43cc7a5d13eefbd9920ef9a02d652f7fad0599218c1f3f2bdaa7b34fcd6ea93"
   },
   "regulation_count": 1591,
   "relation_count": 315,
@@ -39,16 +46,18 @@
     "suggestion_semantic_threshold": 0.6,
     "suggestion_top_one_margin": 0.03
   },
-  "schema_version": "amt-legal-corpus-v1",
-  "source_dataset_revision": "78a2ab626c092662b0441c95904c353b2487b216",
-  "source_dataset_view": "combined-deduplicated",
+  "schema_version": "amt-legal-corpus-v2",
+  "source_dataset_revision": "17a6fe91aad1b9451ecfa49d086ad086c44e6120",
+  "source_dataset_view": "dictionary-serving",
   "source_input_sha256": {
-    "combined_definitions_deduplicated.jsonl": "b7a2edc33ef29b098db7c7254ea750ce3a377c1b1d0d7c55508dec08665e2230",
-    "combined_regulation_relations.jsonl": "44c9db812545c47186e87e6704a945f496166ec2dacb5d4f4a49e50c91b53408",
-    "combined_regulations.jsonl": "cc5af438655d247b28b79d8a80a1aa85019cefa83cdef0efa5910606748dc225",
-    "definition_passage_links.jsonl": "968d158a04941b1ecc1c072245826aed36f10e7d9854d0e63cb32891a5c01b50",
-    "regulation_documents.jsonl": "96a3d29d2194ff16b5f95b1e18996083a5147ad1cb68e7fe18fe65259b78dc78",
+    "dictionary_alternatives.jsonl": "af7a1f0935ad571bb02d8bdbf5d10b6e769fcd3dd4023abf283e0937be48a64a",
+    "dictionary_definitions.jsonl": "c3b23f615bace32affcc980a6ce28d8834a5d2bdf0359d9bd95804ef33f62b3a",
+    "dictionary_primary.jsonl": "301db73c6c370b3ef8edfebc26ffd650f4e9e3a0d77f290cd40cd9d7c801cad4",
+    "dictionary_regulation_relations.jsonl": "44c9db812545c47186e87e6704a945f496166ec2dacb5d4f4a49e50c91b53408",
+    "dictionary_regulations.jsonl": "b6c398c78f1c7e7e082fde9a94255faff74860e89920cf7fb3782e8e6b090ccf",
+    "dictionary_terms.jsonl": "6f665e2c53560bfd28f715a4e671f63f1c4bb3dff0abd67d87a57ed0ddeaae77",
     "regulation_passages.jsonl": "ffe9d0749e2470d8175fdbe4cd77d8fd6848d72463316af2025cca5f11c05eb4"
   },
-  "source_passage_count": 628
+  "source_passage_count": 636,
+  "term_group_count": 6537
 }

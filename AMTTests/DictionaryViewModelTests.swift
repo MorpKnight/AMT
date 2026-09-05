@@ -28,10 +28,40 @@ final class DictionaryViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.topMatches.isEmpty)
     }
 
+    func testKnownTermDetailSeparatesServingAlternativesFromPrimaryDefinition() async throws {
+        let viewModel = DictionaryViewModel(dictionaryStore: LegalDictionaryStore())
+
+        viewModel.lookupTerm("Data Pribadi")
+        await waitForLookupToFinish(viewModel)
+
+        let entry = try XCTUnwrap(viewModel.selectedEntry)
+        let primary = try XCTUnwrap(entry.definitions.first)
+        let officialAlternative = try XCTUnwrap(
+            entry.contextualAlternatives.first {
+                $0.reference?.referenceID == "peraturan.go.id:pp-no-71-tahun-2019"
+            }
+        )
+
+        XCTAssertEqual(entry.definitions.count, 1)
+        XCTAssertEqual(entry.contextualAlternatives.count, 3)
+        XCTAssertEqual(primary.role, .primary)
+        XCTAssertEqual(primary.reference?.referenceID, "peraturan.go.id:uu-no-27-tahun-2022")
+        XCTAssertEqual(primary.provenanceLabel, "Evidence resmi")
+        XCTAssertEqual(primary.verificationStatus, .machineOCRTolerantUnreviewed)
+        XCTAssertEqual(officialAlternative.role, .alternative)
+        XCTAssertEqual(officialAlternative.provenanceLabel, "Evidence resmi")
+        XCTAssertTrue(officialAlternative.reference?.isDefinitionAuthority == true)
+        XCTAssertTrue(
+            entry.contextualAlternatives
+                .dropFirst()
+                .allSatisfy { $0.provenanceLabel == "Kaitan halaman" }
+        )
+    }
+
     func testKnownTermDetailRetainsMultipleOfficialReferences() async {
         let viewModel = DictionaryViewModel(dictionaryStore: LegalDictionaryStore())
 
-        viewModel.lookupTerm("Pelayanan Terpadu Satu Pintu")
+        viewModel.lookupTerm("RKL")
         await waitForLookupToFinish(viewModel)
 
         let enrichedDefinition = viewModel.selectedEntry?.definitions.first {
@@ -42,15 +72,15 @@ final class DictionaryViewModelTests: XCTestCase {
         )
 
         XCTAssertGreaterThanOrEqual(enrichedDefinition?.allReferences.count ?? 0, 2)
-        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-1-tahun-2020"))
-        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-64-tahun-2016"))
+        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-12-tahun-2020"))
+        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-27-tahun-2012"))
     }
 
     func testCorpusSummaryIsAvailableToDictionaryPresentation() {
         let viewModel = DictionaryViewModel(dictionaryStore: LegalDictionaryStore())
 
         XCTAssertTrue(viewModel.corpusSummary.isEnriched)
-        XCTAssertEqual(viewModel.corpusSummary.sourceDatasetView, "combined-deduplicated")
+        XCTAssertEqual(viewModel.corpusSummary.sourceDatasetView, "dictionary-serving")
     }
 
     func testPopularTermsCountIsThree() async {

@@ -8,14 +8,19 @@ final class LegalCorpusP012Tests: XCTestCase {
 
         XCTAssertEqual(
             corpus.manifest.corpusVersion,
-            "hukumonline-kamus-combined-deduplicated@78a2ab626c092662b0441c95904c353b2487b216"
+            "hukumonline-kamus-dictionary-serving@17a6fe91aad1b9451ecfa49d086ad086c44e6120"
         )
-        XCTAssertEqual(corpus.manifest.sourceDatasetView, "combined-deduplicated")
-        XCTAssertEqual(corpus.concepts.count, 8_272)
+        XCTAssertEqual(corpus.manifest.sourceDatasetView, "dictionary-serving")
+        XCTAssertEqual(corpus.concepts.count, 5_416)
         XCTAssertEqual(corpus.regulations.count, 1_591)
         XCTAssertEqual(corpus.relations.count, 315)
-        XCTAssertEqual(corpus.sourcePassages.count, 628)
-        XCTAssertEqual(corpus.manifest.actionableConceptCount, 2_238)
+        XCTAssertEqual(corpus.sourcePassages.count, 636)
+        XCTAssertEqual(corpus.manifest.actionableConceptCount, 2_323)
+        XCTAssertEqual(corpus.termGroups.count, 6_537)
+        XCTAssertEqual(corpus.primaryRecords.count, 6_537)
+        XCTAssertEqual(corpus.alternatives.count, 2_975)
+        XCTAssertEqual(corpus.manifest.termGroupCount, 6_537)
+        XCTAssertEqual(corpus.manifest.alternativeCount, 2_975)
         XCTAssertEqual(corpus.concepts.count, corpus.manifest.conceptCount)
         XCTAssertEqual(corpus.regulations.count, corpus.manifest.regulationCount)
         XCTAssertEqual(corpus.relations.count, corpus.manifest.relationCount)
@@ -32,20 +37,23 @@ final class LegalCorpusP012Tests: XCTestCase {
         XCTAssertTrue(corpus.manifest.embedding.normalized)
         XCTAssertEqual(
             corpus.manifest.embedding.conceptOrderSHA256,
-            "3b9e8320a31dfee5dffbed433ea594e5cb137285f1fbdb2a862e3d1d3ac85f84"
+            "e1faa656a6c81c4aabd36b208742be1f6793cb0d5690f369f18d4ecc69106ade"
         )
     }
 
-    func testBundledCorpusKeepsMultipleDefinitionsForOneTerm() throws {
+    func testBundledCorpusUsesOnePrimaryConceptForOneTerm() throws {
         let corpus = try LegalCorpusStore(bundle: .main)
         let dataPribadi = corpus.concepts.filter {
             $0.term.caseInsensitiveCompare("Data Pribadi") == .orderedSame
         }
 
-        XCTAssertGreaterThanOrEqual(dataPribadi.count, 2)
-        XCTAssertGreaterThanOrEqual(
-            Set(dataPribadi.map(\.recordID)).count,
-            2
+        XCTAssertEqual(dataPribadi.count, 1)
+        XCTAssertEqual(dataPribadi.first?.references.map(\.referenceID), [
+            "peraturan.go.id:uu-no-27-tahun-2022"
+        ])
+        XCTAssertEqual(dataPribadi.first?.sources, ["Paralegal.id"])
+        XCTAssertTrue(
+            dataPribadi.first?.definition.contains("orang perseorangan") == true
         )
     }
 
@@ -60,14 +68,21 @@ final class LegalCorpusP012Tests: XCTestCase {
         XCTAssertGreaterThan(matches.first?.semanticScore ?? 0, 0.99)
     }
 
-    func testDictionaryGroupsCorpusEntriesOnlyAtPresentationBoundary() {
+    func testDictionaryPrimaryDoesNotFanOutCrossSourceDefinitions() {
         let store = LegalDictionaryStore()
         let entries = store.entries(forTerm: "Data Pribadi")
 
-        XCTAssertGreaterThanOrEqual(entries.count, 2)
+        XCTAssertEqual(entries.count, 1)
         XCTAssertEqual(Set(entries.map(\.term)).count, 1)
-        XCTAssertTrue(entries.contains(where: { $0.isActionable }))
-        XCTAssertTrue(entries.contains(where: { !$0.isActionable }))
+        XCTAssertEqual(entries.first?.referenceID, "peraturan.go.id:uu-no-27-tahun-2022")
+        XCTAssertEqual(entries.first?.sources, ["Paralegal.id"])
+
+        let alternatives = store.alternatives(forTerm: "Data Pribadi")
+        XCTAssertEqual(alternatives.count, 3)
+        XCTAssertEqual(
+            alternatives.first?.definitionID,
+            "definition:083ac1e28c6e6fde0d70c2cb"
+        )
     }
 
     func testCombinedCorpusExposesParalegalProvenanceWithoutSuggestionAuthority() throws {
@@ -87,27 +102,24 @@ final class LegalCorpusP012Tests: XCTestCase {
         XCTAssertNotNil(entry.officialDocumentURL)
     }
 
-    func testCombinedCorpusRetainsDistinctDefinitionsAndSourceProvenance() {
+    func testDictionaryPrimaryKeepsOneSourceDefinitionPerSelectedTerm() {
         let store = LegalDictionaryStore()
         let entries = store.entries(forTerm: "Adat")
-        let sources = Set(entries.flatMap(\.sources))
 
-        XCTAssertGreaterThanOrEqual(entries.count, 3)
-        XCTAssertTrue(sources.contains("Hukumonline Kamus"))
-        XCTAssertTrue(sources.contains("Paralegal.id"))
-        XCTAssertTrue(entries.contains(where: { $0.isActionable }))
-        XCTAssertTrue(entries.contains(where: { !$0.isActionable }))
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries.first?.sources, ["Paralegal.id"])
+        XCTAssertEqual(entries.first?.referenceID, "peraturan.go.id:uu-no-21-tahun-2001")
     }
 
     func testDictionaryCorpusSummaryExposesEnrichmentScope() {
         let store = LegalDictionaryStore()
         let summary = store.corpusSummary
 
-        XCTAssertEqual(summary.sourceDatasetView, "combined-deduplicated")
-        XCTAssertEqual(summary.conceptCount, 8_272)
+        XCTAssertEqual(summary.sourceDatasetView, "dictionary-serving")
+        XCTAssertEqual(summary.conceptCount, 5_416)
         XCTAssertEqual(summary.regulationCount, 1_591)
         XCTAssertEqual(summary.relationCount, 315)
-        XCTAssertEqual(summary.sourcePassageCount, 628)
+        XCTAssertEqual(summary.sourcePassageCount, 636)
         XCTAssertTrue(summary.isEnriched)
         XCTAssertTrue(summary.sourceNames.contains("Hukumonline Kamus"))
     }
@@ -134,18 +146,18 @@ final class LegalCorpusP012Tests: XCTestCase {
         XCTAssertNotNil(reference.verificationStatus)
     }
 
-    func testDictionaryPreservesMultipleOfficialReferencesForOneDefinition() throws {
+    func testDictionaryPreservesMultipleOfficialReferencesForOnePrimaryDefinition() throws {
         let store = LegalDictionaryStore()
         let entry = try XCTUnwrap(
-            store.entries(forTerm: "Pelayanan Terpadu Satu Pintu")
+            store.entries(forTerm: "RKL")
                 .first { $0.isActionable }
         )
         let references = store.references(for: entry)
         let referenceIDs = Set(references.compactMap(\.referenceID))
 
         XCTAssertGreaterThanOrEqual(references.count, 2)
-        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-1-tahun-2020"))
-        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-64-tahun-2016"))
+        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-12-tahun-2020"))
+        XCTAssertTrue(referenceIDs.contains("peraturan.go.id:pp-no-27-tahun-2012"))
     }
 
     func testExactTermLookupDoesNotLoadSemanticModel() async {
@@ -233,7 +245,7 @@ final class LegalCorpusP012Tests: XCTestCase {
         XCTAssertThrowsError(try LegalCorpusStore(directory: temporaryDirectory)) { error in
             XCTAssertEqual(error as? LegalCorpusStoreError, .hashMismatch("concepts.json"))
         }
-        XCTAssertEqual(corpus.manifest.conceptCount, 8_272)
+        XCTAssertEqual(corpus.manifest.conceptCount, 5_416)
     }
 
     func testLocalToolsExposeCorpusEvidenceWithoutWriteCapability() async throws {

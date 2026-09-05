@@ -11,6 +11,9 @@ import SwiftUI
 struct DictionaryDetailView: View {
     @Bindable var viewModel: DictionaryViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @State private var historyExpansionByKey: [String: Bool] = [:]
+
+    private let longHistoryThreshold = 3
 
     // MARK: - Adaptive Theme Colors
     private var cardBackground: Color {
@@ -211,6 +214,10 @@ struct DictionaryDetailView: View {
 
             definitionHistory(for: def, in: entry)
 
+            if def.role == .primary {
+                contextualAlternatives(for: entry)
+            }
+
             if !def.sources.isEmpty || !def.sourceURLs.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Sumber kamus")
@@ -239,7 +246,7 @@ struct DictionaryDetailView: View {
             // Inner "Referensi Hukum" Card
             if let ref = def.reference {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Referensi Hukum")
+                    Text(ref.isDefinitionAuthority ? "Referensi Hukum" : "Referensi terkait")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(sectionHeaderColor)
 
@@ -350,22 +357,165 @@ struct DictionaryDetailView: View {
     ) -> some View {
         let events = historyEvents(for: definition, in: entry)
         if !events.isEmpty {
+            let historyKey = historyKey(for: definition, in: entry)
+            let isExpanded = historyExpansionByKey[historyKey]
+                ?? (events.count <= longHistoryThreshold)
+
             VStack(alignment: .leading, spacing: 8) {
-                Text("Riwayat & status sumber")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(sectionHeaderColor)
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        historyExpansionByKey[historyKey] = !isExpanded
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        HStack(spacing: 6) {
+                            Text("Riwayat & status sumber")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(sectionHeaderColor)
+
+                            Text("· \(events.count) catatan")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer(minLength: 12)
+
+                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Riwayat dan status sumber")
+                .accessibilityValue(
+                    "\(events.count) catatan, \(isExpanded ? "terbuka" : "tertutup")"
+                )
+                .accessibilityHint("Klik untuk menampilkan atau menyembunyikan riwayat")
+
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(events.indices, id: \.self) { index in
+                            definitionHistoryRow(
+                                events[index],
+                                isLast: index == events.count - 1
+                            )
+                        }
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 2)
+        }
+    }
+
+    private func historyKey(
+        for definition: DefinitionItem,
+        in entry: LegalGlossaryEntry
+    ) -> String {
+        "\(entry.id)-\(definition.role.rawValue)-\(definition.id)"
+    }
+
+    @ViewBuilder
+    private func contextualAlternatives(for entry: LegalGlossaryEntry) -> some View {
+        if !entry.contextualAlternatives.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Text("Konteks definisi lain")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(sectionHeaderColor)
+
+                    Text("\(entry.contextualAlternatives.count)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.primary.opacity(0.06))
+                        .clipShape(Capsule())
+                }
+
+                Text("Variasi sumber ditampilkan terpisah dari definisi utama.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
 
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(events.indices, id: \.self) { index in
-                        definitionHistoryRow(
-                            events[index],
-                            isLast: index == events.count - 1
+                    ForEach(entry.contextualAlternatives.indices, id: \.self) { index in
+                        contextualAlternativeRow(
+                            entry.contextualAlternatives[index],
+                            isLast: index == entry.contextualAlternatives.count - 1
                         )
                     }
                 }
             }
             .padding(.horizontal, 4)
             .padding(.top, 2)
+        }
+    }
+
+    private func contextualAlternativeRow(
+        _ alternative: DefinitionItem,
+        isLast: Bool
+    ) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            VStack(spacing: 0) {
+                Circle()
+                    .fill(alternative.isDefinitionAuthority
+                        ? Color.accentColor
+                        : Color.secondary.opacity(0.45))
+                    .frame(width: 7, height: 7)
+                    .padding(.top, 4)
+
+                if !isLast {
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.12))
+                        .frame(width: 1)
+                        .frame(maxHeight: .infinity)
+                }
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .frame(width: 8)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(alternative.provenanceLabel)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.primary)
+
+                    if let source = alternative.sources.first {
+                        Text(source)
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Text(alternative.text)
+                    .font(.system(size: 12))
+                    .lineSpacing(3)
+                    .foregroundStyle(definitionTextColor)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let reference = alternative.reference {
+                    Text(reference.isDefinitionAuthority
+                        ? reference.lawName
+                        : "Terkait: \(reference.lawName)")
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    if let metadata = referenceMetadata(for: reference) {
+                        Text(metadata)
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if let verificationStatus = alternative.verificationStatus {
+                    Text(verificationStatus.displayTitle)
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.bottom, 10)
         }
     }
 

@@ -315,9 +315,9 @@ nonisolated struct LegalDictionaryStore: Sendable {
         rankedSearch(query, limit: limit).map(\.entry)
     }
 
-    /// Returns every definition attached to the same canonical term. The
-    /// corpus intentionally keeps these records separate so Dictionary can
-    /// show competing definitions and their individual provenance.
+    /// Returns the searchable primary definition attached to a canonical term.
+    /// Contextual alternatives are exposed separately so duplicate source rows
+    /// do not become duplicate search results.
     nonisolated func entries(forTerm term: String) -> [LegalDictionaryEntry] {
         let normalizedTerm = Self.normalize(term)
         guard !normalizedTerm.isEmpty else { return [] }
@@ -325,11 +325,37 @@ nonisolated struct LegalDictionaryStore: Sendable {
         return entries.filter { Self.normalize($0.term) == normalizedTerm }
     }
 
+    nonisolated func termGroup(forTerm term: String) -> LegalDictionaryTermGroup? {
+        corpusStore?.termGroup(for: term)
+    }
+
+    nonisolated func primaryRecord(forTerm term: String) -> LegalDictionaryPrimaryRecord? {
+        guard let termGroup = termGroup(forTerm: term) else { return nil }
+        return corpusStore?.primaryRecord(forTermGroupID: termGroup.termGroupID)
+    }
+
+    nonisolated func alternatives(forTerm term: String) -> [LegalDictionaryAlternative] {
+        corpusStore?.alternatives(for: term) ?? []
+    }
+
     nonisolated func regulationRelations(
-        for entry: LegalDictionaryEntry
+        for referenceIDs: [String]
     ) -> [LegalRegulationRelation] {
         guard let corpusStore else { return [] }
 
+        var seenReferenceIDs: Set<String> = []
+        let uniqueReferenceIDs = referenceIDs.filter {
+            seenReferenceIDs.insert($0).inserted
+        }
+        var seenRelationIDs: Set<String> = []
+        return uniqueReferenceIDs
+            .flatMap { corpusStore.relations(for: $0) }
+            .filter { seenRelationIDs.insert($0.relationID).inserted }
+    }
+
+    nonisolated func regulationRelations(
+        for entry: LegalDictionaryEntry
+    ) -> [LegalRegulationRelation] {
         var referenceIDs: [String] = []
         if let referenceID = entry.referenceID {
             referenceIDs.append(referenceID)
@@ -339,10 +365,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
             referenceIDs.append(referenceID)
         }
 
-        var seenRelationIDs: Set<String> = []
-        return referenceIDs
-            .flatMap { corpusStore.relations(for: $0) }
-            .filter { seenRelationIDs.insert($0.relationID).inserted }
+        return regulationRelations(for: referenceIDs)
     }
 
     /// Resolves a regulation for a relation row so the UI can show a human
@@ -374,6 +397,8 @@ nonisolated struct LegalDictionaryStore: Sendable {
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             return trimmed.isEmpty ? nil : trimmed
         }
+
+        let primaryRecord = corpusStore.primaryRecord(forTermGroupID: concept.termID)
 
         var seenReferenceIDs: Set<String> = []
         return references.compactMap { reference in
@@ -424,7 +449,86 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 number: nonEmpty(regulation?.number),
                 year: regulation?.year,
                 sourcePassageText: nonEmpty(passage?.text),
-                verificationStatus: evidence?.verificationStatus
+                verificationStatus: evidence?.verificationStatus,
+                attributionStatus: primaryRecord?.primaryAttributionStatus,
+                isDefinitionAuthority: true
+            )
+        }
+    }
+
+    /// Rehydrates references attached to a contextual alternative. Page-only
+    /// and unresolved references are kept visible but are never marked as the
+    /// definition authority.
+    nonisolated func references(
+        for alternative: LegalDictionaryAlternative
+    ) -> [LegalReference] {
+        guard let corpusStore else { return [] }
+
+        var orderedReferenceIDs: [String] = []
+        for referenceID in alternative.attributedReferenceIDs
+            + alternative.pageRelatedReferenceIDs
+            + alternative.unresolvedReferenceIDs
+            + alternative.allReferenceIDs {
+            guard !referenceID.isEmpty, !orderedReferenceIDs.contains(referenceID) else {
+                continue
+            }
+            orderedReferenceIDs.append(referenceID)
+        }
+
+        func nonEmpty(_ value: String?) -> String? {
+            guard let value else { return nil }
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+
+        return orderedReferenceIDs.compactMap { referenceID in
+            let regulation = corpusStore.regulation(id: referenceID)
+            let evidence = alternative.evidence.first {
+                $0.regulationID == referenceID
+            }
+            let passage = evidence.flatMap {
+                corpusStore.sourcePassage(id: $0.passageID)
+            }
+            let isDefinitionAuthority = alternative.attributedReferenceIDs.contains(referenceID)
+            let attributionStatus: String
+            if alternative.unresolvedReferenceIDs.contains(referenceID) {
+                attributionStatus = "unresolved_reference"
+            } else if alternative.pageRelatedReferenceIDs.contains(referenceID) {
+                attributionStatus = "page_related_reference"
+            } else if alternative.attributionStatus == "explicit_reference" {
+                attributionStatus = "explicit_reference"
+            } else if alternative.attributionStatus == "single_page_reference" {
+                attributionStatus = "single_page_reference"
+            } else if isDefinitionAuthority {
+                attributionStatus = "official_evidence"
+            } else {
+                attributionStatus = "page_related_reference"
+            }
+            let lawName = nonEmpty(regulation?.referenceName)
+                ?? (attributionStatus == "unresolved_reference"
+                    ? "Referensi belum dipetakan"
+                    : "Referensi hukum terkait")
+
+            return LegalReference(
+                lawName: lawName,
+                lawTitle: nonEmpty(regulation?.officialTitle),
+                institution: nonEmpty(regulation?.institution),
+                sourceURL: regulation?.officialDetailURL,
+                officialDocumentURL: regulation?.officialDocumentURL
+                    ?? passage?.officialDocumentURL,
+                referenceID: referenceID,
+                applicabilityStatus: regulation?.applicabilityStatus ?? .unknown,
+                articleLocator: evidence?.articleLocator ?? passage?.articleLocator,
+                pageStart: evidence?.pageStart ?? passage?.pageStart,
+                pageEnd: evidence?.pageEnd ?? passage?.pageEnd,
+                sourcePassageID: evidence?.passageID ?? passage?.passageID,
+                officialStatus: nonEmpty(regulation?.officialStatusRaw),
+                number: nonEmpty(regulation?.number),
+                year: regulation?.year,
+                sourcePassageText: nonEmpty(passage?.text),
+                verificationStatus: evidence?.verificationStatus,
+                attributionStatus: attributionStatus,
+                isDefinitionAuthority: isDefinitionAuthority
             )
         }
     }

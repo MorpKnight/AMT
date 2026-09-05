@@ -95,12 +95,12 @@ The active bundled corpus is recorded in [`AMT/Resources/legal_corpus/manifest.j
 
 | Field | Current value |
 | --- | ---: |
-| Corpus version | `hukumonline-kamus-combined-deduplicated@78a2ab626c092662b0441c95904c353b2487b216` |
-| Concepts | 8,272 |
-| Actionable concepts for Suggestion | 2,238 |
+| Corpus version | `hukumonline-kamus-dictionary-serving@17a6fe91aad1b9451ecfa49d086ad086c44e6120` |
+| Concepts | 5,416 |
+| Actionable concepts for Suggestion | 2,323 |
 | Regulations | 1,591 |
 | Regulation relations | 315 |
-| Source passages | 628 |
+| Source passages | 636 |
 | Embedding model | `intfloat/multilingual-e5-small` |
 | Embedding revision | `614241f622f53c4eeff9890bdc4f31cfecc418b3` |
 | Embedding format | 384-dimensional, normalized, float16 little-endian |
@@ -113,10 +113,22 @@ To regenerate a corpus pack from the companion dataset workspace:
 python3 Scripts/export_amt_legal_corpus.py \
   --source-root /path/to/hukumonline-dataset \
   --output-root AMT/Resources/legal_corpus \
-  --dataset-view combined-deduplicated
+  --dataset-view dictionary-serving \
+  --reuse-embeddings-from /path/to/previous/legal_corpus
 ```
 
-The exporter supports `hukumonline`, `combined`, and `combined-deduplicated` views. Embeddings are generated with the pinned multilingual E5 model unless `--skip-embeddings` is used with a compatible existing pack.
+The exporter supports `hukumonline`, `combined`, `combined-deduplicated`, and
+`dictionary-serving` views. `dictionary-primary` remains a compatibility alias
+for `dictionary-serving`. The serving view contains at most one runtime concept
+per canonical term group; ambiguous or unsupported groups are omitted from the
+default dictionary instead of silently selecting an alternative. Other selected
+definitions remain in the bundle as contextual alternatives and are rendered
+separately from the primary definition. OCR-tolerant evidence can participate
+in the serving actionability projection, but remains labelled `Cocok OCR (belum
+ditinjau)` and is not human legal verification.
+Embeddings are generated with the pinned multilingual E5 model unless
+`--reuse-embeddings-from` is used with a compatible existing pack or
+`--skip-embeddings` is used with an unchanged source pack.
 
 ## Getting started
 

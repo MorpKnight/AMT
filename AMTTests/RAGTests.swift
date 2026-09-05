@@ -48,13 +48,24 @@ final class RAGTests: XCTestCase {
         XCTAssertGreaterThan(results.first?.score ?? 0, 0)
     }
 
-    func testLegalDictionarySearchPrefersPrimaryCorpusForDuplicateTerm() async {
+    func testLegalDictionarySearchUsesOnePrimaryConceptForDuplicateTerm() async {
         let store = LegalDictionaryStore()
         let results = await store.searchRAG("Data Pribadi", limit: 5)
 
         XCTAssertEqual(results.first?.term, "Data Pribadi")
         XCTAssertEqual(results.first?.corpusVersion, store.activeCorpusVersion)
+        // The raw RAG limit may include related terms whose definitions
+        // mention the query. The primary-corpus contract is one exact-term
+        // concept, which the ViewModel groups for presentation.
+        XCTAssertEqual(
+            results.filter { $0.term.caseInsensitiveCompare("Data Pribadi") == .orderedSame }.count,
+            1
+        )
+        XCTAssertEqual(results.first?.referenceID, "peraturan.go.id:uu-no-27-tahun-2022")
+        // The serving view marks the current primary evidence as actionable;
+        // the UI still exposes that its OCR match has not been human-reviewed.
         XCTAssertEqual(results.first?.authority, .verified)
+        XCTAssertTrue(results.first?.isActionable == true)
     }
 
     func testLexicalDefinitionQueryFindsDataPribadi() async {

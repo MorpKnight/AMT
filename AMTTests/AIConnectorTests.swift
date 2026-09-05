@@ -651,9 +651,18 @@ final class AIConnectorTests: XCTestCase {
             }
         )
 
+        // OCR-tolerant matches are part of the serving view's actionable
+        // projection, while the Dictionary UI keeps their review status
+        // visible as "Cocok OCR (belum ditinjau)".
         XCTAssertTrue(retrievedTerms.contains("Data Pribadi"))
         XCTAssertTrue(retrievedTerms.contains("Korporasi"))
         XCTAssertFalse(retrievedTerms.contains("Keadaan Kahar"))
+        let actionableTerms = Set(
+            store.entries
+                .filter(\.isActionable)
+                .map(\.term)
+        )
+        XCTAssertTrue(retrievedTerms.isSubset(of: actionableTerms))
     }
 
     func testGlossarySnapshotRetainsSegmentAndCandidateForRunHistory() {
