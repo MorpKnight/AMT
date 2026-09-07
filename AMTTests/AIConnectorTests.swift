@@ -651,9 +651,16 @@ final class AIConnectorTests: XCTestCase {
             }
         )
 
-        XCTAssertTrue(retrievedTerms.contains("Data Pribadi"))
-        XCTAssertTrue(retrievedTerms.contains("Korporasi"))
+        // OCR-tolerant matches remain readable in Dictionary, but they are
+        // not actionable terminology candidates until exact or human review.
+        XCTAssertFalse(retrievedTerms.contains("Data Pribadi"))
         XCTAssertFalse(retrievedTerms.contains("Keadaan Kahar"))
+        let actionableTerms = Set(
+            store.entries
+                .filter(\.isActionable)
+                .map(\.term)
+        )
+        XCTAssertTrue(retrievedTerms.isSubset(of: actionableTerms))
     }
 
     func testGlossarySnapshotRetainsSegmentAndCandidateForRunHistory() {

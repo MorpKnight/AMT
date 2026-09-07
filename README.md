@@ -47,7 +47,7 @@ AMT is an early-stage research/MVP application. It combines a versioned legal di
 - Bidirectional lookup: search for a legal term or search a description to find relevant terms.
 - Lexical retrieval for exact, prefix, substring, and short term-shaped queries.
 - Optional BM25 + multilingual E5 hybrid retrieval for longer reverse lookups.
-- Definitions, source passages, source URLs, reference metadata, regulations, and regulation relations.
+- Definitions, official source passages, official regulation links, reference metadata, regulations, and regulation relations.
 - Fail-closed behavior for unknown short terms: an unrelated semantic neighbor is not shown as an answer.
 - Suggestion terminology candidates are restricted to verified, actionable corpus concepts.
 
@@ -95,12 +95,14 @@ The active bundled corpus is recorded in [`AMT/Resources/legal_corpus/manifest.j
 
 | Field | Current value |
 | --- | ---: |
-| Corpus version | `hukumonline-kamus-combined-deduplicated@78a2ab626c092662b0441c95904c353b2487b216` |
-| Concepts | 8,272 |
-| Actionable concepts for Suggestion | 2,238 |
+| Corpus version | `lawtionary-dictionary-official@d6260263333814513e6c97366a3d316bd9ed717286880169e8e3383085a3deec` |
+| Concepts | 2,589 |
+| Actionable concepts for Suggestion | 1,666 |
 | Regulations | 1,591 |
 | Regulation relations | 315 |
-| Source passages | 628 |
+| Source passages | 588 |
+| Canonical term groups | 2,982 |
+| Official contextual alternatives | 1,093 |
 | Embedding model | `intfloat/multilingual-e5-small` |
 | Embedding revision | `614241f622f53c4eeff9890bdc4f31cfecc418b3` |
 | Embedding format | 384-dimensional, normalized, float16 little-endian |
@@ -113,10 +115,22 @@ To regenerate a corpus pack from the companion dataset workspace:
 python3 Scripts/export_amt_legal_corpus.py \
   --source-root /path/to/hukumonline-dataset \
   --output-root AMT/Resources/legal_corpus \
-  --dataset-view combined-deduplicated
+  --dataset-view dictionary-official
 ```
 
-The exporter supports `hukumonline`, `combined`, and `combined-deduplicated` views. Embeddings are generated with the pinned multilingual E5 model unless `--skip-embeddings` is used with a compatible existing pack.
+The exporter supports `hukumonline`, `combined`, `combined-deduplicated`, and
+`dictionary-serving` views, plus the application-facing `dictionary-official`
+view. `dictionary-primary` remains a compatibility alias for
+`dictionary-serving`. The official view contains at most one runtime concept
+per canonical term group, selects it using official evidence and regulation
+metadata, and keeps other official definitions as regulatory context. Discovery
+source names and URLs are retained only in the source dataset's audit views;
+they are absent from the bundled application pack. OCR-tolerant evidence can be
+displayed as context, but is labelled `Cocok OCR (belum ditinjau)` and is not
+actionable until exact or human verification exists.
+Embeddings are generated with the pinned multilingual E5 model unless
+`--reuse-embeddings-from` is used with a compatible existing pack or
+`--skip-embeddings` is used with an unchanged source pack.
 
 ## Getting started
 
