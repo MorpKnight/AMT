@@ -36,13 +36,13 @@ struct DashboardSidebar: View {
                 Image(logoImageName)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 22, height: 22)
+                    .frame(width: 24, height: 24)
 
                 Text("Lawtionary")
-                    .appFont(.titleMedium, weight: .bold)
+                    .appFont(.subheadline, weight: .medium)
                     .foregroundStyle(Color.textPrimary)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 8)
             .padding(.top, 16)
             .padding(.bottom, 8)
 
@@ -50,16 +50,25 @@ struct DashboardSidebar: View {
             List(selection: $selectedTab) {
                 ForEach(DashboardTab.allCases) { tab in
                     NavigationLink(value: tab) {
-                        Label(tab.rawValue, systemImage: tab.icon)
-                            .appFont(.subheadline, weight: .medium)
-                            .foregroundStyle(Color.textPrimary)
+                        Label {
+                            Text(tab.rawValue)
+                                .appFont(.subheadline, weight: .medium)
+                                .foregroundStyle(selectedTab == tab ? Color.textTertiary : Color.textPrimary)
+                                .background(selectedTab == tab ? Color.textTertiary : Color.black)
+
+                        } icon: {
+                            Image(systemName: tab.icon)
+                                .foregroundStyle(selectedTab == tab ? Color.textTertiary : Color.textPrimary)
+                        }
                     }
                     .tag(tab)
                 }
             }
-            .listStyle(.sidebar)
+            .padding(10)
+            .cornerRadius(8)
         }
-        .frame(minWidth: 200, idealWidth: 220, maxWidth: 260)
+        .frame(minWidth: 220, idealWidth: 270, maxWidth: 270)
+        
     }
 }
 

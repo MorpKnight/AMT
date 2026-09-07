@@ -7,12 +7,75 @@
 
 import SwiftUI
 
-struct CustomSidebar: View {
-    var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+enum SidebarTab: String, CaseIterable, Identifiable {
+    case document = "Document"
+    case dictionary = "Dictionary"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .document: return "doc.text"
+        case .dictionary: return "book"
+        }
     }
 }
 
-#Preview {
-    CustomSidebar()
+struct CustomSidebar: View {
+    @Binding var selectedTab: DashboardTab?
+    @Environment(\.colorScheme) private var colorScheme
+    
+    private var logoImageName: String {
+        colorScheme == .dark ? "logo_white" : "logo_black"
+    }
+
+    var body: some View {
+        VStack{
+            HStack(alignment: .top, spacing: 8) {
+                Image(logoImageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+
+                Text("Lawtionary")
+                    .appFont(.subheadline, weight: .medium)
+                    .foregroundStyle(Color.textPrimary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+            
+            List(selection: $selectedTab) {
+                ForEach(DashboardTab.allCases) { tab in
+                    NavigationLink(value: tab) {
+                        Label {
+                            Text(tab.rawValue)
+                                .appFont(.subheadline, weight: .medium)
+                                .foregroundStyle(selectedTab == tab ? Color.textTertiary : Color.textPrimary)
+                        } icon: {
+                            Image(systemName: tab.icon)
+                                .foregroundStyle(selectedTab == tab ? Color.textTertiary : Color.textPrimary)
+                        }
+                    }
+                    .tag(tab)
+                }
+            }
+        }
+        .frame(minWidth: 220, idealWidth: 270, maxWidth: 270)
+    }
 }
+
+#Preview("Constant binding") {
+    CustomSidebar(selectedTab: .constant(nil))
+}
+
+#Preview("Interactive wrapper") {
+    struct SidebarPreviewWrapper: View {
+        @State private var selected: DashboardTab? = nil
+        var body: some View {
+            CustomSidebar(selectedTab: $selected)
+        }
+    }
+    return SidebarPreviewWrapper()
+}
+

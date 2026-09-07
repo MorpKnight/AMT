@@ -21,10 +21,9 @@ struct EditorSidebar: View {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
                         Text("Dashboard")
-                            .fontWeight(.medium)
                     }
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.accentColor)
+                    .appFont(.callout, weight: .medium)
+                    .foregroundStyle(Color.textPrimary)
                 }
                 .buttonStyle(.plain)
 
@@ -32,8 +31,8 @@ struct EditorSidebar: View {
 
                 Button(action: onCreateNewDocument) {
                     Image(systemName: "square.and.pencil")
-                        .font(.system(size: 14))
-                        .foregroundStyle(.secondary)
+                        .appFont(size: 14, weight: .medium)
+                        .foregroundStyle(Color.textSecondary)
                 }
                 .buttonStyle(.plain)
                 .help("Impor Dokumen Word")
@@ -42,34 +41,27 @@ struct EditorSidebar: View {
             .padding(.vertical, 12)
 
             Divider()
+                .overlay(Color.borderSubtle)
 
             // List of Existing Documents
             List(selection: $selectedDocumentID) {
-                Section("Dokumen Saya") {
+                Section {
                     ForEach(documents) { doc in
                         HStack(spacing: 8) {
-                            Image(systemName: "doc.text")
-                                .font(.system(size: 14))
-                                .foregroundStyle(selectedDocumentID == doc.id ? Color.accentColor : .secondary)
-
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(doc.title)
-                                    .font(.system(size: 13, weight: selectedDocumentID == doc.id ? .semibold : .regular))
-                                    .lineLimit(1)
-
-                                Text(doc.formattedRelativeDate)
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.secondary)
+                                    .appFont(.callout, weight: selectedDocumentID == doc.id ? .semibold : .regular)
+                                    .foregroundStyle(Color.textPrimary)
                                     .lineLimit(1)
                             }
                         }
                         .tag(doc.id)
                     }
+                    .padding(.top, 8)
                 }
             }
-            .listStyle(.sidebar)
         }
-        .frame(minWidth: 180, idealWidth: 220, maxWidth: 260)
+        .frame(minWidth: 220, idealWidth: 270, maxWidth: 270)
     }
 }
 
