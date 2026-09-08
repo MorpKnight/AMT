@@ -80,7 +80,7 @@ struct DictionaryDetailView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 13, weight: .semibold))
-                        Text("Dictionary")
+                        Text("Kembali")
                             .font(.system(size: 14, weight: .semibold))
                     }
                     .foregroundStyle(.primary)
@@ -98,34 +98,35 @@ struct DictionaryDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         // Term Title Heading
-                        Text(entry.term)
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundStyle(.primary)
-                            .padding(.top, 4)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Hasil penelusuran terkait")
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundStyle(.secondary)
+
+                            Text(entry.term)
+                                .font(.system(size: 34, weight: .bold))
+                                .foregroundStyle(.primary)
+                        }
+                        .padding(.top, 4)
 
                         // Top 5 RAG Matches Bar
                         if !viewModel.topMatches.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     HStack(spacing: 10) {
-                                        ForEach(Array(viewModel.topMatches.prefix(5).enumerated()), id: \.offset) { index, match in
+                                        ForEach(viewModel.topMatches.prefix(5)) { match in
                                             Button(action: {
                                                 viewModel.selectMatch(match)
                                             }) {
-                                                HStack(spacing: 6) {
-                                                    Text("#\(index + 1)")
-                                                        .font(.system(size: 11, weight: .bold))
-                                                        .foregroundStyle(viewModel.selectedEntry?.term == match.term ? Color.white : Color.accentColor)
-                                                    Text(match.term)
-                                                        .font(.system(size: 12, weight: .medium))
-                                                        .foregroundStyle(viewModel.selectedEntry?.term == match.term ? Color.white : Color.primary)
-                                                }
-                                                .padding(.horizontal, 12)
-                                                .padding(.vertical, 6)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .fill(viewModel.selectedEntry?.term == match.term ? Color.accentColor : Color.primary.opacity(0.06))
-                                                )
+                                                Text(match.term)
+                                                    .font(.system(size: 12, weight: .medium))
+                                                    .foregroundStyle(viewModel.selectedEntry?.term == match.term ? Color.white : Color.primary)
+                                                    .padding(.horizontal, 12)
+                                                    .padding(.vertical, 6)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .fill(viewModel.selectedEntry?.term == match.term ? Color.accentColor : Color.primary.opacity(0.06))
+                                                    )
                                             }
                                             .buttonStyle(.plain)
                                         }
@@ -213,8 +214,7 @@ struct DictionaryDetailView: View {
                 .padding(.horizontal, 4)
                 .padding(.vertical, 2)
                 .fixedSize(horizontal: false, vertical: true)
-
-            definitionEvidenceSummary(for: def)
+            // definitionEvidenceSummary(for: def)
 
             definitionHistory(for: def, in: entry)
 
