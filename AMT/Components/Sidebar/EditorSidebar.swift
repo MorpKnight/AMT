@@ -11,11 +11,11 @@ struct EditorSidebar: View {
     let documents: [DashboardDocument]
     @Binding var selectedDocumentID: UUID?
     let onBackToDashboard: () -> Void
-    let onCreateNewDocument: () -> Void
+    let onImportDocument: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            // Sidebar Header (Back Button & New Document Button)
+            // Sidebar Header (Back Button & Import Document Button)
             HStack {
                 Button(action: onBackToDashboard) {
                     HStack(spacing: 4) {
@@ -29,10 +29,10 @@ struct EditorSidebar: View {
 
                 Spacer()
 
-                Button(action: onCreateNewDocument) {
-                    Image(systemName: "square.and.pencil")
-                        .appFont(size: 14, weight: .medium)
-                        .foregroundStyle(Color.textSecondary)
+                Button(action: onImportDocument) {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
                 .help("Impor Dokumen Word")
@@ -111,6 +111,6 @@ private struct EditorSidebarItem: View {
         ],
         selectedDocumentID: .constant(nil),
         onBackToDashboard: {},
-        onCreateNewDocument: {}
+        onImportDocument: {}
     )
 }

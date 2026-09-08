@@ -3,7 +3,7 @@ import Foundation
 
 /// Identifies an imported document by both its source bytes and its stored
 /// textual representation.
-struct DocumentFingerprint: Codable, Equatable, Hashable, Sendable {
+nonisolated struct DocumentFingerprint: Codable, Equatable, Hashable, Sendable {
     static let currentVersion = 1
 
     let version: Int
@@ -21,7 +21,7 @@ struct DocumentFingerprint: Codable, Equatable, Hashable, Sendable {
     }
 }
 
-enum DocumentFingerprinting {
+nonisolated enum DocumentFingerprinting {
     private static let fileReadChunkSize = 1_048_576
 
     static func make(

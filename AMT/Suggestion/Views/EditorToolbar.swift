@@ -29,8 +29,8 @@ enum DocumentPresentationMode: String, CaseIterable, Identifiable {
     var id: Self { self }
     var title: String {
         switch self {
-        case .preview: "Dokumen"
-        case .editing: "Edit & Suggestion"
+        case .preview: "Dokumen Asli"
+        case .editing: "Review & Edit"
         }
     }
 }
@@ -40,7 +40,42 @@ struct EditorToolbar: View {
     @Binding var presentationMode: DocumentPresentationMode
     let viewModel: EditorViewModel
     let canPreviewOriginal: Bool
+    let saveState: DocumentSaveState
+    let reviewNeedsRerun: Bool
+    let aiConnectorViewModel: AIConnectorViewModel?
+    var onRetrySave: () -> Void = {}
     var onExport: (() -> Void)?
+    var onRerun: () -> Void = {}
+    var onRerunSection: () -> Void = {}
+    var onRerunFull: () -> Void = {}
+
+    init(
+        documentTitle: Binding<String>,
+        presentationMode: Binding<DocumentPresentationMode>,
+        viewModel: EditorViewModel,
+        canPreviewOriginal: Bool,
+        saveState: DocumentSaveState,
+        reviewNeedsRerun: Bool,
+        onRetrySave: @escaping () -> Void = {},
+        onExport: (() -> Void)? = nil,
+        aiConnectorViewModel: AIConnectorViewModel? = nil,
+        onRerun: @escaping () -> Void = {},
+        onRerunSection: @escaping () -> Void = {},
+        onRerunFull: @escaping () -> Void = {}
+    ) {
+        self._documentTitle = documentTitle
+        self._presentationMode = presentationMode
+        self.viewModel = viewModel
+        self.canPreviewOriginal = canPreviewOriginal
+        self.saveState = saveState
+        self.reviewNeedsRerun = reviewNeedsRerun
+        self.aiConnectorViewModel = aiConnectorViewModel
+        self.onRetrySave = onRetrySave
+        self.onExport = onExport
+        self.onRerun = onRerun
+        self.onRerunSection = onRerunSection
+        self.onRerunFull = onRerunFull
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -59,6 +94,17 @@ struct EditorToolbar: View {
                 formattingControls
             }
             Spacer()
+            saveStatus
+            if presentationMode == .editing, reviewNeedsRerun {
+                Label("Review perlu diulang", systemImage: "arrow.clockwise.circle")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.orange)
+                    .help("Dokumen berubah setelah analisis terakhir.")
+                    .accessibilityLabel("Review perlu diulang")
+            }
+            if presentationMode == .editing, let aiConnectorViewModel {
+                incrementalAnalysisControls(for: aiConnectorViewModel)
+            }
             exportButton
         }
         .padding(.horizontal, 16)
@@ -217,6 +263,38 @@ struct EditorToolbar: View {
         }
     }
 
+    @ViewBuilder
+    private var saveStatus: some View {
+        if case let .failed(message) = saveState {
+            Button(action: onRetrySave) {
+                Label(saveState.title, systemImage: saveState.systemImage)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.orange)
+            }
+            .buttonStyle(.plain)
+            .help("\(message) Klik untuk mencoba lagi.")
+            .accessibilityLabel("\(saveState.title). Coba lagi")
+        } else {
+            Label(saveState.title, systemImage: saveState.systemImage)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(saveStatusColor)
+                .accessibilityLabel(saveState.title)
+        }
+    }
+
+    private var saveStatusColor: Color {
+        switch saveState {
+        case .dirty:
+            .secondary
+        case .saving:
+            .secondary
+        case .saved:
+            .secondary
+        case .failed:
+            .orange
+        }
+    }
+
     private var exportButton: some View {
         Button {
             onExport?()
@@ -229,6 +307,64 @@ struct EditorToolbar: View {
         .buttonStyle(.plain)
         .liquidGlass(cornerRadius: 10)
         .help("Ekspor Dokumen (.docx)")
+    }
+
+    @ViewBuilder
+    private func incrementalAnalysisControls(
+        for aiConnectorViewModel: AIConnectorViewModel
+    ) -> some View {
+        if aiConnectorViewModel.isRunning {
+            HStack(spacing: 6) {
+                ProgressView()
+                    .controlSize(.small)
+                Text(analysisProgressTitle(aiConnectorViewModel))
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Button("Batal") {
+                    aiConnectorViewModel.cancel()
+                }
+                .buttonStyle(.plain)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.orange)
+                .help("Batalkan pemeriksaan; hasil yang sudah valid tetap dipertahankan.")
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(analysisProgressTitle(aiConnectorViewModel))
+        } else {
+            Menu {
+                Button("Periksa ulang") { onRerun() }
+                    .disabled(!aiConnectorViewModel.canRerunAnalysis)
+                Button("Periksa bagian ini") { onRerunSection() }
+                    .disabled(!aiConnectorViewModel.canRerunSelectedSection)
+                Divider()
+                Button("Periksa seluruh dokumen dari awal") { onRerunFull() }
+            } label: {
+                Label(
+                    aiConnectorViewModel.hasPendingAnalysisChanges
+                        ? "Periksa ulang"
+                        : "Periksa",
+                    systemImage: "arrow.clockwise"
+                )
+                .font(.caption2.weight(.medium))
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .help("Pilih bagian dokumen yang ingin diperiksa ulang.")
+            .accessibilityLabel("Pilihan pemeriksaan ulang")
+        }
+    }
+
+    private func analysisProgressTitle(_ viewModel: AIConnectorViewModel) -> String {
+        let progress = viewModel.progressSnapshot
+        let reused = progress.reusedSegmentCount
+        let reprocessed = progress.reprocessedSegmentCount
+        let completed = progress.completedSegmentCount
+        let total = progress.totalSegmentCount
+        if reused > 0 {
+            return "Memeriksa \(completed) dari \(total) · \(reused) dipakai ulang · \(reprocessed) dihitung ulang"
+        }
+        return "Memeriksa \(completed) dari \(total)"
     }
 }
 
@@ -320,7 +456,9 @@ private extension View {
             documentTitle: .constant("Untitled"),
             presentationMode: .constant(.editing),
             viewModel: EditorViewModel(),
-            canPreviewOriginal: true
+            canPreviewOriginal: true,
+            saveState: .saved(Date()),
+            reviewNeedsRerun: false
         )
     }
     .frame(width: 850, height: 100)

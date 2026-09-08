@@ -61,6 +61,7 @@ final class EditorSuggestionTests: XCTestCase {
         XCTAssertEqual(first.reference?.sourcePassageID, "passage-data-pribadi")
         XCTAssertEqual(first.definitionDiagnosticStatus, .mismatch)
         XCTAssertEqual(first.definitionTerm, "Data Pribadi")
+        XCTAssertTrue(first.isReadOnlyDiagnostic)
         XCTAssertEqual(first.id, second.id)
     }
 
@@ -361,6 +362,14 @@ final class EditorSuggestionTests: XCTestCase {
                 assessments: [matching, uncertain, unanchoredMismatch],
                 documentText: target
             ).isEmpty
+        )
+        XCTAssertTrue(
+            EditorSuggestionMapper.make(
+                reviews: [],
+                definitionAssessments: [unanchoredMismatch],
+                documentText: target
+            ).isEmpty,
+            "Definition assessments must stay outside the actionable suggestion layer."
         )
     }
 

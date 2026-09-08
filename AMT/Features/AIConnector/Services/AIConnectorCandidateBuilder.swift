@@ -24,50 +24,34 @@ struct AIConnectorCandidateBuilder: Sendable {
         glossaryMatches: [LegalDictionaryMatch],
         spellingCandidates: [AIConnectorSpellingCandidate] = []
     ) -> [AIConnectorReviewCandidate] {
+        buildResult(
+            for: segment,
+            glossaryMatches: glossaryMatches,
+            spellingCandidates: spellingCandidates
+        ).candidates
+    }
+
+    func buildResult(
+        for segment: AIReviewSegment,
+        glossaryMatches: [LegalDictionaryMatch],
+        spellingCandidates: [AIConnectorSpellingCandidate] = [],
+        phaseTwoEnabled: Bool = false
+    ) -> AIConnectorCandidateBuildResult {
         let verifiedMatches = glossaryMatches.filter {
             $0.entry.authority == .verified
                 && $0.entry.isActionable
                 && $0.entry.corpusVersion != LegalDictionaryCorpusVersion.legacyKamusV1
                 && $0.entry.corpusVersion != LegalDictionaryCorpusVersion.legacyRAGExportV1
         }
-        var parsedReviews = deterministicEngine.suggestions(
+        var proposals = deterministicEngine.anchoredSuggestions(
             for: segment,
             glossaryMatches: verifiedMatches
-        )
-
-        // A retrieved definition is often paraphrased in a contract rather
-        // than copied verbatim. In that case generate the smallest local
-        // source span whose words cover the calibrated definition keywords.
-        // The replacement remains the canonical term from the corpus.
-        for match in verifiedMatches where !match.isDirectTermMatch {
-            guard let change = terminologyChange(for: match.entry, in: segment.targetText),
-                  !parsedReviews.contains(where: {
-                      // Prefer the complete, exact definition replacement
-                      // produced above. A shorter semantic window is useful
-                      // only when no exact definition span was found; it must
-                      // not outrank the safer, fully grounded proposal.
-                      $0.category == .terminology
-                          && $0.replacement == match.entry.term
-                  }) else {
-                continue
-            }
-
-            parsedReviews.append(
-                AIParsedReview(
-                    status: .suggestion,
-                    category: .terminology,
-                    original: change.original,
-                    replacement: match.entry.term,
-                    glossaryID: "G1",
-                    reason: "Mencocokkan uraian pada target dengan istilah canonical dari corpus terverifikasi."
-                )
-            )
-        }
-
-        var proposals = parsedReviews.compactMap { parsedReview -> Proposal? in
+        ).compactMap { anchoredReview -> Proposal? in
+            let parsedReview = anchoredReview.parsedReview
+            let range = anchoredReview.sourceAnchor.range
             guard let original = parsedReview.original,
                   let replacement = parsedReview.replacement,
-                  let range = uniqueRange(of: original, in: segment.targetText),
+                  original == (segment.targetText as NSString).substring(with: range),
                   isAllowedRange(
                       range,
                       category: parsedReview.category,
@@ -95,6 +79,42 @@ struct AIConnectorCandidateBuilder: Sendable {
                 priority: priority(for: parsedReview, glossaryMatch: glossaryMatch),
                 glossaryMatch: glossaryMatch,
                 confidenceTier: confidenceTier
+            )
+        }
+
+        // A retrieved definition is often paraphrased in a contract rather
+        // than copied verbatim. In that case generate the smallest local
+        // source span whose words cover the calibrated definition keywords.
+        // The replacement remains the canonical term from the corpus.
+        for match in verifiedMatches where !match.isDirectTermMatch {
+            guard let change = terminologyChange(for: match.entry, in: segment.targetText),
+                  !proposals.contains(where: {
+                      // Prefer the complete, exact definition replacement
+                      // produced above. A shorter semantic window is useful
+                      // only when no exact definition span was found; it must
+                      // not outrank the safer, fully grounded proposal.
+                      $0.parsedReview.category == .terminology
+                          && $0.parsedReview.replacement == match.entry.term
+                  }) else {
+                continue
+            }
+
+            let parsedReview = AIParsedReview(
+                status: .suggestion,
+                category: .terminology,
+                original: change.original,
+                replacement: match.entry.term,
+                glossaryID: "G1",
+                reason: "Mencocokkan uraian pada target dengan istilah canonical dari corpus terverifikasi."
+            )
+            proposals.append(
+                Proposal(
+                    parsedReview: parsedReview,
+                    range: change.range,
+                    priority: priority(for: parsedReview, glossaryMatch: match),
+                    glossaryMatch: match,
+                    confidenceTier: .verifiedGlossary
+                )
             )
         }
 
@@ -161,6 +181,27 @@ struct AIConnectorCandidateBuilder: Sendable {
         }
         proposals.append(contentsOf: spellingProposals)
 
+        let allCandidates = proposals.enumerated().map { index, proposal in
+            AIConnectorReviewCandidate(
+                id: "P\(index + 1)",
+                segmentID: segment.id,
+                original: proposal.parsedReview.original ?? "",
+                replacement: proposal.parsedReview.replacement ?? "",
+                category: proposal.parsedReview.category,
+                priority: proposal.priority,
+                ruleID: proposal.parsedReview.ruleID,
+                glossaryMatch: proposal.glossaryMatch,
+                explanation: proposal.parsedReview.reason,
+                confidenceTier: proposal.confidenceTier,
+                languageScoreEvidence: proposal.languageScoreEvidence,
+                evidence: evidence(for: proposal)
+            )
+        }
+
+        if phaseTwoEnabled {
+            return AIConnectorPhaseTwoCandidateRanker().select(allCandidates)
+        }
+
         proposals.sort { lhs, rhs in
             if lhs.priority != rhs.priority {
                 return lhs.priority < rhs.priority
@@ -180,20 +221,16 @@ struct AIConnectorCandidateBuilder: Sendable {
             return lhs.parsedReview.ruleID ?? "" < rhs.parsedReview.ruleID ?? ""
         }
 
-        var selected: [Proposal] = []
-        for proposal in proposals {
-            guard !selected.contains(where: { other in
-                NSIntersectionRange(proposal.range, other.range).length > 0
-            }) else {
-                continue
+        let selected = proposals.reduce(into: [Proposal]()) { selected, proposal in
+            guard selected.count < AIConnectorSuggestionConflictResolver.maximumSuggestionsPerSegment,
+                  !selected.contains(where: { other in
+                      NSIntersectionRange(proposal.range, other.range).length > 0
+                  }) else {
+                return
             }
             selected.append(proposal)
-            if selected.count == AIConnectorSuggestionConflictResolver.maximumSuggestionsPerSegment {
-                break
-            }
         }
-
-        return selected.enumerated().map { index, proposal in
+        let candidates = selected.enumerated().map { index, proposal in
             AIConnectorReviewCandidate(
                 id: "C\(index + 1)",
                 segmentID: segment.id,
@@ -205,9 +242,49 @@ struct AIConnectorCandidateBuilder: Sendable {
                 glossaryMatch: proposal.glossaryMatch,
                 explanation: proposal.parsedReview.reason,
                 confidenceTier: proposal.confidenceTier,
-                languageScoreEvidence: proposal.languageScoreEvidence
+                languageScoreEvidence: proposal.languageScoreEvidence,
+                evidence: evidence(for: proposal)
             )
         }
+        return AIConnectorCandidateBuildResult(
+            candidates: candidates,
+            droppedCandidateCount: max(0, proposals.count - selected.count),
+            conflictCount: max(0, proposals.count - selected.count)
+        )
+    }
+
+    private func evidence(for proposal: Proposal) -> AIConnectorCandidateEvidence {
+        let tier: AIConnectorPhaseTwoEvidenceTier
+        switch proposal.confidenceTier {
+        case .deterministicRule:
+            tier = .exactRule
+        case .tataKataScored:
+            tier = .scoredSpelling
+        case .verifiedGlossary:
+            tier = proposal.glossaryMatch?.isDirectTermMatch == true
+                ? .verifiedGlossary
+                : .semanticGlossary
+        }
+
+        let match = proposal.glossaryMatch
+        let hasSourceAnchor = match?.entry.sourcePassageID != nil
+            || match?.entry.referenceID != nil
+            || match?.entry.officialDocumentURL != nil
+            || match?.entry.sourceURL != nil
+
+        return AIConnectorCandidateEvidence(
+            tier: tier,
+            sourceLocation: proposal.range.location,
+            spanLength: proposal.range.length,
+            rulePriority: proposal.priority,
+            sourceRank: match?.rank ?? Int.max,
+            matchedDefinitionTokenCount: match?.matchedDefinitionTokenCount ?? 0,
+            semanticScore: match?.semanticScore.map { Double($0) },
+            languageScoreDelta: proposal.languageScoreEvidence?.delta,
+            isDirectTermMatch: match?.isDirectTermMatch ?? false,
+            hasSourceAnchor: hasSourceAnchor,
+            isUniqueSpan: true
+        )
     }
 
     private func priority(
@@ -311,7 +388,11 @@ struct AIConnectorCandidateBuilder: Sendable {
                     original: original.trimmingCharacters(in: .whitespacesAndNewlines),
                     coverage: coverage,
                     length: windowLength,
-                    location: tokens[start].range.location
+                    location: tokens[start].range.location,
+                    range: NSRange(
+                        location: tokens[start].range.location,
+                        length: NSMaxRange(tokens[end - 1].range) - tokens[start].range.location
+                    )
                 )
                 if best == nil || candidate.isBetter(than: best!) {
                     best = candidate
@@ -325,7 +406,7 @@ struct AIConnectorCandidateBuilder: Sendable {
         }
 
         guard let best else { return nil }
-        return TextChange(original: best.original, replacement: entry.term)
+        return TextChange(original: best.original, replacement: entry.term, range: best.range)
     }
 
     private func isAllowedRange(
@@ -394,6 +475,7 @@ struct AIConnectorCandidateBuilder: Sendable {
         let coverage: Double
         let length: Int
         let location: Int
+        let range: NSRange
 
         func isBetter(than other: Window) -> Bool {
             if length != other.length { return length < other.length }
@@ -405,6 +487,7 @@ struct AIConnectorCandidateBuilder: Sendable {
     private struct TextChange: Sendable {
         let original: String
         let replacement: String
+        let range: NSRange
     }
 
     private struct Proposal: Sendable {

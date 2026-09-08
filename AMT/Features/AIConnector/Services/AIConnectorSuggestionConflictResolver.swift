@@ -15,12 +15,8 @@ struct AIConnectorSuggestionConflictResolver: Sendable {
                 let lhsLength = lhs.original?.utf16.count ?? Int.max
                 let rhsLength = rhs.original?.utf16.count ?? Int.max
                 if lhsLength != rhsLength { return lhsLength < rhsLength }
-                let lhsLocation = lhs.original.flatMap {
-                    uniqueRange(of: $0, in: lhs.segment.targetText)?.location
-                } ?? Int.max
-                let rhsLocation = rhs.original.flatMap {
-                    uniqueRange(of: $0, in: rhs.segment.targetText)?.location
-                } ?? Int.max
+                let lhsLocation = sourceRange(for: lhs)?.location ?? Int.max
+                let rhsLocation = sourceRange(for: rhs)?.location ?? Int.max
                 if lhsLocation != rhsLocation { return lhsLocation < rhsLocation }
                 if lhs.segment.id != rhs.segment.id { return lhs.segment.id < rhs.segment.id }
                 return lhs.id.uuidString < rhs.id.uuidString
@@ -30,8 +26,7 @@ struct AIConnectorSuggestionConflictResolver: Sendable {
         var countsBySegment: [Int: Int] = [:]
 
         for review in actionable {
-            guard let original = review.original,
-                  let localRange = uniqueRange(of: original, in: review.segment.targetText),
+            guard let localRange = sourceRange(for: review),
                   countsBySegment[review.segment.id, default: 0]
                     < Self.maximumSuggestionsPerSegment else {
                 continue
@@ -39,11 +34,7 @@ struct AIConnectorSuggestionConflictResolver: Sendable {
 
             let conflicts = accepted.contains { other in
                 guard other.segment.id == review.segment.id,
-                      let otherOriginal = other.original,
-                      let otherRange = uniqueRange(
-                          of: otherOriginal,
-                          in: other.segment.targetText
-                      ) else {
+                      let otherRange = sourceRange(for: other) else {
                     return false
                 }
                 return NSIntersectionRange(localRange, otherRange).length > 0
@@ -58,6 +49,16 @@ struct AIConnectorSuggestionConflictResolver: Sendable {
             if lhs.segment.id != rhs.segment.id { return lhs.segment.id < rhs.segment.id }
             return lhs.id.uuidString < rhs.id.uuidString
         }
+    }
+
+    private func sourceRange(for review: AIValidatedReview) -> NSRange? {
+        guard let original = review.original else { return nil }
+        if let anchor = review.sourceAnchor {
+            return anchor.isValid(for: review.segment, original: original)
+                ? anchor.range
+                : nil
+        }
+        return uniqueRange(of: original, in: review.segment.targetText)
     }
 
     private func priority(for review: AIValidatedReview) -> Int {

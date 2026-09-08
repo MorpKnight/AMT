@@ -130,6 +130,14 @@ nonisolated struct LegalDictionaryMatch: Identifiable, Hashable, Sendable {
     }
 }
 
+/// Diagnostic metadata for suggestion retrieval. The legacy array-returning
+/// API remains available so Dictionary and older callers do not change.
+nonisolated struct LegalDictionarySuggestionRetrievalResult: Sendable {
+    let matches: [LegalDictionaryMatch]
+    let queryCount: Int
+    let semanticQueryCount: Int
+}
+
 nonisolated struct LegalDictionaryStore: Sendable {
     /// The legacy CSV parser and resource are retained for a future migration,
     /// but the old corpus is intentionally not part of the active Dictionary
@@ -577,6 +585,14 @@ nonisolated struct LegalDictionaryStore: Sendable {
         return await semanticRetriever.isLoaded
     }
 
+    /// Prepares the optional semantic index without performing a query. This
+    /// is used only by the opt-in Phase 0 resource-preparation measurement.
+    nonisolated func prepareSemanticModel(
+        progress: @Sendable @escaping (Double) -> Void = { _ in }
+    ) async throws {
+        try await semanticRetriever?.load(progress: progress)
+    }
+
     nonisolated private func rankedSearch(
         _ query: String,
         limit: Int
@@ -781,22 +797,54 @@ nonisolated struct LegalDictionaryStore: Sendable {
         limit: Int = 3,
         semanticProgress: @Sendable @escaping (Double) -> Void = { _ in }
     ) async -> [LegalDictionaryMatch] {
-        guard limit > 0 else { return [] }
+        await suggestionCandidateResultAsync(
+            for: text,
+            limit: limit,
+            semanticProgress: semanticProgress
+        ).matches
+    }
+
+    /// Returns suggestion matches plus bounded retrieval counters. Query
+    /// strings remain inside the retrieval boundary and are never exported.
+    nonisolated func suggestionCandidateResultAsync(
+        for text: String,
+        limit: Int = 3,
+        semanticProgress: @Sendable @escaping (Double) -> Void = { _ in }
+    ) async -> LegalDictionarySuggestionRetrievalResult {
+        guard limit > 0 else {
+            return LegalDictionarySuggestionRetrievalResult(
+                matches: [],
+                queryCount: 0,
+                semanticQueryCount: 0
+            )
+        }
 
         if corpusStore != nil, semanticRetriever != nil {
             let effectiveLimit = min(
                 limit,
                 corpusStore?.manifest.retrieval.suggestionCandidateLimit ?? limit
             )
-            guard effectiveLimit > 0 else { return [] }
+            guard effectiveLimit > 0 else {
+                return LegalDictionarySuggestionRetrievalResult(
+                    matches: [],
+                    queryCount: 0,
+                    semanticQueryCount: 0
+                )
+            }
             let queries = Self.retrievalQueries(for: text)
             let semanticModelAlreadyLoaded = await semanticRetriever?.isLoaded ?? true
             var matchesByEntryID: [String: LegalDictionaryMatch] = [:]
+            var semanticQueryCount = 0
 
             for (queryIndex, query) in queries.enumerated() {
                 if Task.isCancelled {
-                    return []
+                    return LegalDictionarySuggestionRetrievalResult(
+                        matches: [],
+                        queryCount: queryIndex,
+                        semanticQueryCount: semanticQueryCount
+                    )
                 }
+                semanticQueryCount += 1
                 let request = LegalRetrievalRequest(
                     query: query,
                     intent: .suggestion,
@@ -820,7 +868,11 @@ nonisolated struct LegalDictionaryStore: Sendable {
                     continue
                 }
                 if Task.isCancelled {
-                    return []
+                    return LegalDictionarySuggestionRetrievalResult(
+                        matches: [],
+                        queryCount: queryIndex + 1,
+                        semanticQueryCount: semanticQueryCount
+                    )
                 }
 
                 for match in makeSuggestionMatches(
@@ -838,17 +890,26 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 }
             }
 
-            return matchesByEntryID.values
+            let matches = matchesByEntryID.values
                 .sorted { lhs, rhs in
                     if lhs.score != rhs.score { return lhs.score > rhs.score }
                     return lhs.entry.id < rhs.entry.id
                 }
                 .prefix(effectiveLimit)
                 .map { $0 }
+            return LegalDictionarySuggestionRetrievalResult(
+                matches: matches,
+                queryCount: queries.count,
+                semanticQueryCount: semanticQueryCount
+            )
         }
 
-        return suggestionCandidates(for: text, limit: limit)
-            .filter { $0.entry.isActionable }
+        return LegalDictionarySuggestionRetrievalResult(
+            matches: suggestionCandidates(for: text, limit: limit)
+                .filter { $0.entry.isActionable },
+            queryCount: 1,
+            semanticQueryCount: 0
+        )
     }
 
     private nonisolated func lexicalMatches(
