@@ -85,6 +85,7 @@ public extension Color {
     static let bgSidebar         = AppColor.token.surfaceSidebarBackground
     static let bgCard            = AppColor.token.surfaceCardBackground
     static let bgPrimary         = AppColor.token.primaryMain
+    static let bgSelected        = AppColor.token.neutral100
 
     // MARK: - Border / Divider
     static let borderDefault     = AppColor.token.surfaceSeparator
@@ -94,4 +95,5 @@ public extension Color {
     static let interactiveHover    = AppColor.token.primary500
     static let interactivePressed  = AppColor.token.primary700
     static let interactiveDisabled = AppColor.token.neutral200
+    static let interactiveSelected = AppColor.token.neutral100
 }

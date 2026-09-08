@@ -1,7 +1,10 @@
 import Foundation
 
 struct AIConnectorDocumentProtectionContextBuilder: Sendable {
-    func build(documentText: String) -> AIConnectorDocumentProtectionContext {
+    func build(
+        documentText: String,
+        additionalDefinedTerms: Set<String> = []
+    ) -> AIConnectorDocumentProtectionContext {
         let quotedTerms = matches(
             pattern: #"[\"“]([^\"”]+)[\"”]"#,
             in: documentText,
@@ -37,6 +40,7 @@ struct AIConnectorDocumentProtectionContextBuilder: Sendable {
                 captureGroup: 1
             )
         )
+        definedTerms.formUnion(additionalDefinedTerms)
 
         return AIConnectorDocumentProtectionContext(
             definedTerms: definedTerms,

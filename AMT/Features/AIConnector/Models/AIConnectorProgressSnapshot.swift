@@ -15,6 +15,9 @@ nonisolated struct AIConnectorProgressSnapshot: Equatable, Sendable {
     let generationCharacters: Int
     let startedAt: Date
     let lastActivityAt: Date
+    let reusedSegmentCount: Int
+    let reprocessedSegmentCount: Int
+    let pendingSegmentCount: Int
 
     init(
         stage: AIConnectorProgressStage,
@@ -25,7 +28,10 @@ nonisolated struct AIConnectorProgressSnapshot: Equatable, Sendable {
         currentSegmentID: Int?,
         generationCharacters: Int,
         startedAt: Date,
-        lastActivityAt: Date
+        lastActivityAt: Date,
+        reusedSegmentCount: Int = 0,
+        reprocessedSegmentCount: Int = 0,
+        pendingSegmentCount: Int = 0
     ) {
         self.stage = stage
         self.overallFraction = overallFraction.map(Self.clamped)
@@ -36,6 +42,9 @@ nonisolated struct AIConnectorProgressSnapshot: Equatable, Sendable {
         self.generationCharacters = generationCharacters
         self.startedAt = startedAt
         self.lastActivityAt = lastActivityAt
+        self.reusedSegmentCount = max(reusedSegmentCount, 0)
+        self.reprocessedSegmentCount = max(reprocessedSegmentCount, 0)
+        self.pendingSegmentCount = max(pendingSegmentCount, 0)
     }
 
     var hasKnownOverallProgress: Bool {

@@ -198,6 +198,174 @@ private struct AIConnectorNativeDebugContent: View {
             }
             .disabled(viewModel.isRunning)
 
+            if let structure = viewModel.documentStructure,
+               let profile = viewModel.documentContextProfile {
+                Section("Document Context (Debug)") {
+                    LabeledContent("Struktur") {
+                        Text("\(structure.sections.count) section · \(structure.blocks.count) block · \(structure.headingCount) heading")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    LabeledContent("Status klasifikasi") {
+                        Text(profile.classificationStatus.rawValue)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                    }
+                    LabeledContent("Tipe dokumen") {
+                        Text(profile.documentTypeCandidates.map(\.value).joined(separator: ", "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    LabeledContent("Domain") {
+                        Text(profile.legalDomains.map(\.value).joined(separator: ", "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    LabeledContent("Evidence lokal") {
+                        Text("\(profile.parties.count) pihak · \(profile.definedTerms.count) defined term · \(profile.regulationReferences.count) rujukan · \(profile.jurisdictions.count) yurisdiksi")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    LabeledContent("Coverage cuplikan") {
+                        Text("\(profile.coverage.sampledUTF16Length)/\(profile.coverage.totalUTF16Length) UTF-16 · \(profile.coverage.fraction, specifier: "%.1f")")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    LabeledContent("Klasifikasi Qwen") {
+                        Text("\(profile.modelCallCount) call · \(profile.classificationDuration, specifier: "%.3f") detik · cache \(viewModel.contextPreparationCacheHit ? "hit" : "miss")")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    LabeledContent("Durasi struktur") {
+                        Text("\(viewModel.contextStructureDuration, specifier: "%.3f") detik · ekstraksi \(viewModel.contextExtractionDuration, specifier: "%.3f") detik")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    LabeledContent("Durasi persiapan") {
+                        Text("\(viewModel.contextPreparationDuration, specifier: "%.3f") detik · segmentasi \(viewModel.contextSegmentationDuration, specifier: "%.3f") detik")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    DisclosureGroup("Outline") {
+                        ForEach(structure.sections, id: \.id) { section in
+                            Text(section.headingPath.joined(separator: " › "))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+
+            if viewModel.incrementalRunMetrics.totalDuration != nil
+                || viewModel.hasPendingAnalysisChanges
+                || viewModel.reusedSegmentCount > 0 {
+                Section("Phase 7 — Incremental Analysis (Debug)") {
+                    LabeledContent("Scope") {
+                        Text(viewModel.analysisRunScope.rawValue)
+                            .font(.caption.monospaced())
+                    }
+                    LabeledContent("Coverage") {
+                        Text("\(viewModel.reusedSegmentCount) dipakai ulang · \(viewModel.reprocessedSegmentCount) dihitung ulang · \(viewModel.progressSnapshot.pendingSegmentCount) pending")
+                            .font(.caption.monospacedDigit())
+                    }
+                    LabeledContent("Latensi") {
+                        let metrics = viewModel.incrementalRunMetrics
+                        let firstResult = metrics.firstResultLatency.map {
+                            String(format: "%.3f", $0)
+                        } ?? "—"
+                        let total = metrics.totalDuration.map {
+                            String(format: "%.3f", $0)
+                        } ?? "—"
+                        Text("hasil pertama \(firstResult) detik · total \(total) detik")
+                            .font(.caption.monospacedDigit())
+                    }
+                    LabeledContent("Cache") {
+                        let metrics = viewModel.incrementalRunMetrics
+                        Text("lookup \(metrics.cacheLookupCount) · hit \(metrics.cacheHitCount)")
+                            .font(.caption.monospacedDigit())
+                    }
+                    if viewModel.hasPendingAnalysisChanges {
+                        Label("Pemeriksaan belum lengkap; jalankan Periksa ulang untuk melanjutkan.", systemImage: "pause.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+#if DEBUG
+            Section("Phase 7 — Planner Benchmark") {
+                Text("Benchmark ini mengukur struktur, segmentasi, dan perencanaan reuse secara lokal. Tidak mengunduh model dan tidak mengukur latensi Qwen.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button {
+                    viewModel.runIncrementalPlannerBenchmark(documentText: documentText)
+                } label: {
+                    Label("Run Phase 7 Benchmark", systemImage: "speedometer")
+                }
+
+                if let report = viewModel.incrementalBenchmarkReport {
+                    LabeledContent("Ringkasan") {
+                        Text(
+                            "p50 " + String(format: "%.4f", report.p50Duration)
+                                + " detik · p95 "
+                                + String(format: "%.4f", report.p95Duration)
+                                + " detik"
+                        )
+                        .font(.caption.monospacedDigit())
+                    }
+                    LabeledContent("Resource / model") {
+                        Text(
+                            "resource "
+                                + String(format: "%.4f", report.totalResourcePreparationDuration)
+                                + " detik · "
+                                + String(report.totalModelCallCount)
+                                + " call"
+                        )
+                        .font(.caption.monospacedDigit())
+                    }
+                    ForEach(report.cases) { item in
+                        LabeledContent(item.scenario.title) {
+                            Text(
+                                "reuse " + String(item.reusedSegmentCount)
+                                    + " · ulang " + String(item.reprocessedSegmentCount)
+                                    + " · cache " + String(item.cacheHitCount)
+                            )
+                                .font(.caption.monospacedDigit())
+                        }
+                    }
+                }
+            }
+#endif
+
+            if viewModel.documentFindingMetrics.findingCount > 0
+                || viewModel.documentFindingMetrics.riskCandidateCount > 0
+                || viewModel.documentFindingMetrics.cacheHit {
+                Section("Phase 5 — Defined-Term & Legal Risk (Debug)") {
+                    Text("Hanya jumlah, status, dan durasi yang ditampilkan di diagnostics. Isi finding dan evidence tetap berada di sesi lokal.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    LabeledContent("Finding") {
+                        Text("\(viewModel.documentFindingMetrics.findingCount) total · \(viewModel.documentFindingMetrics.definedTermFindingCount) defined term · \(viewModel.documentFindingMetrics.legalRiskFindingCount) legal risk · \(viewModel.documentFindingMetrics.internalReferenceFindingCount) rujukan")
+                            .font(.caption.monospacedDigit())
+                    }
+                    LabeledContent("Kandidat risiko") {
+                        Text("\(viewModel.documentFindingMetrics.riskCandidateCount) kandidat · \(viewModel.documentFindingMetrics.riskModelCallCount) Qwen call · fallback \(viewModel.documentFindingMetrics.riskFallbackCount)")
+                            .font(.caption.monospacedDigit())
+                    }
+                    LabeledContent("Durasi") {
+                        Text("detector \(viewModel.documentFindingMetrics.duration, specifier: "%.3f") detik · risk review \(viewModel.documentFindingMetrics.riskReviewDuration, specifier: "%.3f") detik")
+                            .font(.caption.monospacedDigit())
+                    }
+                    LabeledContent("Cache") {
+                        Text(viewModel.documentFindingMetrics.cacheHit ? "hit — durasi/call historis tidak dihitung ulang" : "miss")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
             Section("Review") {
                 HStack(spacing: 8) {
                     if viewModel.isRunning {
@@ -325,6 +493,12 @@ private struct AIConnectorNativeDebugContent: View {
 
 private struct AIConnectorNativeDebugDetails: View {
     @Bindable var viewModel: AIConnectorViewModel
+#if DEBUG
+    @State private var exportAlertMessage = ""
+    @State private var isExportAlertPresented = false
+    @State private var phaseTwoExportAlertMessage = ""
+    @State private var isPhaseTwoExportAlertPresented = false
+#endif
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -459,6 +633,13 @@ private struct AIConnectorNativeDebugDetails: View {
                                         .foregroundStyle(.secondary)
                                 }
                             }
+                            if let route = viewModel.currentCandidateRoutes.first(where: {
+                                $0.candidateID == candidate.id
+                            }) {
+                                Text("Phase 2 · \(route.route.rawValue) · \(route.reason.displayTitle)")
+                                    .font(.caption2)
+                                    .foregroundStyle(route.route == .needsReview ? .orange : .secondary)
+                            }
                             Text("\(candidate.original) → \(candidate.replacement)")
                                 .font(.caption)
                                 .textSelection(.enabled)
@@ -500,6 +681,225 @@ private struct AIConnectorNativeDebugDetails: View {
                 }
             }
 
+#if DEBUG
+            Divider()
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Phase 0 — Observability")
+                    .font(.subheadline.weight(.semibold))
+                Text("Benchmark sintetis ini hanya mengukur pipeline. Data yang diekspor berisi panjang, jumlah, durasi, dan status provisional; bukan isi dokumen atau output model.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 8) {
+                    Button {
+                        viewModel.runPhaseZeroBaseline()
+                    } label: {
+                        Label(
+                            viewModel.isPhaseZeroBaselineRunning
+                                ? "Menjalankan Phase 0…"
+                                : "Run Phase 0 Baseline",
+                            systemImage: viewModel.isPhaseZeroBaselineRunning
+                                ? "hourglass"
+                                : "chart.bar.xaxis"
+                        )
+                    }
+                    .disabled(viewModel.isPhaseZeroBaselineRunning || !viewModel.canRunBenchmark)
+
+                    if viewModel.isPhaseZeroBaselineRunning {
+                        Button(role: .cancel) {
+                            viewModel.cancelPhaseZeroBaseline()
+                        } label: {
+                            Label("Batalkan", systemImage: "stop")
+                        }
+                    }
+                }
+
+                if let progress = viewModel.phaseZeroBaselineProgress,
+                   viewModel.isPhaseZeroBaselineRunning {
+                    ProgressView(
+                        value: Double(progress.completedPhaseCount),
+                        total: Double(progress.totalPhaseCount)
+                    )
+                    Text("\(progress.phase) · \(progress.completedPhaseCount) dari \(progress.totalPhaseCount) fase")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let report = viewModel.phaseZeroBaselineReport {
+                    AIConnectorPhaseZeroReportSummaryView(report: report)
+                    Button {
+                        AIConnectorObservationExporter.presentSavePanel(for: report) { result in
+                            Task { @MainActor in
+                                switch result {
+                                case let .success(url):
+                                    exportAlertMessage = "Report disimpan di \(url.path)."
+                                case let .failure(error):
+                                    exportAlertMessage = error.localizedDescription
+                                }
+                                isExportAlertPresented = true
+                            }
+                        }
+                    } label: {
+                        Label("Export Safe JSON…", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(report.terminalStatus == .running)
+                }
+            }
+            .alert("Ekspor Phase 0", isPresented: $isExportAlertPresented) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(exportAlertMessage)
+            }
+
+            Divider()
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Phase 2 — Evidence routing")
+                    .font(.subheadline.weight(.semibold))
+                Text("Membandingkan pipeline Phase 1 yang kompatibel dengan routing Phase 2. Hasil tetap provisional sampai fixture ditinjau lawyer.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 8) {
+                    Button {
+                        viewModel.runPhaseTwoComparison()
+                    } label: {
+                        Label(
+                            viewModel.isPhaseTwoComparisonRunning
+                                ? "Membandingkan Phase 2…"
+                                : "Run Phase 2 Comparison",
+                            systemImage: viewModel.isPhaseTwoComparisonRunning
+                                ? "hourglass"
+                                : "arrow.triangle.branch"
+                        )
+                    }
+                    .disabled(viewModel.isPhaseTwoComparisonRunning || !viewModel.canRunBenchmark)
+
+                    if viewModel.isPhaseTwoComparisonRunning {
+                        Button(role: .cancel) {
+                            viewModel.cancelPhaseTwoComparison()
+                        } label: {
+                            Label("Batalkan", systemImage: "stop")
+                        }
+                    }
+                }
+
+                if let progress = viewModel.phaseTwoComparisonProgress,
+                   viewModel.isPhaseTwoComparisonRunning {
+                    ProgressView(
+                        value: Double(progress.completedPhaseCount),
+                        total: Double(progress.totalPhaseCount)
+                    )
+                    Text("\(progress.phase) · \(progress.completedPhaseCount) dari \(progress.totalPhaseCount) fase")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let report = viewModel.phaseTwoComparisonReport {
+                    AIConnectorPhaseTwoComparisonSummaryView(report: report)
+                    Button {
+                        AIConnectorPhaseTwoComparisonExporter.presentSavePanel(for: report) { result in
+                            Task { @MainActor in
+                                switch result {
+                                case let .success(url):
+                                    phaseTwoExportAlertMessage = "Report disimpan di \(url.path)."
+                                case let .failure(error):
+                                    phaseTwoExportAlertMessage = error.localizedDescription
+                                }
+                                isPhaseTwoExportAlertPresented = true
+                            }
+                        }
+                    } label: {
+                        Label("Export Phase 2 Safe JSON…", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(report.terminalStatus == .running)
+                }
+            }
+            .alert("Ekspor Phase 2", isPresented: $isPhaseTwoExportAlertPresented) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(phaseTwoExportAlertMessage)
+            }
+
+            Divider()
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Phase 8 — Lawyer-reviewed quality gate")
+                    .font(.subheadline.weight(.semibold))
+                Text("Fixture tidak dianggap disetujui otomatis. Evaluasi memakai pipeline Document yang sama; policy dan approval lawyer tetap menjadi bukti terpisah.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                LabeledContent("Fixture") {
+                    Text("\(viewModel.phaseEightFixtureStore.approvedFixtureCount)/\(viewModel.phaseEightFixtureStore.fixtures.count) approved")
+                        .font(.caption.monospacedDigit())
+                }
+                LabeledContent("Policy") {
+                    Text(viewModel.phaseEightQualityPolicy.isCalibrated ? "calibrated" : "belum dikalibrasi")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(viewModel.phaseEightQualityPolicy.isCalibrated ? .green : .orange)
+                }
+
+                HStack(spacing: 8) {
+                    Button {
+                        viewModel.exportPhaseEightReviewPackage()
+                    } label: {
+                        Label("Ekspor paket review", systemImage: "shippingbox")
+                    }
+                    Button {
+                        viewModel.importPhaseEightReviewPackage()
+                    } label: {
+                        Label("Impor keputusan", systemImage: "arrow.down.doc")
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Button {
+                        viewModel.runPhaseEightQualityGate()
+                    } label: {
+                        Label(
+                            viewModel.isPhaseEightQualityRunning ? "Evaluasi Phase 8…" : "Run Phase 8 Quality Gate",
+                            systemImage: viewModel.isPhaseEightQualityRunning ? "hourglass" : "checkmark.shield"
+                        )
+                    }
+                    .disabled(viewModel.isPhaseEightQualityRunning)
+
+                    if viewModel.isPhaseEightQualityRunning {
+                        Button(role: .cancel) {
+                            viewModel.cancelPhaseEightQualityGate()
+                        } label: {
+                            Label("Batalkan", systemImage: "stop")
+                        }
+                    }
+                }
+
+                if let progress = viewModel.phaseEightQualityProgress,
+                   viewModel.isPhaseEightQualityRunning {
+                    ProgressView(
+                        value: Double(progress.completedFixtureCount),
+                        total: Double(max(progress.totalFixtureCount, 1))
+                    )
+                    Text("\(progress.mode.rawValue) · \(progress.completedFixtureCount) dari \(progress.totalFixtureCount) fixture")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+
+                if let report = viewModel.phaseEightQualityReport {
+                    AIConnectorPhaseEightReportSummaryView(report: report)
+                    Button {
+                        viewModel.exportPhaseEightSafeJSON()
+                    } label: {
+                        Label("Export Safe JSON…", systemImage: "square.and.arrow.up")
+                    }
+                }
+
+                if let notice = viewModel.phaseEightQualityNotice {
+                    Text(notice)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            }
+#endif
+
             if let metrics = viewModel.latestGenerationMetrics {
                 DisclosureGroup("Metrik generation") {
                     AIConnectorNativeGenerationMetricsView(metrics: metrics)
@@ -520,6 +920,148 @@ private struct AIConnectorNativeStatusLine: View {
             .accessibilityValue(state.title)
     }
 }
+
+#if DEBUG
+private struct AIConnectorPhaseZeroReportSummaryView: View {
+    let report: AIConnectorBaselineSuiteReport
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            LabeledContent("Status") {
+                Text(report.terminalStatus.rawValue)
+                    .foregroundStyle(report.terminalStatus == .completed ? .green : .orange)
+            }
+            LabeledContent("Fixture") {
+                Text("\(report.fixtureCount) · \(report.fixtureReviewStatus.rawValue)")
+                    .monospacedDigit()
+            }
+            ForEach(report.runs) { run in
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text(run.kind.rawValue)
+                            .font(.caption.weight(.semibold))
+                        Spacer(minLength: 0)
+                        Text(String(format: "%.2f dtk", run.observation.totalDuration))
+                            .font(.caption.monospacedDigit())
+                    }
+                    let accuracy = run.observation.accuracy.first
+                    Text("p50 \(String(format: "%.2f", run.observation.segmentLatencyP50)) · p95 \(String(format: "%.2f", run.observation.segmentLatencyP95)) · model \(run.observation.modelCallCount) · fallback \(run.observation.fallbackCount) · repair \(run.observation.repairCount) · challenge \(run.observation.challengeCount) · cache \(run.observation.cacheHitCount)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    if let accuracy {
+                        Text("provisional · precision \(String(format: "%.2f", accuracy.precision)) · recall \(String(format: "%.2f", accuracy.recall)) · F1 \(String(format: "%.2f", accuracy.f1)) · FP \(accuracy.falsePositive) · FN \(accuracy.falseNegative)")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 3)
+            }
+            if let slowestStage {
+                Text("Stage termahal: \(slowestStage.stage.rawValue) · \(String(format: "%.2f dtk", slowestStage.totalDuration))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var slowestStage: AIConnectorStageMetric? {
+        report.runs
+            .flatMap { $0.observation.stageMetrics }
+            .max { lhs, rhs in lhs.totalDuration < rhs.totalDuration }
+    }
+}
+
+private struct AIConnectorPhaseTwoComparisonSummaryView: View {
+    let report: AIConnectorPhaseTwoComparisonReport
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            LabeledContent("Status") {
+                Text(report.terminalStatus.rawValue)
+                    .foregroundStyle(report.terminalStatus == .completed ? .green : .orange)
+            }
+            LabeledContent("Fixture") {
+                Text("\(report.fixtureCount) · \(report.fixtureReviewStatus.rawValue)")
+                    .monospacedDigit()
+            }
+            ForEach(report.runs) { run in
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text(run.side.rawValue)
+                            .font(.caption.weight(.semibold))
+                        Spacer(minLength: 0)
+                        Text(String(format: "%.2f dtk", run.totalDuration))
+                            .font(.caption.monospacedDigit())
+                    }
+                    Text("p50 \(String(format: "%.2f", run.segmentLatencyP50)) · p95 \(String(format: "%.2f", run.segmentLatencyP95)) · model \(run.modelCallCount) · needs review \(run.needsReviewCount) · suppressed \(run.routeCounts.suppressed)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    if let accuracy = run.accuracy.first {
+                        Text("provisional · precision \(String(format: "%.2f", accuracy.precision)) · recall \(String(format: "%.2f", accuracy.recall)) · F1 \(String(format: "%.2f", accuracy.f1))")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 3)
+            }
+            if let delta = report.delta {
+                Text("Delta Phase 2 − Phase 1 · model \(delta.modelCallCount) · waktu \(String(format: "%.2f", delta.totalDuration)) dtk · needs review \(delta.needsReviewCount) · suppressed \(delta.suppressedCandidateCount)")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private struct AIConnectorPhaseEightReportSummaryView: View {
+    let report: AIConnectorQualityEvaluationReport
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            LabeledContent("Gate") {
+                Text(report.overallStatus.rawValue)
+                    .foregroundStyle(color(for: report.overallStatus))
+            }
+            LabeledContent("Run") {
+                Text("\(report.terminalStatus.rawValue) · \(report.approvedFixtureCount)/\(report.fixtureCount) approved")
+                    .font(.caption.monospacedDigit())
+            }
+            ForEach(report.modes) { mode in
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text(mode.mode.rawValue)
+                            .font(.caption.weight(.semibold))
+                        Spacer(minLength: 0)
+                        Text(mode.status.rawValue)
+                            .foregroundStyle(color(for: mode.status))
+                    }
+                    Text("coverage \(String(format: "%.2f", mode.coverageFraction ?? 0)) · p50 \(String(format: "%.3f", mode.totalDurationP50 ?? 0)) dtk · p95 \(String(format: "%.3f", mode.totalDurationP95 ?? 0)) dtk · model \(mode.modelCallCount) · reuse \(mode.reusedSegmentCount)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    Text("safety \(mode.safetyViolationCount) · incremental equivalent \(mode.incrementalEquivalentCount)/\(mode.incrementalComparisonCount)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 3)
+            }
+            if !report.statusReasons.isEmpty {
+                Text("Alasan: \(report.statusReasons.joined(separator: ", "))")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+        }
+    }
+
+    private func color(for status: AIConnectorQualityGateStatus) -> Color {
+        switch status {
+        case .pass: .green
+        case .fail: .red
+        case .insufficientEvidence: .orange
+        }
+    }
+}
+#endif
 
 private struct AIConnectorNativeProgressView: View {
     let state: AIConnectorRunState
@@ -1042,5 +1584,30 @@ private struct AIConnectorNativeGenerationMetricsView: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+}
+
+#Preview("AI Connector Debug") {
+    AIConnectorDebugPreview()
+}
+
+private struct AIConnectorDebugPreview: View {
+    @State private var viewModel: AIConnectorViewModel
+
+    init() {
+        _viewModel = State(
+            initialValue: AIConnectorViewModel(
+                service: QwenSuggestionService(),
+                dictionaryStore: LegalDictionaryStore(entries: LegalDictionaryEntry.previewEntries)
+            )
+        )
+    }
+
+    var body: some View {
+        AIConnectorDebugPanel(
+            documentText: "Pihak Kedua wajib untuk menyerahkan laporan.",
+            viewModel: viewModel
+        )
+        .frame(width: 560, height: 760)
     }
 }

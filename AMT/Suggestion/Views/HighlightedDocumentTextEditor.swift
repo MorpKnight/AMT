@@ -12,15 +12,76 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
     @Binding var richTextData: Data?
     @Binding var structuredDocument: StructuredDocument?
     @Binding var zoomPercent: Int
+    var fontSizePoints: CGFloat = EditorTypography.bodyPointSize
+    let sourceKind: StructuredDocument.SourceKind
 
     let suggestions: [EditorSuggestion]
-    let selectedSuggestionID: UUID?
+    let annotations: [EditorReviewAnnotation]
+    let definitionResolutions: [UUID: AIConnectorDefinitionResolution]
+    let definitionResolutionLoadingIDs: Set<UUID>
+    let reviewedReviewItemIDs: Set<UUID>
+    let selectedReviewItemID: UUID?
     let onSelect: (UUID?) -> Void
+    let onCaretLocationChanged: (Int?) -> Void
     let onTextEdited: () -> Void
-    let onAccept: (EditorSuggestion) -> Void
+    let onSuggestionAccepted: (EditorSuggestion, String, String) -> Void
     let onDismiss: (UUID) -> Void
+    let onMarkReviewed: (UUID) -> Void
+    let onReopenReviewed: (UUID) -> Void
+    let onRequestDefinitionResolution: (UUID) -> Void
+    let onDefinitionResolutionApplied: (AIConnectorDefinitionResolutionOption, String, String) -> Void
 
     var formattingViewModel: EditorViewModel? = nil
+
+    init(
+        documentID: UUID,
+        text: Binding<String>,
+        richTextData: Binding<Data?>,
+        structuredDocument: Binding<StructuredDocument?>,
+        zoomPercent: Binding<Int>,
+        fontSizePoints: CGFloat = EditorTypography.bodyPointSize,
+        sourceKind: StructuredDocument.SourceKind = .plainText,
+        suggestions: [EditorSuggestion],
+        annotations: [EditorReviewAnnotation],
+        definitionResolutions: [UUID: AIConnectorDefinitionResolution] = [:],
+        definitionResolutionLoadingIDs: Set<UUID> = [],
+        reviewedReviewItemIDs: Set<UUID>,
+        selectedReviewItemID: UUID?,
+        onSelect: @escaping (UUID?) -> Void,
+        onCaretLocationChanged: @escaping (Int?) -> Void = { _ in },
+        onTextEdited: @escaping () -> Void,
+        onSuggestionAccepted: @escaping (EditorSuggestion, String, String) -> Void,
+        onDismiss: @escaping (UUID) -> Void,
+        onMarkReviewed: @escaping (UUID) -> Void,
+        onReopenReviewed: @escaping (UUID) -> Void,
+        onRequestDefinitionResolution: @escaping (UUID) -> Void = { _ in },
+        onDefinitionResolutionApplied: @escaping (AIConnectorDefinitionResolutionOption, String, String) -> Void = { _, _, _ in },
+        formattingViewModel: EditorViewModel? = nil
+    ) {
+        self.documentID = documentID
+        self._text = text
+        self._richTextData = richTextData
+        self._structuredDocument = structuredDocument
+        self._zoomPercent = zoomPercent
+        self.fontSizePoints = fontSizePoints
+        self.sourceKind = sourceKind
+        self.suggestions = suggestions
+        self.annotations = annotations
+        self.definitionResolutions = definitionResolutions
+        self.definitionResolutionLoadingIDs = definitionResolutionLoadingIDs
+        self.reviewedReviewItemIDs = reviewedReviewItemIDs
+        self.selectedReviewItemID = selectedReviewItemID
+        self.onSelect = onSelect
+        self.onCaretLocationChanged = onCaretLocationChanged
+        self.onTextEdited = onTextEdited
+        self.onSuggestionAccepted = onSuggestionAccepted
+        self.onDismiss = onDismiss
+        self.onMarkReviewed = onMarkReviewed
+        self.onReopenReviewed = onReopenReviewed
+        self.onRequestDefinitionResolution = onRequestDefinitionResolution
+        self.onDefinitionResolutionApplied = onDefinitionResolutionApplied
+        self.formattingViewModel = formattingViewModel
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -28,15 +89,20 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView(frame: .zero)
+        scrollView.appearance = NSAppearance(named: .aqua)
         scrollView.drawsBackground = false
         scrollView.borderType = .noBorder
         scrollView.hasHorizontalScroller = true
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
         scrollView.contentView.postsBoundsChangedNotifications = true
-        scrollView.allowsMagnification = true
-        scrollView.minMagnification = EditorZoom.magnification(for: EditorZoom.minimumPercent)
-        scrollView.maxMagnification = EditorZoom.magnification(for: EditorZoom.maximumPercent)
+        // Zoom is temporarily disabled. Keep the magnification constants and
+        // coordinator implementation below dormant so the feature can be
+        // re-enabled without rebuilding the editor wiring.
+        scrollView.allowsMagnification = false
+        // scrollView.allowsMagnification = true
+        // scrollView.minMagnification = EditorZoom.magnification(for: EditorZoom.minimumPercent)
+        // scrollView.maxMagnification = EditorZoom.magnification(for: EditorZoom.maximumPercent)
 
         let textStorage = NSTextStorage()
         let layoutManager = SuggestionLayoutManager()
@@ -53,6 +119,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             frame: .zero,
             textContainer: textContainer
         )
+        textView.appearance = NSAppearance(named: .aqua)
         textView.delegate = context.coordinator
         textView.allowsUndo = true
         textView.isEditable = true
@@ -85,9 +152,11 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         textView.onHover = { [weak coordinator = context.coordinator] point in
             coordinator?.handleHover(at: point)
         }
-        textView.onZoomCommand = { [weak coordinator = context.coordinator] command in
-            coordinator?.handleZoomCommand(command) ?? false
-        }
+        // Zoom keyboard commands are intentionally disabled while font-size
+        // controls are the only supported enlargement mechanism.
+        // textView.onZoomCommand = { [weak coordinator = context.coordinator] command in
+        //     coordinator?.handleZoomCommand(command) ?? false
+        // }
 
         textStorage.setAttributedString(
             renderedText(defaultFont: textView.font ?? EditorTypography.defaultFont)
@@ -107,7 +176,8 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         )
         context.coordinator.updateHighlights(
             suggestions: suggestions,
-            selectedSuggestionID: selectedSuggestionID
+            annotations: annotations,
+            selectedReviewItemID: selectedReviewItemID
         )
         context.coordinator.pushFormattingState()
 
@@ -122,10 +192,12 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             structuredDocument: structuredDocument,
             documentID: documentID
         )
-        context.coordinator.updateZoom(to: zoomPercent)
+        // Zoom is disabled; keep this call commented for future re-enable.
+        // context.coordinator.updateZoom(to: zoomPercent)
         context.coordinator.updateHighlights(
             suggestions: suggestions,
-            selectedSuggestionID: selectedSuggestionID
+            annotations: annotations,
+            selectedReviewItemID: selectedReviewItemID
         )
         if let action = formattingViewModel?.pendingAction {
             context.coordinator.applyFormatting(action)
@@ -163,14 +235,21 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         private var textContainer: NSTextContainer?
         private var boundsObserver: NSObjectProtocol?
         private var magnificationObserver: NSObjectProtocol?
+        private var liveMagnificationObserver: NSObjectProtocol?
         private var scheduledZoomPercent: Int?
+        private var zoomApplicationScheduled = false
+        private var isLiveMagnifying = false
         private var popover: NSPopover?
         private var presentedSuggestionID: UUID?
+        private var lastDefinitionResolutionSignature: String?
+        private var lastSelectedReviewItemID: UUID?
         private var isApplyingProgrammaticMutation = false
         private var currentDocumentID: UUID?
         private var currentText = ""
         private var currentRichTextData: Data?
         private var currentStructuredDocument: StructuredDocument?
+        private var hoverTimer: Timer?
+        private static let hoverDelay: TimeInterval = 0.5
 
         init(parent: HighlightedDocumentTextEditor) {
             self.parent = parent
@@ -182,6 +261,9 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             }
             if let magnificationObserver {
                 NotificationCenter.default.removeObserver(magnificationObserver)
+            }
+            if let liveMagnificationObserver {
+                NotificationCenter.default.removeObserver(liveMagnificationObserver)
             }
         }
 
@@ -204,8 +286,10 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             currentText = text
             currentRichTextData = richTextData
             currentStructuredDocument = structuredDocument
+            syncFontSizeStateFromDocument()
 
-            updateZoom(to: zoomPercent)
+            // Zoom is disabled; keep this call commented for future re-enable.
+            // updateZoom(to: zoomPercent)
 
             boundsObserver = NotificationCenter.default.addObserver(
                 forName: NSView.boundsDidChangeNotification,
@@ -214,6 +298,21 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             ) { [weak self] _ in
                 Task { @MainActor [weak self] in
                     self?.handleScroll()
+                    // self?.scheduleZoomApplication()
+                }
+            }
+
+            // Magnification observers are intentionally dormant while zoom is
+            // disabled. Restore these registrations together with the zoom
+            // callback above when the feature is re-enabled.
+            /*
+            liveMagnificationObserver = NotificationCenter.default.addObserver(
+                forName: NSScrollView.willStartLiveMagnifyNotification,
+                object: scrollView,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.isLiveMagnifying = true
                 }
             }
 
@@ -223,11 +322,15 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 queue: .main
             ) { [weak self] _ in
                 Task { @MainActor [weak self] in
+                    self?.isLiveMagnifying = false
                     self?.syncZoomFromScrollView()
+                    self?.scheduleZoomApplication()
                 }
             }
+            */
 
             publishHistoryState()
+            publishCaretLocation()
         }
 
         func updateTextIfNeeded(
@@ -258,6 +361,10 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             currentRichTextData = richTextData
             currentStructuredDocument = structuredDocument
             let rendered = parent.renderedText(defaultFont: font)
+
+            if didChangeDocument {
+                syncFontSizeStateFromDocument()
+            }
 
             // A text edit writes the canonical bindings back to SwiftUI. The
             // representable may receive that update while AppKit is still
@@ -304,61 +411,70 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         }
 
         func updateZoom(to percent: Int) {
-            guard let scrollView else { return }
-            let clampedPercent = EditorZoom.clamp(percent)
-            let magnification = EditorZoom.magnification(for: clampedPercent)
+            scheduledZoomPercent = EditorZoom.clamp(percent)
+            scheduleZoomApplication()
+        }
+
+        private func scheduleZoomApplication() {
+            guard !zoomApplicationScheduled else { return }
+            zoomApplicationScheduled = true
+
+            // SwiftUI may call updateNSView while AppKit is still laying out
+            // the split view. Defer the mutation and let bounds/live-magnify
+            // notifications retry a request that is not ready yet.
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.zoomApplicationScheduled = false
+                self.applyPendingZoomIfPossible()
+            }
+        }
+
+        private func applyPendingZoomIfPossible() {
+            guard let requestedPercent = scheduledZoomPercent,
+                  let scrollView,
+                  !isLiveMagnifying,
+                  scrollView.window != nil,
+                  scrollView.allowsMagnification,
+                  !scrollView.inLiveResize,
+                  !scrollView.needsLayout,
+                  !scrollView.contentView.needsLayout,
+                  scrollView.bounds.width.isFinite,
+                  scrollView.bounds.height.isFinite,
+                  scrollView.bounds.width > 0,
+                  scrollView.bounds.height > 0,
+                  let documentView = scrollView.documentView,
+                  !documentView.inLiveResize,
+                  !documentView.needsLayout,
+                  EditorZoom.isValid(rect: documentView.frame),
+                  let center = EditorZoom.safeCenter(
+                      visibleRect: scrollView.documentVisibleRect,
+                      documentBounds: documentView.bounds
+                  ) else {
+                return
+            }
+
+            let magnification = EditorZoom.magnification(for: requestedPercent)
             let currentMagnification = scrollView.magnification
 
-            guard !currentMagnification.isFinite
-                    || abs(currentMagnification - magnification) > 0.001
-            else {
+            if currentMagnification.isFinite,
+               abs(currentMagnification - magnification) <= 0.001 {
                 scheduledZoomPercent = nil
                 return
             }
 
-            // A SwiftUI representable update can run from inside AppKit's
-            // layout transaction. Mutating NSScrollView.magnification here
-            // synchronously re-enters layout and AppKit raises an
-            // NSException (which appears in Xcode as EXC_BREAKPOINT at
-            // _crashOnException). Defer the mutation until the current
-            // layout pass has completed and discard stale requests when the
-            // user clicks the zoom controls repeatedly.
-            scheduledZoomPercent = clampedPercent
-            DispatchQueue.main.async { [weak self] in
-                guard let self,
-                      self.scheduledZoomPercent == clampedPercent,
-                      let scrollView = self.scrollView else {
-                    return
-                }
-                self.scheduledZoomPercent = nil
-
-                guard scrollView.window != nil,
-                      scrollView.bounds.width.isFinite,
-                      scrollView.bounds.height.isFinite,
-                      scrollView.bounds.width > 0,
-                      scrollView.bounds.height > 0 else {
-                    return
-                }
-
-                let visibleRect = scrollView.documentVisibleRect
-                guard visibleRect.origin.x.isFinite,
-                      visibleRect.origin.y.isFinite,
-                      visibleRect.size.width.isFinite,
-                      visibleRect.size.height.isFinite else {
-                    return
-                }
-
-                let currentMagnification = scrollView.magnification
-                guard !currentMagnification.isFinite
-                        || abs(currentMagnification - magnification) > 0.001 else {
-                    return
-                }
-
+            if currentMagnification.isFinite {
                 scrollView.setMagnification(
                     magnification,
-                    centeredAt: NSPoint(x: visibleRect.midX, y: visibleRect.midY)
+                    centeredAt: center
                 )
+            } else {
+                // A transient NaN/∞ can occur while AppKit retile/layouts the
+                // scroll view. Direct assignment repairs the value without
+                // asking AppKit to preserve an invalid viewport center.
+                scrollView.magnification = magnification
             }
+
+            scheduledZoomPercent = nil
         }
 
         func handleZoomCommand(_ command: EditorZoomCommand) -> Bool {
@@ -380,6 +496,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
 
         private func syncZoomFromScrollView() {
             guard let scrollView else { return }
+            guard scrollView.magnification.isFinite else { return }
             let percent = EditorZoom.percent(for: scrollView.magnification)
             guard parent.zoomPercent != percent else { return }
             parent.zoomPercent = percent
@@ -387,16 +504,48 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
 
         func updateHighlights(
             suggestions: [EditorSuggestion],
-            selectedSuggestionID: UUID?
+            annotations: [EditorReviewAnnotation],
+            selectedReviewItemID: UUID?
         ) {
             layoutManager?.update(
                 suggestions: suggestions,
-                selectedSuggestionID: selectedSuggestionID
+                annotations: annotations,
+                selectedReviewItemID: selectedReviewItemID,
+                reviewedReviewItemIDs: parent.reviewedReviewItemIDs
             )
 
             if let presentedSuggestionID,
-               !suggestions.contains(where: { $0.id == presentedSuggestionID }) {
+               !(suggestions.map(\.id) + annotations.map(\.id))
+                    .contains(presentedSuggestionID) {
                 closePopover(notifySelection: true)
+            }
+
+            let selectionChanged = lastSelectedReviewItemID != selectedReviewItemID
+            lastSelectedReviewItemID = selectedReviewItemID
+            let resolutionChanged = definitionResolutionSignature(for: selectedReviewItemID)
+                != lastDefinitionResolutionSignature
+            guard selectionChanged || resolutionChanged,
+                  let selectedReviewItemID,
+                  let selectedItem = allReviewItems.first(where: {
+                      $0.id == selectedReviewItemID
+                  }) else {
+                return
+            }
+
+            // Navigator selection is driven by SwiftUI. Defer the AppKit
+            // scroll/popover work until the representable has finished its
+            // update pass to avoid re-entering NSTextView layout.
+            DispatchQueue.main.async { [weak self] in
+                guard let self,
+                      self.lastSelectedReviewItemID == selectedReviewItemID else {
+                    return
+                }
+                self.scroll(to: selectedItem)
+                self.presentPopover(
+                    for: selectedItem,
+                    anchor: self.anchor(for: selectedItem),
+                    isStale: !self.rangeContainsOriginal(selectedItem)
+                )
             }
         }
 
@@ -404,8 +553,9 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             guard let textView,
                   let layoutManager,
                   let textContainer,
-                  !parent.suggestions.isEmpty
+                  !allReviewItems.isEmpty
             else {
+                cancelHoverTimer()
                 return
             }
 
@@ -420,32 +570,47 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             )
 
             guard characterIndex != NSNotFound,
-                  let suggestion = parent.suggestions.first(where: {
-                      NSLocationInRange(characterIndex, $0.sourceRange)
-                  })
+                  let item = reviewItem(at: characterIndex)
             else {
+                cancelHoverTimer()
                 return
             }
 
-            if presentedSuggestionID != suggestion.id {
-                parent.onSelect(suggestion.id)
-                layoutManager.update(
-                    suggestions: parent.suggestions,
-                    selectedSuggestionID: suggestion.id
+            guard presentedSuggestionID != item.id else { return }
+
+            // Cancel any pending timer for a different item before scheduling a new one.
+            cancelHoverTimer()
+            hoverTimer = Timer.scheduledTimer(
+                withTimeInterval: Self.hoverDelay,
+                repeats: false
+            ) { [weak self] _ in
+                guard let self else { return }
+                self.hoverTimer = nil
+                self.parent.onSelect(item.id)
+                self.layoutManager?.update(
+                    suggestions: self.parent.suggestions,
+                    annotations: self.parent.annotations,
+                    selectedReviewItemID: item.id,
+                    reviewedReviewItemIDs: self.parent.reviewedReviewItemIDs
                 )
-                presentPopover(
-                    for: suggestion,
-                    anchor: anchor(for: suggestion),
-                    isStale: !rangeContainsOriginal(suggestion)
+                self.presentPopover(
+                    for: item,
+                    anchor: self.anchor(for: item),
+                    isStale: !self.rangeContainsOriginal(item)
                 )
             }
+        }
+
+        private func cancelHoverTimer() {
+            hoverTimer?.invalidate()
+            hoverTimer = nil
         }
 
         func handleClick(at point: NSPoint) {
             guard let textView,
                   let layoutManager,
                   let textContainer,
-                  !parent.suggestions.isEmpty
+                  !allReviewItems.isEmpty
             else {
                 closePopover(notifySelection: true)
                 return
@@ -462,27 +627,57 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             )
 
             guard characterIndex != NSNotFound,
-                  let suggestion = parent.suggestions.first(where: {
-                      NSLocationInRange(characterIndex, $0.sourceRange)
-                  })
+                  let item = reviewItem(at: characterIndex)
             else {
                 closePopover(notifySelection: true)
                 return
             }
 
-            parent.onSelect(suggestion.id)
+            parent.onSelect(item.id)
             layoutManager.update(
                 suggestions: parent.suggestions,
-                selectedSuggestionID: suggestion.id
+                annotations: parent.annotations,
+                selectedReviewItemID: item.id,
+                reviewedReviewItemIDs: parent.reviewedReviewItemIDs
             )
             presentPopover(
-                for: suggestion,
-                anchor: anchor(for: suggestion),
-                isStale: !rangeContainsOriginal(suggestion)
+                for: item,
+                anchor: anchor(for: item),
+                isStale: !rangeContainsOriginal(item)
             )
         }
 
+        private var allReviewItems: [EditorReviewItem] {
+            let items = parent.suggestions.map(EditorReviewItem.suggestion)
+                + parent.annotations.map(EditorReviewItem.annotation)
+            return items.sorted { lhs, rhs in
+                if lhs.sourceRange.location != rhs.sourceRange.location {
+                    return lhs.sourceRange.location < rhs.sourceRange.location
+                }
+                let lhsPriority = reviewItemPriority(lhs)
+                let rhsPriority = reviewItemPriority(rhs)
+                if lhsPriority != rhsPriority { return lhsPriority < rhsPriority }
+                return lhs.sourceRange.length < rhs.sourceRange.length
+            }
+        }
+
+        private func reviewItem(at characterIndex: Int) -> EditorReviewItem? {
+            allReviewItems.first(where: {
+                NSLocationInRange(characterIndex, $0.sourceRange)
+            })
+        }
+
+        private func reviewItemPriority(_ item: EditorReviewItem) -> Int {
+            switch item {
+            case .suggestion:
+                1
+            case let .annotation(annotation):
+                annotation.definitionDiagnosticStatus == .matches ? 2 : 0
+            }
+        }
+
         func handleScroll() {
+            cancelHoverTimer()
             guard popover != nil || presentedSuggestionID != nil else { return }
             closePopover(notifySelection: true)
         }
@@ -496,7 +691,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
 
             persistRichText(from: textView)
             closePopover(notifySelection: true)
-            layoutManager?.update(suggestions: [], selectedSuggestionID: nil)
+            layoutManager?.update(suggestions: [], annotations: [], selectedReviewItemID: nil)
             parent.onTextEdited()
             pushFormattingState()
         }
@@ -504,11 +699,31 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         func textViewDidChangeSelection(_ notification: Notification) {
             pushFormattingState()
             publishHistoryState()
+            publishCaretLocation()
+        }
+
+        private func publishCaretLocation() {
+            guard let textView else {
+                parent.onCaretLocationChanged(nil)
+                return
+            }
+            let location = textView.selectedRange().location
+            parent.onCaretLocationChanged(location == NSNotFound ? nil : location)
         }
 
         /// Applies a toolbar action to the active AppKit editor selection.
         func applyFormatting(_ action: FormattingAction) {
             guard let textView else { return }
+
+            if case let .fontScale(previousSize, _) = action,
+               !parent.sourceKind.usesCanonicalTypography {
+                // Native Word/RTF formatting is source-faithful. If an old
+                // pending action arrives while the document is switching,
+                // restore the control state without touching the text.
+                parent.formattingViewModel?.fontSizePoints = previousSize
+                publishHistoryState()
+                return
+            }
 
             switch action {
             case .undo:
@@ -517,7 +732,11 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 redo()
             default:
                 performUndoableMutation(named: actionName(for: action)) {
-                    RichTextFormatter.apply(action, to: textView)
+                    RichTextFormatter.apply(
+                        action,
+                        to: textView,
+                        sourceKind: parent.sourceKind
+                    )
                 }
             }
         }
@@ -537,6 +756,30 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             parent.formattingViewModel?.canRedo = textView.undoManager?.canRedo == true
         }
 
+        private func syncFontSizeStateFromDocument() {
+            guard let viewModel = parent.formattingViewModel else { return }
+            guard parent.sourceKind.usesCanonicalTypography else {
+                viewModel.resetFontSizeState()
+                return
+            }
+
+            let bodySize = parent.structuredDocument?.blocks
+                .first(where: { block in
+                    guard case .paragraph = block.kind else { return false }
+                    return block.runs.contains { $0.fontSize != nil }
+                })?
+                .runs
+                .compactMap(\.fontSize)
+                .first
+                .map { CGFloat($0) }
+
+            let resolvedSize = bodySize ?? EditorTypography.bodyPointSize
+            viewModel.fontSizePoints = min(
+                max(resolvedSize, EditorViewModel.minimumFontSize),
+                EditorViewModel.maximumFontSize
+            )
+        }
+
         private func actionName(for action: FormattingAction) -> String {
             switch action {
             case .textStyle(let style): return style.rawValue
@@ -546,6 +789,11 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             case .strikethrough: return "Strikethrough"
             case .listStyle(let style):
                 return style == .bulleted ? "Bulleted List" : "Numbered List"
+            case .alignment(let alignment): return alignment.label
+            case .indent(let direction): return direction.label
+            case .link(let url): return url == nil ? "Remove Link" : "Add Link"
+            case .clearFormatting: return "Clear Formatting"
+            case .fontScale: return "Font Size"
             case .undo, .redo: return ""
             }
         }
@@ -579,7 +827,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             registerSnapshotUndo(before: before, after: after, actionName: actionName)
             persistRichText(from: textView)
             closePopover(notifySelection: true)
-            layoutManager?.update(suggestions: [], selectedSuggestionID: nil)
+            layoutManager?.update(suggestions: [], annotations: [], selectedReviewItemID: nil)
             parent.onTextEdited()
             pushFormattingState()
             publishHistoryState()
@@ -629,7 +877,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             undoManager?.setActionName(actionName)
             persistRichText(from: textView)
             closePopover(notifySelection: true)
-            layoutManager?.update(suggestions: [], selectedSuggestionID: nil)
+            layoutManager?.update(suggestions: [], annotations: [], selectedReviewItemID: nil)
             parent.onTextEdited()
             pushFormattingState()
             publishHistoryState()
@@ -646,7 +894,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             isApplyingProgrammaticMutation = false
             persistRichText(from: textView)
             closePopover(notifySelection: true)
-            layoutManager?.update(suggestions: [], selectedSuggestionID: nil)
+            layoutManager?.update(suggestions: [], annotations: [], selectedReviewItemID: nil)
             parent.onTextEdited()
             pushFormattingState()
             publishHistoryState()
@@ -663,7 +911,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             isApplyingProgrammaticMutation = false
             persistRichText(from: textView)
             closePopover(notifySelection: true)
-            layoutManager?.update(suggestions: [], selectedSuggestionID: nil)
+            layoutManager?.update(suggestions: [], annotations: [], selectedReviewItemID: nil)
             parent.onTextEdited()
             pushFormattingState()
             publishHistoryState()
@@ -671,21 +919,27 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
 
         func accept(_ suggestion: EditorSuggestion) {
             guard let textView else { return }
+            guard !suggestion.isReadOnlyDiagnostic else { return }
 
             guard rangeContainsOriginal(suggestion) else {
                 presentPopover(
-                    for: suggestion,
+                    for: .suggestion(suggestion),
                     anchor: anchor(for: suggestion),
                     isStale: true
                 )
                 return
             }
 
+            let previousText = currentText.isEmpty ? textView.string : currentText
             textView.breakUndoCoalescing()
             let before = snapshot(from: textView)
             let undoManager = textView.undoManager
             undoManager?.disableUndoRegistration()
             isApplyingProgrammaticMutation = true
+            textView.typingAttributes = [
+                NSAttributedString.Key.font: textView.font ?? EditorTypography.defaultFont,
+                NSAttributedString.Key.foregroundColor: NSColor.black
+            ]
             textView.insertText(
                 suggestion.replacement,
                 replacementRange: suggestion.sourceRange
@@ -696,9 +950,53 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             let after = snapshot(from: textView)
             registerSnapshotUndo(before: before, after: after, actionName: "Accept Suggestion")
             persistRichText(from: textView)
-            parent.onAccept(suggestion)
+            parent.onSuggestionAccepted(suggestion, previousText, currentText)
             closePopover(notifySelection: true)
-            parent.onTextEdited()
+            publishHistoryState()
+        }
+
+        func applyDefinitionResolution(_ option: AIConnectorDefinitionResolutionOption) {
+            guard let textView, option.isActionable else { return }
+
+            guard rangeContainsOriginal(option) else {
+                if let annotation = parent.annotations.first(where: { annotation in
+                    parent.definitionResolutions[annotation.id]?.options.contains {
+                        $0.id == option.id
+                    } == true
+                }) {
+                    presentPopover(
+                        for: .annotation(annotation),
+                        anchor: anchor(for: annotation),
+                        isStale: true
+                    )
+                }
+                return
+            }
+
+            guard let replacement = option.replacement else { return }
+            let previousText = currentText.isEmpty ? textView.string : currentText
+            textView.breakUndoCoalescing()
+            let before = snapshot(from: textView)
+            let undoManager = textView.undoManager
+            undoManager?.disableUndoRegistration()
+            isApplyingProgrammaticMutation = true
+            textView.typingAttributes = [
+                NSAttributedString.Key.font: textView.font ?? EditorTypography.defaultFont,
+                NSAttributedString.Key.foregroundColor: NSColor.black
+            ]
+            textView.insertText(replacement, replacementRange: option.targetRange)
+            isApplyingProgrammaticMutation = false
+            undoManager?.enableUndoRegistration()
+
+            let after = snapshot(from: textView)
+            registerSnapshotUndo(
+                before: before,
+                after: after,
+                actionName: "Apply Definition Resolution"
+            )
+            persistRichText(from: textView)
+            parent.onDefinitionResolutionApplied(option, previousText, currentText)
+            closePopover(notifySelection: true)
             publishHistoryState()
         }
 
@@ -713,19 +1011,27 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             currentRichTextData = rtfData
             parent.text = plainText
             parent.richTextData = rtfData
-            let normalized = StructuredDocument.normalize(richText)
+            let sourceKind = parent.sourceKind != .unknown
+                ? parent.sourceKind
+                : (currentStructuredDocument?.sourceKind ?? .plainText)
+            let normalized = StructuredDocument.normalize(
+                richText,
+                sourceKind: sourceKind,
+                typographyVersion: EditorTypography.typographyVersion
+            )
             currentStructuredDocument = normalized
             parent.structuredDocument = normalized
+            syncFontSizeStateFromDocument()
             publishHistoryState()
         }
 
-        func dismiss(_ suggestion: EditorSuggestion) {
-            parent.onDismiss(suggestion.id)
+        func dismiss(_ item: EditorReviewItem) {
+            parent.onDismiss(item.id)
             closePopover(notifySelection: true)
         }
 
         private func presentPopover(
-            for suggestion: EditorSuggestion,
+            for item: EditorReviewItem,
             anchor: NSRect,
             isStale: Bool
         ) {
@@ -735,21 +1041,65 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             popover.behavior = .transient
             popover.animates = true
             popover.delegate = self
-            popover.contentViewController = NSHostingController(
-                rootView: SuggestionPopoverView(
-                    suggestion: suggestion,
-                    isStale: isStale,
-                    onAccept: { [weak self] in
-                        self?.accept(suggestion)
-                    },
-                    onDismiss: { [weak self] in
-                        self?.dismiss(suggestion)
-                    }
+            switch item {
+            case let .suggestion(suggestion):
+                popover.contentViewController = NSHostingController(
+                    rootView: SuggestionPopoverView(
+                        suggestion: suggestion,
+                        isStale: isStale,
+                        onAccept: { [weak self] in
+                            self?.accept(suggestion)
+                        },
+                        onDismiss: { [weak self] in
+                            self?.dismiss(.suggestion(suggestion))
+                        }
+                    )
                 )
-            )
-            popover.contentSize = NSSize(width: 400, height: 460)
+                popover.contentSize = NSSize(width: 400, height: 460)
+            case let .annotation(annotation):
+                let overlappingAnnotations = parent.annotations.filter { other in
+                    other.id != annotation.id
+                        && NSIntersectionRange(other.sourceRange, annotation.sourceRange).length > 0
+                }
+                popover.contentViewController = NSHostingController(
+                    rootView: ReviewAnnotationPopoverView(
+                        annotation: annotation,
+                        isStale: isStale,
+                        isReviewed: parent.reviewedReviewItemIDs.contains(annotation.id),
+                        overlappingAnnotations: overlappingAnnotations,
+                        resolution: parent.definitionResolutions[annotation.id],
+                        isResolutionLoading: parent.definitionResolutionLoadingIDs.contains(annotation.id),
+                        onDismiss: { [weak self] in
+                            self?.dismiss(.annotation(annotation))
+                        },
+                        onMarkReviewed: { [weak self] in
+                            self?.parent.onMarkReviewed(annotation.id)
+                            self?.closePopover(notifySelection: true)
+                        },
+                        onReopenReviewed: { [weak self] in
+                            self?.parent.onReopenReviewed(annotation.id)
+                            self?.closePopover(notifySelection: true)
+                        },
+                        onNavigateToEvidence: { [weak self] evidence in
+                            self?.scroll(to: evidence.sourceRange)
+                        },
+                        onSelectOverlapping: { [weak self] id in
+                            self?.closePopover(notifySelection: false)
+                            self?.parent.onSelect(id)
+                        },
+                        onRequestResolution: { [weak self] in
+                            self?.parent.onRequestDefinitionResolution(annotation.id)
+                        },
+                        onApplyResolution: { [weak self] option in
+                            self?.applyDefinitionResolution(option)
+                        }
+                    )
+                )
+                popover.contentSize = NSSize(width: 440, height: 520)
+            }
             self.popover = popover
-            presentedSuggestionID = suggestion.id
+            presentedSuggestionID = item.id
+            lastDefinitionResolutionSignature = definitionResolutionSignature(for: item.id)
 
             if popover.isShown {
                 popover.delegate = nil
@@ -770,6 +1120,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             }
             popover = nil
             presentedSuggestionID = nil
+            lastDefinitionResolutionSignature = nil
 
             if notifySelection {
                 parent.onSelect(nil)
@@ -787,6 +1138,56 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             return (textView.string as NSString).substring(
                 with: suggestion.sourceRange
             ) == suggestion.original
+        }
+
+        private func rangeContainsOriginal(
+            _ option: AIConnectorDefinitionResolutionOption
+        ) -> Bool {
+            guard let textView,
+                  option.targetRange.location >= 0,
+                  option.targetRange.length > 0,
+                  NSMaxRange(option.targetRange) <= textView.string.utf16.count else {
+                return false
+            }
+            return (textView.string as NSString).substring(with: option.targetRange)
+                == option.original
+        }
+
+        private func definitionResolutionSignature(for id: UUID?) -> String? {
+            guard let id else { return nil }
+            let resolution = parent.definitionResolutions[id]
+            let loading = parent.definitionResolutionLoadingIDs.contains(id)
+            return "\(id.uuidString)|\(loading)|\(resolution?.id ?? "-")|\(resolution?.options.count ?? 0)"
+        }
+
+        private func rangeContainsOriginal(_ item: EditorReviewItem) -> Bool {
+            switch item {
+            case let .suggestion(suggestion):
+                return rangeContainsOriginal(suggestion)
+            case let .annotation(annotation):
+                guard let textView,
+                      annotation.sourceRange.location >= 0,
+                      NSMaxRange(annotation.sourceRange) <= textView.string.utf16.count else {
+                    return false
+                }
+                return (textView.string as NSString).substring(
+                    with: annotation.sourceRange
+                ) == annotation.original
+            }
+        }
+
+        private func scroll(to item: EditorReviewItem) {
+            scroll(to: item.sourceRange)
+        }
+
+        private func scroll(to range: NSRange) {
+            guard let textView,
+                  range.location >= 0,
+                  range.length > 0,
+                  NSMaxRange(range) <= textView.string.utf16.count else {
+                return
+            }
+            textView.scrollRangeToVisible(range)
         }
 
         private func anchor(for suggestion: EditorSuggestion) -> NSRect {
@@ -828,6 +1229,47 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 dx: textView.textContainerOrigin.x,
                 dy: textView.textContainerOrigin.y
             )
+        }
+
+        private func anchor(for annotation: EditorReviewAnnotation) -> NSRect {
+            anchor(for: .annotation(annotation))
+        }
+
+        private func anchor(for item: EditorReviewItem) -> NSRect {
+            switch item {
+            case let .suggestion(suggestion):
+                return anchor(for: suggestion)
+            case let .annotation(annotation):
+                guard let textView,
+                      let layoutManager,
+                      annotation.sourceRange.location >= 0,
+                      annotation.sourceRange.length > 0,
+                      NSMaxRange(annotation.sourceRange) <= textView.string.utf16.count else {
+                    return NSRect(x: 0, y: 0, width: 1, height: 1)
+                }
+                let glyphRange = layoutManager.glyphRange(
+                    forCharacterRange: annotation.sourceRange,
+                    actualCharacterRange: nil
+                )
+                guard glyphRange.length > 0,
+                      glyphRange.location < layoutManager.numberOfGlyphs else {
+                    return NSRect(
+                        x: textView.textContainerOrigin.x,
+                        y: textView.textContainerOrigin.y,
+                        width: 1,
+                        height: textView.font?.pointSize ?? EditorTypography.bodyPointSize
+                    )
+                }
+                let lineRect = layoutManager.lineFragmentRect(
+                    forGlyphAt: glyphRange.location,
+                    effectiveRange: nil,
+                    withoutAdditionalLayout: false
+                )
+                return lineRect.offsetBy(
+                    dx: textView.textContainerOrigin.x,
+                    dy: textView.textContainerOrigin.y
+                )
+            }
         }
 
         private func lineAnchor(
@@ -881,6 +1323,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         func popoverDidClose(_ notification: Notification) {
             popover = nil
             presentedSuggestionID = nil
+            lastDefinitionResolutionSignature = nil
             parent.onSelect(nil)
         }
     }
@@ -920,12 +1363,14 @@ final class SuggestionTextView: NSTextView {
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         guard modifiers.contains(.command),
               !modifiers.contains(.option),
-              !modifiers.contains(.control),
-              let characters = event.charactersIgnoringModifiers?.lowercased()
+              !modifiers.contains(.control)
         else {
             return super.performKeyEquivalent(with: event)
         }
 
+        // Zoom shortcuts are intentionally disabled. Keep the previous
+        // command routing commented so it can be restored with the toolbar.
+        /*
         let command: EditorZoomCommand?
         switch characters {
         case "-", "_": command = .zoomOut
@@ -937,6 +1382,7 @@ final class SuggestionTextView: NSTextView {
         if let command, onZoomCommand?(command) == true {
             return true
         }
+        */
         return super.performKeyEquivalent(with: event)
     }
 }
@@ -946,22 +1392,66 @@ final class SuggestionLayoutManager: NSLayoutManager {
         let id: UUID
         let range: NSRange
         let isSelected: Bool
-        let isDebugOnly: Bool
+        let isReadOnlyDiagnostic: Bool
+        let annotationKind: EditorReviewAnnotationKind?
+        let definitionDiagnosticStatus: EditorDefinitionDiagnosticStatus?
+        let isReviewed: Bool
+        let isStale: Bool
     }
 
     private(set) var drawingRanges: [DrawingRange] = []
 
     func update(
         suggestions: [EditorSuggestion],
-        selectedSuggestionID: UUID?
+        annotations: [EditorReviewAnnotation] = [],
+        selectedReviewItemID: UUID?,
+        reviewedReviewItemIDs: Set<UUID> = []
     ) {
-        drawingRanges = suggestions.map {
+        let text = textStorage?.string ?? ""
+        let suggestionRanges = suggestions.map {
             DrawingRange(
                 id: $0.id,
                 range: $0.sourceRange,
-                isSelected: $0.id == selectedSuggestionID,
-                isDebugOnly: $0.isDebugOnly
+                isSelected: $0.id == selectedReviewItemID,
+                isReadOnlyDiagnostic: false,
+                annotationKind: nil,
+                definitionDiagnosticStatus: nil,
+                isReviewed: false,
+                isStale: !rangeContainsOriginal(
+                    range: $0.sourceRange,
+                    original: $0.original,
+                    in: text
+                )
             )
+        }
+        let annotationRanges = annotations.map {
+            DrawingRange(
+                id: $0.id,
+                range: $0.sourceRange,
+                isSelected: $0.id == selectedReviewItemID,
+                isReadOnlyDiagnostic: true,
+                annotationKind: $0.kind,
+                definitionDiagnosticStatus: $0.definitionDiagnosticStatus,
+                isReviewed: reviewedReviewItemIDs.contains($0.id),
+                isStale: !rangeContainsOriginal(
+                    range: $0.sourceRange,
+                    original: $0.original,
+                    in: text
+                )
+            )
+        }
+        drawingRanges = (annotationRanges + suggestionRanges).sorted { lhs, rhs in
+            let lhsPriority = visualPriority(for: lhs)
+            let rhsPriority = visualPriority(for: rhs)
+            if lhsPriority != rhsPriority {
+                // Lower numbers are more important and should be applied
+                // later so definition/needs-review colors win overlaps.
+                return lhsPriority > rhsPriority
+            }
+            if lhs.range.location != rhs.range.location {
+                return lhs.range.location < rhs.range.location
+            }
+            return lhs.range.length < rhs.range.length
         }
 
         guard let textStorage, textStorage.length > 0 else { return }
@@ -981,9 +1471,7 @@ final class SuggestionLayoutManager: NSLayoutManager {
 
             addTemporaryAttribute(
                 .foregroundColor,
-                value: item.isDebugOnly
-                    ? NSColor.systemGreen
-                    : NSColor(red: 0.65, green: 0.12, blue: 0.18, alpha: 1.0),
+                value: foregroundColor(for: item),
                 forCharacterRange: item.range
             )
             addTemporaryAttribute(
@@ -991,6 +1479,13 @@ final class SuggestionLayoutManager: NSLayoutManager {
                 value: EditorTypography.bodyBoldFont,
                 forCharacterRange: item.range
             )
+            if item.isStale {
+                addTemporaryAttribute(
+                    .underlineStyle,
+                    value: NSUnderlineStyle.single.rawValue,
+                    forCharacterRange: item.range
+                )
+            }
         }
 
         invalidateDisplay(forCharacterRange: fullRange)
@@ -1030,17 +1525,104 @@ final class SuggestionLayoutManager: NSLayoutManager {
                 let drawRect = rect
                     .offsetBy(dx: origin.x, dy: origin.y)
                     .insetBy(dx: -4, dy: 1)
-                let color = item.isDebugOnly
-                    ? NSColor(red: 0.86, green: 0.96, blue: 0.88, alpha: 1.0)
-                    : NSColor(red: 0.98, green: 0.88, blue: 0.90, alpha: 1.0)
+                let color = self.backgroundColor(for: item)
                 color.setFill()
                 NSBezierPath(
                     roundedRect: drawRect,
                     xRadius: 6,
                     yRadius: 6
                 ).fill()
+
+                if item.isSelected {
+                    let outline = NSBezierPath(
+                        roundedRect: drawRect,
+                        xRadius: 6,
+                        yRadius: 6
+                    )
+                    outline.lineWidth = 1.5
+                    NSColor.controlAccentColor.withAlphaComponent(0.75).setStroke()
+                    outline.stroke()
+                }
             }
         }
+    }
+
+    private func visualPriority(for item: DrawingRange) -> Int {
+        guard item.isReadOnlyDiagnostic else { return 1 }
+        return item.definitionDiagnosticStatus == .matches ? 2 : 0
+    }
+
+    private func foregroundColor(for item: DrawingRange) -> NSColor {
+        if item.isStale {
+            return NSColor(white: 0.25, alpha: 1.0)
+        }
+
+        if item.isReviewed {
+            return NSColor(white: 0.35, alpha: 1.0)
+        }
+
+        guard item.isReadOnlyDiagnostic else {
+            return NSColor(red: 0.65, green: 0.12, blue: 0.18, alpha: 1.0)
+        }
+
+        switch annotationColor(for: item) {
+        case .matches:
+            return NSColor(red: 0.12, green: 0.52, blue: 0.24, alpha: 1.0)
+        case .mismatch:
+            return NSColor(red: 0.72, green: 0.10, blue: 0.14, alpha: 1.0)
+        case .needsReview:
+            return NSColor(red: 0.70, green: 0.40, blue: 0.02, alpha: 1.0)
+        }
+    }
+
+    private func backgroundColor(for item: DrawingRange) -> NSColor {
+        if item.isStale {
+            return NSColor(white: 0.88, alpha: 1.0)
+        }
+
+        if item.isReviewed {
+            return NSColor(white: 0.90, alpha: 1.0)
+        }
+
+        guard item.isReadOnlyDiagnostic else {
+            return NSColor(red: 0.98, green: 0.88, blue: 0.90, alpha: 1.0)
+        }
+
+        switch annotationColor(for: item) {
+        case .matches:
+            return NSColor(red: 0.86, green: 0.96, blue: 0.88, alpha: 1.0)
+        case .mismatch:
+            return NSColor(red: 0.99, green: 0.86, blue: 0.88, alpha: 1.0)
+        case .needsReview:
+            return NSColor(red: 0.99, green: 0.94, blue: 0.78, alpha: 1.0)
+        }
+    }
+
+    private func annotationColor(
+        for item: DrawingRange
+    ) -> EditorDefinitionDiagnosticStatus {
+        if let definitionDiagnosticStatus = item.definitionDiagnosticStatus {
+            return definitionDiagnosticStatus
+        }
+        switch item.annotationKind {
+        case .some(.needsReview), .some(.definedTerm), .some(.legalRisk), .none:
+            return .needsReview
+        case .some(.definition):
+            return .needsReview
+        }
+    }
+
+    private func rangeContainsOriginal(
+        range: NSRange,
+        original: String,
+        in text: String
+    ) -> Bool {
+        guard range.location >= 0,
+              range.length > 0,
+              NSMaxRange(range) <= text.utf16.count else {
+            return false
+        }
+        return (text as NSString).substring(with: range) == original
     }
 }
 
@@ -1074,11 +1656,15 @@ final class SuggestionLayoutManager: NSLayoutManager {
                 reference: nil
             )
         ],
-        selectedSuggestionID: nil,
+        annotations: [],
+        reviewedReviewItemIDs: [],
+        selectedReviewItemID: nil,
         onSelect: { _ in },
         onTextEdited: {},
-        onAccept: { _ in },
-        onDismiss: { _ in }
+        onSuggestionAccepted: { _, _, _ in },
+        onDismiss: { _ in },
+        onMarkReviewed: { _ in },
+        onReopenReviewed: { _ in }
     )
     .frame(width: 720, height: 280)
 }
@@ -1103,11 +1689,15 @@ final class SuggestionLayoutManager: NSLayoutManager {
                 reference: nil
             )
         ],
-        selectedSuggestionID: nil,
+        annotations: [],
+        reviewedReviewItemIDs: [],
+        selectedReviewItemID: nil,
         onSelect: { _ in },
         onTextEdited: {},
-        onAccept: { _ in },
-        onDismiss: { _ in }
+        onSuggestionAccepted: { _, _, _ in },
+        onDismiss: { _ in },
+        onMarkReviewed: { _ in },
+        onReopenReviewed: { _ in }
     )
     .frame(width: 520, height: 180)
     .preferredColorScheme(.dark)

@@ -11,6 +11,11 @@ import SwiftUI
 struct DictionaryDetailView: View {
     @Bindable var viewModel: DictionaryViewModel
     @Environment(\.colorScheme) private var colorScheme
+    @State private var historyExpansionByKey: [String: Bool] = [:]
+    @State private var alternativesExpansionByKey: [String: Bool] = [:]
+
+    private let longHistoryThreshold = 3
+    private let longAlternativesThreshold = 2
 
     // MARK: - Adaptive Theme Colors
     private var cardBackground: Color {
@@ -134,34 +139,7 @@ struct DictionaryDetailView: View {
 
                         // Definition Cards (Numbered: 1, 2, ...)
                         ForEach(entry.definitions) { def in
-                            definitionCard(def: def)
-                        }
-
-                        if !entry.regulationRelations.isEmpty {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Relasi Peraturan")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundStyle(sectionHeaderColor)
-
-                                ForEach(entry.regulationRelations) { relation in
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(relation.relationType)
-                                            .font(.system(size: 12, weight: .semibold))
-                                        Text("\(relation.sourceReferenceID) → \(relation.targetReferenceID)")
-                                            .font(.system(size: 11, design: .monospaced))
-                                            .foregroundStyle(.secondary)
-                                        if !relation.evidenceText.isEmpty {
-                                            Text(relation.evidenceText)
-                                                .font(.system(size: 11))
-                                                .foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(10)
-                                    .background(innerBoxBackground)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                }
-                            }
+                            definitionCard(def: def, entry: entry)
                         }
 
                         // "Lihat Juga" Section
@@ -198,7 +176,10 @@ struct DictionaryDetailView: View {
     }
 
     @ViewBuilder
-    private func definitionCard(def: DefinitionItem) -> some View {
+    private func definitionCard(
+        def: DefinitionItem,
+        entry: LegalGlossaryEntry
+    ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             // Header Blue Ribbon with Number Badge
             HStack(spacing: 8) {
@@ -213,7 +194,7 @@ struct DictionaryDetailView: View {
                         .foregroundStyle(bannerColor)
                 }
 
-                Text("Definisi")
+                Text(def.role == .primary ? "Definisi utama" : "Definisi")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.white)
 
@@ -233,35 +214,19 @@ struct DictionaryDetailView: View {
                 .padding(.vertical, 2)
                 .fixedSize(horizontal: false, vertical: true)
 
-            if !def.sources.isEmpty || !def.sourceURLs.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Sumber kamus")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(sectionHeaderColor)
+            definitionEvidenceSummary(for: def)
 
-                    if !def.sources.isEmpty {
-                        Label(
-                            def.sources.joined(separator: " • "),
-                            systemImage: "books.vertical"
-                        )
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                    }
+            definitionHistory(for: def, in: entry)
 
-                    ForEach(def.sourceURLs, id: \.self) { sourceURL in
-                        Link(destination: sourceURL) {
-                            Label("Buka halaman sumber", systemImage: "arrow.up.right.square")
-                                .font(.system(size: 11))
-                        }
-                    }
-                }
-                .padding(.horizontal, 4)
+            if def.role == .primary {
+                contextualAlternatives(for: entry)
             }
 
-            // Inner "Referensi Hukum" Card
+            // Official reference card. Discovery-source provenance is kept in
+            // the audit dataset, but is deliberately not shown in Dictionary.
             if let ref = def.reference {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Referensi Hukum")
+                    Text(ref.isDefinitionAuthority ? "Dasar hukum" : "Regulasi terkait")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(sectionHeaderColor)
 
@@ -328,6 +293,25 @@ struct DictionaryDetailView: View {
                             .foregroundStyle(.secondary)
                     }
 
+                    if let matchedEvidenceText = nonEmpty(ref.matchedEvidenceText) {
+                        DisclosureGroup {
+                            Text(matchedEvidenceText)
+                                .font(.system(size: 11.5))
+                                .lineSpacing(3)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.top, 2)
+                        } label: {
+                            Label(
+                                "Teks definisi yang terpetakan",
+                                systemImage: "quote.opening"
+                            )
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.secondary)
+                        }
+                        .padding(.top, 2)
+                    }
+
                     if let sourceURL = ref.sourceURL {
                         Link(destination: sourceURL) {
                             Label("Buka sumber", systemImage: "arrow.up.right.square")
@@ -364,6 +348,470 @@ struct DictionaryDetailView: View {
                 .strokeBorder(cardBorder, lineWidth: 1)
         )
     }
+
+    @ViewBuilder
+    private func definitionEvidenceSummary(for definition: DefinitionItem) -> some View {
+        let hasVerificationStatus = definition.verificationStatus != nil
+        let hasSelectionReason = definition.role == .primary
+            && nonEmpty(definition.selectionReason) != nil
+
+        if hasVerificationStatus || hasSelectionReason {
+            VStack(alignment: .leading, spacing: 5) {
+                if let verificationStatus = definition.verificationStatus {
+                    Label(
+                        verificationStatus.displayTitle,
+                        systemImage: verificationStatusIcon(for: verificationStatus)
+                    )
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                }
+
+                if definition.role == .primary {
+                    Text(definition.isActionable
+                        ? "Evidence memenuhi syarat untuk kandidat Suggestion."
+                        : "Belum memenuhi syarat evidence untuk kandidat Suggestion.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+
+                if let reason = selectionReasonText(definition.selectionReason) {
+                    Text("Alasan pemilihan: \(reason)")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.horizontal, 4)
+        }
+    }
+
+    private func verificationStatusIcon(
+        for status: LegalCorpusReviewStatus
+    ) -> String {
+        switch status {
+        case .machineExact:
+            "checkmark.circle"
+        case .machineOCRTolerantUnreviewed:
+            "exclamationmark.circle"
+        case .humanVerified:
+            "checkmark.seal"
+        case .needsReview:
+            "questionmark.circle"
+        }
+    }
+
+    private func selectionReasonText(_ rawValue: String?) -> String? {
+        guard let rawValue = nonEmpty(rawValue) else { return nil }
+
+        switch rawValue {
+        case "higher_normative_level_same_official_term":
+            return "peraturan dengan tingkat normatif lebih tinggi untuk istilah yang sama"
+        case "stronger_evidence_same_official_scope":
+            return "evidence resmi yang lebih kuat dalam cakupan yang sama"
+        case "only_official_in_force_definition":
+            return "satu-satunya definisi resmi yang masih berlaku"
+        case "human_verified_override":
+            return "hasil verifikasi manusia"
+        default:
+            return rawValue
+                .replacingOccurrences(of: "_", with: " ")
+                .capitalized
+        }
+    }
+
+    @ViewBuilder
+    private func definitionHistory(
+        for definition: DefinitionItem,
+        in entry: LegalGlossaryEntry
+    ) -> some View {
+        let events = historyEvents(for: definition, in: entry)
+        if !events.isEmpty {
+            let historyKey = historyKey(for: definition, in: entry)
+            let isExpanded = historyExpansionByKey[historyKey]
+                ?? (events.count <= longHistoryThreshold)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        historyExpansionByKey[historyKey] = !isExpanded
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        HStack(spacing: 6) {
+                            Text("Status dan riwayat regulasi")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(sectionHeaderColor)
+
+                            Text("· \(events.count) catatan")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer(minLength: 12)
+
+                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Status dan riwayat regulasi")
+                .accessibilityValue(
+                    "\(events.count) catatan, \(isExpanded ? "terbuka" : "tertutup")"
+                )
+                .accessibilityHint("Klik untuk menampilkan atau menyembunyikan riwayat")
+
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(events.indices, id: \.self) { index in
+                            definitionHistoryRow(
+                                events[index],
+                                isLast: index == events.count - 1
+                            )
+                        }
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 2)
+        }
+    }
+
+    private func historyKey(
+        for definition: DefinitionItem,
+        in entry: LegalGlossaryEntry
+    ) -> String {
+        "\(entry.id)-\(definition.role.rawValue)-\(definition.id)"
+    }
+
+    @ViewBuilder
+    private func contextualAlternatives(for entry: LegalGlossaryEntry) -> some View {
+        if !entry.contextualAlternatives.isEmpty {
+            let alternativesKey = alternativesKey(for: entry)
+            let isExpanded = alternativesExpansionByKey[alternativesKey]
+                ?? (entry.contextualAlternatives.count <= longAlternativesThreshold)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        alternativesExpansionByKey[alternativesKey] = !isExpanded
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        HStack(spacing: 6) {
+                            Text("Konteks definisi lain")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(sectionHeaderColor)
+
+                            Text("· \(entry.contextualAlternatives.count) regulasi")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer(minLength: 12)
+
+                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Konteks definisi lain")
+                .accessibilityValue(
+                    "\(entry.contextualAlternatives.count) regulasi, \(isExpanded ? "terbuka" : "tertutup")"
+                )
+                .accessibilityHint("Klik untuk menampilkan atau menyembunyikan definisi terkait")
+
+                Text("Definisi dari regulasi lain ditampilkan sebagai konteks.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(entry.contextualAlternatives.indices, id: \.self) { index in
+                            contextualAlternativeRow(
+                                entry.contextualAlternatives[index],
+                                isLast: index == entry.contextualAlternatives.count - 1
+                            )
+                        }
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 2)
+        }
+    }
+
+    private func alternativesKey(for entry: LegalGlossaryEntry) -> String {
+        entry.id
+    }
+
+    private func contextualAlternativeRow(
+        _ alternative: DefinitionItem,
+        isLast: Bool
+    ) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            VStack(spacing: 0) {
+                Circle()
+                    .fill(alternative.isDefinitionAuthority
+                        ? Color.accentColor
+                        : Color.secondary.opacity(0.45))
+                    .frame(width: 7, height: 7)
+                    .padding(.top, 4)
+
+                if !isLast {
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.12))
+                        .frame(width: 1)
+                        .frame(maxHeight: .infinity)
+                }
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .frame(width: 8)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(alternative.provenanceLabel)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                Text(alternative.text)
+                    .font(.system(size: 12))
+                    .lineSpacing(3)
+                    .foregroundStyle(definitionTextColor)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let reference = alternative.reference {
+                    Text(reference.isDefinitionAuthority
+                        ? reference.lawName
+                        : "Terkait: \(reference.lawName)")
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    if let metadata = referenceMetadata(for: reference) {
+                        Text(metadata)
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if let verificationStatus = alternative.verificationStatus {
+                    Text(verificationStatus.displayTitle)
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.bottom, 10)
+        }
+    }
+
+    private func historyEvents(
+        for definition: DefinitionItem,
+        in entry: LegalGlossaryEntry
+    ) -> [DefinitionHistoryEvent] {
+        let references = definition.allReferences
+        let referenceIDs = Set(references.compactMap(\.referenceID))
+        let relations = entry.regulationRelations.filter { relation in
+            referenceIDs.contains(relation.sourceReferenceID)
+                || referenceIDs.contains(relation.targetReferenceID)
+        }
+
+        var events: [DefinitionHistoryEvent] = []
+
+        for (index, reference) in references.enumerated() {
+            let hasKnownStatus = referenceStatus(for: reference) != nil
+            let hasRelation = relations.contains {
+                $0.sourceReferenceID == reference.referenceID
+                    || $0.targetReferenceID == reference.referenceID
+            }
+            guard hasKnownStatus || hasRelation || references.count > 1 else {
+                continue
+            }
+
+            events.append(
+                DefinitionHistoryEvent(
+                    id: "reference-\(index)-\(reference.referenceID ?? reference.lawName)",
+                    label: referenceStatus(for: reference) ?? "Dasar hukum",
+                    sourceName: reference.lawName,
+                    metadata: referenceMetadata(for: reference),
+                    explanation: nil,
+                    isInactive: isInactive(reference)
+                )
+            )
+        }
+
+        for relation in relations {
+            let isSource = referenceIDs.contains(relation.sourceReferenceID)
+            let isTarget = referenceIDs.contains(relation.targetReferenceID)
+            let relatedReferenceID: String
+            let rawRelationType: String
+
+            if isSource {
+                relatedReferenceID = relation.targetReferenceID
+                rawRelationType = relation.relationType
+            } else if isTarget {
+                relatedReferenceID = relation.sourceReferenceID
+                rawRelationType = relation.inverseRelationType
+            } else {
+                continue
+            }
+
+            let relatedRegulation = viewModel.regulation(for: relatedReferenceID)
+            events.append(
+                DefinitionHistoryEvent(
+                    id: "relation-\(relation.relationID)",
+                    label: relationTitle(for: rawRelationType),
+                    sourceName: regulationName(relatedRegulation),
+                    metadata: regulationMetadata(for: relatedRegulation),
+                    explanation: nonEmpty(relation.evidenceText),
+                    isInactive: false
+                )
+            )
+        }
+
+        return events
+    }
+
+    private func definitionHistoryRow(
+        _ event: DefinitionHistoryEvent,
+        isLast: Bool
+    ) -> some View {
+        HStack(alignment: .top, spacing: 9) {
+            VStack(spacing: 0) {
+                Circle()
+                    .fill(event.isInactive ? Color.secondary.opacity(0.35) : Color.accentColor)
+                    .frame(width: 7, height: 7)
+                    .padding(.top, 4)
+
+                if !isLast {
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.12))
+                        .frame(width: 1)
+                        .frame(maxHeight: .infinity)
+                }
+            }
+                .frame(maxHeight: .infinity, alignment: .top)
+                .frame(width: 8)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(event.label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(event.isInactive ? .secondary : .primary)
+
+                Text(event.sourceName)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(event.isInactive ? .secondary : lawTitleColor)
+
+                if let metadata = event.metadata {
+                    Text(metadata)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+
+                if let explanation = event.explanation {
+                    Text(explanation)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+            }
+            .padding(.bottom, 10)
+        }
+    }
+
+    private func nonEmpty(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private func referenceStatus(for reference: LegalReference) -> String? {
+        if let officialStatus = nonEmpty(reference.officialStatus) {
+            return officialStatus
+        }
+        return reference.applicabilityStatus == .unknown
+            ? nil
+            : reference.applicabilityStatus.displayTitle
+    }
+
+    private func isInactive(_ reference: LegalReference) -> Bool {
+        if reference.applicabilityStatus == .notInForce {
+            return true
+        }
+        guard let status = nonEmpty(reference.officialStatus)?.lowercased() else {
+            return false
+        }
+        return status.contains("tidak berlaku") || status.contains("dicabut")
+    }
+
+    private func referenceMetadata(for reference: LegalReference) -> String? {
+        var parts: [String] = []
+
+        if let number = nonEmpty(reference.number), let year = reference.year {
+            parts.append("Nomor \(number) Tahun \(year)")
+        } else if let number = nonEmpty(reference.number) {
+            parts.append("Nomor \(number)")
+        } else if let year = reference.year {
+            parts.append("Tahun \(year)")
+        }
+
+        if let articleLocator = nonEmpty(reference.articleLocator) {
+            parts.append("Pasal \(articleLocator)")
+        }
+
+        return parts.isEmpty ? nil : parts.joined(separator: " • ")
+    }
+
+    private func regulationMetadata(for regulation: LegalRegulation?) -> String? {
+        guard let regulation else { return nil }
+
+        if let number = nonEmpty(regulation.number), let year = regulation.year {
+            return "Nomor \(number) Tahun \(year)"
+        }
+        if let number = nonEmpty(regulation.number) {
+            return "Nomor \(number)"
+        }
+        if let year = regulation.year {
+            return "Tahun \(year)"
+        }
+        return nil
+    }
+
+    private func regulationName(_ regulation: LegalRegulation?) -> String {
+        guard let regulation else { return "Sumber hukum terkait" }
+        return nonEmpty(regulation.referenceName)
+            ?? nonEmpty(regulation.officialTitle)
+            ?? "Sumber hukum terkait"
+    }
+
+    private func relationTitle(for rawValue: String) -> String {
+        switch rawValue {
+        case "amends":
+            return "Mengubah"
+        case "amended_by":
+            return "Diubah oleh"
+        case "repeals":
+            return "Mencabut"
+        case "repealed_by":
+            return "Dicabut oleh"
+        default:
+            return rawValue
+                .replacingOccurrences(of: "_", with: " ")
+                .capitalized
+        }
+    }
+}
+
+private struct DefinitionHistoryEvent {
+    let id: String
+    let label: String
+    let sourceName: String
+    let metadata: String?
+    let explanation: String?
+    let isInactive: Bool
 }
 
 // MARK: - "Lihat Juga" Chip Component

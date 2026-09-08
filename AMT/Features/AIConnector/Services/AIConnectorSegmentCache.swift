@@ -13,6 +13,7 @@ struct AIConnectorCacheKeyComponents: Hashable, Sendable {
     let semanticEmbeddingSchema: String
     let semanticRetrievalProfile: String
     let languageScorerVersion: String
+    let reviewPolicyVersion: String
     let validatorVersion: String
     let outputSchemaVersion: String
     let protectionContext: AIConnectorDocumentProtectionContext
@@ -30,6 +31,7 @@ struct AIConnectorCacheKeyComponents: Hashable, Sendable {
         semanticEmbeddingSchema: String = "",
         semanticRetrievalProfile: String = "",
         languageScorerVersion: String = AIConnectorLanguageScorerConfiguration.cacheKey,
+        reviewPolicyVersion: String = AIConnectorPhaseTwoPolicy.disabledVersion,
         validatorVersion: String,
         outputSchemaVersion: String,
         protectionContext: AIConnectorDocumentProtectionContext,
@@ -46,6 +48,7 @@ struct AIConnectorCacheKeyComponents: Hashable, Sendable {
         self.semanticEmbeddingSchema = semanticEmbeddingSchema
         self.semanticRetrievalProfile = semanticRetrievalProfile
         self.languageScorerVersion = languageScorerVersion
+        self.reviewPolicyVersion = reviewPolicyVersion
         self.validatorVersion = validatorVersion
         self.outputSchemaVersion = outputSchemaVersion
         self.protectionContext = protectionContext
@@ -63,6 +66,7 @@ struct AIConnectorCachedReview: Sendable {
     let glossaryMatch: LegalDictionaryMatch?
     let origin: AIReviewOrigin
     let ruleID: String?
+    let sourceAnchor: AIConnectorReviewAnchor?
 
     init(review: AIValidatedReview) {
         id = review.id
@@ -74,10 +78,26 @@ struct AIConnectorCachedReview: Sendable {
         glossaryMatch = review.glossaryMatch
         origin = review.origin
         ruleID = review.ruleID
+        sourceAnchor = review.sourceAnchor
     }
 
     func materialize(for segment: AIReviewSegment) -> AIValidatedReview {
-        AIValidatedReview(
+        let materializedAnchor: AIConnectorReviewAnchor?
+        if let sourceAnchor, let original {
+            let candidate = AIConnectorReviewAnchor(
+                segmentID: segment.id,
+                sourceRange: sourceAnchor.range,
+                original: original
+            )
+            materializedAnchor = candidate.isValid(
+                for: segment,
+                original: original
+            ) ? candidate : nil
+        } else {
+            materializedAnchor = nil
+        }
+
+        return AIValidatedReview(
             id: id,
             segment: segment,
             status: status,
@@ -87,14 +107,16 @@ struct AIConnectorCachedReview: Sendable {
             reason: reason,
             glossaryMatch: glossaryMatch,
             origin: origin,
-            ruleID: ruleID
+            ruleID: ruleID,
+            sourceAnchor: materializedAnchor
         )
     }
 }
 
 struct AIConnectorCachedSegmentResult: Sendable {
-    /// Reviews intentionally contain no segment or absolute source location.
-    /// They are reattached to the current segment on cache lookup.
+    /// Reviews contain segment-relative anchors. The segment itself is still
+    /// reattached on cache lookup so a cache hit cannot carry an absolute
+    /// document location across a different document revision.
     let reviews: [AIConnectorCachedReview]
     let parsedStatus: AIReviewStatus?
     let parsedCategory: AIReviewCategory?
@@ -105,6 +127,7 @@ struct AIConnectorCachedSegmentResult: Sendable {
     let usedFallback: Bool
     let firstPassSucceeded: Bool
     let candidateDecisions: [AIConnectorCandidateDecisionRecord]
+    let candidateRoutes: [AIConnectorPhaseTwoCandidateRoute]
     let generationMetrics: AIConnectorGenerationMetrics?
     let repeatedSixGramRatio: Double?
     let outputWasTruncated: Bool
@@ -124,6 +147,7 @@ struct AIConnectorCachedSegmentResult: Sendable {
         usedFallback: Bool,
         firstPassSucceeded: Bool,
         candidateDecisions: [AIConnectorCandidateDecisionRecord] = [],
+        candidateRoutes: [AIConnectorPhaseTwoCandidateRoute] = [],
         generationMetrics: AIConnectorGenerationMetrics? = nil,
         repeatedSixGramRatio: Double? = nil,
         outputWasTruncated: Bool = false,
@@ -142,6 +166,7 @@ struct AIConnectorCachedSegmentResult: Sendable {
         self.usedFallback = usedFallback
         self.firstPassSucceeded = firstPassSucceeded
         self.candidateDecisions = candidateDecisions
+        self.candidateRoutes = candidateRoutes
         self.generationMetrics = generationMetrics
         self.repeatedSixGramRatio = repeatedSixGramRatio
         self.outputWasTruncated = outputWasTruncated
@@ -155,23 +180,57 @@ struct AIConnectorCachedSegmentResult: Sendable {
 /// In-memory cache for validated, segment-relative results.
 /// Raw model output is intentionally excluded from cache values.
 actor AIConnectorSegmentCache {
+    /// Explicit namespace bump for the Phase 3 anchored result shape. This
+    /// keeps any future persisted/injected cache namespace from reusing
+    /// unanchored Phase 2 results even when the other inputs happen to match.
+    nonisolated static let keyVersion = "segment-cache-v4-context-profile"
+    nonisolated static let maximumEntriesPerDocument = 256
+
     private var values: [String: AIConnectorCachedSegmentResult] = [:]
+    private var recency: [String] = []
 
     func value(for key: String) -> AIConnectorCachedSegmentResult? {
-        values[key]
+        guard let value = values[key] else { return nil }
+        touch(key)
+        return value
     }
 
     func insert(_ value: AIConnectorCachedSegmentResult, for key: String) {
         values[key] = value
+        touch(key)
+        while recency.count > Self.maximumEntriesPerDocument {
+            let evicted = recency.removeFirst()
+            values.removeValue(forKey: evicted)
+        }
     }
 
     func removeAll() {
         values.removeAll()
+        recency.removeAll()
+    }
+
+    func snapshot() -> [String: AIConnectorCachedSegmentResult] {
+        values
+    }
+
+    func restore(_ snapshot: [String: AIConnectorCachedSegmentResult]) {
+        values = Dictionary(
+            uniqueKeysWithValues: snapshot.prefix(Self.maximumEntriesPerDocument).map {
+                ($0.key, $0.value)
+            }
+        )
+        recency = Array(values.keys)
+    }
+
+    private func touch(_ key: String) {
+        recency.removeAll { $0 == key }
+        recency.append(key)
     }
 
     nonisolated static func key(from components: AIConnectorCacheKeyComponents) -> String {
         let profile = components.generationProfile
         let material = [
+            Self.keyVersion,
             components.segment.targetText,
             components.segment.previousContext ?? "-",
             components.segment.nextContext ?? "-",
@@ -186,10 +245,12 @@ actor AIConnectorSegmentCache {
             components.semanticEmbeddingSchema,
             components.semanticRetrievalProfile,
             components.languageScorerVersion,
+            components.reviewPolicyVersion,
             components.validatorVersion,
             components.outputSchemaVersion,
             components.candidateFingerprint,
-            protectionFingerprint(components.protectionContext)
+            protectionFingerprint(components.protectionContext),
+            components.segment.context?.fingerprint ?? "no-context"
         ].joined(separator: "\u{1F}")
 
         let digest = SHA256.hash(data: Data(material.utf8))
