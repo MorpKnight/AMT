@@ -44,24 +44,58 @@ struct EditorSidebar: View {
                 .overlay(Color.borderSubtle)
 
             // List of Existing Documents
-            List(selection: $selectedDocumentID) {
-                Section {
+            ScrollView {
+                LazyVStack(spacing: 4) {
                     ForEach(documents) { doc in
-                        HStack(spacing: 8) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(doc.title)
-                                    .appFont(.callout, weight: selectedDocumentID == doc.id ? .semibold : .regular)
-                                    .foregroundStyle(Color.textPrimary)
-                                    .lineLimit(1)
+                        EditorSidebarItem(
+                            document: doc,
+                            isSelected: selectedDocumentID == doc.id,
+                            action: {
+                                selectedDocumentID = doc.id
                             }
-                        }
-                        .tag(doc.id)
+                        )
                     }
-                    .padding(.top, 8)
                 }
+                .padding(.horizontal, 10)
+                .padding(.top, 8)
             }
         }
         .frame(minWidth: 220, idealWidth: 270, maxWidth: 270)
+    }
+}
+
+private struct EditorSidebarItem: View {
+    let document: DashboardDocument
+    let isSelected: Bool
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: "doc.text")
+                    .font(.system(size: 14))
+                    .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
+
+                Text(document.title)
+                    .appFont(.callout, weight: isSelected ? .semibold : .regular)
+                    .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
+                    .lineLimit(1)
+
+                Spacer()
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isSelected ? Color.bgSelected : (isHovered ? Color.primary.opacity(0.04) : Color.clear))
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
 
