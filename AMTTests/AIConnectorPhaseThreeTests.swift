@@ -387,7 +387,83 @@ final class AIConnectorPhaseThreeTests: XCTestCase {
             )
         )
         XCTAssertTrue(viewModel.reviewItems.isEmpty)
-        XCTAssertNil(viewModel.makeAnalysisSnapshot(documentText: updated))
+        let acceptedSnapshot = try XCTUnwrap(viewModel.makeAnalysisSnapshot(documentText: updated))
+        XCTAssertTrue(acceptedSnapshot.editorSuggestions.isEmpty)
+        XCTAssertEqual(acceptedSnapshot.analyzedContentSHA256, DocumentFingerprinting.contentSHA256(updated))
+    }
+
+    func testAcceptingOneSuggestionRetainsOtherSuggestionsAndAllowsSnapshotPersistence() throws {
+        let originalText = "Kata pertama wajib untuk diuji dan kata kedua adalah adalah salah."
+        let viewModel = AIConnectorViewModel(
+            service: QwenSuggestionService(),
+            dictionaryStore: LegalDictionaryStore(entries: [])
+        )
+        let firstLoc = (originalText as NSString).range(of: "wajib untuk").location
+        let secondLoc = (originalText as NSString).range(of: "adalah adalah").location
+
+        let sugID1 = UUID()
+        let sugID2 = UUID()
+
+        let suggestion1 = makeSuggestion(
+            id: sugID1,
+            location: firstLoc,
+            original: "wajib untuk",
+            replacement: "wajib"
+        )
+        let suggestion2 = makeSuggestion(
+            id: sugID2,
+            location: secondLoc,
+            original: "adalah adalah",
+            replacement: "adalah"
+        )
+
+        let initialSnapshot = DocumentAnalysisSnapshot(
+            analyzedContentSHA256: DocumentFingerprinting.contentSHA256(originalText),
+            analysisProfile: viewModel.currentAnalysisProfile,
+            completedAt: Date(),
+            editorSuggestions: [suggestion1, suggestion2]
+        )
+        XCTAssertTrue(viewModel.restoreAnalysisSnapshot(initialSnapshot, documentText: originalText))
+        XCTAssertEqual(viewModel.editorSuggestions.count, 2)
+
+        // Accept first suggestion
+        let updatedText = (originalText as NSString).replacingCharacters(
+            in: NSRange(location: firstLoc, length: "wajib untuk".utf16.count),
+            with: "wajib"
+        )
+        XCTAssertTrue(
+            viewModel.reconcileAfterAccept(
+                suggestion1,
+                previousText: originalText,
+                updatedText: updatedText
+            )
+        )
+
+        // Only suggestion 1 accepted and removed; suggestion 2 retained with shifted range
+        XCTAssertEqual(viewModel.editorSuggestions.count, 1)
+        let remaining = viewModel.editorSuggestions[0]
+        XCTAssertEqual(remaining.id, sugID2)
+        let lengthDelta = "wajib".utf16.count - "wajib untuk".utf16.count // -6
+        XCTAssertEqual(remaining.sourceRange.location, secondLoc + lengthDelta)
+        XCTAssertEqual(
+            (updatedText as NSString).substring(with: remaining.sourceRange),
+            "adalah adalah"
+        )
+
+        // Snapshot is eligible and persisted correctly with remaining suggestion and new SHA
+        let persistedSnapshot = try XCTUnwrap(viewModel.makeAnalysisSnapshot(documentText: updatedText))
+        XCTAssertEqual(persistedSnapshot.editorSuggestions.count, 1)
+        XCTAssertEqual(persistedSnapshot.editorSuggestions[0].id, sugID2)
+        XCTAssertEqual(persistedSnapshot.analyzedContentSHA256, DocumentFingerprinting.contentSHA256(updatedText))
+
+        // Restoring the persisted snapshot on the updated text succeeds
+        let restoredVM = AIConnectorViewModel(
+            service: QwenSuggestionService(),
+            dictionaryStore: LegalDictionaryStore(entries: [])
+        )
+        XCTAssertTrue(restoredVM.restoreAnalysisSnapshot(persistedSnapshot, documentText: updatedText))
+        XCTAssertEqual(restoredVM.editorSuggestions.count, 1)
+        XCTAssertEqual(restoredVM.editorSuggestions[0].id, sugID2)
     }
 
     func testSnapshotVersionFourDecodesButCannotBeRestoredAsActiveResults() throws {

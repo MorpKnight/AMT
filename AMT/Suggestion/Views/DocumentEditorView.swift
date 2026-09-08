@@ -29,6 +29,7 @@ struct DocumentEditorView: View {
     @State private var editorViewModel = EditorViewModel()
     @State private var presentationMode: DocumentPresentationMode
     @State private var showDefinitionMatches = false
+    @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
 
     init(
         documents: [DashboardDocument],
@@ -76,76 +77,80 @@ struct DocumentEditorView: View {
     }
     
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $sidebarVisibility) {
             EditorSidebar(
                 documents: documents,
                 selectedDocumentID: $selectedDocumentID,
                 onBackToDashboard: onBackToDashboard,
                 onImportDocument: onImportDocument
             )
+            .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 280)
             .navigationTitle("")
             
         } detail: {
             VStack(spacing: 0) {
                 editorToolbar
+                Divider()
+                    .overlay(Color.borderSubtle)
+
                 GeometryReader { proxy in
                     ZStack {
-                        Color(nsColor: .underPageBackgroundColor)
-                            .ignoresSafeArea()
+                        Color.white
 
                         if presentationMode == .preview,
                            let originalSourceURL {
                             WordDocumentPreview(sourceURL: originalSourceURL)
                                 .frame(
-                                    width: min(max(proxy.size.width - 48, 360), 1120),
-                                    height: max(proxy.size.height - 32, 320)
+                                    width: proxy.size.width,
+                                    height: proxy.size.height
                                 )
-                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                                .shadow(color: .black.opacity(0.12), radius: 12, y: 3)
                         } else {
                             editorView(for: proxy)
                         }
                     }
-                    .overlay(alignment: .topTrailing) {
-                        if presentationMode == .editing {
-                            VStack(alignment: .trailing, spacing: 10) {
-                                if !reviewItems.isEmpty
-                                    || !aiConnectorViewModel.definitionMatchAnnotations.isEmpty
-                                    || aiConnectorViewModel.reviewedDocumentFindingCount > 0 {
-                                    ReviewNavigatorView(
-                                        items: reviewItems,
-                                        selectedItemID: aiConnectorViewModel.selectedReviewItemID,
-                                        hasDefinitionMatches: !aiConnectorViewModel.definitionMatchAnnotations.isEmpty,
-                                        showDefinitionMatches: $showDefinitionMatches,
-                                        hasReviewedFindings: aiConnectorViewModel.reviewedDocumentFindingCount > 0,
-                                        showReviewedFindings: Binding(
-                                            get: { aiConnectorViewModel.showReviewedFindings },
-                                            set: { aiConnectorViewModel.setShowReviewedFindings($0) }
-                                        ),
-                                        onPrevious: {
-                                            aiConnectorViewModel.selectPreviousReviewItem(
-                                                includeDefinitionMatches: showDefinitionMatches
-                                            )
-                                        },
-                                        onNext: {
-                                            aiConnectorViewModel.selectNextReviewItem(
-                                                includeDefinitionMatches: showDefinitionMatches
-                                            )
-                                        }
-                                    )
-                                } else if aiConnectorViewModel.state == .completed {
-                                    reviewEmptyState
-                                }
-                            }
-                                .padding(.top, 14)
-                                .padding(.trailing, 14)
-                        }
-                    }
+//                    .overlay(alignment: .topTrailing) {
+//                        if presentationMode == .editing {
+//                            VStack(alignment: .trailing, spacing: 10) {
+//                                if !reviewItems.isEmpty
+//                                    || !aiConnectorViewModel.definitionMatchAnnotations.isEmpty
+//                                    || aiConnectorViewModel.reviewedDocumentFindingCount > 0 {
+//                                    ReviewNavigatorView(
+//                                        items: reviewItems,
+//                                        selectedItemID: aiConnectorViewModel.selectedReviewItemID,
+//                                        hasDefinitionMatches: !aiConnectorViewModel.definitionMatchAnnotations.isEmpty,
+//                                        showDefinitionMatches: $showDefinitionMatches,
+//                                        hasReviewedFindings: aiConnectorViewModel.reviewedDocumentFindingCount > 0,
+//                                        showReviewedFindings: Binding(
+//                                            get: { aiConnectorViewModel.showReviewedFindings },
+//                                            set: { aiConnectorViewModel.setShowReviewedFindings($0) }
+//                                        ),
+//                                        onPrevious: {
+//                                            aiConnectorViewModel.selectPreviousReviewItem(
+//                                                includeDefinitionMatches: showDefinitionMatches
+//                                            )
+//                                        },
+//                                        onNext: {
+//                                            aiConnectorViewModel.selectNextReviewItem(
+//                                                includeDefinitionMatches: showDefinitionMatches
+//                                            )
+//                                        }
+//                                    )
+//                                } else if aiConnectorViewModel.state == .completed {
+//                                    reviewEmptyState
+//                                }
+//                            }
+//                                .padding(.top, 14)
+//                                .padding(.trailing, 14)
+//                        }
+//                    }
+
 
                 }
             }
+            .frame(minWidth: 500, maxWidth: .infinity, maxHeight: .infinity)
             .navigationTitle("")
         }
+        .navigationSplitViewStyle(.prominentDetail)
         .navigationTitle("")
         .onChange(of: selectedDocumentID) { _, newID in
             isDebugPanelPresented = false
@@ -259,6 +264,7 @@ struct DocumentEditorView: View {
             richTextData: $activeDocument.richTextData,
             structuredDocument: $activeDocument.structuredDocument,
             zoomPercent: $editorViewModel.zoomPercent,
+            fontSizePoints: editorViewModel.fontSizePoints,
             suggestions: aiConnectorViewModel.editorSuggestions,
             annotations: displayedReviewAnnotations,
             definitionResolutions: aiConnectorViewModel.definitionResolutions,
@@ -278,16 +284,11 @@ struct DocumentEditorView: View {
                 )
             },
             onSuggestionAccepted: { suggestion, previousText, updatedText in
-                if aiConnectorViewModel.reconcileAfterAccept(
+                if !aiConnectorViewModel.reconcileAfterAccept(
                     suggestion,
                     previousText: previousText,
                     updatedText: updatedText
                 ) {
-                    aiConnectorViewModel.markDocumentEdited(
-                        documentText: updatedText,
-                        structuredDocument: activeDocument.structuredDocument
-                    )
-                } else {
                     aiConnectorViewModel.resetInputMetadata()
                 }
                 onReviewStateChanged()
@@ -308,16 +309,11 @@ struct DocumentEditorView: View {
                 aiConnectorViewModel.requestDefinitionResolution(for: id)
             },
             onDefinitionResolutionApplied: { option, previousText, updatedText in
-                if aiConnectorViewModel.reconcileAfterDefinitionResolution(
+                if !aiConnectorViewModel.reconcileAfterDefinitionResolution(
                     option,
                     previousText: previousText,
                     updatedText: updatedText
                 ) {
-                    aiConnectorViewModel.markDocumentEdited(
-                        documentText: updatedText,
-                        structuredDocument: activeDocument.structuredDocument
-                    )
-                } else {
                     aiConnectorViewModel.resetInputMetadata()
                 }
                 onReviewStateChanged()
@@ -325,14 +321,11 @@ struct DocumentEditorView: View {
             formattingViewModel: editorViewModel
         )
         .frame(
-            width: min(max(proxy.size.width - 80, 360), 920),
-            height: max(proxy.size.height - 48, 320)
+            width: proxy.size.width,
+            height: proxy.size.height
         )
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
-        .shadow(color: .black.opacity(0.12), radius: 12, y: 3)
     }
-
 }
 
 private struct ReviewNavigatorView: View {
