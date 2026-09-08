@@ -1,172 +1,159 @@
 <p align="center">
-  <img src="AMT/Assets.xcassets/logo_black.imageset/Lawtionary%20Logo%20Black.png" alt="Lawtionary logo" width="96">
+  <img src="AMT/Assets.xcassets/logo_black.imageset/Lawtionary%20Logo%20Black.png" alt="Logo Lawtionary" width="112">
 </p>
 
-<h1 align="center">AMT (Lawtionary)</h1>
+<h1 align="center">Lawtionary (AMT)</h1>
 
 <p align="center">
-  A native macOS workspace for source-grounded Indonesian legal terminology lookup and human-reviewed document suggestions.
+  Aplikasi macOS untuk membantu membaca draft dokumen dan menelusuri istilah hukum Indonesia.
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/platform-macOS%2026.5%2B-111111" alt="macOS 26.5 or later">
-  <img src="https://img.shields.io/badge/Swift-5.0-F05138" alt="Swift 5.0">
-  <img src="https://img.shields.io/badge/inference-MLX-007AFF" alt="MLX local inference">
-</p>
+Lawtionary memiliki dua MVP yang saling melengkapi:
 
-AMT is an early-stage research/MVP application. It combines a versioned legal dictionary with a conservative document-review pipeline. The project is intentionally a retrieval and review tool—not a chatbot—and it does not automatically rewrite legal text.
+- <strong>Document</strong> untuk mengimpor, membaca, mengedit, meninjau saran, dan mengekspor draft.
+- <strong>Dictionary</strong> untuk mencari istilah hukum, definisi, serta dasar dan konteks sumbernya.
 
 > [!WARNING]
-> AMT is not legal advice, a legal-accuracy certification system, or a replacement for a lawyer. Dictionary evidence and suggestion output must be reviewed by a qualified human before use.
+> Lawtionary adalah alat bantu kerja dan masih berada pada tahap MVP. Aplikasi ini bukan pemberi nasihat hukum, tidak menyatakan sebuah dokumen sudah benar secara hukum, dan tidak mengubah isi dokumen tanpa keputusan pengguna. Semua hasil tetap harus diperiksa oleh profesional yang berwenang.
 
-## Contents
+## Daftar isi
 
-- [What is included](#what-is-included)
-- [How the review pipeline works](#how-the-review-pipeline-works)
-- [Source-grounded corpus](#source-grounded-corpus)
-- [Getting started](#getting-started)
-- [Testing](#testing)
-- [Project layout](#project-layout)
-- [Model and package dependencies](#model-and-package-dependencies)
-- [Known limitations](#known-limitations)
+- [Dua MVP utama](#dua-mvp-utama)
+- [MVP 1 — Document](#mvp-1--document)
+- [MVP 2 — Dictionary](#mvp-2--dictionary)
+- [Penyimpanan lokal dan penggunaan yang aman](#penyimpanan-lokal-dan-penggunaan-yang-aman)
+- [Menjalankan aplikasi](#menjalankan-aplikasi)
+- [Untuk pengembang](#untuk-pengembang)
+- [Dokumen lanjutan](#dokumen-lanjutan)
 
-## What is included
+## Dua MVP utama
 
-### Document workspace
+| MVP | Tujuan sederhana | Hasil yang pengguna lihat |
+| --- | --- | --- |
+| Document | Membuka draft di satu tempat untuk diedit dan ditinjau. | Dokumen kerja, penanda bagian yang perlu diperiksa, pilihan menerima atau mengabaikan saran, lalu ekspor Word. |
+| Dictionary | Menemukan arti istilah hukum berdasarkan kamus yang disertakan aplikasi. | Definisi utama, konteks sumber atau regulasi bila tersedia, serta istilah terkait. |
 
-- Dashboard navigation for imported and locally stored documents.
-- Finder import for `.docx`, `.doc`, `.rtf`, `.md`, `.markdown`, and `.txt` files.
-- Native AppKit rich-text editing with headings, inline styles, lists, undo/redo, and zoom controls.
-- `.docx` export from the editor.
-- Duplicate detection using the original file hash or normalized document content.
-- JSON persistence in `~/Documents/AMT_Documents` through `DocumentStorageManager`.
-- Analysis snapshots that are invalidated when the document content changes.
+Kedua fitur dipisahkan dengan sengaja. Dictionary berfokus pada informasi istilah yang memiliki bukti sumber, sedangkan Document berfokus pada draft pengguna dan keputusan review manusia.
 
-### Lawtionary Dictionary
+## MVP 1 — Document
 
-- Bidirectional lookup: search for a legal term or search a description to find relevant terms.
-- Lexical retrieval for exact, prefix, substring, and short term-shaped queries.
-- Optional BM25 + multilingual E5 hybrid retrieval for longer reverse lookups.
-- Definitions, official source passages, official regulation links, reference metadata, regulations, and regulation relations.
-- Fail-closed behavior for unknown short terms: an unrelated semantic neighbor is not shown as an answer.
-- Suggestion terminology candidates are restricted to verified, actionable corpus concepts.
+Fitur Document adalah ruang kerja untuk draft yang sudah dimiliki pengguna. Pengguna dapat mengimpor file <code>.docx</code>, <code>.doc</code>, <code>.rtf</code>, <code>.md</code>, <code>.markdown</code>, atau <code>.txt</code> dari Finder.
 
-The legacy `AMT/Dictionary/Resources/kamus_hukum.csv` parser and resource are retained for migration work, but CSV runtime lookup is currently disabled. The active runtime corpus is the versioned pack under `AMT/Resources/legal_corpus/`.
+AMT membuat salinan kerja lokal, memeriksa apakah file atau isi yang sama sudah pernah diimpor, lalu membuka dokumen di editor. Di dalam editor, pengguna dapat mengubah teks dan format dasar, membaca saran yang ditandai, melihat alasan atau sumber pendukung bila ada, kemudian memilih sendiri tindakan yang tepat.
 
-### Suggestion and review
+### Alur kerja Document
 
-- Sentence/paragraph segmentation across the complete document.
-- Review categories for spelling, grammar, clarity, and legal terminology.
-- Deterministic, Hybrid, and Qwen-only review modes.
-- Inline source-range highlights with Accept and Dismiss actions; accepted changes remain user-controlled.
-- Definition diagnostics that distinguish a likely definition from a non-definition and compare it with a source-grounded corpus definition.
-- Review states including `NO_SUGGESTION`, `SUGGESTION`, and `NEEDS_REVIEW`.
-- A Debug Panel with progress, queue state, candidate evidence, rejected output, definition assessments, and benchmark results.
+~~~mermaid
+flowchart TD
+    A["Pilih tab Document"] --> B["Impor file dari Finder"]
+    B --> C{"Isi file dapat dibaca?"}
+    C -- "Tidak" --> X["Tampilkan pesan bahwa impor gagal"]
+    C -- "Ya" --> D{"File atau isi yang sama sudah ada?"}
+    D -- "Ya" --> E["Arahkan pengguna ke dokumen yang sudah tersimpan"]
+    D -- "Tidak" --> F["Simpan salinan kerja secara lokal"]
+    F --> G["Buka dokumen di editor"]
+    G --> H["AMT menandai bagian yang mungkin perlu diperiksa"]
+    H --> I["Pengguna membaca saran dan bukti yang tersedia"]
+    I --> J{"Setujui perubahan?"}
+    J -- "Ya" --> K["Terapkan perubahan pada editor"]
+    J -- "Tidak atau belum yakin" --> L["Abaikan atau tandai sudah diperiksa"]
+    K --> M["Simpan perubahan secara lokal"]
+    L --> M
+    M --> N["Ekspor hasil sebagai file Word (.docx)"]
+~~~
 
-## How the review pipeline works
+Hal yang perlu diingat saat memakai Document:
 
-```mermaid
-flowchart LR
-    A[Document editor] --> B[Document-wide segmenter]
-    B --> C[Serial review queue]
-    C --> D[Local rules and verified corpus candidates]
-    D --> E{Optional local Qwen judge}
-    E --> F[Parser and safety validator]
-    F --> G[Conflict resolver]
-    G --> H[Inline human review]
+- Saran adalah titik awal review, bukan perintah untuk mengubah dokumen.
+- Pengguna dapat menerima, mengabaikan, atau menandai temuan sebagai sudah diperiksa.
+- Jika isi dokumen diubah, hasil review lama dapat menjadi tidak relevan; jalankan pemeriksaan kembali sebelum mengandalkannya.
+- Aplikasi tidak ditujukan untuk membuat kontrak dari nol, mengganti banyak bagian sekaligus, atau memutuskan akibat hukum suatu klausul.
 
-    I[Lawtionary corpus] --> D
-    I --> J[Definition evidence]
-    J --> E
-```
+## MVP 2 — Dictionary
 
-The important boundary is candidate-first processing:
+Fitur Dictionary membantu pengguna mencari istilah hukum atau memasukkan uraian singkat untuk menemukan istilah yang relevan. Hasil yang ditampilkan berasal dari paket kamus berversi yang dibawa bersama aplikasi, bukan jawaban bebas seperti chatbot.
 
-1. AMT creates bounded candidates from local rules, the Indonesian spell checker, or verified glossary evidence.
-2. Qwen receives one supplied candidate and can only return `ACCEPT`, `REJECT`, or `NEEDS_REVIEW` for that candidate.
-3. Parsers, locality checks, protected-term checks, modality/number checks, and conflict resolution run before a result becomes user-visible.
-4. The system never accepts a model-invented replacement, source, legal citation, or glossary term.
+Untuk istilah yang pendek dan jelas, AMT hanya menampilkan hasil yang memiliki kecocokan kata di kamus. Jika tidak ada kecocokan yang cukup, aplikasi akan menyatakan istilah tidak ditemukan daripada memberi jawaban yang terdengar meyakinkan tetapi tidak berkaitan. Untuk uraian yang lebih panjang, aplikasi dapat memakai pencarian berdasarkan makna sebagai pelengkap.
 
-The Hybrid mode tries the local model and uses deterministic recovery for bounded safe cases. The deterministic mode avoids downloading a Qwen model. Model-only mode is available for controlled comparisons, not as a production quality gate.
+### Alur kerja Dictionary
 
-## Source-grounded corpus
+~~~mermaid
+flowchart TD
+    A["Pilih tab Dictionary"] --> B["Masukkan istilah atau uraian singkat"]
+    B --> C["Cari di kamus Lawtionary"]
+    C --> D{"Ada hasil dengan dasar yang cukup?"}
+    D -- "Tidak" --> E["Tampilkan bahwa istilah belum ditemukan"]
+    E --> F["Periksa ejaan atau gunakan istilah lain"]
+    D -- "Ya" --> G["Tampilkan daftar hasil yang relevan"]
+    G --> H["Pilih istilah yang ingin dibaca"]
+    H --> I["Baca definisi utama dan konteksnya"]
+    I --> J["Buka dasar hukum, sumber, atau istilah terkait bila tersedia"]
+    J --> K["Gunakan sebagai bahan pemeriksaan profesional"]
+~~~
 
-The active bundled corpus is recorded in [`AMT/Resources/legal_corpus/manifest.json`](AMT/Resources/legal_corpus/manifest.json):
+Pada halaman detail, pengguna dapat menemukan definisi utama, definisi kontekstual bila ada, status atau riwayat regulasi, rujukan hukum, kutipan bukti yang terpetakan, dan istilah lain untuk ditelusuri. Tidak semua entri memiliki seluruh informasi tersebut.
 
-| Field | Current value |
-| --- | ---: |
-| Corpus version | `lawtionary-dictionary-official@d6260263333814513e6c97366a3d316bd9ed717286880169e8e3383085a3deec` |
-| Concepts | 2,589 |
-| Actionable concepts for Suggestion | 1,666 |
-| Regulations | 1,591 |
-| Regulation relations | 315 |
-| Source passages | 588 |
-| Canonical term groups | 2,982 |
-| Official contextual alternatives | 1,093 |
-| Embedding model | `intfloat/multilingual-e5-small` |
-| Embedding revision | `614241f622f53c4eeff9890bdc4f31cfecc418b3` |
-| Embedding format | 384-dimensional, normalized, float16 little-endian |
+> [!NOTE]
+> Pencarian istilah yang singkat menggunakan pencarian lokal. Pencarian berdasarkan uraian yang lebih panjang dapat memerlukan pemuatan komponen pencarian tambahan pada penggunaan pertama.
 
-The manifest also pins source hashes, file hashes, retrieval limits, and embedding order. The source dataset itself is expected outside this repository.
+## Penyimpanan lokal dan penggunaan yang aman
 
-To regenerate a corpus pack from the companion dataset workspace:
+- Workspace Document disimpan secara lokal di <code>~/Documents/AMT_Documents</code>.
+- File asli di lokasi awal tidak ditimpa. AMT menyimpan salinan kerja agar dokumen dapat dibuka dan dipulihkan dari workspace.
+- Menghapus dokumen dari AMT hanya menghapus catatan workspace dan salinan kerja AMT; file asli di lokasi awal tetap ada.
+- Beberapa fitur pemeriksaan berbantuan model dapat memerlukan unduhan komponen model pada penggunaan pertama. Unduhan model bukan bukti bahwa hasil review sudah benar secara hukum.
+- Tidak ditemukannya istilah di Dictionary bukan berarti istilah tersebut tidak pernah ada dalam hukum. Itu berarti AMT belum memiliki hasil yang cukup tepat dari paket kamus aktif.
 
-```sh
-python3 Scripts/export_amt_legal_corpus.py \
-  --source-root /path/to/hukumonline-dataset \
-  --output-root AMT/Resources/legal_corpus \
-  --dataset-view dictionary-official
-```
+## Menjalankan aplikasi
 
-The exporter supports `hukumonline`, `combined`, `combined-deduplicated`, and
-`dictionary-serving` views, plus the application-facing `dictionary-official`
-view. `dictionary-primary` remains a compatibility alias for
-`dictionary-serving`. The official view contains at most one runtime concept
-per canonical term group, selects it using official evidence and regulation
-metadata, and keeps other official definitions as regulatory context. Discovery
-source names and URLs are retained only in the source dataset's audit views;
-they are absent from the bundled application pack. OCR-tolerant evidence can be
-displayed as context, but is labelled `Cocok OCR (belum ditinjau)` and is not
-actionable until exact or human verification exists.
-Embeddings are generated with the pinned multilingual E5 model unless
-`--reuse-embeddings-from` is used with a compatible existing pack or
-`--skip-embeddings` is used with an unchanged source pack.
+### Kebutuhan
 
-## Getting started
+- macOS 26.5 atau lebih baru.
+- Xcode 26.6, atau toolchain Xcode 26 yang kompatibel.
+- Apple Silicon direkomendasikan bila ingin mencoba pemeriksaan berbantuan model.
 
-### Requirements
+### Membuka proyek
 
-- macOS 26.5 or later.
-- Xcode 26.6 or a compatible Xcode 26 toolchain.
-- Apple Silicon is recommended for MLX inference.
-- Network access on first use of a model-backed feature so pinned model artifacts can be downloaded from Hugging Face.
-
-### Open the app
-
-```sh
+~~~sh
 git clone https://github.com/MorpKnight/AMT.git
 cd AMT
 open AMT.xcodeproj
-```
+~~~
 
-In Xcode, select the `AMT` scheme and a macOS destination, then run with `⌘R`.
+Di Xcode, pilih scheme <code>AMT</code>, pilih tujuan macOS, lalu jalankan aplikasi dengan <code>⌘R</code>.
 
-### Try the main flows
+### Mencoba kedua MVP
 
-1. Use the Document dashboard to import a supported document.
-2. Open the document to edit its text and formatting.
-3. Use the Dictionary tab for term lookup or reverse definition lookup.
-4. Open the AI Connector Debug Panel from the View menu, or press `⌘⌥D`.
-5. Select the current document or one of the built-in fixture samples, choose a review strategy, and select **Start review**.
-6. Inspect the source span and evidence before accepting or dismissing a suggestion.
+1. Pada tab Document, pilih kartu impor lalu pilih sebuah file yang didukung.
+2. Buka dokumen hasil impor, edit bila perlu, dan tinjau saran secara satu per satu.
+3. Ekspor versi kerja sebagai <code>.docx</code> setelah review selesai.
+4. Pada tab Dictionary, cari istilah seperti <em>Data Pribadi</em>, atau tulis uraian dari istilah yang ingin ditemukan.
+5. Baca definisi dan sumber yang tersedia sebelum menggunakannya dalam pekerjaan profesional.
 
-The Debug Panel can also toggle definition diagnostics from the View menu. These diagnostics are read-only and are not automatically applied to the document.
+## Untuk pengembang
 
-## Testing
+### Peta proyek
 
-The regular `AMTTests` suite is designed to run offline and does not download Qwen. Use an external DerivedData directory so build artifacts do not enter the repository.
+~~~text
+AMT/
+├── Dashboard/                 # Impor, penyimpanan lokal, dan daftar dokumen
+├── Suggestion/                # Editor rich-text dan tampilan review
+├── Dictionary/                # Pencarian serta detail istilah hukum
+├── Features/AIConnector/      # Pemeriksaan dokumen yang dibatasi dan dapat ditinjau
+├── Shared/LegalKnowledge/     # Pembacaan corpus dan pencarian berbasis makna
+├── Resources/legal_corpus/    # Paket kamus aktif beserta manifest versinya
+└── AMTApp.swift               # Titik masuk aplikasi
+AMTTests/                      # Test deterministik dan integrasi
+Scripts/export_amt_legal_corpus.py
+~~~
 
-```sh
+Corpus aktif dicatat dalam [manifest kamus](AMT/Resources/legal_corpus/manifest.json). Manifest tersebut menyimpan versi corpus, jumlah data, konfigurasi pencarian, serta hash untuk membantu memeriksa konsistensi paket data.
+
+### Build dan test
+
+Gunakan DerivedData di luar repository agar artefak build tidak masuk ke working tree.
+
+~~~sh
 validation_dir="$(mktemp -d /tmp/amt-build-validation.XXXXXX)"
 xcodebuild \
   -project AMT.xcodeproj \
@@ -175,9 +162,9 @@ xcodebuild \
   -derivedDataPath "$validation_dir" \
   build \
   CODE_SIGNING_ALLOWED=NO
-```
+~~~
 
-```sh
+~~~sh
 test_dir="$(mktemp -d /tmp/amt-test-validation.XXXXXX)"
 xcodebuild \
   -project AMT.xcodeproj \
@@ -186,92 +173,16 @@ xcodebuild \
   -derivedDataPath "$test_dir" \
   test \
   CODE_SIGNING_ALLOWED=NO
-```
+~~~
 
-For a lightweight repository check:
-
-```sh
+~~~sh
 git diff --check
-```
+~~~
 
-### Optional model benchmark
+Test reguler dirancang untuk berjalan tanpa mengunduh model Qwen. Benchmark model bersifat opt-in karena mengunduh model dan hanya menjadi bukti eksperimen, bukan bukti ketepatan hukum.
 
-The Qwen benchmark is opt-in because it downloads a model and measures experimental model behavior. It is not part of the regular test run.
+## Dokumen lanjutan
 
-```sh
-TEST_RUNNER_AMT_RUN_P011_MODEL_BENCHMARK=1 \
-TEST_RUNNER_AMT_P011_MODEL_VARIANT=qwen35-base-4b \
-TEST_RUNNER_AMT_P011_REPORT_PATH=/private/tmp/amt-p011-base-4b.json \
-xcodebuild \
-  -project AMT.xcodeproj \
-  -scheme AMT \
-  -configuration Debug \
-  -destination 'platform=macOS,arch=arm64' \
-  -derivedDataPath /private/tmp/AMT-P011-DerivedData \
-  CODE_SIGNING_ALLOWED=NO \
-  -only-testing:AMTTests/AIConnectorModelBenchmarkTests \
-  test
-```
-
-The selected Qwen3.5 4B Base artifact is approximately 3.1 GB. Benchmark output is evidence for an experiment, not proof of legal correctness.
-
-## Project layout
-
-```text
-AMT/
-├── AMTApp.swift                         # App composition and commands
-├── ContentView.swift                     # Root content view
-├── Dashboard/                            # Document dashboard and persistence
-├── Dictionary/                            # Lawtionary lookup and presentation
-├── Features/AIConnector/                  # Review pipeline, models, rules, debug UI
-├── RAG/                                   # Legacy/local retrieval integration
-├── Resources/legal_corpus/                # Active versioned corpus pack
-├── Shared/LegalKnowledge/                 # Corpus validation and semantic retrieval
-└── Suggestion/                            # Rich-text editor and inline review UI
-AMTTests/                                  # Deterministic unit and integration tests
-Scripts/export_amt_legal_corpus.py        # Corpus pack exporter
-training/                                 # Optional Kaggle QLoRA experiment
-```
-
-The active app composition is `AMTApp → ContentView → DashboardView`. `AMTDocument.swift` remains in the project as a document-model/FileDocument boundary, while the current dashboard flow uses `DashboardDocument` and `DocumentStorageManager` for its local JSON document store.
-
-## Model and package dependencies
-
-### Local model artifacts
-
-Model artifacts are loaded lazily and cached locally at pinned revisions:
-
-| Role | Model ID | Approximate download |
-| --- | --- | ---: |
-| Default Qwen judge | `mlx-community/Qwen3.5-4B-MLX-4bit` | 3.1 GB |
-| Domain comparison | `morpknight/qwen3.5-4b-indonesian-legal-mlx-4bit` | 2.39 GB |
-| Smaller comparison baseline | `mlx-community/Qwen3.5-2B-4bit` | 1.6 GB |
-| Dictionary semantic retrieval | `intfloat/multilingual-e5-small` | corpus-dependent |
-| Bounded spelling-candidate scorer | `citylighxts/TataKata` | corpus-dependent |
-
-The current Swift implementation uses MLX and Hugging Face Swift packages. The exact package graph is pinned in [`Package.resolved`](AMT.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved), including:
-
-- `mlx-swift-lm` 3.31.4
-- `swift-huggingface` 0.9.0
-- `swift-transformers` 1.3.3
-
-The optional training materials in [`training/README.md`](training/README.md) describe a separate Qwen3.5-4B + IGED QLoRA experiment. A training adapter is not automatically the production runtime model.
-
-## Known limitations
-
-- This is an experimental macOS application, not a production legal-review system.
-- Corpus provenance improves traceability but does not guarantee that a definition or retrieved match is legally complete or current.
-- Suggestions are intentionally bounded and may be rejected, skipped, or marked `NEEDS_REVIEW`.
-- Qwen output is parsed and guarded; the model is not allowed to invent legal sources or rewrite a clause freely.
-- Definition diagnostics are source-grounded review aids, not legal conclusions.
-- Model-backed review, semantic reverse lookup, and the TataKata spelling pilot may require large first-run downloads.
-- The importer targets text and rich-text document formats listed above; scanned-PDF/OCR workflows are outside the current importer boundary.
-- Thresholds, prompt versions, model selections, and corpus contents are experimental and may change between revisions.
-
-## Resources
-
-- [`AMT/Features/AIConnector/`](AMT/Features/AIConnector/) — review models, candidate construction, validation, and debug panel.
-- [`AMT/Dictionary/`](AMT/Dictionary/) — dictionary models, store, and views.
-- [`AMT/Shared/LegalKnowledge/`](AMT/Shared/LegalKnowledge/) — versioned corpus validation and semantic retrieval.
-- [`Scripts/export_amt_legal_corpus.py`](Scripts/export_amt_legal_corpus.py) — reproducible corpus-pack export.
-- [`training/README.md`](training/README.md) — optional training experiment notes.
+- [Audit produk Document](docs/document-product-audit-2026-09-08.md) menjelaskan kondisi saat ini, keterbatasan yang telah ditemukan, dan batas validasinya.
+- [Rencana pengembangan Document](docs/document-future-development.md) adalah roadmap. Dokumen ini tidak berarti semua kemampuan yang tertulis di dalamnya sudah tersedia.
+- [Aturan kerja repository](AGENTS.md) menjelaskan arsitektur, batas perubahan, dan perintah validasi proyek.
