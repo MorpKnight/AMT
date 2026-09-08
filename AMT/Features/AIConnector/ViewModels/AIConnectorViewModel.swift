@@ -1866,12 +1866,16 @@ final class AIConnectorViewModel {
         previousText: String,
         updatedText: String
     ) -> Bool {
-        guard suggestion.kind == .language,
-              suggestion.isAnchored(to: previousText) else {
+        let isAnchored = suggestion.isAnchored(to: previousText)
+        let isKnownSuggestion = editorSuggestions.contains(where: { $0.id == suggestion.id })
+        guard suggestion.kind == .language || !suggestion.isReadOnlyDiagnostic,
+              isAnchored || isKnownSuggestion else {
             return false
         }
 
-        let acceptedRange = suggestion.sourceRange
+        let acceptedRange = isAnchored
+            ? suggestion.sourceRange
+            : (editorSuggestions.first(where: { $0.id == suggestion.id })?.sourceRange ?? suggestion.sourceRange)
         let delta = suggestion.replacement.utf16.count - suggestion.original.utf16.count
         editorSuggestions = editorSuggestions.compactMap { item in
             guard item.id != suggestion.id else { return nil }
@@ -1888,6 +1892,7 @@ final class AIConnectorViewModel {
             )
             return shifted
         }
+        validatedReviews.removeAll { $0.id == suggestion.id }
         reviewAnnotations = reconcileAnnotations(
             reviewAnnotations,
             acceptedRange: acceptedRange,

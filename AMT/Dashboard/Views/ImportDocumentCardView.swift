@@ -15,7 +15,7 @@ struct ImportDocumentCardView: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Spacer()
-                Image(systemName: "square.and.arrow.down")
+                Image(systemName: "plus")
                     .font(.system(size: 28, weight: .light))
                     .foregroundStyle(.secondary)
                 Spacer()
