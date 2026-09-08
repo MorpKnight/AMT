@@ -1,118 +1,118 @@
 <p align="center">
-  <img src="AMT/Assets.xcassets/logo_black.imageset/Lawtionary%20Logo%20Black.png" alt="Logo Lawtionary" width="112">
+  <img src="AMT/Assets.xcassets/logo_black.imageset/Lawtionary%20Logo%20Black.png" alt="Lawtionary logo" width="112">
 </p>
 
 <h1 align="center">Lawtionary (AMT)</h1>
 
 <p align="center">
-  Aplikasi macOS untuk membantu membaca draft dokumen dan menelusuri istilah hukum Indonesia.
+  A macOS application for reviewing document drafts and looking up Indonesian legal terms.
 </p>
 
-Lawtionary memiliki dua MVP yang saling melengkapi:
+Lawtionary has two complementary MVPs:
 
-- <strong>Document</strong> untuk mengimpor, membaca, mengedit, meninjau saran, dan mengekspor draft.
-- <strong>Dictionary</strong> untuk mencari istilah hukum, definisi, serta dasar dan konteks sumbernya.
+- <strong>Document</strong> for importing, reading, editing, reviewing suggestions, and exporting drafts.
+- <strong>Dictionary</strong> for looking up legal terms, definitions, and available source context.
 
 > [!WARNING]
-> Lawtionary adalah alat bantu kerja dan masih berada pada tahap MVP. Aplikasi ini bukan pemberi nasihat hukum, tidak menyatakan sebuah dokumen sudah benar secara hukum, dan tidak mengubah isi dokumen tanpa keputusan pengguna. Semua hasil tetap harus diperiksa oleh profesional yang berwenang.
+> Lawtionary is a work-assistance tool and is still an MVP. It is not legal advice, it does not certify that a document is legally correct, and it never changes document content without the user's decision. All results must be reviewed by a qualified professional.
 
-## Daftar isi
+## Contents
 
-- [Dua MVP utama](#dua-mvp-utama)
+- [The two MVPs](#the-two-mvps)
 - [MVP 1 — Document](#mvp-1--document)
 - [MVP 2 — Dictionary](#mvp-2--dictionary)
-- [Penyimpanan lokal dan penggunaan yang aman](#penyimpanan-lokal-dan-penggunaan-yang-aman)
-- [Menjalankan aplikasi](#menjalankan-aplikasi)
-- [Untuk pengembang](#untuk-pengembang)
-- [Dokumen lanjutan](#dokumen-lanjutan)
+- [Local storage and safe use](#local-storage-and-safe-use)
+- [Getting started](#getting-started)
+- [For developers](#for-developers)
+- [Further documentation](#further-documentation)
 
-## Dua MVP utama
+## The two MVPs
 
-| MVP | Tujuan sederhana | Hasil yang pengguna lihat |
+| MVP | Simple purpose | What the user sees |
 | --- | --- | --- |
-| Document | Membuka draft di satu tempat untuk diedit dan ditinjau. | Dokumen kerja, penanda bagian yang perlu diperiksa, pilihan menerima atau mengabaikan saran, lalu ekspor Word. |
-| Dictionary | Menemukan arti istilah hukum berdasarkan kamus yang disertakan aplikasi. | Definisi utama, konteks sumber atau regulasi bila tersedia, serta istilah terkait. |
+| Document | Open a draft in one place so it can be edited and reviewed. | A working document, marked passages to inspect, accept or dismiss actions, and Word export. |
+| Dictionary | Find the meaning of a legal term from the dictionary bundled with the app. | A primary definition, available source or regulation context, and related terms. |
 
-Kedua fitur dipisahkan dengan sengaja. Dictionary berfokus pada informasi istilah yang memiliki bukti sumber, sedangkan Document berfokus pada draft pengguna dan keputusan review manusia.
+The two features are intentionally separate. Dictionary focuses on source-backed terminology information, while Document focuses on the user's draft and human review decisions.
 
 ## MVP 1 — Document
 
-Fitur Document adalah ruang kerja untuk draft yang sudah dimiliki pengguna. Pengguna dapat mengimpor file <code>.docx</code>, <code>.doc</code>, <code>.rtf</code>, <code>.md</code>, <code>.markdown</code>, atau <code>.txt</code> dari Finder.
+Document is a workspace for drafts that users already have. It can import <code>.docx</code>, <code>.doc</code>, <code>.rtf</code>, <code>.md</code>, <code>.markdown</code>, and <code>.txt</code> files from Finder.
 
-AMT membuat salinan kerja lokal, memeriksa apakah file atau isi yang sama sudah pernah diimpor, lalu membuka dokumen di editor. Di dalam editor, pengguna dapat mengubah teks dan format dasar, membaca saran yang ditandai, melihat alasan atau sumber pendukung bila ada, kemudian memilih sendiri tindakan yang tepat.
+AMT creates a local working copy, checks whether the same file or content has already been imported, and opens the document in the editor. Users can change text and basic formatting, read marked suggestions, inspect available reasons or references, and decide what to do with each result.
 
-### Alur kerja Document
+### Document workflow
 
 ~~~mermaid
 flowchart TD
-    A["Pilih tab Document"] --> B["Impor file dari Finder"]
-    B --> C{"Isi file dapat dibaca?"}
-    C -- "Tidak" --> X["Tampilkan pesan bahwa impor gagal"]
-    C -- "Ya" --> D{"File atau isi yang sama sudah ada?"}
-    D -- "Ya" --> E["Arahkan pengguna ke dokumen yang sudah tersimpan"]
-    D -- "Tidak" --> F["Simpan salinan kerja secara lokal"]
-    F --> G["Buka dokumen di editor"]
-    G --> H["AMT menandai bagian yang mungkin perlu diperiksa"]
-    H --> I["Pengguna membaca saran dan bukti yang tersedia"]
-    I --> J{"Setujui perubahan?"}
-    J -- "Ya" --> K["Terapkan perubahan pada editor"]
-    J -- "Tidak atau belum yakin" --> L["Abaikan atau tandai sudah diperiksa"]
-    K --> M["Simpan perubahan secara lokal"]
+    A["Choose the Document tab"] --> B["Import a file from Finder"]
+    B --> C{"Can the file be read?"}
+    C -- "No" --> X["Show an import error"]
+    C -- "Yes" --> D{"Does the same file or content already exist?"}
+    D -- "Yes" --> E["Offer to open the existing document"]
+    D -- "No" --> F["Save a local working copy"]
+    F --> G["Open the document in the editor"]
+    G --> H["AMT marks passages that may need review"]
+    H --> I["Read each suggestion and its available evidence"]
+    I --> J{"Accept the change?"}
+    J -- "Yes" --> K["Apply the change in the editor"]
+    J -- "No or not sure" --> L["Dismiss it or mark it as reviewed"]
+    K --> M["Save the change locally"]
     L --> M
-    M --> N["Ekspor hasil sebagai file Word (.docx)"]
+    M --> N["Export the result as a Word file (.docx)"]
 ~~~
 
-Hal yang perlu diingat saat memakai Document:
+Keep these points in mind when using Document:
 
-- Saran adalah titik awal review, bukan perintah untuk mengubah dokumen.
-- Pengguna dapat menerima, mengabaikan, atau menandai temuan sebagai sudah diperiksa.
-- Jika isi dokumen diubah, hasil review lama dapat menjadi tidak relevan; jalankan pemeriksaan kembali sebelum mengandalkannya.
-- Aplikasi tidak ditujukan untuk membuat kontrak dari nol, mengganti banyak bagian sekaligus, atau memutuskan akibat hukum suatu klausul.
+- A suggestion is a starting point for review, not an instruction to change the draft.
+- Users can accept, dismiss, or mark a finding as reviewed.
+- Editing the document can make an earlier review stale; run the review again before relying on it.
+- The app is not intended to create contracts from scratch, replace large sections automatically, or decide the legal effect of a clause.
 
 ## MVP 2 — Dictionary
 
-Fitur Dictionary membantu pengguna mencari istilah hukum atau memasukkan uraian singkat untuk menemukan istilah yang relevan. Hasil yang ditampilkan berasal dari paket kamus berversi yang dibawa bersama aplikasi, bukan jawaban bebas seperti chatbot.
+Dictionary lets users search for a legal term or enter a short description to find relevant terminology. Results come from a versioned dictionary bundle shipped with the app, not from free-form chatbot answers.
 
-Untuk istilah yang pendek dan jelas, AMT hanya menampilkan hasil yang memiliki kecocokan kata di kamus. Jika tidak ada kecocokan yang cukup, aplikasi akan menyatakan istilah tidak ditemukan daripada memberi jawaban yang terdengar meyakinkan tetapi tidak berkaitan. Untuk uraian yang lebih panjang, aplikasi dapat memakai pencarian berdasarkan makna sebagai pelengkap.
+For short and clear terms, AMT only shows results with literal dictionary evidence. If there is no sufficiently good match, the app reports that the term was not found instead of showing a convincing but unrelated answer. Longer descriptions can use semantic search as an additional retrieval path.
 
-### Alur kerja Dictionary
+### Dictionary workflow
 
 ~~~mermaid
 flowchart TD
-    A["Pilih tab Dictionary"] --> B["Masukkan istilah atau uraian singkat"]
-    B --> C["Cari di kamus Lawtionary"]
-    C --> D{"Ada hasil dengan dasar yang cukup?"}
-    D -- "Tidak" --> E["Tampilkan bahwa istilah belum ditemukan"]
-    E --> F["Periksa ejaan atau gunakan istilah lain"]
-    D -- "Ya" --> G["Tampilkan daftar hasil yang relevan"]
-    G --> H["Pilih istilah yang ingin dibaca"]
-    H --> I["Baca definisi utama dan konteksnya"]
-    I --> J["Buka dasar hukum, sumber, atau istilah terkait bila tersedia"]
-    J --> K["Gunakan sebagai bahan pemeriksaan profesional"]
+    A["Choose the Dictionary tab"] --> B["Enter a term or short description"]
+    B --> C["Search the Lawtionary dictionary"]
+    C --> D{"Is there a sufficiently supported result?"}
+    D -- "No" --> E["Show that the term was not found"]
+    E --> F["Check the spelling or try another term"]
+    D -- "Yes" --> G["Show the relevant results"]
+    G --> H["Choose a term to read"]
+    H --> I["Read the primary definition and context"]
+    I --> J["Open the legal basis, source, or related terms when available"]
+    J --> K["Use it as input for professional review"]
 ~~~
 
-Pada halaman detail, pengguna dapat menemukan definisi utama, definisi kontekstual bila ada, status atau riwayat regulasi, rujukan hukum, kutipan bukti yang terpetakan, dan istilah lain untuk ditelusuri. Tidak semua entri memiliki seluruh informasi tersebut.
+The detail page may show a primary definition, contextual alternatives, regulation status or history, legal references, mapped evidence text, and related terms. Not every entry has every type of information.
 
 > [!NOTE]
-> Pencarian istilah yang singkat menggunakan pencarian lokal. Pencarian berdasarkan uraian yang lebih panjang dapat memerlukan pemuatan komponen pencarian tambahan pada penggunaan pertama.
+> Short-term searches use the local lexical index. Searches based on longer descriptions may load an additional retrieval component the first time they are used.
 
-## Penyimpanan lokal dan penggunaan yang aman
+## Local storage and safe use
 
-- Workspace Document disimpan secara lokal di <code>~/Documents/AMT_Documents</code>.
-- File asli di lokasi awal tidak ditimpa. AMT menyimpan salinan kerja agar dokumen dapat dibuka dan dipulihkan dari workspace.
-- Menghapus dokumen dari AMT hanya menghapus catatan workspace dan salinan kerja AMT; file asli di lokasi awal tetap ada.
-- Beberapa fitur pemeriksaan berbantuan model dapat memerlukan unduhan komponen model pada penggunaan pertama. Unduhan model bukan bukti bahwa hasil review sudah benar secara hukum.
-- Tidak ditemukannya istilah di Dictionary bukan berarti istilah tersebut tidak pernah ada dalam hukum. Itu berarti AMT belum memiliki hasil yang cukup tepat dari paket kamus aktif.
+- The Document workspace is stored locally at <code>~/Documents/AMT_Documents</code>.
+- The original file at its initial location is not overwritten. AMT keeps a working copy so the document can be reopened from the workspace.
+- Deleting a document from AMT removes only its workspace record and AMT's preserved copy; the original file remains at its initial location.
+- Some model-assisted review features may download model components on first use. A downloaded model is not evidence that a review result is legally correct.
+- A missing Dictionary result does not mean that a term never exists in law. It means that the active dictionary did not find a sufficiently precise result.
 
-## Menjalankan aplikasi
+## Getting started
 
-### Kebutuhan
+### Requirements
 
-- macOS 26.5 atau lebih baru.
-- Xcode 26.6, atau toolchain Xcode 26 yang kompatibel.
-- Apple Silicon direkomendasikan bila ingin mencoba pemeriksaan berbantuan model.
+- macOS 26.5 or later.
+- Xcode 26.6, or a compatible Xcode 26 toolchain.
+- Apple Silicon is recommended for model-assisted review.
 
-### Membuka proyek
+### Open the project
 
 ~~~sh
 git clone https://github.com/MorpKnight/AMT.git
@@ -120,38 +120,38 @@ cd AMT
 open AMT.xcodeproj
 ~~~
 
-Di Xcode, pilih scheme <code>AMT</code>, pilih tujuan macOS, lalu jalankan aplikasi dengan <code>⌘R</code>.
+In Xcode, select the <code>AMT</code> scheme, choose a macOS destination, and run the app with <code>⌘R</code>.
 
-### Mencoba kedua MVP
+### Try both MVPs
 
-1. Pada tab Document, pilih kartu impor lalu pilih sebuah file yang didukung.
-2. Buka dokumen hasil impor, edit bila perlu, dan tinjau saran secara satu per satu.
-3. Ekspor versi kerja sebagai <code>.docx</code> setelah review selesai.
-4. Pada tab Dictionary, cari istilah seperti <em>Data Pribadi</em>, atau tulis uraian dari istilah yang ingin ditemukan.
-5. Baca definisi dan sumber yang tersedia sebelum menggunakannya dalam pekerjaan profesional.
+1. In the Document tab, choose the import card and select a supported file.
+2. Open the imported document, edit it if needed, and review suggestions one by one.
+3. Export the working version as <code>.docx</code> when the review is complete.
+4. In the Dictionary tab, search for a term such as <em>Data Pribadi</em>, or enter a description of the term you need.
+5. Read the available definition and sources before using them in professional work.
 
-## Untuk pengembang
+## For developers
 
-### Peta proyek
+### Project map
 
 ~~~text
 AMT/
-├── Dashboard/                 # Impor, penyimpanan lokal, dan daftar dokumen
-├── Suggestion/                # Editor rich-text dan tampilan review
-├── Dictionary/                # Pencarian serta detail istilah hukum
-├── Features/AIConnector/      # Pemeriksaan dokumen yang dibatasi dan dapat ditinjau
-├── Shared/LegalKnowledge/     # Pembacaan corpus dan pencarian berbasis makna
-├── Resources/legal_corpus/    # Paket kamus aktif beserta manifest versinya
-└── AMTApp.swift               # Titik masuk aplikasi
-AMTTests/                      # Test deterministik dan integrasi
+├── Dashboard/                 # Import, local storage, and document list
+├── Suggestion/                # Rich-text editor and review UI
+├── Dictionary/                # Legal-term search and detail views
+├── Features/AIConnector/      # Bounded, reviewable document analysis
+├── Shared/LegalKnowledge/     # Corpus loading and semantic retrieval
+├── Resources/legal_corpus/    # Active dictionary bundle and version manifest
+└── AMTApp.swift               # Application entry point
+AMTTests/                      # Deterministic and integration tests
 Scripts/export_amt_legal_corpus.py
 ~~~
 
-Corpus aktif dicatat dalam [manifest kamus](AMT/Resources/legal_corpus/manifest.json). Manifest tersebut menyimpan versi corpus, jumlah data, konfigurasi pencarian, serta hash untuk membantu memeriksa konsistensi paket data.
+The active corpus is recorded in the [dictionary manifest](AMT/Resources/legal_corpus/manifest.json). The manifest stores the corpus version, data counts, retrieval settings, and file hashes for consistency checks.
 
-### Build dan test
+### Build and test
 
-Gunakan DerivedData di luar repository agar artefak build tidak masuk ke working tree.
+Use a DerivedData directory outside the repository so build artifacts do not enter the working tree.
 
 ~~~sh
 validation_dir="$(mktemp -d /tmp/amt-build-validation.XXXXXX)"
@@ -179,10 +179,10 @@ xcodebuild \
 git diff --check
 ~~~
 
-Test reguler dirancang untuk berjalan tanpa mengunduh model Qwen. Benchmark model bersifat opt-in karena mengunduh model dan hanya menjadi bukti eksperimen, bukan bukti ketepatan hukum.
+The regular test suite is designed to run without downloading Qwen. Model benchmarks are opt-in because they download a model and provide experimental evidence, not proof of legal correctness.
 
-## Dokumen lanjutan
+## Further documentation
 
-- [Audit produk Document](docs/document-product-audit-2026-09-08.md) menjelaskan kondisi saat ini, keterbatasan yang telah ditemukan, dan batas validasinya.
-- [Rencana pengembangan Document](docs/document-future-development.md) adalah roadmap. Dokumen ini tidak berarti semua kemampuan yang tertulis di dalamnya sudah tersedia.
-- [Aturan kerja repository](AGENTS.md) menjelaskan arsitektur, batas perubahan, dan perintah validasi proyek.
+- [Document product audit](docs/document-product-audit-2026-09-08.md) — current behavior, known limitations, and validation boundaries.
+- [Document future development](docs/document-future-development.md) — a roadmap; the capabilities described there are not automatically available in the current app.
+- [Repository instructions](AGENTS.md) — architecture, change boundaries, and validation commands.
