@@ -34,30 +34,55 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void,
         semanticProgress: @escaping @Sendable (Double) -> Void,
-        progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void
+        progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void,
+        observationCollector: AIConnectorObservationCollector? = nil
     ) async throws -> AIConnectorDefinitionAnalysisResult {
         guard !segment.isTooLong else {
             return AIConnectorDefinitionAnalysisResult()
         }
 
+        let detectionClock = ContinuousClock()
+        let detectionStartedAt = detectionClock.now
         var detection = detector.detect(
             segment: segment,
             glossaryMatches: glossaryMatches
         )
+        if let observationCollector {
+            await observationCollector.recordStage(
+                .definitionDetection,
+                duration: AIConnectorObservationTiming.seconds(
+                    detectionStartedAt.duration(to: detectionClock.now)
+                ),
+                segmentID: segment.id
+            )
+        }
         if detection.candidates.isEmpty,
            mode.usesModel,
            !forceDeterministic,
            looksDefinitionLike(segment.targetText) {
             let retrievedMatches = try await retrieveDefinitionCandidates(
                 for: segment.targetText,
-                semanticProgress: semanticProgress
+                semanticProgress: semanticProgress,
+                segmentID: segment.id,
+                observationCollector: observationCollector
             )
             progressStage(.semanticRetrieval)
             if !retrievedMatches.isEmpty {
+                let secondDetectionClock = ContinuousClock()
+                let secondDetectionStartedAt = secondDetectionClock.now
                 detection = detector.detect(
                     segment: segment,
                     glossaryMatches: glossaryMatches + retrievedMatches
                 )
+                if let observationCollector {
+                    await observationCollector.recordStage(
+                        .definitionDetection,
+                        duration: AIConnectorObservationTiming.seconds(
+                            secondDetectionStartedAt.duration(to: secondDetectionClock.now)
+                        ),
+                        segmentID: segment.id
+                    )
+                }
             }
         }
         guard let detectionKind = detection.detection else {
@@ -107,18 +132,44 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
             modelCallCount += 1
 
             do {
-                let result = try await reviewHandler(
+                let reviewClock = ContinuousClock()
+                let reviewStartedAt = reviewClock.now
+                let result: QwenDefinitionReviewResult
+                do {
+                    result = try await reviewHandler(
                     AIConnectorDefinitionReviewRequest(
                         segment: segment,
                         candidate: candidate,
                         thinkingEnabled: thinkingEnabled,
                         modelVariant: modelVariant,
                         generationProfile: generationProfile,
-                        retryInstruction: nil
+                        retryInstruction: nil,
+                        context: segment.context
                     ),
                     downloadProgress,
                     generationProgress
-                )
+                    )
+                } catch {
+                    if let observationCollector {
+                        await observationCollector.recordStage(
+                            .definitionReview,
+                            duration: AIConnectorObservationTiming.seconds(
+                                reviewStartedAt.duration(to: reviewClock.now)
+                            ),
+                            segmentID: segment.id
+                        )
+                    }
+                    throw error
+                }
+                if let observationCollector {
+                    await observationCollector.recordStage(
+                        .definitionReview,
+                        duration: AIConnectorObservationTiming.seconds(
+                            reviewStartedAt.duration(to: reviewClock.now)
+                        ),
+                        segmentID: segment.id
+                    )
+                }
                 guard result.candidateID == candidate.id,
                       !result.containsReasoningMarkers else {
                     lastFailure = AIConnectorDefinitionReviewParserError.invalidDecision
@@ -324,7 +375,8 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
             modelReviewed: false,
             retrievalOrigin: nil,
             semanticScore: nil,
-            requiresHumanReview: true
+            requiresHumanReview: true,
+            candidates: detection.candidates
         )
     }
 
@@ -352,7 +404,8 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
             modelReviewed: modelReviewed,
             retrievalOrigin: candidate.match.retrievalOrigin,
             semanticScore: candidate.match.semanticScore,
-            requiresHumanReview: true
+            requiresHumanReview: true,
+            candidates: detection.candidates
         )
     }
 
@@ -381,8 +434,16 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
 
     private func retrieveDefinitionCandidates(
         for text: String,
-        semanticProgress: @escaping @Sendable (Double) -> Void
+        semanticProgress: @escaping @Sendable (Double) -> Void,
+        segmentID: Int,
+        observationCollector: AIConnectorObservationCollector?
     ) async throws -> [LegalDictionaryMatch] {
+        let retrievalClock = ContinuousClock()
+        let retrievalStartedAt = retrievalClock.now
+        let semanticQueryCount = dictionaryStore.corpusStore != nil
+            && dictionaryStore.semanticRetriever != nil
+            ? 1
+            : 0
         let request = LegalRetrievalRequest(
             query: text,
             intent: .reverseLookup,
@@ -397,7 +458,35 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
         } catch is CancellationError {
             throw CancellationError()
         } catch {
+            if let observationCollector {
+                await observationCollector.recordStage(
+                    .definitionRetrieval,
+                    duration: AIConnectorObservationTiming.seconds(
+                        retrievalStartedAt.duration(to: retrievalClock.now)
+                    ),
+                    segmentID: segmentID
+                )
+                await observationCollector.recordRetrieval(
+                    segmentID: segmentID,
+                    queryCount: 1,
+                    semanticQueryCount: semanticQueryCount
+                )
+            }
             return []
+        }
+        if let observationCollector {
+            await observationCollector.recordStage(
+                .definitionRetrieval,
+                duration: AIConnectorObservationTiming.seconds(
+                    retrievalStartedAt.duration(to: retrievalClock.now)
+                ),
+                segmentID: segmentID
+            )
+            await observationCollector.recordRetrieval(
+                segmentID: segmentID,
+                queryCount: 1,
+                semanticQueryCount: semanticQueryCount
+            )
         }
 
         let semanticThreshold = dictionaryStore.semanticRetrievalConfiguration?

@@ -83,6 +83,7 @@ struct AIConnectorDefinitionAssessment: Identifiable, Hashable, Sendable {
     let term: String?
     let statementText: String
     let candidate: AIConnectorDefinitionCandidate?
+    let candidates: [AIConnectorDefinitionCandidate]
     let candidateCount: Int
     let detection: AIConnectorDefinitionDetection?
     let classification: AIConnectorDefinitionClassification
@@ -94,6 +95,42 @@ struct AIConnectorDefinitionAssessment: Identifiable, Hashable, Sendable {
     let semanticScore: Float?
     let requiresHumanReview: Bool
 
+    init(
+        segment: AIReviewSegment,
+        term: String?,
+        statementText: String,
+        candidate: AIConnectorDefinitionCandidate?,
+        candidateCount: Int,
+        detection: AIConnectorDefinitionDetection?,
+        classification: AIConnectorDefinitionClassification,
+        alignment: AIConnectorDefinitionAlignment,
+        reason: String,
+        origin: AIReviewOrigin,
+        modelReviewed: Bool,
+        retrievalOrigin: LegalRetrievalOrigin?,
+        semanticScore: Float?,
+        requiresHumanReview: Bool,
+        candidates: [AIConnectorDefinitionCandidate] = []
+    ) {
+        self.segment = segment
+        self.term = term
+        self.statementText = statementText
+        self.candidate = candidate
+        self.candidates = candidates.isEmpty
+            ? candidate.map { [$0] } ?? []
+            : candidates
+        self.candidateCount = candidateCount
+        self.detection = detection
+        self.classification = classification
+        self.alignment = alignment
+        self.reason = reason
+        self.origin = origin
+        self.modelReviewed = modelReviewed
+        self.retrievalOrigin = retrievalOrigin
+        self.semanticScore = semanticScore
+        self.requiresHumanReview = requiresHumanReview
+    }
+
     var id: String { "definition-\(segment.id)" }
 
     var isFinding: Bool {
@@ -104,13 +141,24 @@ struct AIConnectorDefinitionAssessment: Identifiable, Hashable, Sendable {
 struct AIConnectorDefinitionAnalysisResult: Hashable, Sendable {
     let assessment: AIConnectorDefinitionAssessment?
     let modelCallCount: Int
+    let cacheHit: Bool
 
     init(
         assessment: AIConnectorDefinitionAssessment? = nil,
-        modelCallCount: Int = 0
+        modelCallCount: Int = 0,
+        cacheHit: Bool = false
     ) {
         self.assessment = assessment
         self.modelCallCount = modelCallCount
+        self.cacheHit = cacheHit
+    }
+
+    func asCacheHit() -> Self {
+        Self(
+            assessment: assessment,
+            modelCallCount: 0,
+            cacheHit: true
+        )
     }
 }
 
@@ -121,6 +169,25 @@ struct AIConnectorDefinitionReviewRequest: Sendable {
     let modelVariant: AIConnectorModelVariant
     let generationProfile: AIConnectorGenerationProfile
     let retryInstruction: String?
+    let context: AIConnectorSegmentContext?
+
+    init(
+        segment: AIReviewSegment,
+        candidate: AIConnectorDefinitionCandidate,
+        thinkingEnabled: Bool,
+        modelVariant: AIConnectorModelVariant,
+        generationProfile: AIConnectorGenerationProfile,
+        retryInstruction: String?,
+        context: AIConnectorSegmentContext? = nil
+    ) {
+        self.segment = segment
+        self.candidate = candidate
+        self.thinkingEnabled = thinkingEnabled
+        self.modelVariant = modelVariant
+        self.generationProfile = generationProfile
+        self.retryInstruction = retryInstruction
+        self.context = context
+    }
 }
 
 struct QwenDefinitionReviewResult: Sendable {

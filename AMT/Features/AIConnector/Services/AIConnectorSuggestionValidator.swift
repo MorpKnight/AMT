@@ -11,6 +11,7 @@ enum AIConnectorValidationError: Error, Equatable, Sendable {
     case protectedContentChanged
     case legalStructureChanged
     case overlappingSuggestion
+    case invalidSourceAnchor
     case invalidGlossaryReference
     case unsupportedSourceClaim
     case ungroundedReason
@@ -37,6 +38,8 @@ enum AIConnectorValidationError: Error, Equatable, Sendable {
             "Usulan mengubah kondisi, pengecualian, referensi, atau akibat hukum."
         case .overlappingSuggestion:
             "Usulan bertabrakan dengan usulan lain pada segmen yang sama."
+        case .invalidSourceAnchor:
+            "Lokasi sumber usulan tidak cocok dengan isi segmen saat ini."
         case .invalidGlossaryReference:
             "Rujukan glossary tidak tersedia atau tidak sesuai."
         case .unsupportedSourceClaim:
@@ -48,7 +51,7 @@ enum AIConnectorValidationError: Error, Equatable, Sendable {
 }
 
 struct AIConnectorSuggestionValidator: Sendable {
-    nonisolated static let version = "validator-v3-locality-grounding"
+    nonisolated static let version = "validator-v4-anchored-locality-grounding"
     private static let legalModalities: Set<String> = [
         "wajib",
         "harus",
@@ -80,7 +83,8 @@ struct AIConnectorSuggestionValidator: Sendable {
         for segment: AIReviewSegment,
         glossaryMatches: [LegalDictionaryMatch],
         origin: AIReviewOrigin = .qwen,
-        protectionContext: AIConnectorDocumentProtectionContext = .empty
+        protectionContext: AIConnectorDocumentProtectionContext = .empty,
+        sourceAnchor: AIConnectorReviewAnchor? = nil
     ) throws -> AIValidatedReview {
         guard !containsUnsupportedSourceClaim(in: parsedReview.reason) else {
             throw AIConnectorValidationError.unsupportedSourceClaim
@@ -99,7 +103,8 @@ struct AIConnectorSuggestionValidator: Sendable {
             guard parsedReview.category == .none,
                   parsedReview.original == nil,
                   parsedReview.replacement == nil,
-                  parsedReview.glossaryID == nil else {
+                  parsedReview.glossaryID == nil,
+                  sourceAnchor == nil else {
                 throw AIConnectorValidationError.inconsistentFields
             }
 
@@ -111,7 +116,8 @@ struct AIConnectorSuggestionValidator: Sendable {
                 parsedReview,
                 segment: segment,
                 glossaryMatch: glossaryMatch,
-                protectionContext: protectionContext
+                protectionContext: protectionContext,
+                sourceAnchor: sourceAnchor
             )
 
         case .needsReview:
@@ -119,9 +125,13 @@ struct AIConnectorSuggestionValidator: Sendable {
                 throw AIConnectorValidationError.inconsistentFields
             }
             if let original = parsedReview.original {
-                guard occurrenceCount(of: original, in: segment.targetText) == 1 else {
-                    throw AIConnectorValidationError.originalNotUnique
-                }
+                try validateSourceAnchor(
+                    sourceAnchor,
+                    original: original,
+                    segment: segment
+                )
+            } else if sourceAnchor != nil {
+                throw AIConnectorValidationError.invalidSourceAnchor
             }
         }
 
@@ -134,7 +144,8 @@ struct AIConnectorSuggestionValidator: Sendable {
             reason: parsedReview.reason,
             glossaryMatch: glossaryMatch,
             origin: origin,
-            ruleID: parsedReview.ruleID
+            ruleID: parsedReview.ruleID,
+            sourceAnchor: sourceAnchor
         )
     }
 
@@ -142,7 +153,8 @@ struct AIConnectorSuggestionValidator: Sendable {
         _ parsedReview: AIParsedReview,
         segment: AIReviewSegment,
         glossaryMatch: LegalDictionaryMatch?,
-        protectionContext: AIConnectorDocumentProtectionContext
+        protectionContext: AIConnectorDocumentProtectionContext,
+        sourceAnchor: AIConnectorReviewAnchor?
     ) throws {
         guard let original = parsedReview.original else {
             throw AIConnectorValidationError.missingOriginal
@@ -150,9 +162,7 @@ struct AIConnectorSuggestionValidator: Sendable {
         guard let replacement = parsedReview.replacement else {
             throw AIConnectorValidationError.missingReplacement
         }
-        guard occurrenceCount(of: original, in: segment.targetText) == 1 else {
-            throw AIConnectorValidationError.originalNotUnique
-        }
+        try validateSourceAnchor(sourceAnchor, original: original, segment: segment)
         guard original != replacement else {
             throw AIConnectorValidationError.replacementUnchanged
         }
@@ -193,6 +203,22 @@ struct AIConnectorSuggestionValidator: Sendable {
         if parsedReview.category != .terminology,
            hasNonMinimalEditSpan(original: original, replacement: replacement) {
             throw AIConnectorValidationError.nonMinimalEditSpan
+        }
+    }
+
+    private func validateSourceAnchor(
+        _ sourceAnchor: AIConnectorReviewAnchor?,
+        original: String,
+        segment: AIReviewSegment
+    ) throws {
+        if let sourceAnchor {
+            guard sourceAnchor.isValid(for: segment, original: original) else {
+                throw AIConnectorValidationError.invalidSourceAnchor
+            }
+        } else {
+            guard occurrenceCount(of: original, in: segment.targetText) == 1 else {
+                throw AIConnectorValidationError.originalNotUnique
+            }
         }
     }
 
