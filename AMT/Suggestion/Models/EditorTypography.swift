@@ -3,7 +3,7 @@ import AppKit
 /// Shared typography tokens for the editable document surface. Native Word
 /// and RTF imports keep their source fonts; these values are used for Markdown,
 /// plain-text fallbacks, and explicit toolbar style actions.
-enum EditorTypography {
+nonisolated enum EditorTypography {
     static let bodyPointSize: CGFloat = 18
     static let heading1PointSize: CGFloat = 32
     static let heading2PointSize: CGFloat = 26

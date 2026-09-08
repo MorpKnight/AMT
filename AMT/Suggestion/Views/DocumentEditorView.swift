@@ -10,41 +10,65 @@ import SwiftUI
 struct DocumentEditorView: View {
     let documents: [DashboardDocument]
     @Binding var activeDocument: DashboardDocument
+    @Binding var selectedDocumentID: UUID?
     let onBackToDashboard: () -> Void
-    let onCreateNewDocument: () -> Void
+    let onImportDocument: () -> Void
+    let onSelectDocument: (DashboardDocument) -> Void
     let originalSourceURL: URL?
+    let saveState: DocumentSaveState
+    let reviewNeedsRerun: Bool
+    let onRetrySave: () -> Void
+    let onExport: () -> Void
+    let onReviewStateChanged: () -> Void
+    let onRerun: () -> Void
+    let onRerunSection: () -> Void
+    let onRerunFull: () -> Void
     
-    private let suggestionService: QwenSuggestionService
-    
-    @State private var selectedDocumentID: UUID?
-    @State private var aiConnectorViewModel: AIConnectorViewModel
+    let aiConnectorViewModel: AIConnectorViewModel
     @State private var isDebugPanelPresented = false
     @State private var editorViewModel = EditorViewModel()
     @State private var presentationMode: DocumentPresentationMode
-    @State private var showDefinitionDiagnostics = false
+    @State private var showDefinitionMatches = false
 
     init(
         documents: [DashboardDocument],
         activeDocument: Binding<DashboardDocument>,
+        selectedDocumentID: Binding<UUID?>? = nil,
         onBackToDashboard: @escaping () -> Void,
-        onCreateNewDocument: @escaping () -> Void,
+        onImportDocument: @escaping () -> Void,
+        onSelectDocument: @escaping (DashboardDocument) -> Void,
         originalSourceURL: URL?,
+        saveState: DocumentSaveState = .saved(Date()),
+        reviewNeedsRerun: Bool = false,
+        onRetrySave: @escaping () -> Void = {},
+        onExport: @escaping () -> Void = {},
+        onReviewStateChanged: @escaping () -> Void = {},
+        onRerun: @escaping () -> Void = {},
+        onRerunSection: @escaping () -> Void = {},
+        onRerunFull: @escaping () -> Void = {},
         suggestionService: QwenSuggestionService,
         dictionaryStore: LegalDictionaryStore,
         aiConnectorViewModel: AIConnectorViewModel? = nil
     ) {
         self.documents = documents
         self._activeDocument = activeDocument
+        self._selectedDocumentID = selectedDocumentID
+            ?? .constant(activeDocument.wrappedValue.id)
         self.onBackToDashboard = onBackToDashboard
-        self.onCreateNewDocument = onCreateNewDocument
+        self.onImportDocument = onImportDocument
+        self.onSelectDocument = onSelectDocument
         self.originalSourceURL = originalSourceURL
-        self.suggestionService = suggestionService
-        self._selectedDocumentID = State(initialValue: activeDocument.wrappedValue.id)
-        self._aiConnectorViewModel = State(
-            initialValue: aiConnectorViewModel ?? AIConnectorViewModel(
-                service: suggestionService,
-                dictionaryStore: dictionaryStore
-            )
+        self.saveState = saveState
+        self.reviewNeedsRerun = reviewNeedsRerun
+        self.onRetrySave = onRetrySave
+        self.onExport = onExport
+        self.onReviewStateChanged = onReviewStateChanged
+        self.onRerun = onRerun
+        self.onRerunSection = onRerunSection
+        self.onRerunFull = onRerunFull
+        self.aiConnectorViewModel = aiConnectorViewModel ?? AIConnectorViewModel(
+            service: suggestionService,
+            dictionaryStore: dictionaryStore
         )
         self._presentationMode = State(
             initialValue: .editing
@@ -57,25 +81,13 @@ struct DocumentEditorView: View {
                 documents: documents,
                 selectedDocumentID: $selectedDocumentID,
                 onBackToDashboard: onBackToDashboard,
-                onCreateNewDocument: onCreateNewDocument
+                onImportDocument: onImportDocument
             )
             .navigationTitle("")
             
         } detail: {
             VStack(spacing: 0) {
-                EditorToolbar(
-                    documentTitle: $activeDocument.title,
-                    presentationMode: $presentationMode,
-                    viewModel: editorViewModel,
-                    canPreviewOriginal: false,
-                    onExport: {
-                        if let structuredDocument = activeDocument.structuredDocument {
-                            DocumentExporter.exportAsDocx(title: activeDocument.title, document: structuredDocument)
-                        } else {
-                            DocumentExporter.exportAsDocx(title: activeDocument.title, content: activeDocument.content)
-                        }
-                    }
-                )
+                editorToolbar
                 GeometryReader { proxy in
                     ZStack {
                         Color(nsColor: .underPageBackgroundColor)
@@ -95,10 +107,36 @@ struct DocumentEditorView: View {
                         }
                     }
                     .overlay(alignment: .topTrailing) {
-                        if presentationMode == .editing,
-                           showDefinitionDiagnostics,
-                           !aiConnectorViewModel.definitionDebugSuggestions.isEmpty {
-                            DefinitionDiagnosticsLegend()
+                        if presentationMode == .editing {
+                            VStack(alignment: .trailing, spacing: 10) {
+                                if !reviewItems.isEmpty
+                                    || !aiConnectorViewModel.definitionMatchAnnotations.isEmpty
+                                    || aiConnectorViewModel.reviewedDocumentFindingCount > 0 {
+                                    ReviewNavigatorView(
+                                        items: reviewItems,
+                                        selectedItemID: aiConnectorViewModel.selectedReviewItemID,
+                                        hasDefinitionMatches: !aiConnectorViewModel.definitionMatchAnnotations.isEmpty,
+                                        showDefinitionMatches: $showDefinitionMatches,
+                                        hasReviewedFindings: aiConnectorViewModel.reviewedDocumentFindingCount > 0,
+                                        showReviewedFindings: Binding(
+                                            get: { aiConnectorViewModel.showReviewedFindings },
+                                            set: { aiConnectorViewModel.setShowReviewedFindings($0) }
+                                        ),
+                                        onPrevious: {
+                                            aiConnectorViewModel.selectPreviousReviewItem(
+                                                includeDefinitionMatches: showDefinitionMatches
+                                            )
+                                        },
+                                        onNext: {
+                                            aiConnectorViewModel.selectNextReviewItem(
+                                                includeDefinitionMatches: showDefinitionMatches
+                                            )
+                                        }
+                                    )
+                                } else if aiConnectorViewModel.state == .completed {
+                                    reviewEmptyState
+                                }
+                            }
                                 .padding(.top, 14)
                                 .padding(.trailing, 14)
                         }
@@ -110,12 +148,12 @@ struct DocumentEditorView: View {
         }
         .navigationTitle("")
         .onChange(of: selectedDocumentID) { _, newID in
-            aiConnectorViewModel.resetInputMetadata()
             isDebugPanelPresented = false
-            showDefinitionDiagnostics = false
+            showDefinitionMatches = false
             if let newID = newID,
+               newID != activeDocument.id,
                let doc = documents.first(where: { $0.id == newID }) {
-                activeDocument = doc
+                onSelectDocument(doc)
             }
         }
         .onChange(of: activeDocument.id) { _, newID in
@@ -141,8 +179,8 @@ struct DocumentEditorView: View {
             activeDocument.richTextData = payload.richTextData ?? activeDocument.richTextData
             activeDocument.content = payload.plainText
         }
-        .onChange(of: showDefinitionDiagnostics) { _, _ in
-            aiConnectorViewModel.selectSuggestion(nil)
+        .onChange(of: showDefinitionMatches) { _, _ in
+            aiConnectorViewModel.selectReviewItem(nil)
         }
         .sheet(isPresented: $isDebugPanelPresented) {
             AIConnectorDebugPanel(
@@ -154,22 +192,64 @@ struct DocumentEditorView: View {
         .focusedSceneValue(\.showAIConnectorDebugPanel) {
             isDebugPanelPresented = true
         }
-        .focusedSceneValue(\.showAIConnectorDefinitionDiagnostics, $showDefinitionDiagnostics)
+        .focusedSceneValue(\.showAIConnectorDefinitionDiagnostics, $showDefinitionMatches)
     }
 
-    private var displayedDefinitionDiagnostics: [EditorSuggestion] {
-        showDefinitionDiagnostics
-            ? aiConnectorViewModel.definitionDebugSuggestions
-            : []
-    }
-
-    private func reconcileAcceptedSuggestion(_ suggestion: EditorSuggestion) {
-        let replacementLength = suggestion.replacement.utf16.count
-        let originalLength = suggestion.original.utf16.count
-        aiConnectorViewModel.reconcileAfterAccept(
-            suggestion.id,
-            replacementDelta: replacementLength - originalLength
+    private var editorToolbar: some View {
+        EditorToolbar(
+            documentTitle: $activeDocument.title,
+            presentationMode: $presentationMode,
+            viewModel: editorViewModel,
+            canPreviewOriginal: originalSourceURL != nil,
+            saveState: saveState,
+            reviewNeedsRerun: reviewNeedsRerun,
+            onRetrySave: onRetrySave,
+            onExport: onExport,
+            aiConnectorViewModel: aiConnectorViewModel,
+            onRerun: onRerun,
+            onRerunSection: onRerunSection,
+            onRerunFull: onRerunFull
         )
+    }
+
+    private var reviewItems: [EditorReviewItem] {
+        aiConnectorViewModel.reviewItems(
+            includeDefinitionMatches: showDefinitionMatches
+        )
+    }
+
+    private var displayedReviewAnnotations: [EditorReviewAnnotation] {
+        aiConnectorViewModel.visibleReviewAnnotations(
+            includeDefinitionMatches: showDefinitionMatches
+        )
+    }
+
+    private var reviewEmptyState: some View {
+        let allItemsIgnored = aiConnectorViewModel.allReviewItemsIgnored
+        let hasReviewedItems = aiConnectorViewModel.reviewedDocumentFindingCount > 0
+        let baseMessage = allItemsIgnored
+            ? "Semua hasil pada pemeriksaan ini telah diabaikan"
+            : hasReviewedItems
+                ? "Semua temuan aktif sudah diperiksa. Gunakan ‘Tampilkan yang sudah diperiksa’ untuk membukanya kembali."
+            : "Tidak ditemukan isu pada pemeriksaan ini. Hasil ini bukan jaminan ketepatan hukum dan tetap memerlukan review profesional."
+        let limitationCount = aiConnectorViewModel.skippedSegmentCount
+            + aiConnectorViewModel.rejectedReviews.count
+
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(baseMessage)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
+            if limitationCount > 0 {
+                Text("\(limitationCount) bagian tidak dapat disimpulkan.")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: 360, alignment: .trailing)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 
     private func editorView(for proxy: GeometryProxy) -> some View {
@@ -180,19 +260,67 @@ struct DocumentEditorView: View {
             structuredDocument: $activeDocument.structuredDocument,
             zoomPercent: $editorViewModel.zoomPercent,
             suggestions: aiConnectorViewModel.editorSuggestions,
-            diagnosticSuggestions: displayedDefinitionDiagnostics,
-            selectedSuggestionID: aiConnectorViewModel.selectedSuggestionID,
+            annotations: displayedReviewAnnotations,
+            definitionResolutions: aiConnectorViewModel.definitionResolutions,
+            definitionResolutionLoadingIDs: aiConnectorViewModel.definitionResolutionLoadingIDs,
+            reviewedReviewItemIDs: aiConnectorViewModel.reviewedReviewItemIDs,
+            selectedReviewItemID: aiConnectorViewModel.selectedReviewItemID,
             onSelect: { id in
-                aiConnectorViewModel.selectSuggestion(id)
+                aiConnectorViewModel.selectReviewItem(id)
+            },
+            onCaretLocationChanged: { location in
+                aiConnectorViewModel.updateCaretLocation(location)
             },
             onTextEdited: {
-                aiConnectorViewModel.resetInputMetadata()
+                aiConnectorViewModel.markDocumentEdited(
+                    documentText: activeDocument.content,
+                    structuredDocument: activeDocument.structuredDocument
+                )
             },
-            onAccept: { suggestion in
-                reconcileAcceptedSuggestion(suggestion)
+            onSuggestionAccepted: { suggestion, previousText, updatedText in
+                if aiConnectorViewModel.reconcileAfterAccept(
+                    suggestion,
+                    previousText: previousText,
+                    updatedText: updatedText
+                ) {
+                    aiConnectorViewModel.markDocumentEdited(
+                        documentText: updatedText,
+                        structuredDocument: activeDocument.structuredDocument
+                    )
+                } else {
+                    aiConnectorViewModel.resetInputMetadata()
+                }
+                onReviewStateChanged()
             },
             onDismiss: { id in
-                aiConnectorViewModel.dismissSuggestion(id)
+                aiConnectorViewModel.dismissReviewItem(id)
+                onReviewStateChanged()
+            },
+            onMarkReviewed: { id in
+                aiConnectorViewModel.markReviewItemReviewed(id)
+                onReviewStateChanged()
+            },
+            onReopenReviewed: { id in
+                aiConnectorViewModel.reopenReviewItem(id)
+                onReviewStateChanged()
+            },
+            onRequestDefinitionResolution: { id in
+                aiConnectorViewModel.requestDefinitionResolution(for: id)
+            },
+            onDefinitionResolutionApplied: { option, previousText, updatedText in
+                if aiConnectorViewModel.reconcileAfterDefinitionResolution(
+                    option,
+                    previousText: previousText,
+                    updatedText: updatedText
+                ) {
+                    aiConnectorViewModel.markDocumentEdited(
+                        documentText: updatedText,
+                        structuredDocument: activeDocument.structuredDocument
+                    )
+                } else {
+                    aiConnectorViewModel.resetInputMetadata()
+                }
+                onReviewStateChanged()
             },
             formattingViewModel: editorViewModel
         )
@@ -207,13 +335,59 @@ struct DocumentEditorView: View {
 
 }
 
-private struct DefinitionDiagnosticsLegend: View {
+private struct ReviewNavigatorView: View {
+    let items: [EditorReviewItem]
+    let selectedItemID: UUID?
+    let hasDefinitionMatches: Bool
+    @Binding var showDefinitionMatches: Bool
+    let hasReviewedFindings: Bool
+    @Binding var showReviewedFindings: Bool
+    let onPrevious: () -> Void
+    let onNext: () -> Void
+
+    private var selectedIndex: Int? {
+        guard let selectedItemID else { return nil }
+        return items.firstIndex(where: { $0.id == selectedItemID })
+    }
+
     var body: some View {
-        HStack(spacing: 10) {
-            ForEach(EditorDefinitionDiagnosticStatus.allCases, id: \.self) { status in
-                Label(status.shortTitle, systemImage: status.iconName)
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(tint(for: status))
+        HStack(spacing: 8) {
+            Button(action: onPrevious) {
+                Image(systemName: "chevron.left")
+            }
+            .disabled(items.isEmpty || selectedIndex == 0)
+            .accessibilityLabel("Temuan sebelumnya")
+            .help("Temuan sebelumnya")
+
+            Text(positionTitle)
+                .font(.caption.weight(.medium).monospacedDigit())
+                .frame(minWidth: 58)
+                .accessibilityLabel("Posisi temuan")
+
+            Button(action: onNext) {
+                Image(systemName: "chevron.right")
+            }
+            .disabled(items.isEmpty || selectedIndex == items.count - 1)
+            .accessibilityLabel("Temuan berikutnya")
+            .help("Temuan berikutnya")
+
+            if hasDefinitionMatches {
+                Divider()
+                    .frame(height: 16)
+                Toggle("Definisi selaras", isOn: $showDefinitionMatches)
+                    .toggleStyle(.checkbox)
+                    .font(.caption2)
+                    .help("Tampilkan definisi selaras")
+                    .accessibilityLabel("Tampilkan definisi selaras")
+            }
+            if hasReviewedFindings {
+                Divider()
+                    .frame(height: 16)
+                Toggle("Sudah diperiksa", isOn: $showReviewedFindings)
+                    .toggleStyle(.checkbox)
+                    .font(.caption2)
+                    .help("Tampilkan yang sudah diperiksa")
+                    .accessibilityLabel("Tampilkan yang sudah diperiksa")
             }
         }
         .padding(.horizontal, 10)
@@ -223,19 +397,12 @@ private struct DefinitionDiagnosticsLegend: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(Color.primary.opacity(0.1), lineWidth: 1)
         )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Legenda highlight analisis definisi")
+        .accessibilityElement(children: .contain)
     }
 
-    private func tint(for status: EditorDefinitionDiagnosticStatus) -> Color {
-        switch status {
-        case .matches:
-            .green
-        case .mismatch:
-            .red
-        case .needsReview:
-            .orange
-        }
+    private var positionTitle: String {
+        guard let selectedIndex else { return "— dari \(items.count)" }
+        return "\(selectedIndex + 1) dari \(items.count)"
     }
 }
 
@@ -243,9 +410,14 @@ private struct DefinitionDiagnosticsLegend: View {
     DocumentEditorView(
         documents: [DashboardDocument(title: "Untitled", content: "Sample")],
         activeDocument: .constant(DashboardDocument(title: "Untitled", content: "Samplsdfsafsdafe")),
+        selectedDocumentID: .constant(nil),
         onBackToDashboard: {},
-        onCreateNewDocument: {},
+        onImportDocument: {},
+        onSelectDocument: { _ in },
         originalSourceURL: nil,
+        saveState: .saved(Date()),
+        onRetrySave: {},
+        onExport: {},
         suggestionService: QwenSuggestionService(),
         dictionaryStore: LegalDictionaryStore(entries: LegalDictionaryEntry.previewEntries)
     )

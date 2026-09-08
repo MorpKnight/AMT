@@ -1,5 +1,5 @@
 //
-//  NewDocumentCardView.swift
+//  ImportDocumentCardView.swift
 //  AMT
 //
 //  Created by Antigravity on 2026/08/26.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct NewDocumentCardView: View {
+struct ImportDocumentCardView: View {
     let action: () -> Void
     @State private var isHovered = false
 
@@ -15,7 +15,7 @@ struct NewDocumentCardView: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Spacer()
-                Image(systemName: "plus")
+                Image(systemName: "square.and.arrow.down")
                     .font(.system(size: 28, weight: .light))
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -38,11 +38,11 @@ struct NewDocumentCardView: View {
             isHovered = hovering
         }
         .help("Impor file dokumen (.docx, .md, .txt) dari Finder")
+        .accessibilityLabel("Impor Dokumen")
     }
 }
 
 #Preview {
-    NewDocumentCardView(action: {})
+    ImportDocumentCardView(action: {})
         .padding()
 }
-

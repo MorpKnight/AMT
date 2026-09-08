@@ -75,14 +75,14 @@ final class DocumentStorageManagerTests: XCTestCase {
         )
     }
 
-    func testFirstImportPersistsExactlyOneDocumentAndFingerprint() throws {
+    func testFirstImportPersistsExactlyOneDocumentAndFingerprint() async throws {
         let storage = makeStorage()
         let sourceURL = try writeFile(
             named: "agreement.txt",
             data: Data("Perjanjian ini berlaku.\n".utf8)
         )
 
-        let result = storage.importDocument(at: sourceURL)
+        let result = await storage.importDocument(at: sourceURL)
         let document = try requireImportedDocument(from: result)
 
         XCTAssertEqual(storage.documents.count, 1)
@@ -102,7 +102,7 @@ final class DocumentStorageManagerTests: XCTestCase {
         )
     }
 
-    func testIdenticalSourceFileIsBlockedWithoutCreatingDocumentOrJSON() throws {
+    func testIdenticalSourceFileIsBlockedWithoutCreatingDocumentOrJSON() async throws {
         let storage = makeStorage()
         let firstURL = try writeFile(
             named: "first.txt",
@@ -114,11 +114,11 @@ final class DocumentStorageManagerTests: XCTestCase {
         )
 
         let firstDocument = try requireImportedDocument(
-            from: storage.importDocument(at: firstURL)
+            from: await storage.importDocument(at: firstURL)
         )
         let jsonCountBeforeDuplicate = try jsonFiles().count
 
-        switch storage.importDocument(at: secondURL) {
+        switch await storage.importDocument(at: secondURL) {
         case let .duplicate(existing, matchKind):
             XCTAssertEqual(existing.id, firstDocument.id)
             XCTAssertEqual(matchKind, .sourceFile)
@@ -131,7 +131,7 @@ final class DocumentStorageManagerTests: XCTestCase {
         XCTAssertEqual(storage.documents.first?.id, firstDocument.id)
     }
 
-    func testDifferentSourceWithSameNormalizedContentIsBlockedByContentHash() throws {
+    func testDifferentSourceWithSameNormalizedContentIsBlockedByContentHash() async throws {
         let storage = makeStorage()
         let firstURL = try writeFile(
             named: "windows.txt",
@@ -143,10 +143,10 @@ final class DocumentStorageManagerTests: XCTestCase {
         )
 
         let firstDocument = try requireImportedDocument(
-            from: storage.importDocument(at: firstURL)
+            from: await storage.importDocument(at: firstURL)
         )
 
-        switch storage.importDocument(at: secondURL) {
+        switch await storage.importDocument(at: secondURL) {
         case let .duplicate(existing, matchKind):
             XCTAssertEqual(existing.id, firstDocument.id)
             XCTAssertEqual(matchKind, .normalizedContent)
@@ -158,19 +158,19 @@ final class DocumentStorageManagerTests: XCTestCase {
         XCTAssertEqual(try jsonFiles().count, 1)
     }
 
-    func testDifferentContentCanBeImportedAsAnotherDocument() throws {
+    func testDifferentContentCanBeImportedAsAnotherDocument() async throws {
         let storage = makeStorage()
         let firstURL = try writeFile(named: "first.txt", data: Data("Satu".utf8))
         let secondURL = try writeFile(named: "second.txt", data: Data("Dua".utf8))
 
-        _ = try requireImportedDocument(from: storage.importDocument(at: firstURL))
-        _ = try requireImportedDocument(from: storage.importDocument(at: secondURL))
+        _ = try requireImportedDocument(from: await storage.importDocument(at: firstURL))
+        _ = try requireImportedDocument(from: await storage.importDocument(at: secondURL))
 
         XCTAssertEqual(storage.documents.count, 2)
         XCTAssertEqual(try jsonFiles().count, 2)
     }
 
-    func testLegacyJSONWithoutFingerprintLoadsAndGetsFingerprintOnNextSave() throws {
+    func testLegacyJSONWithoutFingerprintLoadsAndGetsFingerprintOnNextSave() async throws {
         let legacyID = UUID()
         let legacyContent = "Dokumen lama tanpa fingerprint."
         let legacy = LegacyDashboardDocument(
@@ -191,7 +191,10 @@ final class DocumentStorageManagerTests: XCTestCase {
             DocumentFingerprinting.contentSHA256(legacyContent)
         )
 
-        storage.saveDocument(try XCTUnwrap(storage.documents.first))
+        _ = storage.updateDraft(try XCTUnwrap(storage.documents.first))
+        _ = try requireSavedDocument(
+            from: await storage.flushPendingSave(for: legacyID)
+        )
 
         let reloaded = makeStorage()
         XCTAssertNotNil(reloaded.documents.first?.fingerprint)
@@ -201,7 +204,7 @@ final class DocumentStorageManagerTests: XCTestCase {
         )
     }
 
-    func testLegacyDocumentParticipatesInContentDuplicateDetection() throws {
+    func testLegacyDocumentParticipatesInContentDuplicateDetection() async throws {
         let legacyID = UUID()
         let legacyContent = "Konten legacy yang sama."
         let legacy = LegacyDashboardDocument(
@@ -217,7 +220,7 @@ final class DocumentStorageManagerTests: XCTestCase {
         let storage = makeStorage()
         let importedURL = try writeFile(named: "new.txt", data: Data(legacyContent.utf8))
 
-        switch storage.importDocument(at: importedURL) {
+        switch await storage.importDocument(at: importedURL) {
         case let .duplicate(existing, matchKind):
             XCTAssertEqual(existing.id, legacyID)
             XCTAssertEqual(matchKind, .normalizedContent)
@@ -229,7 +232,7 @@ final class DocumentStorageManagerTests: XCTestCase {
         XCTAssertEqual(try jsonFiles().count, 1)
     }
 
-    func testEarliestCreatedDuplicateIsUsedAsCanonicalExistingDocument() throws {
+    func testEarliestCreatedDuplicateIsUsedAsCanonicalExistingDocument() async throws {
         let olderID = UUID()
         let newerID = UUID()
         let content = "Konten yang sengaja tersimpan dua kali."
@@ -257,7 +260,7 @@ final class DocumentStorageManagerTests: XCTestCase {
         let storage = makeStorage()
         let importedURL = try writeFile(named: "same-content.txt", data: Data(content.utf8))
 
-        switch storage.importDocument(at: importedURL) {
+        switch await storage.importDocument(at: importedURL) {
         case let .duplicate(existing, matchKind):
             XCTAssertEqual(existing.id, olderID)
             XCTAssertEqual(matchKind, .normalizedContent)
@@ -269,20 +272,23 @@ final class DocumentStorageManagerTests: XCTestCase {
         XCTAssertEqual(try jsonFiles().count, 2, "File sumber bukan JSON dan tidak boleh dihitung sebagai dokumen.")
     }
 
-    func testEditingContentRefreshesContentHashButPreservesSourceHash() throws {
+    func testEditingContentRefreshesContentHashButPreservesSourceHash() async throws {
         let storage = makeStorage()
         let sourceURL = try writeFile(
             named: "editable.txt",
             data: Data("Versi awal".utf8)
         )
         let imported = try requireImportedDocument(
-            from: storage.importDocument(at: sourceURL)
+            from: await storage.importDocument(at: sourceURL)
         )
         let originalSourceHash = imported.fingerprint?.sourceFileSHA256
 
         var edited = imported
         edited.content = "Versi yang sudah diedit"
-        storage.saveDocument(edited)
+        _ = storage.updateDraft(edited)
+        _ = try requireSavedDocument(
+            from: await storage.flushPendingSave(for: imported.id)
+        )
 
         let saved = try XCTUnwrap(storage.documents.first { $0.id == imported.id })
         XCTAssertEqual(saved.fingerprint?.sourceFileSHA256, originalSourceHash)
@@ -300,7 +306,7 @@ final class DocumentStorageManagerTests: XCTestCase {
         )
     }
 
-    func testConversionOrEmptyContentFailureDoesNotPersistDocument() throws {
+    func testConversionOrEmptyContentFailureDoesNotPersistDocument() async throws {
         let storage = makeStorage()
         let invalidDocxURL = try writeFile(
             named: "invalid.docx",
@@ -308,22 +314,23 @@ final class DocumentStorageManagerTests: XCTestCase {
         )
         let emptyTextURL = try writeFile(named: "empty.txt", data: Data())
 
-        assertFailed(storage.importDocument(at: invalidDocxURL))
-        assertFailed(storage.importDocument(at: emptyTextURL))
+        assertFailed(await storage.importDocument(at: invalidDocxURL))
+        assertFailed(await storage.importDocument(at: emptyTextURL))
 
         XCTAssertTrue(storage.documents.isEmpty)
         XCTAssertTrue(try jsonFiles().isEmpty)
     }
 
-    func testCompletedAnalysisSnapshotPersistsWithDocumentAndReloads() throws {
+    func testCompletedAnalysisSnapshotPersistsWithDocumentAndReloads() async throws {
         let storage = makeStorage()
         let sourceURL = try writeFile(
             named: "analyzed.txt",
             data: Data("Pihak Kedua wajib untuk membayar.\n".utf8)
         )
         let imported = try requireImportedDocument(
-            from: storage.importDocument(at: sourceURL)
+            from: await storage.importDocument(at: sourceURL)
         )
+        let originalUpdatedAt = imported.updatedAt
         let suggestion = makeSuggestion(
             in: imported.content,
             original: "wajib untuk",
@@ -336,10 +343,11 @@ final class DocumentStorageManagerTests: XCTestCase {
             editorSuggestions: [suggestion]
         )
 
-        let saved = try XCTUnwrap(
-            storage.saveAnalysisSnapshot(snapshot, for: imported)
+        let saved = try requireSavedDocument(
+            from: await storage.saveAnalysisSnapshot(snapshot, for: imported)
         )
         XCTAssertEqual(saved.analysisSnapshot, snapshot)
+        XCTAssertEqual(saved.updatedAt, originalUpdatedAt)
 
         let reloaded = makeStorage()
         XCTAssertEqual(
@@ -352,14 +360,14 @@ final class DocumentStorageManagerTests: XCTestCase {
         )
     }
 
-    func testMismatchedAnalysisSnapshotIsNotAttachedToDocument() throws {
+    func testMismatchedAnalysisSnapshotIsNotAttachedToDocument() async throws {
         let storage = makeStorage()
         let sourceURL = try writeFile(
             named: "mismatched.txt",
             data: Data("Isi asli.".utf8)
         )
         let imported = try requireImportedDocument(
-            from: storage.importDocument(at: sourceURL)
+            from: await storage.importDocument(at: sourceURL)
         )
         let snapshot = DocumentAnalysisSnapshot(
             analyzedContentSHA256: DocumentFingerprinting.contentSHA256("Isi berbeda."),
@@ -368,19 +376,25 @@ final class DocumentStorageManagerTests: XCTestCase {
             editorSuggestions: []
         )
 
-        XCTAssertNil(storage.saveAnalysisSnapshot(snapshot, for: imported))
+        guard case .failure(.analysisSnapshotMismatch) = await storage.saveAnalysisSnapshot(
+            snapshot,
+            for: imported
+        ) else {
+            XCTFail("Snapshot yang tidak cocok harus ditolak.")
+            return
+        }
         XCTAssertNil(storage.documents.first?.analysisSnapshot)
         XCTAssertEqual(try jsonFiles().count, 1)
     }
 
-    func testEditingContentInvalidatesPersistedAnalysisSnapshot() throws {
+    func testEditingContentInvalidatesPersistedAnalysisSnapshot() async throws {
         let storage = makeStorage()
         let sourceURL = try writeFile(
             named: "editable-analysis.txt",
             data: Data("Pihak Kedua wajib untuk membayar.".utf8)
         )
         let imported = try requireImportedDocument(
-            from: storage.importDocument(at: sourceURL)
+            from: await storage.importDocument(at: sourceURL)
         )
         let snapshot = DocumentAnalysisSnapshot(
             analyzedContentSHA256: DocumentFingerprinting.contentSHA256(imported.content),
@@ -394,13 +408,16 @@ final class DocumentStorageManagerTests: XCTestCase {
                 )
             ]
         )
-        let saved = try XCTUnwrap(
-            storage.saveAnalysisSnapshot(snapshot, for: imported)
+        let saved = try requireSavedDocument(
+            from: await storage.saveAnalysisSnapshot(snapshot, for: imported)
         )
 
         var edited = saved
         edited.content = "Pihak Kedua dapat membayar."
-        let persistedEdited = try XCTUnwrap(storage.saveDocument(edited))
+        _ = storage.updateDraft(edited)
+        let persistedEdited = try requireSavedDocument(
+            from: await storage.flushPendingSave(for: imported.id)
+        )
 
         XCTAssertNil(persistedEdited.analysisSnapshot)
         XCTAssertNil(storage.documents.first?.analysisSnapshot)
@@ -415,13 +432,196 @@ final class DocumentStorageManagerTests: XCTestCase {
         XCTAssertNil(makeStorage().documents.first?.analysisSnapshot)
     }
 
-    private func makeStorage() -> DocumentStorageManager {
-        DocumentStorageManager(storageDirectoryURL: storageDirectory)
+    func testRapidDraftEditsCoalesceIntoOneFinalPersistedRevision() async throws {
+        let storage = makeStorage()
+        let sourceURL = try writeExternalFile(
+            named: "rapid-edits.txt",
+            data: Data("Versi awal".utf8)
+        )
+        defer { try? FileManager.default.removeItem(at: sourceURL) }
+
+        let imported = try requireImportedDocument(
+            from: await storage.importDocument(at: sourceURL)
+        )
+        var firstEdit = imported
+        firstEdit.content = "Versi pertama"
+        let firstDraft = storage.updateDraft(firstEdit)
+        var finalEdit = firstDraft
+        finalEdit.content = "Versi final"
+        _ = storage.updateDraft(finalEdit)
+
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+
+        let reloaded = makeStorage()
+        XCTAssertEqual(reloaded.documents.first?.content, "Versi final")
+        guard case .saved = storage.saveState(for: finalEdit) else {
+            return XCTFail("Edit cepat harus berakhir pada status Tersimpan lokal.")
+        }
+    }
+
+    func testOlderRevisionCannotMarkNewerDraftAsSaved() async throws {
+        let storage = makeStorage(persistenceDelayNanoseconds: 150_000_000)
+        let sourceURL = try writeExternalFile(
+            named: "stale-revision.txt",
+            data: Data("Versi awal".utf8)
+        )
+        defer { try? FileManager.default.removeItem(at: sourceURL) }
+
+        let imported = try requireImportedDocument(
+            from: await storage.importDocument(at: sourceURL)
+        )
+        var firstEdit = imported
+        firstEdit.content = "Versi sedang ditulis"
+        let firstDraft = storage.updateDraft(firstEdit)
+        let flushTask = Task { @MainActor in
+            await storage.flushPendingSave(for: imported.id)
+        }
+
+        await Task.yield()
+        try await Task.sleep(nanoseconds: 25_000_000)
+
+        var newerEdit = firstDraft
+        newerEdit.content = "Versi terbaru"
+        _ = storage.updateDraft(newerEdit)
+
+        _ = await flushTask.value
+        let finalResult = await storage.flushPendingSave(for: imported.id)
+        _ = try requireSavedDocument(from: finalResult)
+        XCTAssertEqual(storage.documents.first?.content, "Versi terbaru")
+        XCTAssertEqual(makeStorage().documents.first?.content, "Versi terbaru")
+    }
+
+    func testFailedSaveKeepsDraftAndRetryPersistsLatestVersion() async throws {
+        let storage = makeStorage()
+        let sourceURL = try writeExternalFile(
+            named: "failed-save.txt",
+            data: Data("Versi awal".utf8)
+        )
+        defer { try? FileManager.default.removeItem(at: sourceURL) }
+
+        let imported = try requireImportedDocument(
+            from: await storage.importDocument(at: sourceURL)
+        )
+        var edited = imported
+        edited.content = "Draft yang belum tersimpan"
+
+        try FileManager.default.removeItem(at: storageDirectory)
+        try Data("bukan folder".utf8).write(to: storageDirectory)
+        _ = storage.updateDraft(edited)
+
+        guard case .failure(.writeFailed) = await storage.flushPendingSave(for: imported.id) else {
+            return XCTFail("Write ke path yang bukan folder harus gagal.")
+        }
+        XCTAssertEqual(storage.documents.first?.content, "Draft yang belum tersimpan")
+        guard case .failed = storage.saveState(for: edited) else {
+            return XCTFail("Kegagalan write harus terlihat sebagai Gagal menyimpan.")
+        }
+
+        try FileManager.default.removeItem(at: storageDirectory)
+        try FileManager.default.createDirectory(
+            at: storageDirectory,
+            withIntermediateDirectories: true
+        )
+        storage.retrySave(for: imported.id)
+        try await Task.sleep(nanoseconds: 25_000_000)
+        _ = await storage.flushPendingSave(for: imported.id)
+
+        XCTAssertEqual(makeStorage().documents.first?.content, "Draft yang belum tersimpan")
+        guard case .saved = storage.saveState(for: edited) else {
+            return XCTFail("Retry setelah storage pulih harus berhasil.")
+        }
+    }
+
+    func testDeleteRemovesAMTCopyButLeavesExternalOriginalUntouched() async throws {
+        let storage = makeStorage()
+        let sourceURL = try writeExternalFile(
+            named: "external-original.txt",
+            data: Data("File asli eksternal".utf8)
+        )
+        defer { try? FileManager.default.removeItem(at: sourceURL) }
+
+        let document = try requireImportedDocument(
+            from: await storage.importDocument(at: sourceURL)
+        )
+        let preservedSourceURL = storage.importedSourceURL(for: document)
+        XCTAssertNotNil(preservedSourceURL)
+
+        guard case .success = await storage.deleteDocument(document) else {
+            return XCTFail("Delete dokumen yang valid harus berhasil.")
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sourceURL.path))
+        if let preservedSourceURL {
+            XCTAssertFalse(FileManager.default.fileExists(atPath: preservedSourceURL.path))
+        }
+        XCTAssertTrue(storage.documents.isEmpty)
+        XCTAssertTrue(try jsonFiles().isEmpty)
+    }
+
+    func testDeleteFailureLeavesDocumentAndAMTCopyAvailable() async throws {
+        let fileManager = FailingMoveFileManager()
+        let storage = makeStorage(fileManager: fileManager)
+        let sourceURL = try writeExternalFile(
+            named: "rollback-original.txt",
+            data: Data("File untuk rollback".utf8)
+        )
+        defer { try? FileManager.default.removeItem(at: sourceURL) }
+
+        let document = try requireImportedDocument(
+            from: await storage.importDocument(at: sourceURL)
+        )
+        let preservedSourceURL = try XCTUnwrap(storage.importedSourceURL(for: document))
+
+        guard case .failure(.deleteFailed) = await storage.deleteDocument(document) else {
+            return XCTFail("Kegagalan staging harus dilaporkan.")
+        }
+        XCTAssertEqual(storage.documents.count, 1)
+        XCTAssertTrue(try jsonFiles().contains { $0.lastPathComponent == "\(document.id.uuidString).json" })
+        XCTAssertTrue(FileManager.default.fileExists(atPath: preservedSourceURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sourceURL.path))
+    }
+
+    func testInvalidSourceReferenceCannotEscapeAMTStorageDirectory() async throws {
+        let documentID = UUID()
+        let document = DashboardDocument(
+            id: documentID,
+            title: "Unsafe",
+            content: "Isi",
+            importedSourceFileName: "../outside.txt"
+        )
+        try JSONEncoder().encode(document).write(
+            to: storageDirectory.appendingPathComponent("\(documentID.uuidString).json")
+        )
+
+        let storage = makeStorage()
+        XCTAssertNil(storage.importedSourceURL(for: document))
+        guard case .failure(.invalidSourceReference) = await storage.deleteDocument(document) else {
+            return XCTFail("Nama sumber yang keluar dari storage harus ditolak.")
+        }
+        XCTAssertEqual(storage.documents.first?.id, documentID)
+    }
+
+    private func makeStorage(
+        fileManager: FileManager = .default,
+        persistenceDelayNanoseconds: UInt64 = 0
+    ) -> DocumentStorageManager {
+        DocumentStorageManager(
+            fileManager: fileManager,
+            storageDirectoryURL: storageDirectory,
+            persistenceDelayNanoseconds: persistenceDelayNanoseconds
+        )
     }
 
     @discardableResult
     private func writeFile(named name: String, data: Data) throws -> URL {
         let url = storageDirectory.appendingPathComponent(name)
+        try data.write(to: url)
+        return url
+    }
+
+    @discardableResult
+    private func writeExternalFile(named name: String, data: Data) throws -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("AMT-DocumentStorageExternal-\(UUID().uuidString)-\(name)")
         try data.write(to: url)
         return url
     }
@@ -446,6 +646,20 @@ final class DocumentStorageManagerTests: XCTestCase {
             XCTFail("Import gagal: \(message)", file: file, line: line)
         default:
             XCTFail("Hasil import bukan imported: \(result)", file: file, line: line)
+        }
+        throw ImportTestError.unexpectedResult
+    }
+
+    private func requireSavedDocument(
+        from result: Result<DashboardDocument, DocumentStorageError>,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> DashboardDocument {
+        switch result {
+        case let .success(document):
+            return document
+        case let .failure(error):
+            XCTFail("Penyimpanan gagal: \(error.localizedDescription)", file: file, line: line)
         }
         throw ImportTestError.unexpectedResult
     }
@@ -497,6 +711,22 @@ final class DocumentStorageManagerTests: XCTestCase {
             reason: "Perbaikan tata bahasa.",
             origin: .deterministic
         )
+    }
+}
+
+private final class FailingMoveFileManager: FileManager {
+    private var moveCount = 0
+
+    override func moveItem(at srcURL: URL, to dstURL: URL) throws {
+        moveCount += 1
+        if moveCount == 2 {
+            throw NSError(
+                domain: "AMTTests.FailingMoveFileManager",
+                code: 1,
+                userInfo: nil
+            )
+        }
+        try super.moveItem(at: srcURL, to: dstURL)
     }
 }
 

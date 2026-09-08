@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct DashboardDocument: Identifiable, Codable, Equatable, Hashable {
+nonisolated struct DashboardDocument: Identifiable, Codable, Equatable, Hashable, Sendable {
     var id: UUID
     var title: String
     var content: String

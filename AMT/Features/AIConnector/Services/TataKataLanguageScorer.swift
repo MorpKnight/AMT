@@ -183,6 +183,12 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
         _ = try await resolvedRuntime(progress: progress)
     }
 
+    func prepare(
+        progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void = { _ in }
+    ) async throws {
+        try await load(progress: progress)
+    }
+
     func score(
         segment: AIReviewSegment,
         candidates: [AIConnectorSpellingCandidate],

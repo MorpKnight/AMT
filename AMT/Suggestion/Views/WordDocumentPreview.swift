@@ -11,16 +11,18 @@ import SwiftUI
 struct WordDocumentPreview: NSViewRepresentable {
     let sourceURL: URL
 
-    func makeNSView(context: Context) -> QLPreviewView {
+    func makeNSView(context: Context) -> NSView {
         // The designated Objective-C initializer is imported as failable.
-        // Quick Look always provides this view on supported macOS versions.
-        let preview = QLPreviewView(frame: .zero, style: .normal)!
+        guard let preview = QLPreviewView(frame: .zero, style: .normal) else {
+            return NSView(frame: .zero)
+        }
         preview.autoresizingMask = [.width, .height]
         preview.previewItem = sourceURL as NSURL
         return preview
     }
 
-    func updateNSView(_ preview: QLPreviewView, context: Context) {
+    func updateNSView(_ preview: NSView, context: Context) {
+        guard let preview = preview as? QLPreviewView else { return }
         if (preview.previewItem as? NSURL)?.path != sourceURL.path {
             preview.previewItem = sourceURL as NSURL
         }

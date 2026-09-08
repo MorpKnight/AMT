@@ -10,6 +10,7 @@ import SwiftUI
 struct DocumentCardView: View {
     let document: DashboardDocument
     let onSelect: () -> Void
+    let onExport: () -> Void
     let onDelete: () -> Void
 
     @State private var isHovered = false
@@ -46,9 +47,7 @@ struct DocumentCardView: View {
                 Button(action: onSelect) {
                     Label("Buka Dokumen", systemImage: "doc.text.fill")
                 }
-                Button(action: {
-                    DocumentExporter.exportAsDocx(title: document.title, content: document.content)
-                }) {
+                Button(action: onExport) {
                     Label("Ekspor ke Word (.docx)", systemImage: "square.and.arrow.up")
                 }
                 Divider()
@@ -82,6 +81,7 @@ struct DocumentCardView: View {
     DocumentCardView(
         document: DashboardDocument(title: "Untitled", content: "Sample text content"),
         onSelect: {},
+        onExport: {},
         onDelete: {}
     )
     .padding()
