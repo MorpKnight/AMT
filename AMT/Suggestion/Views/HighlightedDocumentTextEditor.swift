@@ -12,6 +12,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
     @Binding var richTextData: Data?
     @Binding var structuredDocument: StructuredDocument?
     @Binding var zoomPercent: Int
+    var fontSizePoints: CGFloat = EditorTypography.bodyPointSize
 
     let suggestions: [EditorSuggestion]
     let annotations: [EditorReviewAnnotation]
@@ -37,6 +38,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         richTextData: Binding<Data?>,
         structuredDocument: Binding<StructuredDocument?>,
         zoomPercent: Binding<Int>,
+        fontSizePoints: CGFloat = EditorTypography.bodyPointSize,
         suggestions: [EditorSuggestion],
         annotations: [EditorReviewAnnotation],
         definitionResolutions: [UUID: AIConnectorDefinitionResolution] = [:],
@@ -59,6 +61,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         self._richTextData = richTextData
         self._structuredDocument = structuredDocument
         self._zoomPercent = zoomPercent
+        self.fontSizePoints = fontSizePoints
         self.suggestions = suggestions
         self.annotations = annotations
         self.definitionResolutions = definitionResolutions
@@ -83,6 +86,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSScrollView(frame: .zero)
+        scrollView.appearance = NSAppearance(named: .aqua)
         scrollView.drawsBackground = false
         scrollView.borderType = .noBorder
         scrollView.hasHorizontalScroller = true
@@ -108,6 +112,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             frame: .zero,
             textContainer: textContainer
         )
+        textView.appearance = NSAppearance(named: .aqua)
         textView.delegate = context.coordinator
         textView.allowsUndo = true
         textView.isEditable = true
@@ -179,6 +184,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             documentID: documentID
         )
         context.coordinator.updateZoom(to: zoomPercent)
+        context.coordinator.updateFontSize(to: fontSizePoints)
         context.coordinator.updateHighlights(
             suggestions: suggestions,
             annotations: annotations,
@@ -229,6 +235,8 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         private var currentText = ""
         private var currentRichTextData: Data?
         private var currentStructuredDocument: StructuredDocument?
+        private var hoverTimer: Timer?
+        private static let hoverDelay: TimeInterval = 0.5
 
         init(parent: HighlightedDocumentTextEditor) {
             self.parent = parent
@@ -371,15 +379,22 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                     || abs(currentMagnification - magnification) > 0.001
             else { return }
 
-            // Use AppKit's centered setter rather than mutating the property
-            // during a SwiftUI representable update. It clips to the scroll
-            // view's limits and avoids leaving the clip view in a transient
-            // invalid state while its bounds are being recalculated.
             let visibleRect = scrollView.documentVisibleRect
             scrollView.setMagnification(
                 magnification,
                 centeredAt: NSPoint(x: visibleRect.midX, y: visibleRect.midY)
             )
+        }
+
+        func updateFontSize(to newSize: CGFloat) {
+            guard let textView else { return }
+            let clampedSize = min(max(newSize, EditorViewModel.minimumFontSize), EditorViewModel.maximumFontSize)
+            let currentSize = textView.font?.pointSize ?? EditorTypography.bodyPointSize
+            guard abs(currentSize - clampedSize) > 0.1 else { return }
+            let newFont = NSFont.systemFont(ofSize: clampedSize)
+            textView.font = newFont
+            textView.typingAttributes[.font] = newFont
+            textView.typingAttributes[.foregroundColor] = NSColor.black
         }
 
         func handleZoomCommand(_ command: EditorZoomCommand) -> Bool {
@@ -459,6 +474,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                   let textContainer,
                   !allReviewItems.isEmpty
             else {
+                cancelHoverTimer()
                 return
             }
 
@@ -475,23 +491,38 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             guard characterIndex != NSNotFound,
                   let item = reviewItem(at: characterIndex)
             else {
+                cancelHoverTimer()
                 return
             }
 
-            if presentedSuggestionID != item.id {
-                parent.onSelect(item.id)
-                layoutManager.update(
-                    suggestions: parent.suggestions,
-                    annotations: parent.annotations,
+            guard presentedSuggestionID != item.id else { return }
+
+            // Cancel any pending timer for a different item before scheduling a new one.
+            cancelHoverTimer()
+            hoverTimer = Timer.scheduledTimer(
+                withTimeInterval: Self.hoverDelay,
+                repeats: false
+            ) { [weak self] _ in
+                guard let self else { return }
+                self.hoverTimer = nil
+                self.parent.onSelect(item.id)
+                self.layoutManager?.update(
+                    suggestions: self.parent.suggestions,
+                    annotations: self.parent.annotations,
                     selectedReviewItemID: item.id,
-                    reviewedReviewItemIDs: parent.reviewedReviewItemIDs
+                    reviewedReviewItemIDs: self.parent.reviewedReviewItemIDs
                 )
-                presentPopover(
+                self.presentPopover(
                     for: item,
-                    anchor: anchor(for: item),
-                    isStale: !rangeContainsOriginal(item)
+                    anchor: self.anchor(for: item),
+                    isStale: !self.rangeContainsOriginal(item)
                 )
             }
+        }
+
+        private func cancelHoverTimer() {
+            hoverTimer?.invalidate()
+            hoverTimer = nil
         }
 
         func handleClick(at point: NSPoint) {
@@ -565,6 +596,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         }
 
         func handleScroll() {
+            cancelHoverTimer()
             guard popover != nil || presentedSuggestionID != nil else { return }
             closePopover(notifySelection: true)
         }
@@ -774,12 +806,16 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 return
             }
 
-            let previousText = textView.string
+            let previousText = currentText.isEmpty ? textView.string : currentText
             textView.breakUndoCoalescing()
             let before = snapshot(from: textView)
             let undoManager = textView.undoManager
             undoManager?.disableUndoRegistration()
             isApplyingProgrammaticMutation = true
+            textView.typingAttributes = [
+                NSAttributedString.Key.font: textView.font ?? EditorTypography.defaultFont,
+                NSAttributedString.Key.foregroundColor: NSColor.black
+            ]
             textView.insertText(
                 suggestion.replacement,
                 replacementRange: suggestion.sourceRange
@@ -790,7 +826,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             let after = snapshot(from: textView)
             registerSnapshotUndo(before: before, after: after, actionName: "Accept Suggestion")
             persistRichText(from: textView)
-            parent.onSuggestionAccepted(suggestion, previousText, textView.string)
+            parent.onSuggestionAccepted(suggestion, previousText, currentText)
             closePopover(notifySelection: true)
             publishHistoryState()
         }
@@ -814,12 +850,16 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             }
 
             guard let replacement = option.replacement else { return }
-            let previousText = textView.string
+            let previousText = currentText.isEmpty ? textView.string : currentText
             textView.breakUndoCoalescing()
             let before = snapshot(from: textView)
             let undoManager = textView.undoManager
             undoManager?.disableUndoRegistration()
             isApplyingProgrammaticMutation = true
+            textView.typingAttributes = [
+                NSAttributedString.Key.font: textView.font ?? EditorTypography.defaultFont,
+                NSAttributedString.Key.foregroundColor: NSColor.black
+            ]
             textView.insertText(replacement, replacementRange: option.targetRange)
             isApplyingProgrammaticMutation = false
             undoManager?.enableUndoRegistration()
@@ -831,7 +871,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 actionName: "Apply Definition Resolution"
             )
             persistRichText(from: textView)
-            parent.onDefinitionResolutionApplied(option, previousText, textView.string)
+            parent.onDefinitionResolutionApplied(option, previousText, currentText)
             closePopover(notifySelection: true)
             publishHistoryState()
         }
@@ -1379,11 +1419,11 @@ final class SuggestionLayoutManager: NSLayoutManager {
 
     private func foregroundColor(for item: DrawingRange) -> NSColor {
         if item.isStale {
-            return NSColor.secondaryLabelColor
+            return NSColor(white: 0.25, alpha: 1.0)
         }
 
         if item.isReviewed {
-            return NSColor.secondaryLabelColor
+            return NSColor(white: 0.35, alpha: 1.0)
         }
 
         guard item.isReadOnlyDiagnostic else {
@@ -1402,11 +1442,11 @@ final class SuggestionLayoutManager: NSLayoutManager {
 
     private func backgroundColor(for item: DrawingRange) -> NSColor {
         if item.isStale {
-            return NSColor.secondaryLabelColor.withAlphaComponent(0.15)
+            return NSColor(white: 0.88, alpha: 1.0)
         }
 
         if item.isReviewed {
-            return NSColor.secondaryLabelColor.withAlphaComponent(0.16)
+            return NSColor(white: 0.90, alpha: 1.0)
         }
 
         guard item.isReadOnlyDiagnostic else {

@@ -81,20 +81,9 @@ struct EditorToolbar: View {
         HStack(spacing: 12) {
             documentTitleField
             Spacer()
-            if canPreviewOriginal {
-                Picker("Mode", selection: $presentationMode) {
-                    ForEach(DocumentPresentationMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 220)
-            }
-            if presentationMode == .editing {
-                formattingControls
-            }
+            fontSizeGroup
+            zoomGroup
             Spacer()
-            saveStatus
             if presentationMode == .editing, reviewNeedsRerun {
                 Label("Review perlu diulang", systemImage: "arrow.clockwise.circle")
                     .font(.caption2.weight(.medium))
@@ -109,6 +98,7 @@ struct EditorToolbar: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private var documentTitleField: some View {
@@ -116,55 +106,7 @@ struct EditorToolbar: View {
             .textFieldStyle(.plain)
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(.primary)
-            .frame(minWidth: 100, maxWidth: 220)
-    }
-
-    private var formattingControls: some View {
-        HStack(spacing: 8) {
-            historyGroup
-            textStyleGroup
-            inlineStyleGroup
-            listStyleGroup
-            zoomGroup
-        }
-    }
-
-    private var historyGroup: some View {
-        HStack(spacing: 2) {
-            toolbarIconButton(
-                systemName: "arrow.uturn.backward",
-                help: "Undo (⌘Z)",
-                isEnabled: viewModel.canUndo
-            ) {
-                viewModel.pendingAction = .undo
-            }
-            .keyboardShortcut("z", modifiers: .command)
-            toolbarIconButton(
-                systemName: "arrow.uturn.forward",
-                help: "Redo (⇧⌘Z)",
-                isEnabled: viewModel.canRedo
-            ) {
-                viewModel.pendingAction = .redo
-            }
-            .keyboardShortcut("z", modifiers: [.command, .shift])
-        }
-        .toolbarGroupStyle()
-    }
-
-    private var textStyleGroup: some View {
-        HStack(spacing: 2) {
-            ForEach(TextStyle.allCases) { style in
-                let isActive = viewModel.activeState.textStyle == style
-                GlassPillButton(isActive: isActive, width: style == .body ? 76 : 26) {
-                    viewModel.pendingAction = .textStyle(style)
-                } label: {
-                    Text(style.rawValue)
-                        .font(.system(size: style == .body ? 11 : 12, weight: isActive ? .bold : .medium))
-                        .foregroundStyle(isActive ? .primary : .secondary)
-                }
-            }
-        }
-        .toolbarGroupStyle()
+            .frame(minWidth: 100, maxWidth: 360, alignment: .leading)
     }
 
     private var zoomGroup: some View {
@@ -202,52 +144,36 @@ struct EditorToolbar: View {
         .toolbarGroupStyle()
     }
 
-    private var inlineStyleGroup: some View {
+    private var fontSizeGroup: some View {
         HStack(spacing: 2) {
-            inlineButton("B", action: .bold, isActive: viewModel.activeState.isBold) {
-                $0.font(.system(size: 13, weight: .bold))
+            toolbarIconButton(
+                systemName: "textformat.size.smaller",
+                help: "Perkecil ukuran font",
+                isEnabled: viewModel.fontSizePoints > EditorViewModel.minimumFontSize
+            ) {
+                viewModel.decreaseFontSize()
             }
-            inlineButton("I", action: .italic, isActive: viewModel.activeState.isItalic) {
-                $0.font(.system(size: 13, weight: .bold)).italic()
+
+            Button {
+                viewModel.resetFontSize()
+            } label: {
+                Text("\(Int(viewModel.fontSizePoints))pt")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 36, height: 24)
             }
-            inlineButton("U", action: .underline, isActive: viewModel.activeState.isUnderline) {
-                $0.font(.system(size: 13, weight: .semibold)).underline()
-            }
-            inlineButton("S", action: .strikethrough, isActive: viewModel.activeState.isStrikethrough) {
-                $0.font(.system(size: 13, weight: .semibold)).strikethrough()
+            .buttonStyle(.plain)
+            .help("Reset ukuran font")
+
+            toolbarIconButton(
+                systemName: "textformat.size.larger",
+                help: "Perbesar ukuran font",
+                isEnabled: viewModel.fontSizePoints < EditorViewModel.maximumFontSize
+            ) {
+                viewModel.increaseFontSize()
             }
         }
         .toolbarGroupStyle()
-    }
-
-    private var listStyleGroup: some View {
-        HStack(spacing: 2) {
-            ForEach(ListStyle.allCases) { style in
-                let isActive = viewModel.activeState.listStyle == style
-                GlassPillButton(isActive: isActive) {
-                    viewModel.pendingAction = .listStyle(style)
-                } label: {
-                    Image(systemName: style.rawValue)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(isActive ? .primary : .secondary)
-                }
-            }
-        }
-        .toolbarGroupStyle()
-    }
-
-    private func inlineButton(
-        _ title: String,
-        action: FormattingAction,
-        isActive: Bool,
-        textStyle: @escaping (Text) -> Text
-    ) -> some View {
-        GlassPillButton(isActive: isActive) {
-            viewModel.pendingAction = action
-        } label: {
-            textStyle(Text(title))
-                .foregroundStyle(isActive ? .primary : .secondary)
-        }
     }
 
     private func toolbarIconButton(
@@ -305,7 +231,7 @@ struct EditorToolbar: View {
                 .frame(width: 32, height: 32)
         }
         .buttonStyle(.plain)
-        .liquidGlass(cornerRadius: 10)
+        .toolbarGroupStyle(cornerRadius: 10)
         .help("Ekspor Dokumen (.docx)")
     }
 
@@ -398,52 +324,28 @@ private struct GlassPillButton<Label: View>: View {
     }
 }
 
-private struct LiquidGlassModifier: ViewModifier {
+private struct FlatToolbarGroupModifier: ViewModifier {
     var cornerRadius: CGFloat = 16
     @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         content
-            .background {
+            .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.white.opacity(0.70))
-                    }
-                    .overlay {
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [
-                                        colorScheme == .dark ? Color.white.opacity(0.22) : Color.white.opacity(0.85),
-                                        colorScheme == .dark ? Color.white.opacity(0.04) : Color.white.opacity(0.35)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ),
-                                lineWidth: 0.8
-                            )
-                    }
-                    .shadow(
-                        color: colorScheme == .dark ? Color.black.opacity(0.4) : Color.black.opacity(0.06),
-                        radius: 6,
-                        x: 0,
-                        y: 2
-                    )
-            }
+                    .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+            )
     }
 }
 
 private extension View {
-    func toolbarGroupStyle() -> some View {
+    func toolbarGroupStyle(cornerRadius: CGFloat = 16) -> some View {
         padding(.horizontal, 4)
             .padding(.vertical, 3)
-            .liquidGlass(cornerRadius: 16)
-    }
-
-    func liquidGlass(cornerRadius: CGFloat = 16) -> some View {
-        modifier(LiquidGlassModifier(cornerRadius: cornerRadius))
+            .modifier(FlatToolbarGroupModifier(cornerRadius: cornerRadius))
     }
 }
 

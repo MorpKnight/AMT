@@ -1909,6 +1909,11 @@ final class AIConnectorViewModel {
         ignoredReviewItemIDs.remove(suggestion.id)
         selectedReviewItemID = nil
         editorSourceText = updatedText
+        definitionResolutions = [:]
+        definitionResolutionMetrics = [:]
+        definitionResolutionCache.removeAll()
+        definitionResolutionOperationIDs.removeAll()
+        definitionResolutionLoadingIDs = []
         contextPreparationCache.removeAll()
         documentReviewCache.removeAll()
         documentStructure = nil
@@ -1919,7 +1924,9 @@ final class AIConnectorViewModel {
         contextPreparationDuration = 0
         contextClassificationDuration = 0
         contextPreparationCacheHit = false
-        analysisSnapshotEligible = false
+        exposesEditorSuggestions = true
+        analysisSnapshotEligible = true
+        state = .completed
         return true
     }
 
@@ -1997,7 +2004,9 @@ final class AIConnectorViewModel {
         contextPreparationDuration = 0
         contextClassificationDuration = 0
         contextPreparationCacheHit = false
-        analysisSnapshotEligible = false
+        exposesEditorSuggestions = true
+        analysisSnapshotEligible = true
+        state = .completed
         return true
     }
 

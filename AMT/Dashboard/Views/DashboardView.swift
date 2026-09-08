@@ -24,6 +24,8 @@ struct DashboardView: View {
     @State private var pendingDeletionDocument: DashboardDocument?
     @Environment(\.scenePhase) private var scenePhase
 
+    @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
+
     private var filteredDocuments: [DashboardDocument] {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return storageManager.documents
@@ -93,8 +95,9 @@ struct DashboardView: View {
                     aiConnectorViewModel: aiConnectorViewModel
                 )
             } else {
-                NavigationSplitView {
+                NavigationSplitView(columnVisibility: $sidebarVisibility) {
                     DashboardSidebar(selectedTab: $selectedTab)
+                        .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 280)
                         .navigationTitle("")
                 } detail: {
                     switch selectedTab {
@@ -116,6 +119,7 @@ struct DashboardView: View {
                         DictionaryView(dictionaryStore: dictionaryStore)
                     }
                 }
+                .navigationSplitViewStyle(.prominentDetail)
                 .navigationTitle("")
             }
         }
@@ -171,9 +175,10 @@ struct DashboardView: View {
             Text("Yang dihapus hanya workspace AMT dan salinan sumber lokal. File asli di lokasi awal tetap ada.")
         }
         .onChange(of: aiConnectorViewModel?.isRunning) { _, isRunning in
-            guard isRunning == false, let document = analyzingDocument,
+            guard isRunning == false,
                   let viewModel = aiConnectorViewModel,
-                  viewModel.state == .completed else { return }
+                  viewModel.state == .completed,
+                  let document = activeDocument ?? analyzingDocument else { return }
             finishAnalysis(for: document, with: viewModel)
         }
         .onChange(of: scenePhase) { _, phase in
@@ -269,8 +274,13 @@ struct DashboardView: View {
     private func openDocument(_ document: DashboardDocument) {
         if let currentDocument = activeDocument,
            currentDocument.id != document.id {
-            aiConnectorViewModel?.cancel()
+            let previousViewModel = aiConnectorViewModel
+            previousViewModel?.cancel()
             Task { @MainActor in
+                if let previousViewModel,
+                   let snapshot = previousViewModel.makeAnalysisSnapshot(documentText: currentDocument.content) {
+                    _ = await storageManager.saveAnalysisSnapshot(snapshot, for: currentDocument)
+                }
                 let result = await storageManager.flushPendingSave(for: currentDocument.id)
                 if case let .failure(error) = result, error != .cancelled {
                     presentStorageError(error, retryDocumentID: currentDocument.id)
@@ -317,8 +327,13 @@ struct DashboardView: View {
             return
         }
 
-        aiConnectorViewModel?.cancel()
+        let currentViewModel = aiConnectorViewModel
+        currentViewModel?.cancel()
         Task { @MainActor in
+            if let currentViewModel,
+               let snapshot = currentViewModel.makeAnalysisSnapshot(documentText: currentDocument.content) {
+                _ = await storageManager.saveAnalysisSnapshot(snapshot, for: currentDocument)
+            }
             let result = await storageManager.flushPendingSave(for: currentDocument.id)
             if case let .failure(error) = result, error != .cancelled {
                 presentStorageError(error, retryDocumentID: currentDocument.id)

@@ -8,8 +8,8 @@
 import SwiftUI
 
 enum DashboardTab: String, CaseIterable, Identifiable {
-    case document = "Document"
-    case dictionary = "Dictionary"
+    case document = "Dokumen"
+    case dictionary = "Kamus"
 
     var id: String { rawValue }
 
@@ -39,10 +39,10 @@ struct DashboardSidebar: View {
                 Image(logoImageName)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 20, height: 20)
+                    .frame(width: 30, height: 30)
 
                 Text("Lawtionary")
-                    .appFont(.subheadline, weight: .semibold)
+                    .appFont(.titleMedium, weight: .semibold)
                     .foregroundStyle(Color.textPrimary)
 
                 Spacer()
@@ -51,11 +51,8 @@ struct DashboardSidebar: View {
             .padding(.top, 14)
             .padding(.bottom, 2)
 
-            // Section Label
-            Text("Header")
-                .appFont(.caption, weight: .medium)
-                .foregroundStyle(Color.textSecondary)
-                .padding(.horizontal, 16)
+            // Separate
+            Divider().padding(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 10))
 
             // Sidebar Navigation List
             VStack(spacing: 4) {
@@ -70,17 +67,35 @@ struct DashboardSidebar: View {
                 }
             }
             .padding(.horizontal, 10)
+
+            Spacer()
+
+            // Footer Links
+            VStack(alignment: .leading, spacing: 10) {
+                Button(action: { showingTermsSheet = true }) {
+                    Text("Term and Condition")
+                        .appFont(.caption, weight: .regular)
+                        .foregroundStyle(Color.textSecondary)
+                }
+                .buttonStyle(.plain)
+
+                Button(action: { showingAboutSheet = true }) {
+                    Text("About Lawtionary")
+                        .appFont(.caption, weight: .regular)
+                        .foregroundStyle(Color.textSecondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
-        .frame(minWidth: 200, idealWidth: 240, maxWidth: 260)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .sheet(isPresented: $showingTermsSheet) {
             termsSheetView
         }
         .sheet(isPresented: $showingAboutSheet) {
             aboutSheetView
         }
-        
-        Spacer()
-        
     }
 
     private var termsSheetView: some View {
