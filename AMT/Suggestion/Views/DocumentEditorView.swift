@@ -5,6 +5,7 @@
 //  Created by Giovan Christoffel Sihombing on 2026/08/25.
 //
 
+import Foundation
 import SwiftUI
 
 struct DocumentEditorView: View {
@@ -84,7 +85,7 @@ struct DocumentEditorView: View {
                 onBackToDashboard: onBackToDashboard,
                 onImportDocument: onImportDocument
             )
-            .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 280)
+            .navigationSplitViewColumnWidth(min: 270, ideal: 270, max: 270)
             .navigationTitle("")
             
         } detail: {
@@ -150,7 +151,7 @@ struct DocumentEditorView: View {
             .frame(minWidth: 500, maxWidth: .infinity, maxHeight: .infinity)
             .navigationTitle("")
         }
-        .navigationSplitViewStyle(.prominentDetail)
+        .navigationSplitViewStyle(.balanced)
         .navigationTitle("")
         .onChange(of: selectedDocumentID) { _, newID in
             isDebugPanelPresented = false
@@ -167,18 +168,25 @@ struct DocumentEditorView: View {
             }
             presentationMode = .editing
             editorViewModel.resetZoom()
+            editorViewModel.resetFontSizeState()
             editorViewModel.resetHistoryState()
         }
         .task(id: activeDocument.id) {
             // Older records may already have semantic blocks but no embedded
-            // fidelity payload. Rebuild those once from the native RTF (or
-            // Markdown/plain text fallback) and then keep the migrated result.
-            guard activeDocument.structuredDocument?.richTextData == nil else { return }
+            // fidelity payload. Markdown/plain-text records can also carry an
+            // older canonical typography scale. Migrate those once while
+            // leaving native Word/RTF typography untouched.
+            guard DocumentRenderNormalizer.needsMigration(
+                structuredDocument: activeDocument.structuredDocument,
+                sourceFileName: activeDocument.importedSourceFileName,
+                sourceURL: originalSourceURL
+            ) else { return }
             let payload = DocumentRenderNormalizer.migrate(
                 content: activeDocument.content,
                 richTextData: activeDocument.richTextData,
                 sourceFileName: activeDocument.importedSourceFileName,
-                sourceURL: originalSourceURL
+                sourceURL: originalSourceURL,
+                structuredDocument: activeDocument.structuredDocument
             )
             activeDocument.structuredDocument = payload.structuredDocument
             activeDocument.richTextData = payload.richTextData ?? activeDocument.richTextData
@@ -208,6 +216,7 @@ struct DocumentEditorView: View {
             canPreviewOriginal: originalSourceURL != nil,
             saveState: saveState,
             reviewNeedsRerun: reviewNeedsRerun,
+            canAdjustFontSize: editorSourceKind.usesCanonicalTypography,
             onRetrySave: onRetrySave,
             onExport: onExport,
             aiConnectorViewModel: aiConnectorViewModel,
@@ -265,6 +274,7 @@ struct DocumentEditorView: View {
             structuredDocument: $activeDocument.structuredDocument,
             zoomPercent: $editorViewModel.zoomPercent,
             fontSizePoints: editorViewModel.fontSizePoints,
+            sourceKind: editorSourceKind,
             suggestions: aiConnectorViewModel.editorSuggestions,
             annotations: displayedReviewAnnotations,
             definitionResolutions: aiConnectorViewModel.definitionResolutions,
@@ -325,6 +335,24 @@ struct DocumentEditorView: View {
             height: proxy.size.height
         )
         .background(Color.white)
+    }
+
+    private var editorSourceKind: StructuredDocument.SourceKind {
+        if let sourceKind = activeDocument.structuredDocument?.sourceKind,
+           sourceKind != .unknown {
+            return sourceKind
+        }
+
+        let extensionName = activeDocument.importedSourceFileName
+            .map { ($0 as NSString).pathExtension.lowercased() }
+        switch extensionName {
+        case "docx", "doc", "rtf", "html", "htm":
+            return .native
+        case "md", "markdown":
+            return .markdown
+        default:
+            return .plainText
+        }
     }
 }
 

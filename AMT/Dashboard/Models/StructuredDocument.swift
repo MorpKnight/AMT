@@ -9,9 +9,27 @@ import Foundation
 /// uncommon attributes must not disappear just because they do not have a
 /// first-class Swift property yet.
 nonisolated struct StructuredDocument: Codable, Equatable, Hashable, Sendable {
-    static let currentVersion = 2
+    static let currentVersion = 3
+
+    enum SourceKind: String, Codable, Hashable {
+        case markdown
+        case plainText
+        case native
+        case unknown
+
+        var usesCanonicalTypography: Bool {
+            self == .markdown || self == .plainText
+        }
+    }
 
     var version: Int = currentVersion
+    /// The source controls whether canonical editor typography may be
+    /// migrated. Native Word/RTF documents must remain source-faithful.
+    var sourceKind: SourceKind
+    /// Version of the canonical Markdown/plain-text typography used to build
+    /// the persisted RTF payload. Native documents keep this marker only for
+    /// bookkeeping and are never resized by migration.
+    var typographyVersion: Int
     var blocks: [StructuredBlock]
     /// Semantic table cells for Markdown tables and tabular native text. The
     /// embedded RTF remains authoritative for borders, merged cells, and
@@ -23,17 +41,30 @@ nonisolated struct StructuredDocument: Codable, Equatable, Hashable, Sendable {
     /// migration.
     var richTextData: Data?
 
-    init(blocks: [StructuredBlock] = [], tables: [StructuredTable] = [], richTextData: Data? = nil) {
+    init(
+        blocks: [StructuredBlock] = [],
+        tables: [StructuredTable] = [],
+        richTextData: Data? = nil,
+        sourceKind: SourceKind = .unknown,
+        typographyVersion: Int = EditorTypography.typographyVersion
+    ) {
         self.blocks = blocks
         self.tables = tables
         self.richTextData = richTextData
+        self.sourceKind = sourceKind
+        self.typographyVersion = typographyVersion
     }
 
-    private enum CodingKeys: String, CodingKey { case version, blocks, tables, richTextData }
+    private enum CodingKeys: String, CodingKey {
+        case version, sourceKind, typographyVersion, blocks, tables, richTextData
+    }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         version = try container.decodeIfPresent(Int.self, forKey: .version) ?? Self.currentVersion
+        sourceKind = try container.decodeIfPresent(SourceKind.self, forKey: .sourceKind) ?? .unknown
+        // Missing metadata means this is a pre-typography-migration record.
+        typographyVersion = try container.decodeIfPresent(Int.self, forKey: .typographyVersion) ?? 0
         blocks = try container.decodeIfPresent([StructuredBlock].self, forKey: .blocks) ?? []
         tables = try container.decodeIfPresent([StructuredTable].self, forKey: .tables) ?? []
         richTextData = try container.decodeIfPresent(Data.self, forKey: .richTextData)
@@ -42,6 +73,8 @@ nonisolated struct StructuredDocument: Codable, Equatable, Hashable, Sendable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(version, forKey: .version)
+        try container.encode(sourceKind, forKey: .sourceKind)
+        try container.encode(typographyVersion, forKey: .typographyVersion)
         try container.encode(blocks, forKey: .blocks)
         try container.encode(tables, forKey: .tables)
         try container.encodeIfPresent(richTextData, forKey: .richTextData)
@@ -51,7 +84,11 @@ nonisolated struct StructuredDocument: Codable, Equatable, Hashable, Sendable {
         blocks.map(\.plainText).joined(separator: "\n")
     }
 
-    static func normalize(_ attributed: NSAttributedString) -> StructuredDocument {
+    static func normalize(
+        _ attributed: NSAttributedString,
+        sourceKind: SourceKind = .unknown,
+        typographyVersion: Int = EditorTypography.typographyVersion
+    ) -> StructuredDocument {
         let text = attributed.string as NSString
         var blocks: [StructuredBlock] = []
         let full = NSRange(location: 0, length: text.length)
@@ -130,12 +167,18 @@ nonisolated struct StructuredDocument: Codable, Equatable, Hashable, Sendable {
         return StructuredDocument(
             blocks: blocks,
             tables: StructuredTable.extract(from: blocks),
-            richTextData: serializedRichText
+            richTextData: serializedRichText,
+            sourceKind: sourceKind,
+            typographyVersion: typographyVersion
         )
     }
 
-    func attributedString() -> NSAttributedString {
-        if let richTextData,
+    func attributedString(
+        preferRichText: Bool = true,
+        applyingCurrentTypography: Bool = false
+    ) -> NSAttributedString {
+        if preferRichText,
+           let richTextData,
            let richText = try? NSAttributedString(
                data: richTextData,
                options: [.documentType: NSAttributedString.DocumentType.rtf],
@@ -144,7 +187,7 @@ nonisolated struct StructuredDocument: Codable, Equatable, Hashable, Sendable {
             return richText
         }
 
-        // Compatibility path for pre-v2 JSON that has semantic blocks but no
+        // Compatibility path for legacy JSON that has semantic blocks but no
         // RTF snapshot. New documents take the lossless path above.
         let result = NSMutableAttributedString()
         for (index, block) in blocks.enumerated() {
@@ -168,7 +211,11 @@ nonisolated struct StructuredDocument: Codable, Equatable, Hashable, Sendable {
             }
 
             for run in block.runs {
-                let font = font(for: block, run: run)
+                let font = font(
+                    for: block,
+                    run: run,
+                    applyingCurrentTypography: applyingCurrentTypography
+                )
                 var attrs: [NSAttributedString.Key: Any] = [
                     .font: font,
                     .foregroundColor: run.foregroundColor?.nsColor ?? NSColor.black,
@@ -191,21 +238,64 @@ nonisolated struct StructuredDocument: Codable, Equatable, Hashable, Sendable {
         return result
     }
 
-    private func font(for block: StructuredBlock, run: StructuredRun) -> NSFont {
+    private func font(
+        for block: StructuredBlock,
+        run: StructuredRun,
+        applyingCurrentTypography: Bool
+    ) -> NSFont {
+        let style: TextStyle
         let defaultSize: CGFloat
         switch block.kind {
         case .heading(let level):
             switch level {
-            case 1: defaultSize = EditorTypography.heading1PointSize
-            case 2: defaultSize = EditorTypography.heading2PointSize
-            case 3: defaultSize = EditorTypography.heading3PointSize
-            default: defaultSize = EditorTypography.bodyPointSize
+            case 1:
+                style = .heading1
+                defaultSize = EditorTypography.heading1PointSize
+            case 2:
+                style = .heading2
+                defaultSize = EditorTypography.heading2PointSize
+            case 3:
+                style = .heading3
+                defaultSize = EditorTypography.heading3PointSize
+            default:
+                style = .body
+                defaultSize = EditorTypography.bodyPointSize
             }
-        default: defaultSize = EditorTypography.bodyPointSize
+        default:
+            style = .body
+            defaultSize = EditorTypography.bodyPointSize
         }
-        let size = CGFloat(run.fontSize ?? Double(defaultSize))
-        let baseName = run.fontName ?? run.fontFamily ?? "Times New Roman"
-        let base = NSFont(name: baseName, size: size) ?? NSFont.systemFont(ofSize: size)
+
+        let storedSize = run.fontSize.map { CGFloat($0) }
+        let shouldUseCurrentSize: Bool
+        if applyingCurrentTypography {
+            guard let storedSize else {
+                shouldUseCurrentSize = true
+                let base = NSFont.systemFont(ofSize: defaultSize)
+                return font(base, for: block, run: run, size: defaultSize)
+            }
+            shouldUseCurrentSize = abs(storedSize - EditorTypography.legacyPointSize(for: style)) < 0.01
+        } else {
+            shouldUseCurrentSize = false
+        }
+        let size = shouldUseCurrentSize ? EditorTypography.canonicalPointSize(for: style) : (storedSize ?? defaultSize)
+        let base: NSFont
+        if let baseName = run.fontName ?? run.fontFamily,
+           let namedFont = NSFont(name: baseName, size: size) {
+            base = namedFont
+        } else {
+            base = NSFont.systemFont(ofSize: size)
+        }
+
+        return font(base, for: block, run: run, size: size)
+    }
+
+    private func font(
+        _ base: NSFont,
+        for block: StructuredBlock,
+        run: StructuredRun,
+        size: CGFloat
+    ) -> NSFont {
 
         var traits = run.fontTraits.map(NSFontDescriptor.SymbolicTraits.init(rawValue:)) ?? base.fontDescriptor.symbolicTraits
         if run.marks.contains(.bold) || block.kind.isHeading { traits.insert(.bold) }

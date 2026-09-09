@@ -7,6 +7,72 @@ import AppKit
 import Foundation
 import Observation
 
+enum EditorParagraphAlignment: String, CaseIterable, Identifiable {
+    case leading
+    case center
+    case trailing
+    case justified
+
+    var id: Self { self }
+
+    var textAlignment: NSTextAlignment {
+        switch self {
+        case .leading: return .left
+        case .center: return .center
+        case .trailing: return .right
+        case .justified: return .justified
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .leading: return "text.alignleft"
+        case .center: return "text.aligncenter"
+        case .trailing: return "text.alignright"
+        case .justified: return "text.justify"
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .leading: return "Align left"
+        case .center: return "Align center"
+        case .trailing: return "Align right"
+        case .justified: return "Justify"
+        }
+    }
+
+    init(textAlignment: NSTextAlignment) {
+        switch textAlignment {
+        case .center: self = .center
+        case .right: self = .trailing
+        case .justified: self = .justified
+        default: self = .leading
+        }
+    }
+}
+
+enum IndentDirection: String, CaseIterable, Identifiable {
+    case increase
+    case decrease
+
+    var id: Self { self }
+
+    var systemImage: String {
+        switch self {
+        case .increase: return "increase.indent"
+        case .decrease: return "decrease.indent"
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .increase: return "Increase indent"
+        case .decrease: return "Decrease indent"
+        }
+    }
+}
+
 enum FormattingAction: Equatable {
     case textStyle(TextStyle)
     case bold
@@ -14,6 +80,11 @@ enum FormattingAction: Equatable {
     case underline
     case strikethrough
     case listStyle(ListStyle)
+    case alignment(EditorParagraphAlignment)
+    case indent(IndentDirection)
+    case link(URL?)
+    case clearFormatting
+    case fontScale(from: CGFloat, to: CGFloat)
     case undo
     case redo
 }
@@ -25,6 +96,11 @@ struct FormattingState: Equatable {
     var isUnderline = false
     var isStrikethrough = false
     var listStyle: ListStyle?
+    var alignment: EditorParagraphAlignment = .leading
+    var indentLevel = 0
+    var isLink = false
+    var linkURL: URL?
+    var hasSelection = false
 }
 
 @Observable
@@ -56,15 +132,48 @@ final class EditorViewModel {
     static let fontSizeStep: CGFloat = 1
 
     func increaseFontSize() {
-        fontSizePoints = min(fontSizePoints + Self.fontSizeStep, Self.maximumFontSize)
+        queueFontSizeChange(to: min(fontSizePoints + Self.fontSizeStep, Self.maximumFontSize))
     }
 
     func decreaseFontSize() {
-        fontSizePoints = max(fontSizePoints - Self.fontSizeStep, Self.minimumFontSize)
+        queueFontSizeChange(to: max(fontSizePoints - Self.fontSizeStep, Self.minimumFontSize))
     }
 
     func resetFontSize() {
+        queueFontSizeChange(to: EditorTypography.bodyPointSize)
+    }
+
+    /// Resets the transient font-size control when switching documents.
+    /// This does not enqueue an edit or create an undo entry.
+    func resetFontSizeState() {
         fontSizePoints = EditorTypography.bodyPointSize
+        pendingAction = nil
+    }
+
+    private func queueFontSizeChange(to requestedSize: CGFloat) {
+        let targetSize = min(
+            max(requestedSize, Self.minimumFontSize),
+            Self.maximumFontSize
+        )
+        let previousSize = min(
+            max(fontSizePoints, Self.minimumFontSize),
+            Self.maximumFontSize
+        )
+        guard abs(targetSize - previousSize) > 0.01 else { return }
+
+        let actionStartSize: CGFloat
+        if let pendingAction,
+           case let .fontScale(from, _) = pendingAction {
+            actionStartSize = from
+        } else {
+            actionStartSize = previousSize
+        }
+        fontSizePoints = targetSize
+        if abs(targetSize - actionStartSize) <= 0.01 {
+            pendingAction = nil
+            return
+        }
+        pendingAction = .fontScale(from: actionStartSize, to: targetSize)
     }
 
     func resetHistoryState() {
@@ -607,8 +716,16 @@ enum MarkdownRichTextCodec {
 }
 
 enum RichTextFormatter {
+    private static let indentStep: CGFloat = 24
+    private static let listHeadIndent: CGFloat = 22
+    private static let listFirstLineHeadIndent: CGFloat = -12
+
     @discardableResult
-    static func apply(_ action: FormattingAction, to textView: NSTextView) -> Bool {
+    static func apply(
+        _ action: FormattingAction,
+        to textView: NSTextView,
+        sourceKind: StructuredDocument.SourceKind = .plainText
+    ) -> Bool {
         switch action {
         case .textStyle(let style):
             return applyTextStyle(style, to: textView)
@@ -622,9 +739,86 @@ enum RichTextFormatter {
             return toggleAttribute(.strikethroughStyle, enabledValue: NSUnderlineStyle.single.rawValue, in: textView)
         case .listStyle(let style):
             return applyListStyle(style, to: textView)
+        case .alignment(let alignment):
+            return applyAlignment(alignment, to: textView)
+        case .indent(let direction):
+            return applyIndent(direction, to: textView)
+        case .link(let url):
+            return applyLink(url, to: textView)
+        case .clearFormatting:
+            return clearFormatting(in: textView)
+        case .fontScale(let from, let to):
+            return applyFontScale(
+                from: from,
+                to: to,
+                to: textView,
+                sourceKind: sourceKind
+            )
         case .undo, .redo:
             return false
         }
+    }
+
+    /// Scales every font run in a canonical Markdown/plain-text document while
+    /// preserving each run's family, traits, and all non-font attributes.
+    private static func applyFontScale(
+        from previousBodySize: CGFloat,
+        to targetBodySize: CGFloat,
+        to textView: NSTextView,
+        sourceKind: StructuredDocument.SourceKind
+    ) -> Bool {
+        guard sourceKind.usesCanonicalTypography,
+              previousBodySize.isFinite,
+              targetBodySize.isFinite,
+              previousBodySize > 0,
+              targetBodySize > 0 else {
+            return false
+        }
+
+        let scale = targetBodySize / previousBodySize
+        guard scale.isFinite, scale > 0,
+              let textStorage = textView.textStorage else {
+            return false
+        }
+
+        var didChange = false
+        let fullRange = NSRange(location: 0, length: textStorage.length)
+        if fullRange.length > 0 {
+            textStorage.enumerateAttribute(.font, in: fullRange, options: []) { value, range, _ in
+                guard let font = value as? NSFont else { return }
+                let scaledFont = scaledFont(font, by: scale)
+                guard !font.isEqual(scaledFont) else { return }
+                textStorage.addAttribute(.font, value: scaledFont, range: range)
+                didChange = true
+            }
+        }
+
+        let currentTypingFont = (textView.typingAttributes[.font] as? NSFont)
+            ?? textView.font
+            ?? EditorTypography.defaultFont
+        let nextTypingFont = scaledFont(currentTypingFont, by: scale)
+        if !currentTypingFont.isEqual(nextTypingFont) {
+            var typingAttributes = textView.typingAttributes
+            typingAttributes[.font] = nextTypingFont
+            textView.typingAttributes = typingAttributes
+            didChange = true
+        }
+
+        let currentViewFont = textView.font ?? EditorTypography.defaultFont
+        let nextViewFont = scaledFont(currentViewFont, by: scale)
+        if !currentViewFont.isEqual(nextViewFont) {
+            textView.font = nextViewFont
+            didChange = true
+        }
+
+        return didChange
+    }
+
+    private static func scaledFont(_ font: NSFont, by scale: CGFloat) -> NSFont {
+        let pointSize = max(1, font.pointSize * scale)
+        return NSFont(descriptor: font.fontDescriptor, size: pointSize)
+            ?? NSFont(name: font.fontName, size: pointSize)
+            ?? font
     }
 
     static func state(for textView: NSTextView) -> FormattingState {
@@ -635,6 +829,18 @@ enum RichTextFormatter {
             ? attributedText.attributes(at: safeLocation, effectiveRange: nil)
             : textView.typingAttributes
         let font = (attributes[.font] as? NSFont) ?? EditorTypography.defaultFont
+        let paragraph = attributes[.paragraphStyle] as? NSParagraphStyle
+        let headIndent = paragraph?.headIndent ?? 0
+        let link: URL?
+        if let url = attributes[.link] as? URL {
+            link = url
+        } else if let url = attributes[.link] as? NSURL {
+            link = url as URL
+        } else if let value = attributes[.link] as? String {
+            link = URL(string: value)
+        } else {
+            link = nil
+        }
 
         return FormattingState(
             textStyle: EditorTypography.textStyle(for: font),
@@ -642,19 +848,43 @@ enum RichTextFormatter {
             isItalic: font.fontDescriptor.symbolicTraits.contains(.italic),
             isUnderline: numericValue(attributes[.underlineStyle]) != 0,
             isStrikethrough: numericValue(attributes[.strikethroughStyle]) != 0,
-            listStyle: listStyle(for: textView.string as NSString, at: safeLocation)
+            listStyle: listStyle(for: textView.string as NSString, at: safeLocation),
+            alignment: EditorParagraphAlignment(textAlignment: paragraph?.alignment ?? .left),
+            indentLevel: max(0, Int((headIndent / indentStep).rounded())),
+            isLink: link != nil,
+            linkURL: link,
+            hasSelection: selection.length > 0
         )
     }
 
     private static func applyTextStyle(_ style: TextStyle, to textView: NSTextView) -> Bool {
-        let paragraphRange = paragraphRange(in: textView)
-        guard paragraphRange.length > 0 else { return false }
-
+        let paragraphRanges = selectedParagraphRanges(in: textView)
         let font = EditorTypography.font(for: style)
+        guard !paragraphRanges.isEmpty else {
+            let currentFont = textView.typingAttributes[.font] as? NSFont
+            guard currentFont?.isEqual(font) != true else { return false }
+            var typingAttributes = textView.typingAttributes
+            typingAttributes[.font] = font
+            textView.typingAttributes = typingAttributes
+            return true
+        }
 
-        textView.textStorage?.addAttributes(MarkdownRichTextCodec.baseAttributes(font: font), range: paragraphRange)
-        textView.typingAttributes = MarkdownRichTextCodec.baseAttributes(font: font)
-        return true
+        guard let textStorage = textView.textStorage else { return false }
+        var didChange = false
+        for paragraphRange in paragraphRanges {
+            textStorage.enumerateAttribute(.font, in: paragraphRange, options: []) { value, subrange, _ in
+                guard (value as? NSFont)?.isEqual(font) != true else { return }
+                textStorage.addAttribute(.font, value: font, range: subrange)
+                didChange = true
+            }
+        }
+        var typingAttributes = textView.typingAttributes
+        if (typingAttributes[.font] as? NSFont)?.isEqual(font) != true {
+            typingAttributes[.font] = font
+            textView.typingAttributes = typingAttributes
+            didChange = true
+        }
+        return didChange
     }
 
     private static func applyFontTrait(_ trait: NSFontDescriptor.SymbolicTraits, to textView: NSTextView) -> Bool {
@@ -665,20 +895,22 @@ enum RichTextFormatter {
         if range.length == 0 {
             let currentFont = (textView.typingAttributes[.font] as? NSFont) ?? EditorTypography.defaultFont
             var attributes = textView.typingAttributes
-            attributes[.font] = font(from: currentFont, toggling: trait, enabled: !isEnabled)
+            let updatedFont = font(from: currentFont, toggling: trait, enabled: !isEnabled)
+            guard !currentFont.isEqual(updatedFont) else { return false }
+            attributes[.font] = updatedFont
             textView.typingAttributes = attributes
             return true
         }
 
+        var didChange = false
         textStorage?.enumerateAttribute(.font, in: range, options: []) { value, subrange, _ in
             let currentFont = (value as? NSFont) ?? EditorTypography.defaultFont
-            textStorage?.addAttribute(
-                .font,
-                value: font(from: currentFont, toggling: trait, enabled: !isEnabled),
-                range: subrange
-            )
+            let updatedFont = font(from: currentFont, toggling: trait, enabled: !isEnabled)
+            guard !currentFont.isEqual(updatedFont) else { return }
+            textStorage?.addAttribute(.font, value: updatedFont, range: subrange)
+            didChange = true
         }
-        return true
+        return didChange
     }
 
     private static func toggleAttribute(
@@ -694,7 +926,9 @@ enum RichTextFormatter {
 
         if range.length == 0 {
             var typingAttributes = textView.typingAttributes
-            typingAttributes[key] = isEnabled ? 0 : enabledValue
+            let nextValue = isEnabled ? 0 : enabledValue
+            guard numericValue(typingAttributes[key]) != nextValue else { return false }
+            typingAttributes[key] = nextValue
             textView.typingAttributes = typingAttributes
         } else if isEnabled {
             textView.textStorage?.removeAttribute(key, range: range)
@@ -706,35 +940,263 @@ enum RichTextFormatter {
 
     private static func applyListStyle(_ style: ListStyle, to textView: NSTextView) -> Bool {
         let text = textView.string as NSString
-        let range = paragraphRange(in: textView)
-        let line = text.substring(with: range)
-        let prefix: String
-
-        switch style {
-        case .bulleted:
-            prefix = "• "
-        case .numbered:
-            prefix = "1. "
+        let paragraphRanges = selectedParagraphRanges(in: textView)
+        guard let textStorage = textView.textStorage, !paragraphRanges.isEmpty else {
+            return false
         }
 
-        let currentPrefixRange = listPrefixRange(in: line)
-        if let currentPrefixRange, (line as NSString).substring(with: currentPrefixRange) == prefix {
-            textView.insertText("", replacementRange: NSRange(location: range.location, length: currentPrefixRange.length))
-        } else {
-            if let currentPrefixRange {
-                textView.insertText(prefix, replacementRange: NSRange(location: range.location, length: currentPrefixRange.length))
-            } else {
-                textView.insertText(prefix, replacementRange: NSRange(location: range.location, length: 0))
+        let currentStyles = paragraphRanges.map { range -> ListStyle? in
+            listStyle(for: text.substring(with: range))
+        }
+        let shouldRemove = currentStyles.allSatisfy { $0 == style }
+        let originalSelection = textView.selectedRange()
+        var selectionAfterEdits = originalSelection
+        var didChange = false
+
+        for (index, range) in paragraphRanges.enumerated().reversed() {
+            let line = text.substring(with: range)
+            let relativePrefix = listPrefixRange(in: line)
+            let currentPrefix = relativePrefix.map {
+                NSRange(location: range.location + $0.location, length: $0.length)
             }
+            let replacement: String
+            if shouldRemove {
+                replacement = ""
+            } else {
+                switch style {
+                case .bulleted:
+                    replacement = "• "
+                case .numbered:
+                    replacement = "\(index + 1). "
+                }
+            }
+
+            let replacementRange = currentPrefix
+                ?? NSRange(location: range.location, length: 0)
+            let oldPrefixLength = replacementRange.length
+            let prefixAttributes: [NSAttributedString.Key: Any]
+            if replacementRange.location < textStorage.length {
+                prefixAttributes = textStorage.attributes(
+                    at: replacementRange.location,
+                    effectiveRange: nil
+                )
+            } else {
+                prefixAttributes = textView.typingAttributes
+            }
+
+            let oldPrefix = relativePrefix.map { (line as NSString).substring(with: $0) }
+            guard oldPrefix != replacement else { continue }
+
+            textStorage.replaceCharacters(in: replacementRange, with: replacement)
+            didChange = true
+            if !replacement.isEmpty {
+                textStorage.addAttributes(
+                    prefixAttributes,
+                    range: NSRange(
+                        location: replacementRange.location,
+                        length: (replacement as NSString).length
+                    )
+                )
+            }
+
+            let delta = (replacement as NSString).length - oldPrefixLength
+            selectionAfterEdits = adjustedSelection(
+                selectionAfterEdits,
+                replacing: replacementRange,
+                withLength: (replacement as NSString).length
+            )
+
+            let newParagraphLength = max(0, range.length + delta)
+            guard newParagraphLength > 0,
+                  replacementRange.location < textStorage.length else { continue }
+            let paragraphRange = NSRange(
+                location: replacementRange.location,
+                length: min(newParagraphLength, textStorage.length - replacementRange.location)
+            )
+            let paragraph = mutableParagraphStyle(
+                at: paragraphRange.location,
+                in: textStorage
+            )
+            if shouldRemove {
+                if abs(paragraph.headIndent - listHeadIndent) < 0.5,
+                   abs(paragraph.firstLineHeadIndent - listFirstLineHeadIndent) < 0.5 {
+                    paragraph.headIndent = 0
+                    paragraph.firstLineHeadIndent = 0
+                }
+            } else {
+                paragraph.headIndent = max(paragraph.headIndent, listHeadIndent)
+                paragraph.firstLineHeadIndent = min(
+                    paragraph.firstLineHeadIndent,
+                    listFirstLineHeadIndent
+                )
+            }
+            textStorage.addAttribute(.paragraphStyle, value: paragraph, range: paragraphRange)
+        }
+
+        textView.setSelectedRange(selectionAfterEdits)
+        return didChange
+    }
+
+    private static func applyAlignment(
+        _ alignment: EditorParagraphAlignment,
+        to textView: NSTextView
+    ) -> Bool {
+        let paragraphRanges = selectedParagraphRanges(in: textView)
+        guard let textStorage = textView.textStorage, !paragraphRanges.isEmpty else {
+            var attributes = textView.typingAttributes
+            let paragraph = mutableParagraphStyle(from: attributes[.paragraphStyle] as? NSParagraphStyle)
+            guard paragraph.alignment != alignment.textAlignment else { return false }
+            paragraph.alignment = alignment.textAlignment
+            attributes[.paragraphStyle] = paragraph
+            textView.typingAttributes = attributes
+            return true
+        }
+
+        var didChange = false
+        for range in paragraphRanges {
+            let paragraph = mutableParagraphStyle(at: range.location, in: textStorage)
+            guard paragraph.alignment != alignment.textAlignment else { continue }
+            paragraph.alignment = alignment.textAlignment
+            textStorage.addAttribute(.paragraphStyle, value: paragraph, range: range)
+            didChange = true
+        }
+        return didChange
+    }
+
+    private static func applyIndent(
+        _ direction: IndentDirection,
+        to textView: NSTextView
+    ) -> Bool {
+        let paragraphRanges = selectedParagraphRanges(in: textView)
+        guard let textStorage = textView.textStorage, !paragraphRanges.isEmpty else {
+            var attributes = textView.typingAttributes
+            let paragraph = mutableParagraphStyle(from: attributes[.paragraphStyle] as? NSParagraphStyle)
+            let nextIndent = max(0, paragraph.headIndent + (direction == .increase ? indentStep : -indentStep))
+            guard abs(nextIndent - paragraph.headIndent) > 0.01 else { return false }
+            paragraph.headIndent = nextIndent
+            attributes[.paragraphStyle] = paragraph
+            textView.typingAttributes = attributes
+            return true
+        }
+
+        let delta = direction == .increase ? indentStep : -indentStep
+        var didChange = false
+        for range in paragraphRanges {
+            let paragraph = mutableParagraphStyle(at: range.location, in: textStorage)
+            let nextIndent = max(0, paragraph.headIndent + delta)
+            guard abs(nextIndent - paragraph.headIndent) > 0.01 else { continue }
+            paragraph.headIndent = nextIndent
+            textStorage.addAttribute(.paragraphStyle, value: paragraph, range: range)
+            didChange = true
+        }
+        return didChange
+    }
+
+    private static func applyLink(_ url: URL?, to textView: NSTextView) -> Bool {
+        let range = formattingRange(in: textView)
+        guard range.length > 0, let textStorage = textView.textStorage else {
+            return false
+        }
+
+        var didChange = false
+        textStorage.enumerateAttribute(.link, in: range, options: []) { value, _, _ in
+            if linkURL(from: value) != url { didChange = true }
+        }
+        guard didChange else { return false }
+
+        if let url {
+            textStorage.addAttribute(.link, value: url, range: range)
+        } else {
+            textStorage.removeAttribute(.link, range: range)
         }
         return true
     }
 
-    private static func paragraphRange(in textView: NSTextView) -> NSRange {
+    private static func clearFormatting(in textView: NSTextView) -> Bool {
+        let range = formattingRange(in: textView)
+        let keys: [NSAttributedString.Key] = [
+            .underlineStyle,
+            .strikethroughStyle,
+            .underlineColor,
+            .strikethroughColor,
+            .backgroundColor,
+            .link,
+            .baselineOffset,
+            .kern
+        ]
+
+        if range.length == 0 {
+            var attributes = textView.typingAttributes
+            let currentFont = attributes[.font] as? NSFont
+            let hasOtherFormatting = keys.contains { attributes[$0] != nil }
+            guard currentFont?.isEqual(EditorTypography.defaultFont) != true
+                    || !isBlack(attributes[.foregroundColor] as? NSColor)
+                    || hasOtherFormatting else {
+                return false
+            }
+            attributes[.font] = EditorTypography.defaultFont
+            attributes[.foregroundColor] = NSColor.black
+            for key in keys {
+                attributes.removeValue(forKey: key)
+            }
+            textView.typingAttributes = attributes
+            return true
+        }
+
+        guard let textStorage = textView.textStorage else { return false }
+        var didChange = false
+        textStorage.enumerateAttributes(in: range, options: []) { attributes, _, _ in
+            if (attributes[.font] as? NSFont)?.isEqual(EditorTypography.defaultFont) != true {
+                didChange = true
+            }
+            if !isBlack(attributes[.foregroundColor] as? NSColor) {
+                didChange = true
+            }
+            if keys.contains(where: { attributes[$0] != nil }) {
+                didChange = true
+            }
+        }
+        guard didChange else { return false }
+        textStorage.addAttribute(.font, value: EditorTypography.defaultFont, range: range)
+        textStorage.addAttribute(.foregroundColor, value: NSColor.black, range: range)
+        for key in keys {
+            textStorage.removeAttribute(key, range: range)
+        }
+        return true
+    }
+
+    private static func selectedParagraphRanges(in textView: NSTextView) -> [NSRange] {
         let text = textView.string as NSString
-        guard text.length > 0 else { return .init(location: 0, length: 0) }
-        let location = min(textView.selectedRange().location, text.length - 1)
-        return text.lineRange(for: NSRange(location: location, length: 0))
+        guard text.length > 0 else { return [] }
+
+        let selection = textView.selectedRange()
+        let start = min(max(selection.location, 0), text.length - 1)
+        let end = selection.length == 0
+            ? start
+            : min(max(NSMaxRange(selection) - 1, start), text.length - 1)
+        let first = text.lineRange(for: NSRange(location: start, length: 0))
+        let last = text.lineRange(for: NSRange(location: end, length: 0))
+        let combined = NSUnionRange(first, last)
+
+        var ranges: [NSRange] = []
+        var cursor = combined.location
+        let limit = NSMaxRange(combined)
+        while cursor < limit {
+            let range = text.lineRange(for: NSRange(location: cursor, length: 0))
+            ranges.append(range)
+            let next = NSMaxRange(range)
+            guard next > cursor else { break }
+            cursor = next
+        }
+        return ranges
+    }
+
+    private static func paragraphRange(in textView: NSTextView) -> NSRange {
+        selectedParagraphRanges(in: textView).reduce(
+            into: NSRange(location: NSNotFound, length: 0)
+        ) { result, range in
+            result = result.location == NSNotFound ? range : NSUnionRange(result, range)
+        }.withFallback(location: 0, length: 0)
     }
 
     private static func formattingRange(in textView: NSTextView) -> NSRange {
@@ -747,6 +1209,10 @@ enum RichTextFormatter {
     private static func listStyle(for text: NSString, at location: Int) -> ListStyle? {
         guard text.length > 0 else { return nil }
         let line = text.substring(with: text.lineRange(for: NSRange(location: min(location, text.length - 1), length: 0)))
+        return listStyle(for: line)
+    }
+
+    private static func listStyle(for line: String) -> ListStyle? {
         if line.hasPrefix("• ") { return .bulleted }
         if line.range(of: "^[0-9]+\\. ", options: .regularExpression) != nil { return .numbered }
         return nil
@@ -757,6 +1223,73 @@ enum RichTextFormatter {
         if line.hasPrefix("• ") { return NSRange(location: 0, length: 2) }
         let range = string.range(of: "^[0-9]+\\. ", options: .regularExpression)
         return range.location == NSNotFound ? nil : range
+    }
+
+    private static func mutableParagraphStyle(
+        at location: Int,
+        in textStorage: NSTextStorage
+    ) -> NSMutableParagraphStyle {
+        guard textStorage.length > 0,
+              location >= 0,
+              location < textStorage.length,
+              let original = textStorage.attributes(at: location, effectiveRange: nil)[.paragraphStyle]
+                as? NSParagraphStyle,
+              let copy = original.mutableCopy() as? NSMutableParagraphStyle else {
+            return NSMutableParagraphStyle()
+        }
+        return copy
+    }
+
+    private static func mutableParagraphStyle(
+        from original: NSParagraphStyle?
+    ) -> NSMutableParagraphStyle {
+        if let original,
+           let copy = original.mutableCopy() as? NSMutableParagraphStyle {
+            return copy
+        }
+        return NSMutableParagraphStyle()
+    }
+
+    private static func linkURL(from value: Any?) -> URL? {
+        if let url = value as? URL { return url }
+        if let url = value as? NSURL { return url as URL }
+        if let string = value as? String { return URL(string: string) }
+        return nil
+    }
+
+    private static func isBlack(_ color: NSColor?) -> Bool {
+        guard let color,
+              let rgb = color.usingColorSpace(.deviceRGB) else { return false }
+        return abs(rgb.redComponent) < 0.001
+            && abs(rgb.greenComponent) < 0.001
+            && abs(rgb.blueComponent) < 0.001
+            && abs(rgb.alphaComponent - 1) < 0.001
+    }
+
+    private static func adjustedSelection(
+        _ selection: NSRange,
+        replacing oldRange: NSRange,
+        withLength newLength: Int
+    ) -> NSRange {
+        let oldEnd = NSMaxRange(oldRange)
+        let delta = newLength - oldRange.length
+        var location = selection.location
+        var end = NSMaxRange(selection)
+
+        if location >= oldEnd {
+            location += delta
+        } else if location > oldRange.location {
+            location = oldRange.location + newLength
+        }
+
+        if end >= oldEnd {
+            end += delta
+        } else if end > oldRange.location {
+            end = oldRange.location + newLength
+        }
+
+        if end < location { end = location }
+        return NSRange(location: max(0, location), length: max(0, end - location))
     }
 
     private static func traitIsEnabled(
@@ -790,5 +1323,11 @@ enum RichTextFormatter {
         if let number = value as? NSNumber { return number.intValue }
         if let value = value as? Int { return value }
         return 0
+    }
+}
+
+private extension NSRange {
+    func withFallback(location: Int, length: Int) -> NSRange {
+        self.location == NSNotFound ? NSRange(location: location, length: length) : self
     }
 }
