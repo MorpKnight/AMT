@@ -29,8 +29,8 @@ enum DocumentPresentationMode: String, CaseIterable, Identifiable {
     var id: Self { self }
     var title: String {
         switch self {
-        case .preview: "Dokumen"
-        case .editing: "Edit & Suggestion"
+        case .preview: "Dokumen Asli"
+        case .editing: "Review & Edit"
         }
     }
 }
@@ -40,29 +40,65 @@ struct EditorToolbar: View {
     @Binding var presentationMode: DocumentPresentationMode
     let viewModel: EditorViewModel
     let canPreviewOriginal: Bool
+    let saveState: DocumentSaveState
+    let reviewNeedsRerun: Bool
+    let aiConnectorViewModel: AIConnectorViewModel?
+    var onRetrySave: () -> Void = {}
     var onExport: (() -> Void)?
+    var onRerun: () -> Void = {}
+    var onRerunSection: () -> Void = {}
+    var onRerunFull: () -> Void = {}
+
+    init(
+        documentTitle: Binding<String>,
+        presentationMode: Binding<DocumentPresentationMode>,
+        viewModel: EditorViewModel,
+        canPreviewOriginal: Bool,
+        saveState: DocumentSaveState,
+        reviewNeedsRerun: Bool,
+        onRetrySave: @escaping () -> Void = {},
+        onExport: (() -> Void)? = nil,
+        aiConnectorViewModel: AIConnectorViewModel? = nil,
+        onRerun: @escaping () -> Void = {},
+        onRerunSection: @escaping () -> Void = {},
+        onRerunFull: @escaping () -> Void = {}
+    ) {
+        self._documentTitle = documentTitle
+        self._presentationMode = presentationMode
+        self.viewModel = viewModel
+        self.canPreviewOriginal = canPreviewOriginal
+        self.saveState = saveState
+        self.reviewNeedsRerun = reviewNeedsRerun
+        self.aiConnectorViewModel = aiConnectorViewModel
+        self.onRetrySave = onRetrySave
+        self.onExport = onExport
+        self.onRerun = onRerun
+        self.onRerunSection = onRerunSection
+        self.onRerunFull = onRerunFull
+    }
 
     var body: some View {
         HStack(spacing: 12) {
             documentTitleField
             Spacer()
-            if canPreviewOriginal {
-                Picker("Mode", selection: $presentationMode) {
-                    ForEach(DocumentPresentationMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 220)
-            }
-            if presentationMode == .editing {
-                formattingControls
-            }
+            fontSizeGroup
+            zoomGroup
             Spacer()
+            if presentationMode == .editing, reviewNeedsRerun {
+                Label("Review perlu diulang", systemImage: "arrow.clockwise.circle")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.orange)
+                    .help("Dokumen berubah setelah analisis terakhir.")
+                    .accessibilityLabel("Review perlu diulang")
+            }
+            if presentationMode == .editing, let aiConnectorViewModel {
+                incrementalAnalysisControls(for: aiConnectorViewModel)
+            }
             exportButton
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private var documentTitleField: some View {
@@ -70,7 +106,7 @@ struct EditorToolbar: View {
             .textFieldStyle(.plain)
             .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(.primary)
-            .frame(minWidth: 100, maxWidth: 220)
+            .frame(minWidth: 100, maxWidth: 360, alignment: .leading)
     }
 
     private var formattingControls: some View {
@@ -158,52 +194,36 @@ struct EditorToolbar: View {
         .toolbarGroupStyle()
     }
 
-    private var inlineStyleGroup: some View {
+    private var fontSizeGroup: some View {
         HStack(spacing: 2) {
-            inlineButton("B", action: .bold, isActive: viewModel.activeState.isBold) {
-                $0.font(.system(size: 13, weight: .bold))
+            toolbarIconButton(
+                systemName: "textformat.size.smaller",
+                help: "Perkecil ukuran font",
+                isEnabled: viewModel.fontSizePoints > EditorViewModel.minimumFontSize
+            ) {
+                viewModel.decreaseFontSize()
             }
-            inlineButton("I", action: .italic, isActive: viewModel.activeState.isItalic) {
-                $0.font(.system(size: 13, weight: .bold)).italic()
+
+            Button {
+                viewModel.resetFontSize()
+            } label: {
+                Text("\(Int(viewModel.fontSizePoints))pt")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 36, height: 24)
             }
-            inlineButton("U", action: .underline, isActive: viewModel.activeState.isUnderline) {
-                $0.font(.system(size: 13, weight: .semibold)).underline()
-            }
-            inlineButton("S", action: .strikethrough, isActive: viewModel.activeState.isStrikethrough) {
-                $0.font(.system(size: 13, weight: .semibold)).strikethrough()
+            .buttonStyle(.plain)
+            .help("Reset ukuran font")
+
+            toolbarIconButton(
+                systemName: "textformat.size.larger",
+                help: "Perbesar ukuran font",
+                isEnabled: viewModel.fontSizePoints < EditorViewModel.maximumFontSize
+            ) {
+                viewModel.increaseFontSize()
             }
         }
         .toolbarGroupStyle()
-    }
-
-    private var listStyleGroup: some View {
-        HStack(spacing: 2) {
-            ForEach(ListStyle.allCases) { style in
-                let isActive = viewModel.activeState.listStyle == style
-                GlassPillButton(isActive: isActive) {
-                    viewModel.pendingAction = .listStyle(style)
-                } label: {
-                    Image(systemName: style.rawValue)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(isActive ? .primary : .secondary)
-                }
-            }
-        }
-        .toolbarGroupStyle()
-    }
-
-    private func inlineButton(
-        _ title: String,
-        action: FormattingAction,
-        isActive: Bool,
-        textStyle: @escaping (Text) -> Text
-    ) -> some View {
-        GlassPillButton(isActive: isActive) {
-            viewModel.pendingAction = action
-        } label: {
-            textStyle(Text(title))
-                .foregroundStyle(isActive ? .primary : .secondary)
-        }
     }
 
     private func toolbarIconButton(
@@ -219,6 +239,38 @@ struct EditorToolbar: View {
         }
     }
 
+    @ViewBuilder
+    private var saveStatus: some View {
+        if case let .failed(message) = saveState {
+            Button(action: onRetrySave) {
+                Label(saveState.title, systemImage: saveState.systemImage)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.orange)
+            }
+            .buttonStyle(.plain)
+            .help("\(message) Klik untuk mencoba lagi.")
+            .accessibilityLabel("\(saveState.title). Coba lagi")
+        } else {
+            Label(saveState.title, systemImage: saveState.systemImage)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(saveStatusColor)
+                .accessibilityLabel(saveState.title)
+        }
+    }
+
+    private var saveStatusColor: Color {
+        switch saveState {
+        case .dirty:
+            .secondary
+        case .saving:
+            .secondary
+        case .saved:
+            .secondary
+        case .failed:
+            .orange
+        }
+    }
+
     private var exportButton: some View {
         Button {
             onExport?()
@@ -229,8 +281,66 @@ struct EditorToolbar: View {
                 .frame(width: 32, height: 32)
         }
         .buttonStyle(.plain)
-        .liquidGlass(cornerRadius: 10)
+        .toolbarGroupStyle(cornerRadius: 10)
         .help("Ekspor Dokumen (.docx)")
+    }
+
+    @ViewBuilder
+    private func incrementalAnalysisControls(
+        for aiConnectorViewModel: AIConnectorViewModel
+    ) -> some View {
+        if aiConnectorViewModel.isRunning {
+            HStack(spacing: 6) {
+                ProgressView()
+                    .controlSize(.small)
+                Text(analysisProgressTitle(aiConnectorViewModel))
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Button("Batal") {
+                    aiConnectorViewModel.cancel()
+                }
+                .buttonStyle(.plain)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.orange)
+                .help("Batalkan pemeriksaan; hasil yang sudah valid tetap dipertahankan.")
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(analysisProgressTitle(aiConnectorViewModel))
+        } else {
+            Menu {
+                Button("Periksa ulang") { onRerun() }
+                    .disabled(!aiConnectorViewModel.canRerunAnalysis)
+                Button("Periksa bagian ini") { onRerunSection() }
+                    .disabled(!aiConnectorViewModel.canRerunSelectedSection)
+                Divider()
+                Button("Periksa seluruh dokumen dari awal") { onRerunFull() }
+            } label: {
+                Label(
+                    aiConnectorViewModel.hasPendingAnalysisChanges
+                        ? "Periksa ulang"
+                        : "Periksa",
+                    systemImage: "arrow.clockwise"
+                )
+                .font(.caption2.weight(.medium))
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .help("Pilih bagian dokumen yang ingin diperiksa ulang.")
+            .accessibilityLabel("Pilihan pemeriksaan ulang")
+        }
+    }
+
+    private func analysisProgressTitle(_ viewModel: AIConnectorViewModel) -> String {
+        let progress = viewModel.progressSnapshot
+        let reused = progress.reusedSegmentCount
+        let reprocessed = progress.reprocessedSegmentCount
+        let completed = progress.completedSegmentCount
+        let total = progress.totalSegmentCount
+        if reused > 0 {
+            return "Memeriksa \(completed) dari \(total) · \(reused) dipakai ulang · \(reprocessed) dihitung ulang"
+        }
+        return "Memeriksa \(completed) dari \(total)"
     }
 }
 
@@ -264,52 +374,28 @@ private struct GlassPillButton<Label: View>: View {
     }
 }
 
-private struct LiquidGlassModifier: ViewModifier {
+private struct FlatToolbarGroupModifier: ViewModifier {
     var cornerRadius: CGFloat = 16
     @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         content
-            .background {
+            .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(colorScheme == .dark ? Color.white.opacity(0.05) : Color.white.opacity(0.70))
-                    }
-                    .overlay {
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [
-                                        colorScheme == .dark ? Color.white.opacity(0.22) : Color.white.opacity(0.85),
-                                        colorScheme == .dark ? Color.white.opacity(0.04) : Color.white.opacity(0.35)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                ),
-                                lineWidth: 0.8
-                            )
-                    }
-                    .shadow(
-                        color: colorScheme == .dark ? Color.black.opacity(0.4) : Color.black.opacity(0.06),
-                        radius: 6,
-                        x: 0,
-                        y: 2
-                    )
-            }
+                    .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+            )
     }
 }
 
 private extension View {
-    func toolbarGroupStyle() -> some View {
+    func toolbarGroupStyle(cornerRadius: CGFloat = 16) -> some View {
         padding(.horizontal, 4)
             .padding(.vertical, 3)
-            .liquidGlass(cornerRadius: 16)
-    }
-
-    func liquidGlass(cornerRadius: CGFloat = 16) -> some View {
-        modifier(LiquidGlassModifier(cornerRadius: cornerRadius))
+            .modifier(FlatToolbarGroupModifier(cornerRadius: cornerRadius))
     }
 }
 
@@ -322,7 +408,9 @@ private extension View {
             documentTitle: .constant("Untitled"),
             presentationMode: .constant(.editing),
             viewModel: EditorViewModel(),
-            canPreviewOriginal: true
+            canPreviewOriginal: true,
+            saveState: .saved(Date()),
+            reviewNeedsRerun: false
         )
     }
     .frame(width: 850, height: 100)

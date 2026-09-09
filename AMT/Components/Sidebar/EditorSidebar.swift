@@ -11,27 +11,26 @@ struct EditorSidebar: View {
     let documents: [DashboardDocument]
     @Binding var selectedDocumentID: UUID?
     let onBackToDashboard: () -> Void
-    let onCreateNewDocument: () -> Void
+    let onImportDocument: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            // Sidebar Header (Back Button & New Document Button)
+            // Sidebar Header (Back Button & Import Document Button)
             HStack {
                 Button(action: onBackToDashboard) {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
                         Text("Dashboard")
-                            .fontWeight(.medium)
                     }
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.accentColor)
+                    .appFont(.callout, weight: .medium)
+                    .foregroundStyle(Color.textPrimary)
                 }
                 .buttonStyle(.plain)
 
                 Spacer()
 
-                Button(action: onCreateNewDocument) {
-                    Image(systemName: "square.and.pencil")
+                Button(action: onImportDocument) {
+                    Image(systemName: "square.and.arrow.down")
                         .font(.system(size: 14))
                         .foregroundStyle(.secondary)
                 }
@@ -42,34 +41,61 @@ struct EditorSidebar: View {
             .padding(.vertical, 12)
 
             Divider()
+                .overlay(Color.borderSubtle)
 
             // List of Existing Documents
-            List(selection: $selectedDocumentID) {
-                Section("Dokumen Saya") {
+            ScrollView {
+                LazyVStack(spacing: 4) {
                     ForEach(documents) { doc in
-                        HStack(spacing: 8) {
-                            Image(systemName: "doc.text")
-                                .font(.system(size: 14))
-                                .foregroundStyle(selectedDocumentID == doc.id ? Color.accentColor : .secondary)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(doc.title)
-                                    .font(.system(size: 13, weight: selectedDocumentID == doc.id ? .semibold : .regular))
-                                    .lineLimit(1)
-
-                                Text(doc.formattedRelativeDate)
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
+                        EditorSidebarItem(
+                            document: doc,
+                            isSelected: selectedDocumentID == doc.id,
+                            action: {
+                                selectedDocumentID = doc.id
                             }
-                        }
-                        .tag(doc.id)
+                        )
                     }
                 }
+                .padding(.horizontal, 10)
+                .padding(.top, 8)
             }
-            .listStyle(.sidebar)
         }
-        .frame(minWidth: 180, idealWidth: 220, maxWidth: 260)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+private struct EditorSidebarItem: View {
+    let document: DashboardDocument
+    let isSelected: Bool
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: "doc.text")
+                    .font(.system(size: 14))
+                    .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
+
+                Text(document.title)
+                    .appFont(.callout, weight: isSelected ? .semibold : .regular)
+                    .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
+                    .lineLimit(1)
+
+                Spacer()
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isSelected ? Color.bgSelected : (isHovered ? Color.primary.opacity(0.04) : Color.clear))
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
 
@@ -85,6 +111,6 @@ struct EditorSidebar: View {
         ],
         selectedDocumentID: .constant(nil),
         onBackToDashboard: {},
-        onCreateNewDocument: {}
+        onImportDocument: {}
     )
 }

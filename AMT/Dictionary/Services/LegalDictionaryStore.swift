@@ -130,6 +130,14 @@ nonisolated struct LegalDictionaryMatch: Identifiable, Hashable, Sendable {
     }
 }
 
+/// Diagnostic metadata for suggestion retrieval. The legacy array-returning
+/// API remains available so Dictionary and older callers do not change.
+nonisolated struct LegalDictionarySuggestionRetrievalResult: Sendable {
+    let matches: [LegalDictionaryMatch]
+    let queryCount: Int
+    let semanticQueryCount: Int
+}
+
 nonisolated struct LegalDictionaryStore: Sendable {
     /// The legacy CSV parser and resource are retained for a future migration,
     /// but the old corpus is intentionally not part of the active Dictionary
@@ -163,9 +171,46 @@ nonisolated struct LegalDictionaryStore: Sendable {
     private let retrievalIndex: [RetrievalIndexEntry]
     private let inverseDocumentFrequencies: [String: Double]
     private let averageDocumentLength: Double
+    private let officialReferenceIDsByTerm: [String: Set<String>]
 
     var activeCorpusVersion: String {
         corpusStore?.manifest.corpusVersion ?? LegalDictionaryCorpusVersion.legacyKamusV1
+    }
+
+    /// Exposes the active corpus scope without making the view depend on the
+    /// corpus loader or its manifest shape.
+    var corpusSummary: LegalDictionaryCorpusSummary {
+        let sourceNames = Set(
+            entries
+                .flatMap(\.sources)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+        )
+        .sorted {
+            $0.localizedCaseInsensitiveCompare($1) == .orderedAscending
+        }
+
+        guard let manifest = corpusStore?.manifest else {
+            return LegalDictionaryCorpusSummary(
+                corpusVersion: entries.first?.corpusVersion,
+                sourceDatasetView: nil,
+                conceptCount: entries.count,
+                regulationCount: 0,
+                relationCount: 0,
+                sourcePassageCount: 0,
+                sourceNames: sourceNames
+            )
+        }
+
+        return LegalDictionaryCorpusSummary(
+            corpusVersion: manifest.corpusVersion,
+            sourceDatasetView: manifest.sourceDatasetView,
+            conceptCount: manifest.conceptCount,
+            regulationCount: manifest.regulationCount,
+            relationCount: manifest.relationCount,
+            sourcePassageCount: manifest.sourcePassageCount,
+            sourceNames: sourceNames
+        )
     }
 
     var semanticModelRevision: String {
@@ -236,6 +281,42 @@ nonisolated struct LegalDictionaryStore: Sendable {
         self.corpusStore = corpusStore
         self.semanticRetriever = semanticRetriever
 
+        var termGroupsByNormalizedTerm: [String: LegalDictionaryTermGroup] = [:]
+        var alternativesByTermGroupID: [String: [LegalDictionaryAlternative]] = [:]
+        if let corpusStore {
+            for termGroup in corpusStore.termGroups {
+                let normalizedTerm = Self.normalize(
+                    termGroup.termNormalized.isEmpty ? termGroup.term : termGroup.termNormalized
+                )
+                guard !normalizedTerm.isEmpty else { continue }
+                termGroupsByNormalizedTerm[normalizedTerm] = termGroup
+            }
+            for alternative in corpusStore.alternatives
+                where alternative.termSelectionStatus == "selected"
+                    && alternative.definitionRole == "alternative" {
+                alternativesByTermGroupID[alternative.termGroupID, default: []].append(alternative)
+            }
+        }
+
+        var officialReferencesByTerm: [String: Set<String>] = [:]
+        for entry in entries {
+            let normalizedTerm = Self.normalize(entry.term)
+            guard !normalizedTerm.isEmpty else { continue }
+
+            if let referenceID = entry.referenceID {
+                officialReferencesByTerm[normalizedTerm, default: []].insert(referenceID)
+            }
+            if let termGroup = termGroupsByNormalizedTerm[normalizedTerm] {
+                officialReferencesByTerm[normalizedTerm, default: []]
+                    .formUnion(termGroup.regulationIDs)
+                for alternative in alternativesByTermGroupID[termGroup.termGroupID] ?? [] {
+                    officialReferencesByTerm[normalizedTerm, default: []]
+                        .formUnion(alternative.allReferenceIDs)
+                }
+            }
+        }
+        officialReferenceIDsByTerm = officialReferencesByTerm
+
         let index = entries.map { entry in
             let retrievalDefinition = Self.retrievalDefinition(for: entry)
             let searchableText = [
@@ -279,9 +360,9 @@ nonisolated struct LegalDictionaryStore: Sendable {
         rankedSearch(query, limit: limit).map(\.entry)
     }
 
-    /// Returns every definition attached to the same canonical term. The
-    /// corpus intentionally keeps these records separate so Dictionary can
-    /// show competing definitions and their individual provenance.
+    /// Returns the searchable primary definition attached to a canonical term.
+    /// Contextual alternatives are exposed separately so duplicate source rows
+    /// do not become duplicate search results.
     nonisolated func entries(forTerm term: String) -> [LegalDictionaryEntry] {
         let normalizedTerm = Self.normalize(term)
         guard !normalizedTerm.isEmpty else { return [] }
@@ -289,16 +370,227 @@ nonisolated struct LegalDictionaryStore: Sendable {
         return entries.filter { Self.normalize($0.term) == normalizedTerm }
     }
 
+    nonisolated func termGroup(forTerm term: String) -> LegalDictionaryTermGroup? {
+        corpusStore?.termGroup(for: term)
+    }
+
+    nonisolated func primaryRecord(forTerm term: String) -> LegalDictionaryPrimaryRecord? {
+        guard let termGroup = termGroup(forTerm: term) else { return nil }
+        return corpusStore?.primaryRecord(forTermGroupID: termGroup.termGroupID)
+    }
+
+    nonisolated func alternatives(forTerm term: String) -> [LegalDictionaryAlternative] {
+        corpusStore?.alternatives(for: term) ?? []
+    }
+
+    nonisolated func regulationRelations(
+        for referenceIDs: [String]
+    ) -> [LegalRegulationRelation] {
+        guard let corpusStore else { return [] }
+
+        var seenReferenceIDs: Set<String> = []
+        let uniqueReferenceIDs = referenceIDs.filter {
+            seenReferenceIDs.insert($0).inserted
+        }
+        var seenRelationIDs: Set<String> = []
+        return uniqueReferenceIDs
+            .flatMap { corpusStore.relations(for: $0) }
+            .filter { seenRelationIDs.insert($0.relationID).inserted }
+    }
+
     nonisolated func regulationRelations(
         for entry: LegalDictionaryEntry
     ) -> [LegalRegulationRelation] {
-        guard let corpusStore, let referenceID = entry.referenceID else { return [] }
-        return corpusStore.relations(for: referenceID)
+        var referenceIDs: [String] = []
+        if let referenceID = entry.referenceID {
+            referenceIDs.append(referenceID)
+        }
+        for referenceID in references(for: entry).compactMap(\.referenceID) {
+            guard !referenceIDs.contains(referenceID) else { continue }
+            referenceIDs.append(referenceID)
+        }
+
+        return regulationRelations(for: referenceIDs)
+    }
+
+    /// Resolves a regulation for a relation row so the UI can show a human
+    /// readable official name instead of exposing internal IDs as the label.
+    nonisolated func regulation(id: String) -> LegalRegulation? {
+        corpusStore?.regulation(id: id)
+    }
+
+    /// Rehydrates all official references attached to a concept, including
+    /// evidence, regulation metadata, and the source passage when available.
+    /// The first reference follows the entry's primary evidence reference so
+    /// the Dictionary detail remains consistent with search ranking.
+    nonisolated func references(for entry: LegalDictionaryEntry) -> [LegalReference] {
+        guard let corpusStore,
+              let concept = corpusStore.concept(id: entry.id) else {
+            return []
+        }
+
+        var references = concept.references
+        if let primaryIndex = references.firstIndex(where: {
+            $0.referenceID == entry.referenceID
+        }) {
+            let primary = references.remove(at: primaryIndex)
+            references.insert(primary, at: 0)
+        }
+
+        func nonEmpty(_ value: String?) -> String? {
+            guard let value else { return nil }
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+
+        let primaryRecord = corpusStore.primaryRecord(forTermGroupID: concept.termID)
+
+        var seenReferenceIDs: Set<String> = []
+        return references.compactMap { reference in
+            guard seenReferenceIDs.insert(reference.referenceID).inserted else {
+                return nil
+            }
+
+            let regulation = corpusStore.regulation(id: reference.referenceID)
+            let evidence = concept.actionableEvidence?.referenceID == reference.referenceID
+                ? concept.actionableEvidence
+                : concept.evidence.first { $0.referenceID == reference.referenceID }
+            let passage = evidence.flatMap { corpusStore.sourcePassage(id: $0.passageID) }
+                ?? corpusStore.sourcePassages.first {
+                    $0.referenceID == reference.referenceID
+                        && $0.conceptIDs.contains(concept.recordID)
+                }
+            let sourceURL = evidence?.officialDetailURL
+                ?? regulation?.officialDetailURL
+                ?? reference.officialDetailURL
+            let officialDocumentURL = evidence?.officialDocumentURL
+                ?? regulation?.officialDocumentURL
+                ?? passage?.officialDocumentURL
+                ?? reference.officialDocumentURL
+            let lawName = nonEmpty(regulation?.referenceName)
+                ?? nonEmpty(reference.displayName)
+                ?? "Sumber hukum"
+            let lawTitle = nonEmpty(regulation?.officialTitle)
+                ?? nonEmpty(evidence?.regulationTitle)
+                ?? nonEmpty(reference.officialTitle)
+            let status = regulation?.applicabilityStatus
+                ?? reference.officialStatusCode
+                ?? .unknown
+
+            return LegalReference(
+                lawName: lawName,
+                lawTitle: lawTitle,
+                institution: nonEmpty(regulation?.institution),
+                sourceURL: sourceURL,
+                officialDocumentURL: officialDocumentURL,
+                referenceID: reference.referenceID,
+                applicabilityStatus: status,
+                articleLocator: evidence?.articleLocator ?? passage?.articleLocator,
+                pageStart: evidence?.pageStart ?? passage?.pageStart,
+                pageEnd: evidence?.pageEnd ?? passage?.pageEnd,
+                sourcePassageID: evidence?.passageID ?? passage?.passageID,
+                officialStatus: nonEmpty(regulation?.officialStatusRaw)
+                    ?? nonEmpty(reference.officialStatus),
+                number: nonEmpty(regulation?.number),
+                year: regulation?.year,
+                sourcePassageText: nonEmpty(passage?.text),
+                matchedEvidenceText: nonEmpty(evidence?.matchedDefinitionText),
+                verificationStatus: evidence?.verificationStatus,
+                attributionStatus: primaryRecord?.primaryAttributionStatus,
+                isDefinitionAuthority: true
+            )
+        }
+    }
+
+    /// Rehydrates references attached to a contextual alternative. Page-only
+    /// and unresolved references are kept visible but are never marked as the
+    /// definition authority.
+    nonisolated func references(
+        for alternative: LegalDictionaryAlternative
+    ) -> [LegalReference] {
+        guard let corpusStore else { return [] }
+
+        var orderedReferenceIDs: [String] = []
+        for referenceID in alternative.attributedReferenceIDs
+            + alternative.pageRelatedReferenceIDs
+            + alternative.unresolvedReferenceIDs
+            + alternative.allReferenceIDs {
+            guard !referenceID.isEmpty, !orderedReferenceIDs.contains(referenceID) else {
+                continue
+            }
+            orderedReferenceIDs.append(referenceID)
+        }
+
+        func nonEmpty(_ value: String?) -> String? {
+            guard let value else { return nil }
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+
+        return orderedReferenceIDs.compactMap { referenceID in
+            let regulation = corpusStore.regulation(id: referenceID)
+            let evidence = alternative.evidence.first {
+                $0.regulationID == referenceID
+            }
+            let passage = evidence.flatMap {
+                corpusStore.sourcePassage(id: $0.passageID)
+            }
+            let isDefinitionAuthority = alternative.attributedReferenceIDs.contains(referenceID)
+            let attributionStatus: String
+            if alternative.unresolvedReferenceIDs.contains(referenceID) {
+                attributionStatus = "unresolved_reference"
+            } else if alternative.pageRelatedReferenceIDs.contains(referenceID) {
+                attributionStatus = "page_related_reference"
+            } else if alternative.attributionStatus == "explicit_reference" {
+                attributionStatus = "explicit_reference"
+            } else if alternative.attributionStatus == "single_page_reference" {
+                attributionStatus = "single_page_reference"
+            } else if isDefinitionAuthority {
+                attributionStatus = "official_evidence"
+            } else {
+                attributionStatus = "page_related_reference"
+            }
+            let lawName = nonEmpty(regulation?.referenceName)
+                ?? (attributionStatus == "unresolved_reference"
+                    ? "Referensi belum dipetakan"
+                    : "Referensi hukum terkait")
+
+            return LegalReference(
+                lawName: lawName,
+                lawTitle: nonEmpty(regulation?.officialTitle),
+                institution: nonEmpty(regulation?.institution),
+                sourceURL: regulation?.officialDetailURL,
+                officialDocumentURL: regulation?.officialDocumentURL
+                    ?? passage?.officialDocumentURL,
+                referenceID: referenceID,
+                applicabilityStatus: regulation?.applicabilityStatus ?? .unknown,
+                articleLocator: evidence?.articleLocator ?? passage?.articleLocator,
+                pageStart: evidence?.pageStart ?? passage?.pageStart,
+                pageEnd: evidence?.pageEnd ?? passage?.pageEnd,
+                sourcePassageID: evidence?.passageID ?? passage?.passageID,
+                officialStatus: nonEmpty(regulation?.officialStatusRaw),
+                number: nonEmpty(regulation?.number),
+                year: regulation?.year,
+                sourcePassageText: nonEmpty(passage?.text),
+                matchedEvidenceText: nonEmpty(evidence?.matchedDefinitionText),
+                verificationStatus: evidence?.verificationStatus,
+                attributionStatus: attributionStatus,
+                isDefinitionAuthority: isDefinitionAuthority
+            )
+        }
     }
 
     nonisolated func isSemanticModelLoaded() async -> Bool {
         guard let semanticRetriever else { return false }
         return await semanticRetriever.isLoaded
+    }
+
+    /// Prepares the optional semantic index without performing a query. This
+    /// is used only by the opt-in Phase 0 resource-preparation measurement.
+    nonisolated func prepareSemanticModel(
+        progress: @Sendable @escaping (Double) -> Void = { _ in }
+    ) async throws {
+        try await semanticRetriever?.load(progress: progress)
     }
 
     nonisolated private func rankedSearch(
@@ -505,22 +797,54 @@ nonisolated struct LegalDictionaryStore: Sendable {
         limit: Int = 3,
         semanticProgress: @Sendable @escaping (Double) -> Void = { _ in }
     ) async -> [LegalDictionaryMatch] {
-        guard limit > 0 else { return [] }
+        await suggestionCandidateResultAsync(
+            for: text,
+            limit: limit,
+            semanticProgress: semanticProgress
+        ).matches
+    }
+
+    /// Returns suggestion matches plus bounded retrieval counters. Query
+    /// strings remain inside the retrieval boundary and are never exported.
+    nonisolated func suggestionCandidateResultAsync(
+        for text: String,
+        limit: Int = 3,
+        semanticProgress: @Sendable @escaping (Double) -> Void = { _ in }
+    ) async -> LegalDictionarySuggestionRetrievalResult {
+        guard limit > 0 else {
+            return LegalDictionarySuggestionRetrievalResult(
+                matches: [],
+                queryCount: 0,
+                semanticQueryCount: 0
+            )
+        }
 
         if corpusStore != nil, semanticRetriever != nil {
             let effectiveLimit = min(
                 limit,
                 corpusStore?.manifest.retrieval.suggestionCandidateLimit ?? limit
             )
-            guard effectiveLimit > 0 else { return [] }
+            guard effectiveLimit > 0 else {
+                return LegalDictionarySuggestionRetrievalResult(
+                    matches: [],
+                    queryCount: 0,
+                    semanticQueryCount: 0
+                )
+            }
             let queries = Self.retrievalQueries(for: text)
             let semanticModelAlreadyLoaded = await semanticRetriever?.isLoaded ?? true
             var matchesByEntryID: [String: LegalDictionaryMatch] = [:]
+            var semanticQueryCount = 0
 
             for (queryIndex, query) in queries.enumerated() {
                 if Task.isCancelled {
-                    return []
+                    return LegalDictionarySuggestionRetrievalResult(
+                        matches: [],
+                        queryCount: queryIndex,
+                        semanticQueryCount: semanticQueryCount
+                    )
                 }
+                semanticQueryCount += 1
                 let request = LegalRetrievalRequest(
                     query: query,
                     intent: .suggestion,
@@ -544,7 +868,11 @@ nonisolated struct LegalDictionaryStore: Sendable {
                     continue
                 }
                 if Task.isCancelled {
-                    return []
+                    return LegalDictionarySuggestionRetrievalResult(
+                        matches: [],
+                        queryCount: queryIndex + 1,
+                        semanticQueryCount: semanticQueryCount
+                    )
                 }
 
                 for match in makeSuggestionMatches(
@@ -562,17 +890,26 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 }
             }
 
-            return matchesByEntryID.values
+            let matches = matchesByEntryID.values
                 .sorted { lhs, rhs in
                     if lhs.score != rhs.score { return lhs.score > rhs.score }
                     return lhs.entry.id < rhs.entry.id
                 }
                 .prefix(effectiveLimit)
                 .map { $0 }
+            return LegalDictionarySuggestionRetrievalResult(
+                matches: matches,
+                queryCount: queries.count,
+                semanticQueryCount: semanticQueryCount
+            )
         }
 
-        return suggestionCandidates(for: text, limit: limit)
-            .filter { $0.entry.isActionable }
+        return LegalDictionarySuggestionRetrievalResult(
+            matches: suggestionCandidates(for: text, limit: limit)
+                .filter { $0.entry.isActionable },
+            queryCount: 1,
+            semanticQueryCount: 0
+        )
     }
 
     private nonisolated func lexicalMatches(
@@ -819,19 +1156,59 @@ nonisolated struct LegalDictionaryStore: Sendable {
     ) -> [String] {
         guard limit > 0 else { return [] }
         let excluded = Self.normalize(currentTerm)
-        var seen: Set<String> = []
+        let currentReferenceIDs = officialReferenceIDs(forTerm: currentTerm)
+        let currentTokens = Set(Self.tokenize(currentTerm))
 
-        return entries.compactMap { entry -> String? in
+        var bestByTerm: [String: (term: String, score: Int)] = [:]
+        for entry in entries {
             let normalizedTerm = Self.normalize(entry.term)
-            guard !normalizedTerm.isEmpty,
-                  normalizedTerm != excluded,
-                  seen.insert(normalizedTerm).inserted else {
-                return nil
+            guard !normalizedTerm.isEmpty, normalizedTerm != excluded else { continue }
+
+            let sharedReferenceCount = currentReferenceIDs
+                .intersection(officialReferenceIDs(for: entry))
+                .count
+            let sharedReferenceScore = sharedReferenceCount * 100
+            let tokenOverlapScore = currentTokens
+                .intersection(Self.tokenize(entry.term))
+                .count * 10
+            let score = sharedReferenceScore
+                + tokenOverlapScore
+                + (entry.authority == .verified ? 1 : 0)
+            guard score > 0 else { continue }
+
+            if let existing = bestByTerm[normalizedTerm], existing.score >= score {
+                continue
             }
-            return entry.term
+            bestByTerm[normalizedTerm] = (entry.term, score)
         }
-        .prefix(limit)
-        .map { $0 }
+
+        return bestByTerm.values
+            .sorted { lhs, rhs in
+                if lhs.score != rhs.score { return lhs.score > rhs.score }
+                return lhs.term.localizedCaseInsensitiveCompare(rhs.term) == .orderedAscending
+            }
+            .prefix(limit)
+            .map(\.term)
+    }
+
+    /// Collects every official regulation attached to a canonical term,
+    /// including references carried by contextual alternatives. This keeps
+    /// "Lihat Juga" grounded in the official projection instead of only the
+    /// selected primary row.
+    private nonisolated func officialReferenceIDs(forTerm term: String) -> Set<String> {
+        officialReferenceIDsByTerm[Self.normalize(term)] ?? []
+    }
+
+    private nonisolated func officialReferenceIDs(
+        for entry: LegalDictionaryEntry
+    ) -> Set<String> {
+        if let referenceIDs = officialReferenceIDsByTerm[Self.normalize(entry.term)] {
+            return referenceIDs
+        }
+        if let referenceID = entry.referenceID {
+            return [referenceID]
+        }
+        return []
     }
 
 

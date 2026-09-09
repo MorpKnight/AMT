@@ -8,7 +8,7 @@ import Foundation
 /// rendering/export. This is important for Word/RTF imports: unsupported or
 /// uncommon attributes must not disappear just because they do not have a
 /// first-class Swift property yet.
-struct StructuredDocument: Codable, Equatable, Hashable {
+nonisolated struct StructuredDocument: Codable, Equatable, Hashable, Sendable {
     static let currentVersion = 2
 
     var version: Int = currentVersion
@@ -215,7 +215,7 @@ struct StructuredDocument: Codable, Equatable, Hashable {
     }
 }
 
-struct StructuredTable: Codable, Equatable, Hashable, Identifiable {
+nonisolated struct StructuredTable: Codable, Equatable, Hashable, Identifiable, Sendable {
     var id: UUID
     var rows: [[String]]
 
@@ -254,8 +254,8 @@ struct StructuredTable: Codable, Equatable, Hashable, Identifiable {
     }
 }
 
-struct StructuredBlock: Codable, Equatable, Hashable, Identifiable {
-    enum Kind: Codable, Equatable, Hashable {
+nonisolated struct StructuredBlock: Codable, Equatable, Hashable, Identifiable, Sendable {
+    nonisolated enum Kind: Codable, Equatable, Hashable, Sendable {
         case paragraph
         case heading(level: Int)
         case pageBreak
@@ -368,7 +368,7 @@ struct StructuredBlock: Codable, Equatable, Hashable, Identifiable {
     var plainText: String { runs.map(\.text).joined() }
 }
 
-struct StructuredRun: Codable, Equatable, Hashable, Identifiable {
+nonisolated struct StructuredRun: Codable, Equatable, Hashable, Identifiable, Sendable {
     var id: UUID
     var text: String
     var marks: Set<StructuredMark>
@@ -528,7 +528,7 @@ private func numberOptional(_ value: Any?) -> Double? {
     return nil
 }
 
-struct StructuredColor: Codable, Equatable, Hashable {
+nonisolated struct StructuredColor: Codable, Equatable, Hashable, Sendable {
     var red: Double
     var green: Double
     var blue: Double
@@ -560,16 +560,16 @@ struct StructuredColor: Codable, Equatable, Hashable {
     }
 }
 
-enum StructuredMark: String, Codable, Hashable {
+nonisolated enum StructuredMark: String, Codable, Hashable, Sendable {
     case bold, italic, underline, strikethrough
 }
 
-enum StructuredListStyle: String, Codable, Hashable {
+nonisolated enum StructuredListStyle: String, Codable, Hashable, Sendable {
     case unordered
     case ordered
 }
 
-enum StructuredAlignment: String, Codable, Hashable {
+nonisolated enum StructuredAlignment: String, Codable, Hashable, Sendable {
     case leading, center, trailing, justified
 
     init(_ value: NSTextAlignment) {

@@ -1,9 +1,10 @@
 {
-  "actionable_concept_count": 2238,
-  "concept_count": 8272,
-  "corpus_version": "hukumonline-kamus-combined-deduplicated@78a2ab626c092662b0441c95904c353b2487b216",
+  "actionable_concept_count": 1666,
+  "alternative_count": 1093,
+  "concept_count": 2589,
+  "corpus_version": "lawtionary-dictionary-official@d6260263333814513e6c97366a3d316bd9ed717286880169e8e3383085a3deec",
   "embedding": {
-    "concept_order_sha256": "3b9e8320a31dfee5dffbed433ea594e5cb137285f1fbdb2a862e3d1d3ac85f84",
+    "concept_order_sha256": "acf42bf20340bd80bdef0130130ccf9cfe92d92f3e2fcc2e39fa98e4ace0e020",
     "dimension": 384,
     "dtype": "float16-little-endian",
     "model": "intfloat/multilingual-e5-small",
@@ -14,17 +15,23 @@
   },
   "files": {
     "concepts": "concepts.json",
+    "dictionary_alternatives": "dictionary_alternatives.json",
+    "dictionary_primary": "dictionary_primary.json",
+    "dictionary_terms": "dictionary_terms.json",
     "embeddings": "definition_embeddings.f16",
     "regulations": "regulations.json",
     "relations": "relations.json",
     "source_passages": "source_passages.json"
   },
   "files_sha256": {
-    "concepts.json": "eb4dca4f5f8f0becb28ddc98c3f6374a1797ef4613a668c9cfda94402ea989bf",
-    "definition_embeddings.f16": "2d45fedd0438c843990f8a52d88a4b8c5cfd1aeb5019dbbd4a02d1b2a27fea84",
-    "regulations.json": "161824f10942b7d4e5bef6be6f8d041e4c7419d6b561dba294b53b5897c3143f",
+    "concepts.json": "f38f3d94abbcd591a025e62e4573907fa60445237c6d048b90463bf09768e48e",
+    "definition_embeddings.f16": "c842766759db2a9210fbd6e7cf88119e0c76099f54e74697ae60c5b32b820c96",
+    "dictionary_alternatives.json": "d7488ed7fb4fa68bd52be5d72f25f1150d12582ddc3406d18629a89364d49d5c",
+    "dictionary_primary.json": "238cc9e10617734b4d3ef2d78c675b9781f5676cc694f8940db480d4ae911d16",
+    "dictionary_terms.json": "56760088821fdbc07e9f9688631e847724585111f9b843b0143b423acc90d7ce",
+    "regulations.json": "b75a3df15250c0f201ad43958118fa6aa98f8e3ebb3f485c25df7814c1d30f0b",
     "relations.json": "d82d0e3ec0ee14cc205cd2af32beb3cd644c53c1a4eec6f158d2d40f07fab144",
-    "source_passages.json": "dae9eaca2a0d5df90649bc1457e044474238331e824131d1b763866923da930e"
+    "source_passages.json": "26fed603664977a6586c58f5e49d645ec40866b52ee8852c04e1fe77176ad384"
   },
   "regulation_count": 1591,
   "relation_count": 315,
@@ -39,16 +46,20 @@
     "suggestion_semantic_threshold": 0.6,
     "suggestion_top_one_margin": 0.03
   },
-  "schema_version": "amt-legal-corpus-v1",
-  "source_dataset_revision": "78a2ab626c092662b0441c95904c353b2487b216",
-  "source_dataset_view": "combined-deduplicated",
+  "schema_version": "amt-legal-corpus-v2",
+  "source_dataset_revision": "d6260263333814513e6c97366a3d316bd9ed717286880169e8e3383085a3deec",
+  "source_dataset_view": "dictionary-official",
   "source_input_sha256": {
-    "combined_definitions_deduplicated.jsonl": "b7a2edc33ef29b098db7c7254ea750ce3a377c1b1d0d7c55508dec08665e2230",
-    "combined_regulation_relations.jsonl": "44c9db812545c47186e87e6704a945f496166ec2dacb5d4f4a49e50c91b53408",
-    "combined_regulations.jsonl": "cc5af438655d247b28b79d8a80a1aa85019cefa83cdef0efa5910606748dc225",
     "definition_passage_links.jsonl": "968d158a04941b1ecc1c072245826aed36f10e7d9854d0e63cb32891a5c01b50",
+    "dictionary_definitions.jsonl": "c3b23f615bace32affcc980a6ce28d8834a5d2bdf0359d9bd95804ef33f62b3a",
+    "dictionary_official_alternatives.jsonl": "4a79eb714e00283c0ed8e2d9f7d79f02cbbca801b59127951632484439834cd4",
+    "dictionary_official_primary.jsonl": "4f6d639aed45b7e699fb81e08a8e7d2eb46017120eee20f1c2a16eb815c52364",
+    "dictionary_official_terms.jsonl": "cec20ec1ae87fef34157fd77d31d4a12d8262bb05ee2c8071640c20c0c41ec9a",
+    "dictionary_regulation_relations.jsonl": "44c9db812545c47186e87e6704a945f496166ec2dacb5d4f4a49e50c91b53408",
+    "dictionary_regulations.jsonl": "b6c398c78f1c7e7e082fde9a94255faff74860e89920cf7fb3782e8e6b090ccf",
     "regulation_documents.jsonl": "96a3d29d2194ff16b5f95b1e18996083a5147ad1cb68e7fe18fe65259b78dc78",
     "regulation_passages.jsonl": "ffe9d0749e2470d8175fdbe4cd77d8fd6848d72463316af2025cca5f11c05eb4"
   },
-  "source_passage_count": 628
+  "source_passage_count": 588,
+  "term_group_count": 2982
 }

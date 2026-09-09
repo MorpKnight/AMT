@@ -34,7 +34,10 @@ final class EditorViewModel {
     var canUndo = false
     var canRedo = false
     var zoomPercent = EditorZoom.defaultPercent
+    /// Font size in points for the body text. Defaults to EditorTypography body size.
+    var fontSizePoints: CGFloat = EditorTypography.bodyPointSize
 
+    // MARK: - Zoom
     func zoomIn() {
         zoomPercent = EditorZoom.clamp(zoomPercent + EditorZoom.stepPercent)
     }
@@ -45,6 +48,23 @@ final class EditorViewModel {
 
     func resetZoom() {
         zoomPercent = EditorZoom.defaultPercent
+    }
+
+    // MARK: - Font Size
+    static let minimumFontSize: CGFloat = 8
+    static let maximumFontSize: CGFloat = 36
+    static let fontSizeStep: CGFloat = 1
+
+    func increaseFontSize() {
+        fontSizePoints = min(fontSizePoints + Self.fontSizeStep, Self.maximumFontSize)
+    }
+
+    func decreaseFontSize() {
+        fontSizePoints = max(fontSizePoints - Self.fontSizeStep, Self.minimumFontSize)
+    }
+
+    func resetFontSize() {
+        fontSizePoints = EditorTypography.bodyPointSize
     }
 
     func resetHistoryState() {
