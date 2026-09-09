@@ -237,6 +237,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         private var currentStructuredDocument: StructuredDocument?
         private var hoverTimer: Timer?
         private static let hoverDelay: TimeInterval = 0.5
+        private var resolvedReviewItemIDs = Set<UUID>()
 
         init(parent: HighlightedDocumentTextEditor) {
             self.parent = parent
@@ -270,6 +271,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             currentText = text
             currentRichTextData = richTextData
             currentStructuredDocument = structuredDocument
+            resolvedReviewItemIDs.removeAll()
 
             updateZoom(to: zoomPercent)
 
@@ -317,6 +319,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             if didChangeDocument {
                 textView.undoManager?.removeAllActions()
                 currentDocumentID = documentID
+                resolvedReviewItemIDs.removeAll()
                 parent.formattingViewModel?.resetHistoryState()
             }
 
@@ -426,15 +429,17 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             annotations: [EditorReviewAnnotation],
             selectedReviewItemID: UUID?
         ) {
+            let activeSuggestions = suggestions.filter { !resolvedReviewItemIDs.contains($0.id) }
+            let activeAnnotations = annotations.filter { !resolvedReviewItemIDs.contains($0.id) }
             layoutManager?.update(
-                suggestions: suggestions,
-                annotations: annotations,
+                suggestions: activeSuggestions,
+                annotations: activeAnnotations,
                 selectedReviewItemID: selectedReviewItemID,
                 reviewedReviewItemIDs: parent.reviewedReviewItemIDs
             )
 
             if let presentedSuggestionID,
-               !(suggestions.map(\.id) + annotations.map(\.id))
+               !(activeSuggestions.map(\.id) + activeAnnotations.map(\.id))
                     .contains(presentedSuggestionID) {
                 closePopover(notifySelection: true)
             }
@@ -569,15 +574,17 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         private var allReviewItems: [EditorReviewItem] {
             let items = parent.suggestions.map(EditorReviewItem.suggestion)
                 + parent.annotations.map(EditorReviewItem.annotation)
-            return items.sorted { lhs, rhs in
-                if lhs.sourceRange.location != rhs.sourceRange.location {
-                    return lhs.sourceRange.location < rhs.sourceRange.location
+            return items
+                .filter { !resolvedReviewItemIDs.contains($0.id) }
+                .sorted { lhs, rhs in
+                    if lhs.sourceRange.location != rhs.sourceRange.location {
+                        return lhs.sourceRange.location < rhs.sourceRange.location
+                    }
+                    let lhsPriority = reviewItemPriority(lhs)
+                    let rhsPriority = reviewItemPriority(rhs)
+                    if lhsPriority != rhsPriority { return lhsPriority < rhsPriority }
+                    return lhs.sourceRange.length < rhs.sourceRange.length
                 }
-                let lhsPriority = reviewItemPriority(lhs)
-                let rhsPriority = reviewItemPriority(rhs)
-                if lhsPriority != rhsPriority { return lhsPriority < rhsPriority }
-                return lhs.sourceRange.length < rhs.sourceRange.length
-            }
         }
 
         private func reviewItem(at characterIndex: Int) -> EditorReviewItem? {
@@ -806,7 +813,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 return
             }
 
-            let previousText = currentText.isEmpty ? textView.string : currentText
+            let previousText = textView.string
             textView.breakUndoCoalescing()
             let before = snapshot(from: textView)
             let undoManager = textView.undoManager
@@ -814,19 +821,66 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             isApplyingProgrammaticMutation = true
             textView.typingAttributes = [
                 NSAttributedString.Key.font: textView.font ?? EditorTypography.defaultFont,
-                NSAttributedString.Key.foregroundColor: NSColor.black
+                NSAttributedString.Key.foregroundColor: NSColor.textColor
             ]
             textView.insertText(
                 suggestion.replacement,
                 replacementRange: suggestion.sourceRange
             )
+            let replacementRange = NSRange(
+                location: suggestion.sourceRange.location,
+                length: suggestion.replacement.utf16.count
+            )
+            if let textStorage = textView.textStorage,
+               NSMaxRange(replacementRange) <= textStorage.length {
+                textStorage.removeAttribute(.backgroundColor, range: replacementRange)
+                textStorage.removeAttribute(.underlineStyle, range: replacementRange)
+                textStorage.removeAttribute(.underlineColor, range: replacementRange)
+                textStorage.addAttribute(
+                    .font,
+                    value: textView.font ?? EditorTypography.defaultFont,
+                    range: replacementRange
+                )
+                textStorage.addAttribute(
+                    .foregroundColor,
+                    value: NSColor.textColor,
+                    range: replacementRange
+                )
+            }
             isApplyingProgrammaticMutation = false
             undoManager?.enableUndoRegistration()
 
             let after = snapshot(from: textView)
             registerSnapshotUndo(before: before, after: after, actionName: "Accept Suggestion")
             persistRichText(from: textView)
-            parent.onSuggestionAccepted(suggestion, previousText, currentText)
+            let updatedText = textView.string
+
+            let delta = suggestion.replacement.utf16.count - suggestion.original.utf16.count
+            let acceptedRange = suggestion.sourceRange
+            let remainingSuggestions = parent.suggestions.compactMap { item -> EditorSuggestion? in
+                guard item.id != suggestion.id else { return nil }
+                if NSIntersectionRange(item.sourceRange, acceptedRange).length > 0 {
+                    return nil
+                }
+                guard item.sourceRange.location >= NSMaxRange(acceptedRange) else {
+                    return item
+                }
+                var shifted = item
+                shifted.sourceRange = NSRange(
+                    location: item.sourceRange.location + delta,
+                    length: item.sourceRange.length
+                )
+                return shifted
+            }
+            resolvedReviewItemIDs.insert(suggestion.id)
+            layoutManager?.update(
+                suggestions: remainingSuggestions,
+                annotations: parent.annotations,
+                selectedReviewItemID: nil,
+                reviewedReviewItemIDs: parent.reviewedReviewItemIDs
+            )
+
+            parent.onSuggestionAccepted(suggestion, previousText, updatedText)
             closePopover(notifySelection: true)
             publishHistoryState()
         }
@@ -850,7 +904,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             }
 
             guard let replacement = option.replacement else { return }
-            let previousText = currentText.isEmpty ? textView.string : currentText
+            let previousText = textView.string
             textView.breakUndoCoalescing()
             let before = snapshot(from: textView)
             let undoManager = textView.undoManager
@@ -858,9 +912,29 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             isApplyingProgrammaticMutation = true
             textView.typingAttributes = [
                 NSAttributedString.Key.font: textView.font ?? EditorTypography.defaultFont,
-                NSAttributedString.Key.foregroundColor: NSColor.black
+                NSAttributedString.Key.foregroundColor: NSColor.textColor
             ]
             textView.insertText(replacement, replacementRange: option.targetRange)
+            let replacementRange = NSRange(
+                location: option.targetRange.location,
+                length: replacement.utf16.count
+            )
+            if let textStorage = textView.textStorage,
+               NSMaxRange(replacementRange) <= textStorage.length {
+                textStorage.removeAttribute(.backgroundColor, range: replacementRange)
+                textStorage.removeAttribute(.underlineStyle, range: replacementRange)
+                textStorage.removeAttribute(.underlineColor, range: replacementRange)
+                textStorage.addAttribute(
+                    .font,
+                    value: textView.font ?? EditorTypography.defaultFont,
+                    range: replacementRange
+                )
+                textStorage.addAttribute(
+                    .foregroundColor,
+                    value: NSColor.textColor,
+                    range: replacementRange
+                )
+            }
             isApplyingProgrammaticMutation = false
             undoManager?.enableUndoRegistration()
 
@@ -871,7 +945,54 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 actionName: "Apply Definition Resolution"
             )
             persistRichText(from: textView)
-            parent.onDefinitionResolutionApplied(option, previousText, currentText)
+            let updatedText = textView.string
+
+            let delta = replacement.utf16.count - option.original.utf16.count
+            let acceptedRange = option.targetRange
+            let remainingAnnotations = parent.annotations.compactMap { annotation -> EditorReviewAnnotation? in
+                if parent.definitionResolutions[annotation.id]?.options.contains(where: { $0.id == option.id }) == true {
+                    return nil
+                }
+                if NSIntersectionRange(annotation.sourceRange, acceptedRange).length > 0 {
+                    return nil
+                }
+                guard annotation.sourceRange.location >= NSMaxRange(acceptedRange) else {
+                    return annotation
+                }
+                var shifted = annotation
+                shifted.sourceRange = NSRange(
+                    location: annotation.sourceRange.location + delta,
+                    length: annotation.sourceRange.length
+                )
+                return shifted
+            }
+            let remainingSuggestions = parent.suggestions.compactMap { item -> EditorSuggestion? in
+                if NSIntersectionRange(item.sourceRange, acceptedRange).length > 0 {
+                    return nil
+                }
+                guard item.sourceRange.location >= NSMaxRange(acceptedRange) else {
+                    return item
+                }
+                var shifted = item
+                shifted.sourceRange = NSRange(
+                    location: item.sourceRange.location + delta,
+                    length: item.sourceRange.length
+                )
+                return shifted
+            }
+            if let annotation = parent.annotations.first(where: { annotation in
+                parent.definitionResolutions[annotation.id]?.options.contains(where: { $0.id == option.id }) == true
+            }) {
+                resolvedReviewItemIDs.insert(annotation.id)
+            }
+            layoutManager?.update(
+                suggestions: remainingSuggestions,
+                annotations: remainingAnnotations,
+                selectedReviewItemID: nil,
+                reviewedReviewItemIDs: parent.reviewedReviewItemIDs
+            )
+
+            parent.onDefinitionResolutionApplied(option, previousText, updatedText)
             closePopover(notifySelection: true)
             publishHistoryState()
         }
@@ -894,6 +1015,15 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         }
 
         func dismiss(_ item: EditorReviewItem) {
+            resolvedReviewItemIDs.insert(item.id)
+            let remainingSuggestions = parent.suggestions.filter { $0.id != item.id }
+            let remainingAnnotations = parent.annotations.filter { $0.id != item.id }
+            layoutManager?.update(
+                suggestions: remainingSuggestions,
+                annotations: remainingAnnotations,
+                selectedReviewItemID: nil,
+                reviewedReviewItemIDs: parent.reviewedReviewItemIDs
+            )
             parent.onDismiss(item.id)
             closePopover(notifySelection: true)
         }
@@ -1273,34 +1403,34 @@ final class SuggestionLayoutManager: NSLayoutManager {
         reviewedReviewItemIDs: Set<UUID> = []
     ) {
         let text = textStorage?.string ?? ""
-        let suggestionRanges = suggestions.map {
+        let suggestionRanges = suggestions.map { suggestion in
             DrawingRange(
-                id: $0.id,
-                range: $0.sourceRange,
-                isSelected: $0.id == selectedReviewItemID,
+                id: suggestion.id,
+                range: suggestion.sourceRange,
+                isSelected: suggestion.id == selectedReviewItemID,
                 isReadOnlyDiagnostic: false,
                 annotationKind: nil,
                 definitionDiagnosticStatus: nil,
                 isReviewed: false,
                 isStale: !rangeContainsOriginal(
-                    range: $0.sourceRange,
-                    original: $0.original,
+                    range: suggestion.sourceRange,
+                    original: suggestion.original,
                     in: text
                 )
             )
         }
-        let annotationRanges = annotations.map {
+        let annotationRanges = annotations.map { annotation in
             DrawingRange(
-                id: $0.id,
-                range: $0.sourceRange,
-                isSelected: $0.id == selectedReviewItemID,
+                id: annotation.id,
+                range: annotation.sourceRange,
+                isSelected: annotation.id == selectedReviewItemID,
                 isReadOnlyDiagnostic: true,
-                annotationKind: $0.kind,
-                definitionDiagnosticStatus: $0.definitionDiagnosticStatus,
-                isReviewed: reviewedReviewItemIDs.contains($0.id),
+                annotationKind: annotation.kind,
+                definitionDiagnosticStatus: annotation.definitionDiagnosticStatus,
+                isReviewed: reviewedReviewItemIDs.contains(annotation.id),
                 isStale: !rangeContainsOriginal(
-                    range: $0.sourceRange,
-                    original: $0.original,
+                    range: annotation.sourceRange,
+                    original: annotation.original,
                     in: text
                 )
             )
@@ -1328,7 +1458,8 @@ final class SuggestionLayoutManager: NSLayoutManager {
         removeTemporaryAttribute(.font, forCharacterRange: fullRange)
 
         for item in drawingRanges {
-            guard item.range.location >= 0,
+            guard !item.isStale,
+                  item.range.location >= 0,
                   NSMaxRange(item.range) <= textStorage.length
             else {
                 continue
@@ -1344,13 +1475,6 @@ final class SuggestionLayoutManager: NSLayoutManager {
                 value: EditorTypography.bodyBoldFont,
                 forCharacterRange: item.range
             )
-            if item.isStale {
-                addTemporaryAttribute(
-                    .underlineStyle,
-                    value: NSUnderlineStyle.single.rawValue,
-                    forCharacterRange: item.range
-                )
-            }
         }
 
         invalidateDisplay(forCharacterRange: fullRange)
@@ -1365,6 +1489,7 @@ final class SuggestionLayoutManager: NSLayoutManager {
         defer { NSGraphicsContext.restoreGraphicsState() }
 
         for item in drawingRanges {
+            guard !item.isStale else { continue }
             let glyphRange = glyphRange(
                 forCharacterRange: item.range,
                 actualCharacterRange: nil
