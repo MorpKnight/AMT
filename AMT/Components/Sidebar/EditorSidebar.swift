@@ -60,13 +60,7 @@ struct EditorSidebar: View {
                 .padding(.top, 8)
             }
         }
-        .frame(
-            minWidth: 270,
-            idealWidth: 270,
-            maxWidth: 270,
-            maxHeight: .infinity,
-            alignment: .topLeading
-        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 

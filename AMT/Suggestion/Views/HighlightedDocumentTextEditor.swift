@@ -13,7 +13,6 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
     @Binding var structuredDocument: StructuredDocument?
     @Binding var zoomPercent: Int
     var fontSizePoints: CGFloat = EditorTypography.bodyPointSize
-    let sourceKind: StructuredDocument.SourceKind
 
     let suggestions: [EditorSuggestion]
     let annotations: [EditorReviewAnnotation]
@@ -40,7 +39,6 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         structuredDocument: Binding<StructuredDocument?>,
         zoomPercent: Binding<Int>,
         fontSizePoints: CGFloat = EditorTypography.bodyPointSize,
-        sourceKind: StructuredDocument.SourceKind = .plainText,
         suggestions: [EditorSuggestion],
         annotations: [EditorReviewAnnotation],
         definitionResolutions: [UUID: AIConnectorDefinitionResolution] = [:],
@@ -64,7 +62,6 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         self._structuredDocument = structuredDocument
         self._zoomPercent = zoomPercent
         self.fontSizePoints = fontSizePoints
-        self.sourceKind = sourceKind
         self.suggestions = suggestions
         self.annotations = annotations
         self.definitionResolutions = definitionResolutions
@@ -96,13 +93,9 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
         scrollView.contentView.postsBoundsChangedNotifications = true
-        // Zoom is temporarily disabled. Keep the magnification constants and
-        // coordinator implementation below dormant so the feature can be
-        // re-enabled without rebuilding the editor wiring.
-        scrollView.allowsMagnification = false
-        // scrollView.allowsMagnification = true
-        // scrollView.minMagnification = EditorZoom.magnification(for: EditorZoom.minimumPercent)
-        // scrollView.maxMagnification = EditorZoom.magnification(for: EditorZoom.maximumPercent)
+        scrollView.allowsMagnification = true
+        scrollView.minMagnification = EditorZoom.magnification(for: EditorZoom.minimumPercent)
+        scrollView.maxMagnification = EditorZoom.magnification(for: EditorZoom.maximumPercent)
 
         let textStorage = NSTextStorage()
         let layoutManager = SuggestionLayoutManager()
@@ -152,11 +145,9 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         textView.onHover = { [weak coordinator = context.coordinator] point in
             coordinator?.handleHover(at: point)
         }
-        // Zoom keyboard commands are intentionally disabled while font-size
-        // controls are the only supported enlargement mechanism.
-        // textView.onZoomCommand = { [weak coordinator = context.coordinator] command in
-        //     coordinator?.handleZoomCommand(command) ?? false
-        // }
+        textView.onZoomCommand = { [weak coordinator = context.coordinator] command in
+            coordinator?.handleZoomCommand(command) ?? false
+        }
 
         textStorage.setAttributedString(
             renderedText(defaultFont: textView.font ?? EditorTypography.defaultFont)
@@ -192,8 +183,8 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             structuredDocument: structuredDocument,
             documentID: documentID
         )
-        // Zoom is disabled; keep this call commented for future re-enable.
-        // context.coordinator.updateZoom(to: zoomPercent)
+        context.coordinator.updateZoom(to: zoomPercent)
+        context.coordinator.updateFontSize(to: fontSizePoints)
         context.coordinator.updateHighlights(
             suggestions: suggestions,
             annotations: annotations,
@@ -235,10 +226,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         private var textContainer: NSTextContainer?
         private var boundsObserver: NSObjectProtocol?
         private var magnificationObserver: NSObjectProtocol?
-        private var liveMagnificationObserver: NSObjectProtocol?
         private var scheduledZoomPercent: Int?
-        private var zoomApplicationScheduled = false
-        private var isLiveMagnifying = false
         private var popover: NSPopover?
         private var presentedSuggestionID: UUID?
         private var lastDefinitionResolutionSignature: String?
@@ -263,9 +251,6 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             if let magnificationObserver {
                 NotificationCenter.default.removeObserver(magnificationObserver)
             }
-            if let liveMagnificationObserver {
-                NotificationCenter.default.removeObserver(liveMagnificationObserver)
-            }
         }
 
         func connect(
@@ -288,10 +273,8 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             currentRichTextData = richTextData
             currentStructuredDocument = structuredDocument
             resolvedReviewItemIDs.removeAll()
-            syncFontSizeStateFromDocument()
 
-            // Zoom is disabled; keep this call commented for future re-enable.
-            // updateZoom(to: zoomPercent)
+            updateZoom(to: zoomPercent)
 
             boundsObserver = NotificationCenter.default.addObserver(
                 forName: NSView.boundsDidChangeNotification,
@@ -300,21 +283,6 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             ) { [weak self] _ in
                 Task { @MainActor [weak self] in
                     self?.handleScroll()
-                    // self?.scheduleZoomApplication()
-                }
-            }
-
-            // Magnification observers are intentionally dormant while zoom is
-            // disabled. Restore these registrations together with the zoom
-            // callback above when the feature is re-enabled.
-            /*
-            liveMagnificationObserver = NotificationCenter.default.addObserver(
-                forName: NSScrollView.willStartLiveMagnifyNotification,
-                object: scrollView,
-                queue: .main
-            ) { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    self?.isLiveMagnifying = true
                 }
             }
 
@@ -324,12 +292,9 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 queue: .main
             ) { [weak self] _ in
                 Task { @MainActor [weak self] in
-                    self?.isLiveMagnifying = false
                     self?.syncZoomFromScrollView()
-                    self?.scheduleZoomApplication()
                 }
             }
-            */
 
             publishHistoryState()
             publishCaretLocation()
@@ -364,10 +329,6 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             currentRichTextData = richTextData
             currentStructuredDocument = structuredDocument
             let rendered = parent.renderedText(defaultFont: font)
-
-            if didChangeDocument {
-                syncFontSizeStateFromDocument()
-            }
 
             // A text edit writes the canonical bindings back to SwiftUI. The
             // representable may receive that update while AppKit is still
@@ -414,69 +375,72 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         }
 
         func updateZoom(to percent: Int) {
-            scheduledZoomPercent = EditorZoom.clamp(percent)
-            scheduleZoomApplication()
-        }
-
-        private func scheduleZoomApplication() {
-            guard !zoomApplicationScheduled else { return }
-            zoomApplicationScheduled = true
-
-            // SwiftUI may call updateNSView while AppKit is still laying out
-            // the split view. Defer the mutation and let bounds/live-magnify
-            // notifications retry a request that is not ready yet.
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.zoomApplicationScheduled = false
-                self.applyPendingZoomIfPossible()
-            }
-        }
-
-        private func applyPendingZoomIfPossible() {
-            guard let requestedPercent = scheduledZoomPercent,
-                  let scrollView,
-                  !isLiveMagnifying,
-                  scrollView.window != nil,
-                  scrollView.allowsMagnification,
-                  !scrollView.inLiveResize,
-                  !scrollView.needsLayout,
-                  !scrollView.contentView.needsLayout,
-                  scrollView.bounds.width.isFinite,
-                  scrollView.bounds.height.isFinite,
-                  scrollView.bounds.width > 0,
-                  scrollView.bounds.height > 0,
-                  let documentView = scrollView.documentView,
-                  !documentView.inLiveResize,
-                  !documentView.needsLayout,
-                  EditorZoom.isValid(rect: documentView.frame),
-                  let center = EditorZoom.safeCenter(
-                      visibleRect: scrollView.documentVisibleRect,
-                      documentBounds: documentView.bounds
-                  ) else {
-                return
-            }
-
-            let magnification = EditorZoom.magnification(for: requestedPercent)
+            guard let scrollView else { return }
+            let clampedPercent = EditorZoom.clamp(percent)
+            let magnification = EditorZoom.magnification(for: clampedPercent)
             let currentMagnification = scrollView.magnification
 
-            if currentMagnification.isFinite,
-               abs(currentMagnification - magnification) <= 0.001 {
+            guard !currentMagnification.isFinite
+                    || abs(currentMagnification - magnification) > 0.001
+            else {
                 scheduledZoomPercent = nil
                 return
             }
 
-            if currentMagnification.isFinite {
+            // A SwiftUI representable update can run from inside AppKit's
+            // layout transaction. Mutating NSScrollView.magnification here
+            // synchronously re-enters layout and AppKit raises an
+            // NSException (which appears in Xcode as EXC_BREAKPOINT at
+            // _crashOnException). Defer the mutation until the current
+            // layout pass has completed and discard stale requests when the
+            // user clicks the zoom controls repeatedly.
+            scheduledZoomPercent = clampedPercent
+            DispatchQueue.main.async { [weak self] in
+                guard let self,
+                      self.scheduledZoomPercent == clampedPercent,
+                      let scrollView = self.scrollView else {
+                    return
+                }
+                self.scheduledZoomPercent = nil
+
+                guard scrollView.window != nil,
+                      scrollView.bounds.width.isFinite,
+                      scrollView.bounds.height.isFinite,
+                      scrollView.bounds.width > 0,
+                      scrollView.bounds.height > 0 else {
+                    return
+                }
+
+                let visibleRect = scrollView.documentVisibleRect
+                guard visibleRect.origin.x.isFinite,
+                      visibleRect.origin.y.isFinite,
+                      visibleRect.size.width.isFinite,
+                      visibleRect.size.height.isFinite else {
+                    return
+                }
+
+                let currentMagnification = scrollView.magnification
+                guard !currentMagnification.isFinite
+                        || abs(currentMagnification - magnification) > 0.001 else {
+                    return
+                }
+
                 scrollView.setMagnification(
                     magnification,
-                    centeredAt: center
+                    centeredAt: NSPoint(x: visibleRect.midX, y: visibleRect.midY)
                 )
-            } else {
-                // A transient NaN/∞ can occur while AppKit retile/layouts the
-                // scroll view. Direct assignment repairs the value without
-                // asking AppKit to preserve an invalid viewport center.
-                scrollView.magnification = magnification
             }
-            scheduledZoomPercent = nil
+        }
+
+        func updateFontSize(to newSize: CGFloat) {
+            guard let textView else { return }
+            let clampedSize = min(max(newSize, EditorViewModel.minimumFontSize), EditorViewModel.maximumFontSize)
+            let currentSize = textView.font?.pointSize ?? EditorTypography.bodyPointSize
+            guard abs(currentSize - clampedSize) > 0.1 else { return }
+            let newFont = NSFont.systemFont(ofSize: clampedSize)
+            textView.font = newFont
+            textView.typingAttributes[.font] = newFont
+            textView.typingAttributes[.foregroundColor] = NSColor.black
         }
 
         func handleZoomCommand(_ command: EditorZoomCommand) -> Bool {
@@ -498,7 +462,6 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
 
         private func syncZoomFromScrollView() {
             guard let scrollView else { return }
-            guard scrollView.magnification.isFinite else { return }
             let percent = EditorZoom.percent(for: scrollView.magnification)
             guard parent.zoomPercent != percent else { return }
             parent.zoomPercent = percent
@@ -721,16 +684,6 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         func applyFormatting(_ action: FormattingAction) {
             guard let textView else { return }
 
-            if case let .fontScale(previousSize, _) = action,
-               !parent.sourceKind.usesCanonicalTypography {
-                // Native Word/RTF formatting is source-faithful. If an old
-                // pending action arrives while the document is switching,
-                // restore the control state without touching the text.
-                parent.formattingViewModel?.fontSizePoints = previousSize
-                publishHistoryState()
-                return
-            }
-
             switch action {
             case .undo:
                 undo()
@@ -738,11 +691,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
                 redo()
             default:
                 performUndoableMutation(named: actionName(for: action)) {
-                    RichTextFormatter.apply(
-                        action,
-                        to: textView,
-                        sourceKind: parent.sourceKind
-                    )
+                    RichTextFormatter.apply(action, to: textView)
                 }
             }
         }
@@ -762,30 +711,6 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             parent.formattingViewModel?.canRedo = textView.undoManager?.canRedo == true
         }
 
-        private func syncFontSizeStateFromDocument() {
-            guard let viewModel = parent.formattingViewModel else { return }
-            guard parent.sourceKind.usesCanonicalTypography else {
-                viewModel.resetFontSizeState()
-                return
-            }
-
-            let bodySize = parent.structuredDocument?.blocks
-                .first(where: { block in
-                    guard case .paragraph = block.kind else { return false }
-                    return block.runs.contains { $0.fontSize != nil }
-                })?
-                .runs
-                .compactMap(\.fontSize)
-                .first
-                .map { CGFloat($0) }
-
-            let resolvedSize = bodySize ?? EditorTypography.bodyPointSize
-            viewModel.fontSizePoints = min(
-                max(resolvedSize, EditorViewModel.minimumFontSize),
-                EditorViewModel.maximumFontSize
-            )
-        }
-
         private func actionName(for action: FormattingAction) -> String {
             switch action {
             case .textStyle(let style): return style.rawValue
@@ -795,11 +720,6 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             case .strikethrough: return "Strikethrough"
             case .listStyle(let style):
                 return style == .bulleted ? "Bulleted List" : "Numbered List"
-            case .alignment(let alignment): return alignment.label
-            case .indent(let direction): return direction.label
-            case .link(let url): return url == nil ? "Remove Link" : "Add Link"
-            case .clearFormatting: return "Clear Formatting"
-            case .fontScale: return "Font Size"
             case .undo, .redo: return ""
             }
         }
@@ -1131,17 +1051,9 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             currentRichTextData = rtfData
             parent.text = plainText
             parent.richTextData = rtfData
-            let sourceKind = parent.sourceKind != .unknown
-                ? parent.sourceKind
-                : (currentStructuredDocument?.sourceKind ?? .plainText)
-            let normalized = StructuredDocument.normalize(
-                richText,
-                sourceKind: sourceKind,
-                typographyVersion: EditorTypography.typographyVersion
-            )
+            let normalized = StructuredDocument.normalize(richText)
             currentStructuredDocument = normalized
             parent.structuredDocument = normalized
-            syncFontSizeStateFromDocument()
             publishHistoryState()
         }
 
@@ -1492,14 +1404,12 @@ final class SuggestionTextView: NSTextView {
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         guard modifiers.contains(.command),
               !modifiers.contains(.option),
-              !modifiers.contains(.control)
+              !modifiers.contains(.control),
+              let characters = event.charactersIgnoringModifiers?.lowercased()
         else {
             return super.performKeyEquivalent(with: event)
         }
 
-        // Zoom shortcuts are intentionally disabled. Keep the previous
-        // command routing commented so it can be restored with the toolbar.
-        /*
         let command: EditorZoomCommand?
         switch characters {
         case "-", "_": command = .zoomOut
@@ -1511,7 +1421,6 @@ final class SuggestionTextView: NSTextView {
         if let command, onZoomCommand?(command) == true {
             return true
         }
-        */
         return super.performKeyEquivalent(with: event)
     }
 }
