@@ -7,6 +7,40 @@
 
 import Foundation
 
+/// Read-only summary of the corpus that powers Dictionary.
+nonisolated struct LegalDictionaryCorpusSummary: Hashable, Sendable {
+    let corpusVersion: String?
+    let sourceDatasetView: String?
+    let conceptCount: Int
+    let regulationCount: Int
+    let relationCount: Int
+    let sourcePassageCount: Int
+    let sourceNames: [String]
+
+    var isEnriched: Bool {
+        regulationCount > 0 || relationCount > 0 || sourcePassageCount > 0
+    }
+
+    var datasetLabel: String {
+        switch sourceDatasetView {
+        case "combined-deduplicated":
+            "Korpus gabungan terkurasi"
+        case "dictionary-primary":
+            "Korpus istilah utama"
+        case "dictionary-serving":
+            "Korpus kamus terkurasi"
+        case "dictionary-official":
+            "Kamus dengan rujukan resmi"
+        case "combined":
+            "Korpus gabungan"
+        case let .some(view):
+            "Korpus versi \(view)"
+        default:
+            "Kamus lokal"
+        }
+    }
+}
+
 // MARK: - Legal Reference Model
 
 /// Detailed statutory or institutional reference for a legal definition.
@@ -24,6 +58,14 @@ nonisolated struct LegalReference: Hashable, Sendable {
     let pageStart: Int?
     let pageEnd: Int?
     let sourcePassageID: String?
+    let officialStatus: String?
+    let number: String?
+    let year: Int?
+    let sourcePassageText: String?
+    let matchedEvidenceText: String?
+    let verificationStatus: LegalCorpusReviewStatus?
+    let attributionStatus: String?
+    let isDefinitionAuthority: Bool
 
     init(
         lawName: String,
@@ -38,7 +80,15 @@ nonisolated struct LegalReference: Hashable, Sendable {
         articleLocator: String? = nil,
         pageStart: Int? = nil,
         pageEnd: Int? = nil,
-        sourcePassageID: String? = nil
+        sourcePassageID: String? = nil,
+        officialStatus: String? = nil,
+        number: String? = nil,
+        year: Int? = nil,
+        sourcePassageText: String? = nil,
+        matchedEvidenceText: String? = nil,
+        verificationStatus: LegalCorpusReviewStatus? = nil,
+        attributionStatus: String? = nil,
+        isDefinitionAuthority: Bool = true
     ) {
         self.lawName = lawName
         self.lawTitle = lawTitle
@@ -53,31 +103,99 @@ nonisolated struct LegalReference: Hashable, Sendable {
         self.pageStart = pageStart
         self.pageEnd = pageEnd
         self.sourcePassageID = sourcePassageID
+        self.officialStatus = officialStatus
+        self.number = number
+        self.year = year
+        self.sourcePassageText = sourcePassageText
+        self.matchedEvidenceText = matchedEvidenceText
+        self.verificationStatus = verificationStatus
+        self.attributionStatus = attributionStatus
+        self.isDefinitionAuthority = isDefinitionAuthority
     }
 }
 
 // MARK: - Definition Item Model
+
+nonisolated enum LegalDefinitionRole: String, Hashable, Sendable {
+    case primary
+    case alternative
+}
 
 /// Represents a single numbered definition under a legal term.
 nonisolated struct DefinitionItem: Identifiable, Hashable, Sendable {
     var id: Int
     let text: String
     let reference: LegalReference?
+    let additionalReferences: [LegalReference]
     let sources: [String]
     let sourceURLs: [URL]
+    let role: LegalDefinitionRole
+    let attributionStatus: String?
+    let selectionStatus: String?
+    let selectionReason: String?
+    let verificationStatus: LegalCorpusReviewStatus?
+    let isActionable: Bool
 
     init(
         id: Int,
         text: String,
         reference: LegalReference? = nil,
+        additionalReferences: [LegalReference] = [],
         sources: [String] = [],
-        sourceURLs: [URL] = []
+        sourceURLs: [URL] = [],
+        role: LegalDefinitionRole = .primary,
+        attributionStatus: String? = nil,
+        selectionStatus: String? = nil,
+        selectionReason: String? = nil,
+        verificationStatus: LegalCorpusReviewStatus? = nil,
+        isActionable: Bool = false
     ) {
         self.id = id
         self.text = text
         self.reference = reference
+        self.additionalReferences = additionalReferences
         self.sources = sources
         self.sourceURLs = sourceURLs
+        self.role = role
+        self.attributionStatus = attributionStatus
+        self.selectionStatus = selectionStatus
+        self.selectionReason = selectionReason
+        self.verificationStatus = verificationStatus
+        self.isActionable = isActionable
+    }
+
+    var allReferences: [LegalReference] {
+        var seen: Set<String> = []
+        return ([reference] + additionalReferences).compactMap { candidate in
+            guard let candidate else { return nil }
+            let key = candidate.referenceID
+                ?? "\(candidate.lawName)|\(candidate.lawTitle ?? "")"
+            guard seen.insert(key).inserted else { return nil }
+            return candidate
+        }
+    }
+
+    var provenanceLabel: String {
+        switch attributionStatus {
+        case "official_evidence":
+            "Ditemukan dalam teks peraturan"
+        case "explicit_definition_source", "explicit_reference":
+            "Rujukan resmi"
+        case "page_related_only", "page_related_reference":
+            "Konteks regulasi"
+        case "unresolved_only", "unresolved_reference":
+            "Rujukan belum terverifikasi"
+        case "single_page_reference", "source_page_single_reference":
+            "Konteks halaman"
+        case "no_reference":
+            "Belum ada rujukan resmi"
+        default:
+            role == .primary ? "Definisi utama" : "Status sumber belum diketahui"
+        }
+    }
+
+    var isDefinitionAuthority: Bool {
+        reference?.isDefinitionAuthority ?? false
     }
 }
 
@@ -94,6 +212,9 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
     let applicabilityStatus: LegalCorpusApplicabilityStatus
     let isActionable: Bool
     let regulationRelations: [LegalRegulationRelation]
+    let contextualAlternatives: [DefinitionItem]
+    let selectionStatus: String?
+    let selectionReason: String?
 
     init(
         term: String,
@@ -103,7 +224,10 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
         corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy,
         applicabilityStatus: LegalCorpusApplicabilityStatus = .unknown,
         isActionable: Bool = false,
-        regulationRelations: [LegalRegulationRelation] = []
+        regulationRelations: [LegalRegulationRelation] = [],
+        contextualAlternatives: [DefinitionItem] = [],
+        selectionStatus: String? = nil,
+        selectionReason: String? = nil
     ) {
         self.term = term
         self.definitions = definitions
@@ -113,6 +237,9 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
         self.applicabilityStatus = applicabilityStatus
         self.isActionable = isActionable
         self.regulationRelations = regulationRelations
+        self.contextualAlternatives = contextualAlternatives
+        self.selectionStatus = selectionStatus
+        self.selectionReason = selectionReason
     }
 
     /// Single-definition convenience initializer
@@ -125,7 +252,10 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
         corpusVersion: String = LegalDictionaryCorpusVersion.unspecifiedLegacy,
         applicabilityStatus: LegalCorpusApplicabilityStatus = .unknown,
         isActionable: Bool = false,
-        regulationRelations: [LegalRegulationRelation] = []
+        regulationRelations: [LegalRegulationRelation] = [],
+        contextualAlternatives: [DefinitionItem] = [],
+        selectionStatus: String? = nil,
+        selectionReason: String? = nil
     ) {
         self.term = term
         self.definitions = [
@@ -137,6 +267,9 @@ nonisolated struct LegalGlossaryEntry: Identifiable, Hashable, Sendable {
         self.applicabilityStatus = applicabilityStatus
         self.isActionable = isActionable
         self.regulationRelations = regulationRelations
+        self.contextualAlternatives = contextualAlternatives
+        self.selectionStatus = selectionStatus
+        self.selectionReason = selectionReason
     }
 }
 

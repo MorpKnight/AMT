@@ -15,7 +15,7 @@ struct CustomTitleBar: View {
     var body: some View {
         HStack {
             Text("Document")
-                .font(.system(size: 24, weight: .bold))
+                .appFont(.displayMedium)
                 .foregroundStyle(.primary)
 
             Spacer()

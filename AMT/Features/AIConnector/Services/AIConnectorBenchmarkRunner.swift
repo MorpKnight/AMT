@@ -15,12 +15,42 @@ final class AIConnectorBenchmarkRunner {
     var onGenerationProgress: (@MainActor @Sendable (Int) -> Void)?
     var onProgressStage: (@MainActor @Sendable (AIConnectorProgressStage) -> Void)?
 
+    func prepareResources(
+        modelVariant: AIConnectorModelVariant,
+        observationCollector: AIConnectorObservationCollector? = nil
+    ) async throws {
+        try await processor.prepareResources(
+            modelVariant: modelVariant,
+            downloadProgress: { [weak self] value in
+                Task { @MainActor [weak self] in
+                    self?.onDownloadProgress?(value)
+                }
+            },
+            semanticProgress: { [weak self] value in
+                Task { @MainActor [weak self] in
+                    self?.onSemanticProgress?(value)
+                }
+            },
+            languageProgress: { _ in },
+            observationCollector: observationCollector
+        )
+    }
+
+    func cacheSnapshot() async -> [String: AIConnectorCachedSegmentResult] {
+        await processor.cacheSnapshot()
+    }
+
+    func restoreCache(_ snapshot: [String: AIConnectorCachedSegmentResult]) async {
+        await processor.restoreCache(snapshot)
+    }
+
     init(
         service: QwenSuggestionService,
         dictionaryStore: LegalDictionaryStore,
         ruleStore: AIConnectorRuleStore? = nil,
         modelReviewHandler: AIConnectorModelReviewHandler? = nil,
-        candidateDecisionHandler: AIConnectorCandidateDecisionHandler? = nil
+        candidateDecisionHandler: AIConnectorCandidateDecisionHandler? = nil,
+        enablePhaseTwo: Bool = false
     ) {
         let cache = AIConnectorSegmentCache()
         let processor = AIConnectorSegmentProcessor(
@@ -29,7 +59,8 @@ final class AIConnectorBenchmarkRunner {
             ruleStore: ruleStore ?? AIConnectorRuleStore(),
             segmentCache: cache,
             modelReviewHandler: modelReviewHandler,
-            candidateDecisionHandler: candidateDecisionHandler
+            candidateDecisionHandler: candidateDecisionHandler,
+            enablePhaseTwo: enablePhaseTwo
         )
         self.processor = processor
         self.workQueue = AIConnectorWorkQueue(processor: processor)
@@ -42,14 +73,18 @@ final class AIConnectorBenchmarkRunner {
         samples: [AIConnectorSample] = [],
         resetCache: Bool = true,
         generationProfilePreset: AIConnectorGenerationProfilePreset = .greedy,
-        progress: @escaping @MainActor (Int, Int) -> Void
+        progress: @escaping @MainActor (Int, Int) -> Void,
+        observationCollector: AIConnectorObservationCollector? = nil,
+        resultObserver: (@MainActor (AIConnectorSegmentResult) -> Void)? = nil
     ) async throws -> AIConnectorBenchmarkReport {
         let startedAt = Date()
+        let observationClock = ContinuousClock()
         let samples = samples.isEmpty ? AIConnectorSample.samples : samples
         if resetCache {
             await processor.clearCache()
         }
 
+        let segmentationStartedAt = observationClock.now
         var queueSegments: [AIReviewSegment] = []
         var sampleBySegmentID: [Int: AIConnectorSample] = [:]
         var skippedSamples: [AIConnectorSample] = []
@@ -76,11 +111,36 @@ final class AIConnectorBenchmarkRunner {
             sampleBySegmentID[segmentID] = sample
             sourceLocation += sample.text.utf16.count + 2
         }
+        if let observationCollector {
+            await observationCollector.setInputMetadata(
+                utf16Length: samples
+                    .map(\.text)
+                    .joined(separator: "\n\n")
+                    .utf16
+                    .count,
+                segmentCount: queueSegments.count
+            )
+            await observationCollector.recordStage(
+                .segmenting,
+                duration: AIConnectorObservationTiming.seconds(
+                    segmentationStartedAt.duration(to: observationClock.now)
+                )
+            )
+        }
 
         let runID = UUID()
+        let protectionStartedAt = observationClock.now
         let protectionContext = processor.protectionContext(
             for: samples.map(\.text).joined(separator: "\n\n")
         )
+        if let observationCollector {
+            await observationCollector.recordStage(
+                .protectionContext,
+                duration: AIConnectorObservationTiming.seconds(
+                    protectionStartedAt.duration(to: observationClock.now)
+                )
+            )
+        }
         let generationProfile = generationProfilePreset.profile(
             for: modelVariant,
             thinkingEnabled: thinkingEnabled
@@ -108,7 +168,8 @@ final class AIConnectorBenchmarkRunner {
             progressStage: { [weak self] stage in
                 self?.onProgressStage?(stage)
             },
-            generationProfile: generationProfile
+            generationProfile: generationProfile,
+            observationCollector: observationCollector
         )
 
         var resultBySegmentID: [Int: AIConnectorSegmentResult] = [:]
@@ -122,6 +183,7 @@ final class AIConnectorBenchmarkRunner {
                     switch event {
                     case let .result(result):
                         resultBySegmentID[result.segment.id] = result
+                        resultObserver?(result)
                         progress(resultBySegmentID.count, samples.count)
                         await workQueue.acknowledgeResult()
                     case .circuitBreakerActivated:

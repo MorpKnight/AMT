@@ -19,23 +19,33 @@ struct AIConnectorDeterministicSuggestionEngine: Sendable {
         for segment: AIReviewSegment,
         glossaryMatches: [LegalDictionaryMatch] = []
     ) -> [AIParsedReview] {
-        var results: [AIParsedReview] = []
+        anchoredSuggestions(for: segment, glossaryMatches: glossaryMatches)
+            .map(\.parsedReview)
+    }
+
+    /// Returns deterministic reviews together with every source occurrence.
+    /// The legacy `suggestions` method above intentionally remains available
+    /// for callers that only need parsed output.
+    func anchoredSuggestions(
+        for segment: AIReviewSegment,
+        glossaryMatches: [LegalDictionaryMatch] = []
+    ) -> [AIConnectorAnchoredParsedReview] {
+        var anchoredResults: [AIConnectorAnchoredParsedReview] = []
 
         for rule in ruleStore.activeRules {
             guard rule.matcher == .tokenSequence,
-                  let change = uniqueChange(
-                      searchTerm: rule.value,
-                      replacement: rule.replacement,
-                      in: segment.targetText
-                  ),
                   !rule.exceptions.contains(where: {
                       segment.targetText.localizedCaseInsensitiveContains($0)
                   }) else {
                 continue
             }
 
-            results.append(
-                AIParsedReview(
+            for change in changes(
+                searchTerm: rule.value,
+                replacement: rule.replacement,
+                in: segment.targetText
+            ) {
+                let parsedReview = AIParsedReview(
                     status: .suggestion,
                     category: rule.category,
                     original: change.original,
@@ -44,19 +54,25 @@ struct AIConnectorDeterministicSuggestionEngine: Sendable {
                     reason: rule.reason,
                     ruleID: rule.id
                 )
-            )
+                anchoredResults.append(
+                    AIConnectorAnchoredParsedReview(
+                        parsedReview: parsedReview,
+                        sourceAnchor: AIConnectorReviewAnchor(
+                            segmentID: segment.id,
+                            sourceRange: change.range,
+                            original: change.original
+                        )
+                    )
+                )
+            }
         }
 
         for match in glossaryMatches where !match.isDirectTermMatch {
-            guard let change = replacingDefinition(
+            for change in replacingDefinitions(
                 for: match.entry,
                 in: segment.targetText
-            ) else {
-                continue
-            }
-
-            results.append(
-                AIParsedReview(
+            ) {
+                let parsedReview = AIParsedReview(
                     status: .suggestion,
                     category: .terminology,
                     original: change.original,
@@ -64,14 +80,24 @@ struct AIConnectorDeterministicSuggestionEngine: Sendable {
                     glossaryID: "G1",
                     reason: "Mengusulkan istilah glossary yang cocok dengan pengertian pada target."
                 )
-            )
+                anchoredResults.append(
+                    AIConnectorAnchoredParsedReview(
+                        parsedReview: parsedReview,
+                        sourceAnchor: AIConnectorReviewAnchor(
+                            segmentID: segment.id,
+                            sourceRange: change.range,
+                            original: change.original
+                        )
+                    )
+                )
+            }
         }
 
         // Candidate-first selection applies the segment cap after all local
         // evidence (rules and verified glossary matches) has been collected.
         // Keeping every local proposal here prevents a third rule from
         // accidentally hiding a stronger verified terminology candidate.
-        return results
+        return anchoredResults
     }
 
     func suggestion(
@@ -100,39 +126,37 @@ struct AIConnectorDeterministicSuggestionEngine: Sendable {
         )
     }
 
-    private func uniqueChange(
+    private func changes(
         searchTerm: String,
         replacement: String,
         in text: String
-    ) -> TextChange? {
-        guard let firstRange = text.range(
-            of: searchTerm,
-            options: [.caseInsensitive, .diacriticInsensitive]
-        ) else {
-            return nil
-        }
+    ) -> [TextChange] {
+        guard !searchTerm.isEmpty else { return [] }
 
-        let first = TextChange(
-            original: String(text[firstRange]),
-            replacement: replacement
-        )
-        let afterFirst = text.index(after: firstRange.lowerBound)
-        guard afterFirst < text.endIndex else { return first }
-
-        let remainder = text[afterFirst..<text.endIndex]
-        guard remainder.range(
-            of: searchTerm,
-            options: [.caseInsensitive, .diacriticInsensitive]
-        ) == nil else {
-            return nil
+        var changes: [TextChange] = []
+        var searchStart = text.startIndex
+        while searchStart < text.endIndex,
+              let range = text.range(
+                  of: searchTerm,
+                  options: [.caseInsensitive, .diacriticInsensitive],
+                  range: searchStart..<text.endIndex
+              ) {
+            changes.append(
+                TextChange(
+                    original: String(text[range]),
+                    replacement: replacement,
+                    range: NSRange(range, in: text)
+                )
+            )
+            searchStart = range.upperBound
         }
-        return first
+        return changes
     }
 
-    private func replacingDefinition(
+    private func replacingDefinitions(
         for entry: LegalDictionaryEntry,
         in text: String
-    ) -> TextChange? {
+    ) -> [TextChange] {
         let definition = entry.definition.trimmingCharacters(in: .whitespacesAndNewlines)
         let definitionWithoutTrailingPunctuation = removingTrailingSentencePunctuation(
             from: definition
@@ -149,26 +173,23 @@ struct AIConnectorDeterministicSuggestionEngine: Sendable {
             return String(definitionWithoutTrailingPunctuation.dropFirst(prefix.count))
         }
 
-        for phrase in phrases.sorted(by: { $0.count > $1.count }) {
-            guard !phrase.isEmpty,
-                  text.range(
-                      of: entry.term,
-                      options: [.caseInsensitive, .diacriticInsensitive]
-                  ) == nil,
-                  let range = text.range(
-                      of: phrase,
-                      options: [.caseInsensitive, .diacriticInsensitive]
-                  ) else {
-                continue
-            }
-
-            return TextChange(
-                original: String(text[range]),
-                replacement: entry.term
-            )
+        guard text.range(
+            of: entry.term,
+            options: [.caseInsensitive, .diacriticInsensitive]
+        ) == nil else {
+            return []
         }
 
-        return nil
+        return phrases
+            .sorted(by: { $0.count > $1.count })
+            .flatMap { phrase in
+                guard !phrase.isEmpty else { return [TextChange]() }
+                return changes(
+                    searchTerm: phrase,
+                    replacement: entry.term,
+                    in: text
+                )
+            }
     }
 
     private func removingTrailingSentencePunctuation(from text: String) -> String {
@@ -186,5 +207,6 @@ struct AIConnectorDeterministicSuggestionEngine: Sendable {
     private struct TextChange: Sendable {
         let original: String
         let replacement: String
+        let range: NSRange
     }
 }

@@ -95,7 +95,7 @@ struct AIConnectorDefinitionDetector: Sendable {
         )
     }
 
-    static func isUsableEvidence(_ entry: LegalDictionaryEntry) -> Bool {
+    nonisolated static func isUsableEvidence(_ entry: LegalDictionaryEntry) -> Bool {
         entry.authority == .verified
             && entry.isActionable
             && entry.corpusVersion != LegalDictionaryCorpusVersion.legacyKamusV1

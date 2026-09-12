@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 struct AIReviewSegment: Hashable, Sendable {
@@ -8,6 +9,7 @@ struct AIReviewSegment: Hashable, Sendable {
     let previousContext: String?
     let nextContext: String?
     let isTooLong: Bool
+    let context: AIConnectorSegmentContext?
 
     init(
         id: Int,
@@ -16,7 +18,8 @@ struct AIReviewSegment: Hashable, Sendable {
         targetText: String,
         previousContext: String?,
         nextContext: String?,
-        isTooLong: Bool = false
+        isTooLong: Bool = false,
+        context: AIConnectorSegmentContext? = nil
     ) {
         self.id = id
         self.sourceLocation = sourceLocation
@@ -25,6 +28,72 @@ struct AIReviewSegment: Hashable, Sendable {
         self.previousContext = previousContext
         self.nextContext = nextContext
         self.isTooLong = isTooLong
+        self.context = context
+    }
+}
+
+/// A segment-relative source anchor for a review result.
+///
+/// Ranges use UTF-16 offsets because the AppKit editor uses `NSRange`. The
+/// hash lets the consumer verify the exact original text without retaining a
+/// second copy of that text in the anchor.
+nonisolated struct AIConnectorReviewAnchor: Codable, Hashable, Sendable {
+    let segmentID: Int
+    let sourceLocation: Int
+    let sourceLength: Int
+    let originalSHA256: String
+
+    init(
+        segmentID: Int,
+        sourceLocation: Int,
+        sourceLength: Int,
+        originalSHA256: String
+    ) {
+        self.segmentID = segmentID
+        self.sourceLocation = sourceLocation
+        self.sourceLength = sourceLength
+        self.originalSHA256 = originalSHA256
+    }
+
+    init(
+        segmentID: Int,
+        sourceRange: NSRange,
+        original: String
+    ) {
+        self.init(
+            segmentID: segmentID,
+            sourceLocation: sourceRange.location,
+            sourceLength: sourceRange.length,
+            originalSHA256: Self.sha256(original)
+        )
+    }
+
+    var range: NSRange {
+        NSRange(location: sourceLocation, length: sourceLength)
+    }
+
+    func isValid(
+        for segment: AIReviewSegment,
+        original: String
+    ) -> Bool {
+        guard segment.id == segmentID,
+              sourceLocation >= 0,
+              sourceLength > 0,
+              sourceLength == original.utf16.count,
+              sourceLocation <= segment.targetText.utf16.count,
+              sourceLength <= segment.targetText.utf16.count - sourceLocation,
+              (segment.targetText as NSString).substring(with: range) == original
+        else {
+            return false
+        }
+
+        return Self.sha256(original) == originalSHA256
+    }
+
+    private static func sha256(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
     }
 }
 
@@ -113,7 +182,7 @@ enum AIConnectorRejectionClass: String, Codable, Hashable, Sendable {
     case cancelled
 }
 
-enum AIConnectorReviewMode: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
+nonisolated enum AIConnectorReviewMode: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case deterministic = "deterministic"
     case hybrid = "hybrid"
     case modelOnly = "modelOnly"
@@ -147,7 +216,7 @@ enum AIConnectorReviewMode: String, CaseIterable, Codable, Identifiable, Hashabl
     }
 }
 
-enum AIConnectorModelVariant: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
+nonisolated enum AIConnectorModelVariant: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case qwen35_2b = "qwen35-2b"
     case qwen35Legal4B = "qwen35-legal-4b"
     case qwen35Base4B = "qwen35-base-4b"
@@ -260,7 +329,7 @@ struct AIConnectorGenerationProfile: Hashable, Sendable {
     }
 }
 
-enum AIConnectorGenerationProfilePreset: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
+nonisolated enum AIConnectorGenerationProfilePreset: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case greedy
     case lowVariance = "low-variance"
     case officialInstruct = "official-instruct"
@@ -336,13 +405,13 @@ enum AIConnectorGenerationProfilePreset: String, CaseIterable, Codable, Identifi
     }
 }
 
-enum AIConnectorGenerationStopReason: String, Codable, Hashable, Sendable {
+nonisolated enum AIConnectorGenerationStopReason: String, Codable, Hashable, Sendable {
     case stop
     case length
     case cancelled
 }
 
-struct AIConnectorGenerationMetrics: Codable, Hashable, Sendable {
+nonisolated struct AIConnectorGenerationMetrics: Codable, Hashable, Sendable {
     let promptTokenCount: Int
     let generationTokenCount: Int
     let promptDuration: TimeInterval
@@ -432,11 +501,25 @@ protocol AIConnectorSpellingCandidateProviding {
 protocol AIConnectorLanguageCandidateScoring: Sendable {
     var isLoaded: Bool { get async }
 
+    /// Optional resource preparation hook. Test doubles can use the default
+    /// no-op implementation so existing offline tests stay model-free.
+    func prepare(
+        progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void
+    ) async throws
+
     func score(
         segment: AIReviewSegment,
         candidates: [AIConnectorSpellingCandidate],
         progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void
     ) async throws -> [AIConnectorSpellingCandidate]
+}
+
+extension AIConnectorLanguageCandidateScoring {
+    func prepare(
+        progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void = { _ in }
+    ) async throws {
+        _ = progress
+    }
 }
 
 /// A proposal created entirely by local rules or verified glossary data.
@@ -454,6 +537,52 @@ struct AIConnectorReviewCandidate: Identifiable, Hashable, Sendable {
     let explanation: String
     let confidenceTier: AIConnectorCandidateConfidence
     let languageScoreEvidence: AIConnectorLanguageScoreEvidence?
+    let evidence: AIConnectorCandidateEvidence
+
+    init(
+        id: String,
+        segmentID: Int,
+        original: String,
+        replacement: String,
+        category: AIReviewCategory,
+        priority: Int,
+        ruleID: String?,
+        glossaryMatch: LegalDictionaryMatch?,
+        explanation: String,
+        confidenceTier: AIConnectorCandidateConfidence,
+        languageScoreEvidence: AIConnectorLanguageScoreEvidence?,
+        evidence: AIConnectorCandidateEvidence = .unknown
+    ) {
+        self.id = id
+        self.segmentID = segmentID
+        self.original = original
+        self.replacement = replacement
+        self.category = category
+        self.priority = priority
+        self.ruleID = ruleID
+        self.glossaryMatch = glossaryMatch
+        self.explanation = explanation
+        self.confidenceTier = confidenceTier
+        self.languageScoreEvidence = languageScoreEvidence
+        self.evidence = evidence
+    }
+
+    func withID(_ id: String) -> AIConnectorReviewCandidate {
+        AIConnectorReviewCandidate(
+            id: id,
+            segmentID: segmentID,
+            original: original,
+            replacement: replacement,
+            category: category,
+            priority: priority,
+            ruleID: ruleID,
+            glossaryMatch: glossaryMatch,
+            explanation: explanation,
+            confidenceTier: confidenceTier,
+            languageScoreEvidence: languageScoreEvidence,
+            evidence: evidence
+        )
+    }
 }
 
 enum AIConnectorCandidateDecision: String, Codable, Hashable, Sendable {
@@ -469,6 +598,25 @@ struct AIConnectorCandidateReviewRequest: Sendable {
     let modelVariant: AIConnectorModelVariant
     let generationProfile: AIConnectorGenerationProfile
     let retryInstruction: String?
+    let context: AIConnectorSegmentContext?
+
+    init(
+        segment: AIReviewSegment,
+        candidate: AIConnectorReviewCandidate,
+        thinkingEnabled: Bool,
+        modelVariant: AIConnectorModelVariant,
+        generationProfile: AIConnectorGenerationProfile,
+        retryInstruction: String?,
+        context: AIConnectorSegmentContext? = nil
+    ) {
+        self.segment = segment
+        self.candidate = candidate
+        self.thinkingEnabled = thinkingEnabled
+        self.modelVariant = modelVariant
+        self.generationProfile = generationProfile
+        self.retryInstruction = retryInstruction
+        self.context = context
+    }
 }
 
 struct QwenCandidateDecisionResult: Sendable {
@@ -513,6 +661,8 @@ struct AIConnectorCandidateDecisionRecord: Hashable, Sendable {
     let generationMetrics: AIConnectorGenerationMetrics?
     let finalOrigin: AIReviewOrigin?
     let repeatedSixGramRatio: Double?
+    let route: AIConnectorPhaseTwoRoute?
+    let routeReason: AIConnectorPhaseTwoRouteReason?
 
     init(
         candidateID: String,
@@ -526,7 +676,9 @@ struct AIConnectorCandidateDecisionRecord: Hashable, Sendable {
         rejectionClass: AIConnectorRejectionClass?,
         generationMetrics: AIConnectorGenerationMetrics?,
         finalOrigin: AIReviewOrigin? = nil,
-        repeatedSixGramRatio: Double? = nil
+        repeatedSixGramRatio: Double? = nil,
+        route: AIConnectorPhaseTwoRoute? = nil,
+        routeReason: AIConnectorPhaseTwoRouteReason? = nil
     ) {
         self.candidateID = candidateID
         self.candidateCategory = candidateCategory
@@ -540,6 +692,8 @@ struct AIConnectorCandidateDecisionRecord: Hashable, Sendable {
         self.generationMetrics = generationMetrics
         self.finalOrigin = finalOrigin
         self.repeatedSixGramRatio = repeatedSixGramRatio
+        self.route = route
+        self.routeReason = routeReason
     }
 }
 
@@ -571,6 +725,13 @@ struct AIParsedReview: Hashable, Sendable {
     }
 }
 
+/// A parsed review paired with the exact source occurrence that produced it.
+/// Model output never supplies this anchor; it is created by local evidence.
+struct AIConnectorAnchoredParsedReview: Sendable {
+    let parsedReview: AIParsedReview
+    let sourceAnchor: AIConnectorReviewAnchor
+}
+
 struct AIValidatedReview: Identifiable, Hashable, Sendable {
     let id: UUID
     let segment: AIReviewSegment
@@ -582,6 +743,7 @@ struct AIValidatedReview: Identifiable, Hashable, Sendable {
     let glossaryMatch: LegalDictionaryMatch?
     let origin: AIReviewOrigin
     let ruleID: String?
+    let sourceAnchor: AIConnectorReviewAnchor?
 
     init(
         id: UUID = UUID(),
@@ -593,7 +755,8 @@ struct AIValidatedReview: Identifiable, Hashable, Sendable {
         reason: String,
         glossaryMatch: LegalDictionaryMatch?,
         origin: AIReviewOrigin,
-        ruleID: String? = nil
+        ruleID: String? = nil,
+        sourceAnchor: AIConnectorReviewAnchor? = nil
     ) {
         self.id = id
         self.segment = segment
@@ -605,9 +768,14 @@ struct AIValidatedReview: Identifiable, Hashable, Sendable {
         self.glossaryMatch = glossaryMatch
         self.origin = origin
         self.ruleID = ruleID
+        self.sourceAnchor = sourceAnchor
     }
 
     var segmentID: Int { segment.id }
+
+    var localSourceRange: NSRange? {
+        sourceAnchor?.range
+    }
 }
 
 struct AIReviewGlossarySnapshot: Identifiable, Hashable, Sendable {
@@ -641,7 +809,7 @@ struct AIReviewRejection: Identifiable, Hashable, Sendable {
     var segmentID: Int { segment.id }
 }
 
-struct AIConnectorRunSummary: Codable, Hashable, Sendable {
+nonisolated struct AIConnectorRunSummary: Codable, Hashable, Sendable {
     let reviewMode: AIConnectorReviewMode
     let modelVariant: AIConnectorModelVariant
     let processedSegmentCount: Int
@@ -747,10 +915,14 @@ struct AIConnectorSegmentResult: Sendable {
     let sourceClaimDetected: Bool
     let candidates: [AIConnectorReviewCandidate]
     let candidateDecisions: [AIConnectorCandidateDecisionRecord]
+    let candidateRoutes: [AIConnectorPhaseTwoCandidateRoute]
+    let droppedCandidateCount: Int
+    let candidateConflictCount: Int
     let modelCallCount: Int
     let challengeCount: Int
     let definitionAssessment: AIConnectorDefinitionAssessment?
     let definitionModelCallCount: Int
+    let definitionCacheHit: Bool
 
     init(
         segment: AIReviewSegment,
@@ -772,10 +944,14 @@ struct AIConnectorSegmentResult: Sendable {
         sourceClaimDetected: Bool = false,
         candidates: [AIConnectorReviewCandidate] = [],
         candidateDecisions: [AIConnectorCandidateDecisionRecord] = [],
+        candidateRoutes: [AIConnectorPhaseTwoCandidateRoute] = [],
+        droppedCandidateCount: Int = 0,
+        candidateConflictCount: Int = 0,
         modelCallCount: Int = 0,
         challengeCount: Int = 0,
         definitionAssessment: AIConnectorDefinitionAssessment? = nil,
-        definitionModelCallCount: Int = 0
+        definitionModelCallCount: Int = 0,
+        definitionCacheHit: Bool = false
     ) {
         self.segment = segment
         self.glossaryMatches = glossaryMatches
@@ -796,10 +972,14 @@ struct AIConnectorSegmentResult: Sendable {
         self.sourceClaimDetected = sourceClaimDetected
         self.candidates = candidates
         self.candidateDecisions = candidateDecisions
+        self.candidateRoutes = candidateRoutes
+        self.droppedCandidateCount = max(0, droppedCandidateCount)
+        self.candidateConflictCount = max(0, candidateConflictCount)
         self.modelCallCount = modelCallCount
         self.challengeCount = challengeCount
         self.definitionAssessment = definitionAssessment
         self.definitionModelCallCount = definitionModelCallCount
+        self.definitionCacheHit = definitionCacheHit
     }
 
     func withDefinitionAnalysis(
@@ -825,10 +1005,14 @@ struct AIConnectorSegmentResult: Sendable {
             sourceClaimDetected: sourceClaimDetected,
             candidates: candidates,
             candidateDecisions: candidateDecisions,
+            candidateRoutes: candidateRoutes,
+            droppedCandidateCount: droppedCandidateCount,
+            candidateConflictCount: candidateConflictCount,
             modelCallCount: modelCallCount,
             challengeCount: challengeCount,
             definitionAssessment: analysis.assessment,
-            definitionModelCallCount: analysis.modelCallCount
+            definitionModelCallCount: analysis.modelCallCount,
+            definitionCacheHit: analysis.cacheHit
         )
     }
 }

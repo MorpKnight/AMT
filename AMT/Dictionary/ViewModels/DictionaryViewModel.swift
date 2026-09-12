@@ -24,6 +24,10 @@ final class DictionaryViewModel {
     /// Array of popular legal terms displayed in the "Istilah Populer" section.
     var popularTerms: [PopularTerm] = []
 
+    var corpusSummary: LegalDictionaryCorpusSummary {
+        dictionaryStore.corpusSummary
+    }
+
     private let dictionaryStore: LegalDictionaryStore
     @ObservationIgnored private var lookupTask: Task<Void, Never>?
     @ObservationIgnored private var activeLookupID: UUID?
@@ -110,21 +114,12 @@ final class DictionaryViewModel {
         }
     }
 
-    private func relatedTerms(count: Int = 4, excluding currentTerm: String) -> [String] {
-        let related = dictionaryStore.relatedTerms(excluding: currentTerm, limit: count)
-        if !related.isEmpty { return related }
+    func regulation(for referenceID: String) -> LegalRegulation? {
+        dictionaryStore.regulation(id: referenceID)
+    }
 
-        let fallbackTerms = [
-            "Jaksa Agung",
-            "Jabatan Fungsional",
-            "Jabatan Struktural",
-            "Jabatan Pimpinan Tinggi",
-            "Pengendali Data Pribadi",
-            "Hak Cipta",
-            "Bursa Efek",
-            "Badan Hukum"
-        ]
-        return Array(fallbackTerms.filter { $0.lowercased() != currentTerm.lowercased() }.shuffled().prefix(count))
+    private func relatedTerms(count: Int = 4, excluding currentTerm: String) -> [String] {
+        dictionaryStore.relatedTerms(excluding: currentTerm, limit: count)
     }
 
     private func makeGlossaryEntry(forTerm term: String) -> LegalGlossaryEntry {
@@ -133,16 +128,58 @@ final class DictionaryViewModel {
             ? dictionaryStore.search(term, limit: 1)
             : termEntries
         let canonicalTerm = entries.first?.term ?? term
+        let termGroup = dictionaryStore.termGroup(forTerm: canonicalTerm)
 
         let definitions = entries.enumerated().map { index, entry in
-            DefinitionItem(
+            let resolvedReferences = dictionaryStore.references(for: entry)
+            let primaryReference = resolvedReferences.first ?? makeReference(from: entry)
+            return DefinitionItem(
                 id: index + 1,
                 text: entry.definition,
-                reference: makeReference(from: entry),
-                sources: entry.sources,
-                sourceURLs: entry.sourceURLs
+                reference: primaryReference,
+                additionalReferences: Array(resolvedReferences.dropFirst()),
+                // Discovery provenance is retained in the dataset audit
+                // views, but never exposed through the application model.
+                sources: [],
+                sourceURLs: [],
+                role: .primary,
+                attributionStatus: dictionaryStore
+                    .primaryRecord(forTerm: canonicalTerm)?
+                    .primaryAttributionStatus
+                    ?? primaryReference?.attributionStatus,
+                selectionStatus: termGroup?.selectionStatus,
+                selectionReason: termGroup?.selectionReason,
+                verificationStatus: primaryReference?.verificationStatus,
+                isActionable: entry.isActionable
             )
         }
+        let contextualAlternatives = dictionaryStore
+            .alternatives(forTerm: canonicalTerm)
+            .enumerated()
+            .map { index, alternative in
+                let resolvedReferences = dictionaryStore.references(for: alternative)
+                let reference = resolvedReferences.first {
+                    $0.isDefinitionAuthority
+                } ?? resolvedReferences.first
+                return DefinitionItem(
+                    id: index + 1,
+                    text: alternative.definition,
+                    reference: reference,
+                    additionalReferences: Array(resolvedReferences.dropFirst()),
+                    // Official-first alternatives are identified by their
+                    // regulation reference, not by the discovery website.
+                    sources: [],
+                    sourceURLs: [],
+                    role: .alternative,
+                    attributionStatus: alternative.attributionStatus,
+                    selectionStatus: alternative.selectionStatus,
+                    selectionReason: alternative.selectionReason,
+                    verificationStatus: resolvedReferences
+                        .compactMap(\.verificationStatus)
+                        .first,
+                    isActionable: alternative.isActionable
+                )
+            }
         let authority = entries.contains { $0.authority == .verified }
             ? LegalDictionaryEntryAuthority.verified
             : .legacy
@@ -154,14 +191,13 @@ final class DictionaryViewModel {
         } else {
             applicabilityStatus = .unknown
         }
-        let relations = entries
-            .flatMap(dictionaryStore.regulationRelations(for:))
-            .reduce(into: [LegalRegulationRelation]()) { result, relation in
-                guard !result.contains(where: { $0.relationID == relation.relationID }) else {
-                    return
-                }
-                result.append(relation)
-            }
+        var referenceIDs = entries
+            .flatMap(dictionaryStore.references(for:))
+            .compactMap(\.referenceID)
+        referenceIDs.append(contentsOf: contextualAlternatives
+            .flatMap(\.allReferences)
+            .compactMap(\.referenceID))
+        let relations = dictionaryStore.regulationRelations(for: referenceIDs)
 
         return LegalGlossaryEntry(
             term: canonicalTerm,
@@ -172,7 +208,10 @@ final class DictionaryViewModel {
                 ?? LegalDictionaryCorpusVersion.unspecifiedLegacy,
             applicabilityStatus: applicabilityStatus,
             isActionable: entries.contains(where: { $0.isActionable }),
-            regulationRelations: relations
+            regulationRelations: relations,
+            contextualAlternatives: contextualAlternatives,
+            selectionStatus: termGroup?.selectionStatus,
+            selectionReason: termGroup?.selectionReason
         )
     }
 
@@ -194,7 +233,9 @@ final class DictionaryViewModel {
             articleLocator: entry.articleLocator,
             pageStart: entry.pageStart,
             pageEnd: entry.pageEnd,
-            sourcePassageID: entry.sourcePassageID
+            sourcePassageID: entry.sourcePassageID,
+            attributionStatus: entry.referenceID == nil ? nil : "explicit_reference",
+            isDefinitionAuthority: entry.referenceID != nil
         )
     }
 

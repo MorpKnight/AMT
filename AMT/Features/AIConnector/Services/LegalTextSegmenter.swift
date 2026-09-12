@@ -14,6 +14,84 @@ struct LegalTextSegmenter: Sendable {
     private static let longSentenceCharacterThreshold = 2_048
 
     func segment(documentText: String) -> AITextSegmentationResult {
+        segment(documentText: documentText, structure: nil, profile: nil)
+    }
+
+    /// Structure-aware overload used by Document. The old text-only API is
+    /// intentionally retained for benchmarks and compatibility callers.
+    func segment(
+        documentText: String,
+        structure: AIConnectorDocumentStructure?,
+        profile: AIConnectorDocumentContextProfile?
+    ) -> AITextSegmentationResult {
+        guard let structure, !structure.blocks.isEmpty else {
+            return segmentWithoutStructure(documentText: documentText)
+        }
+
+        let contentBlocks = structure.blocks.filter { $0.kind != .heading }
+        var rawSegments: [RawSegment] = []
+        for (blockIndex, block) in contentBlocks.enumerated() {
+            let previous = contentBlocks[..<blockIndex].last {
+                $0.parentSectionID == block.parentSectionID
+            }?.text
+            let next = contentBlocks.dropFirst(blockIndex + 1).first {
+                $0.parentSectionID == block.parentSectionID
+            }?.text
+            let blockContext = profile.map {
+                AIConnectorDocumentContextProfileBuilder().context(
+                    for: block,
+                    structure: structure,
+                    profile: $0
+                )
+            }
+            let sentenceRanges = sentenceRanges(in: block.text)
+            for sentenceRange in sentenceRanges {
+                guard let trimmedSentenceRange = Self.trimmedRange(sentenceRange, in: block.text) else { continue }
+                let sentence = String(block.text[trimmedSentenceRange])
+                let parts = Self.shouldSplit(sentence)
+                    ? Self.semicolonParts(in: sentence)
+                    : [sentence.startIndex..<sentence.endIndex]
+                for partRange in parts {
+                    let part = String(sentence[partRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !part.isEmpty else { continue }
+                    let offset = NSRange(trimmedSentenceRange, in: block.text).location
+                        + NSRange(partRange, in: sentence).location
+                    rawSegments.append(
+                        RawSegment(
+                            sourceLocation: block.sourceRange.location + offset,
+                            sourceLength: part.utf16.count,
+                            text: part,
+                            isTooLong: Self.tokenCount(in: part) > Self.maximumTokensPerSegment,
+                            context: blockContext,
+                            previousContext: previous,
+                            nextContext: next
+                        )
+                    )
+                }
+            }
+        }
+
+        let segments = rawSegments.enumerated().map { offset, rawSegment in
+            AIReviewSegment(
+                id: offset + 1,
+                sourceLocation: rawSegment.sourceLocation,
+                sourceLength: rawSegment.sourceLength,
+                targetText: rawSegment.text,
+                previousContext: rawSegment.previousContext,
+                nextContext: rawSegment.nextContext,
+                isTooLong: rawSegment.isTooLong,
+                context: rawSegment.context
+            )
+        }
+        return AITextSegmentationResult(
+            segments: segments,
+            headingCount: structure.headingCount,
+            tooLongSegmentCount: segments.filter(\.isTooLong).count,
+            omittedSegmentCount: 0
+        )
+    }
+
+    private func segmentWithoutStructure(documentText: String) -> AITextSegmentationResult {
         guard !documentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return AITextSegmentationResult(
                 segments: [],
@@ -77,14 +155,17 @@ struct LegalTextSegmenter: Sendable {
                     let sourceLength = part.utf16.count
                     let isTooLong = Self.tokenCount(in: part) > Self.maximumTokensPerSegment
 
-                    rawSegments.append(
-                        RawSegment(
-                            sourceLocation: sourceLocation,
-                            sourceLength: sourceLength,
-                            text: part,
-                            isTooLong: isTooLong
-                        )
+                rawSegments.append(
+                    RawSegment(
+                        sourceLocation: sourceLocation,
+                        sourceLength: sourceLength,
+                        text: part,
+                        isTooLong: isTooLong,
+                        context: nil,
+                        previousContext: nil,
+                        nextContext: nil
                     )
+                )
                 }
             }
         }
@@ -99,7 +180,8 @@ struct LegalTextSegmenter: Sendable {
                 nextContext: offset + 1 < rawSegments.count
                     ? rawSegments[offset + 1].text
                     : nil,
-                isTooLong: rawSegment.isTooLong
+                isTooLong: rawSegment.isTooLong,
+                context: nil
             )
         }
 
@@ -109,6 +191,18 @@ struct LegalTextSegmenter: Sendable {
             tooLongSegmentCount: segments.filter(\.isTooLong).count,
             omittedSegmentCount: 0
         )
+    }
+
+    private func sentenceRanges(in text: String) -> [Range<String.Index>] {
+        let tokenizer = NLTokenizer(unit: .sentence)
+        tokenizer.string = text
+        tokenizer.setLanguage(.indonesian)
+        var ranges: [Range<String.Index>] = []
+        tokenizer.enumerateTokens(in: text.startIndex..<text.endIndex) { range, _ in
+            ranges.append(range)
+            return true
+        }
+        return ranges.isEmpty ? [text.startIndex..<text.endIndex] : ranges
     }
 
     private static func isShortHeading(_ text: String) -> Bool {
@@ -178,5 +272,8 @@ struct LegalTextSegmenter: Sendable {
         let sourceLength: Int
         let text: String
         let isTooLong: Bool
+        let context: AIConnectorSegmentContext?
+        let previousContext: String?
+        let nextContext: String?
     }
 }
