@@ -137,7 +137,26 @@ nonisolated struct LegalDictionarySuggestionRetrievalResult: Sendable {
     let queryCount: Int
     let semanticQueryCount: Int
     var semanticFailed: Bool = false
+    #if DEBUG
+    var lexicalDiagnostics = LegalLexicalRetrievalDiagnostics()
+    #endif
 }
+
+/// Counts actual suggestion retrieval work, distinct from logical query counts.
+nonisolated struct LegalLexicalRetrievalDiagnostics: Codable, Hashable, Sendable {
+    var searchCount = 0
+    var evaluatedCandidateCount = 0
+    var reuseCount = 0
+}
+
+nonisolated struct LegalLexicalSearchSnapshot: Sendable {
+    let matches: [(entry: LegalDictionaryEntry, score: Double)]
+    let evaluatedCandidateCount: Int
+}
+
+typealias LegalDictionarySemanticSearchHandler = @Sendable (
+    String, Int, @escaping @Sendable (Double) -> Void
+) async throws -> [LegalRetrievalMatch]
 
 nonisolated struct LegalDictionaryStore: Sendable {
     /// The legacy CSV parser and resource are retained for a future migration,
@@ -159,6 +178,8 @@ nonisolated struct LegalDictionaryStore: Sendable {
     private static let suggestionMinimumMatchedDefinitionTokens = 4
 
     private struct RetrievalIndexEntry: Sendable {
+        let normalizedTerm: String
+        let normalizedDefinition: String
         let termTokens: [String]
         let definitionTokenSet: Set<String>
         let termFrequencies: [String: Int]
@@ -170,6 +191,8 @@ nonisolated struct LegalDictionaryStore: Sendable {
     let corpusStore: LegalCorpusStore?
     let semanticRetriever: LegalSemanticRetriever?
     private let retrievalIndex: [RetrievalIndexEntry]
+    private let entryIndicesByNormalizedTerm: [String: [Int]]
+    private let entryIndicesByToken: [String: [Int]]
     private let inverseDocumentFrequencies: [String: Double]
     private let averageDocumentLength: Double
     private let officialReferenceIDsByTerm: [String: Set<String>]
@@ -320,7 +343,9 @@ nonisolated struct LegalDictionaryStore: Sendable {
         officialReferenceIDsByTerm = officialReferencesByTerm
 
         let index = entries.map { entry in
-            let retrievalDefinition = Self.retrievalDefinition(for: entry)
+            let normalizedTerm = Self.normalize(entry.term)
+            let normalizedDefinition = Self.normalize(entry.definition)
+            let retrievalDefinition = Self.retrievalDefinition(normalizedTerm: normalizedTerm, normalizedDefinition: normalizedDefinition)
             let searchableText = [
                 entry.term,
                 retrievalDefinition,
@@ -330,6 +355,8 @@ nonisolated struct LegalDictionaryStore: Sendable {
             let tokens = Self.tokenize(searchableText)
 
             return RetrievalIndexEntry(
+                normalizedTerm: normalizedTerm,
+                normalizedDefinition: normalizedDefinition,
                 termTokens: Self.tokenize(entry.term),
                 definitionTokenSet: Set(Self.tokenize(retrievalDefinition)),
                 termFrequencies: Self.termFrequencies(for: tokens),
@@ -337,6 +364,14 @@ nonisolated struct LegalDictionaryStore: Sendable {
             )
         }
         retrievalIndex = index
+        entryIndicesByNormalizedTerm = Dictionary(grouping: entries.indices, by: { index[$0].normalizedTerm })
+        var postings: [String: [Int]] = [:]
+        for (documentIndex, document) in index.enumerated() {
+            for token in document.termFrequencies.keys {
+                postings[token, default: []].append(documentIndex)
+            }
+        }
+        entryIndicesByToken = postings
 
         var documentFrequency: [String: Int] = [:]
         for document in index {
@@ -369,7 +404,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
         let normalizedTerm = Self.normalize(term)
         guard !normalizedTerm.isEmpty else { return [] }
 
-        return entries.filter { Self.normalize($0.term) == normalizedTerm }
+        return (entryIndicesByNormalizedTerm[normalizedTerm] ?? []).map { entries[$0] }
     }
 
     nonisolated func termGroup(forTerm term: String) -> LegalDictionaryTermGroup? {
@@ -599,17 +634,38 @@ nonisolated struct LegalDictionaryStore: Sendable {
         _ query: String,
         limit: Int
     ) -> [(entry: LegalDictionaryEntry, score: Double)] {
+        lexicalSearch(query, limit: limit).matches
+    }
+
+    #if DEBUG
+    nonisolated func debugLexicalSearch(_ query: String, limit: Int) -> LegalLexicalSearchSnapshot {
+        lexicalSearch(query, limit: limit)
+    }
+    #endif
+
+    nonisolated private func lexicalSearch(_ query: String, limit: Int) -> LegalLexicalSearchSnapshot {
         let normalizedQuery = Self.normalize(query)
         let queryTokens = Array(Set(Self.tokenize(query)))
         guard limit > 0, !normalizedQuery.isEmpty, !queryTokens.isEmpty else {
-            return []
+            return LegalLexicalSearchSnapshot(matches: [], evaluatedCandidateCount: 0)
         }
 
-        return entries.indices
-            .compactMap { index -> (entry: LegalDictionaryEntry, score: Double)? in
-                let entry = entries[index]
-                let normalizedTerm = Self.normalize(entry.term)
-                let normalizedDefinition = Self.normalize(entry.definition)
+        var candidateIndices = Set(entryIndicesByNormalizedTerm[normalizedQuery] ?? [])
+        for token in queryTokens {
+            candidateIndices.formUnion(entryIndicesByToken[token] ?? [])
+        }
+        // Token postings cannot represent a partial word or an arbitrary phrase.
+        // Preserve all substring bonuses using immutable normalized corpus text.
+        for index in entries.indices {
+            if retrievalIndex[index].normalizedTerm.contains(normalizedQuery)
+                || retrievalIndex[index].normalizedDefinition.contains(normalizedQuery) {
+                candidateIndices.insert(index)
+            }
+        }
+        let matches = candidateIndices.sorted()
+            .compactMap { index -> (index: Int, score: Double)? in
+                let normalizedTerm = retrievalIndex[index].normalizedTerm
+                let normalizedDefinition = retrievalIndex[index].normalizedDefinition
                 var score = bm25Score(queryTokens: queryTokens, documentIndex: index)
 
                 if normalizedTerm == normalizedQuery {
@@ -624,31 +680,35 @@ nonisolated struct LegalDictionaryStore: Sendable {
                     score += 100
                 }
 
-                return score > 0 ? (entry, score) : nil
+                return score > 0 ? (index, score) : nil
             }
             .sorted { lhs, rhs in
-                let lhsIsExactTerm = Self.normalize(lhs.entry.term) == normalizedQuery
-                let rhsIsExactTerm = Self.normalize(rhs.entry.term) == normalizedQuery
+                let lhsEntry = entries[lhs.index]
+                let rhsEntry = entries[rhs.index]
+                let lhsIsExactTerm = retrievalIndex[lhs.index].normalizedTerm == normalizedQuery
+                let rhsIsExactTerm = retrievalIndex[rhs.index].normalizedTerm == normalizedQuery
                 if lhsIsExactTerm != rhsIsExactTerm {
                     return lhsIsExactTerm
                 }
                 if lhsIsExactTerm && rhsIsExactTerm,
-                   lhs.entry.authority != rhs.entry.authority {
-                    return lhs.entry.authority == .verified
+                   lhsEntry.authority != rhsEntry.authority {
+                    return lhsEntry.authority == .verified
                 }
                 if lhs.score != rhs.score { return lhs.score > rhs.score }
-                if lhs.entry.authority != rhs.entry.authority {
-                    return lhs.entry.authority == .verified
+                if lhsEntry.authority != rhsEntry.authority {
+                    return lhsEntry.authority == .verified
                 }
-                let lhsCorpusPriority = Self.corpusPriority(lhs.entry.corpusVersion)
-                let rhsCorpusPriority = Self.corpusPriority(rhs.entry.corpusVersion)
+                let lhsCorpusPriority = Self.corpusPriority(lhsEntry.corpusVersion)
+                let rhsCorpusPriority = Self.corpusPriority(rhsEntry.corpusVersion)
                 if lhsCorpusPriority != rhsCorpusPriority {
                     return lhsCorpusPriority > rhsCorpusPriority
                 }
-                return lhs.entry.term.localizedCaseInsensitiveCompare(rhs.entry.term) == .orderedAscending
+                let order = lhsEntry.term.localizedCaseInsensitiveCompare(rhsEntry.term)
+                return order == .orderedSame ? lhs.index < rhs.index : order == .orderedAscending
             }
             .prefix(limit)
-            .map { $0 }
+            .map { (entry: entries[$0.index], score: $0.score) }
+        return LegalLexicalSearchSnapshot(matches: matches, evaluatedCandidateCount: candidateIndices.count)
     }
 
     /// Searches the versioned corpus. Exact, prefix, and short term-shaped
@@ -814,6 +874,35 @@ nonisolated struct LegalDictionaryStore: Sendable {
         allowSemantic: Bool = true,
         semanticProgress: @Sendable @escaping (Double) -> Void = { _ in }
     ) async -> LegalDictionarySuggestionRetrievalResult {
+        await performSuggestionRetrieval(for: text, limit: limit, allowSemantic: allowSemantic, semanticProgress: semanticProgress)
+    }
+
+    #if DEBUG
+    /// Per-request offline seam: no shared mutable model or cache overrides.
+    nonisolated func debugSuggestionCandidateResultAsync(
+        for text: String, limit: Int, reuseLexicalGate: Bool = true,
+        semanticSearch: @escaping LegalDictionarySemanticSearchHandler
+    ) async -> LegalDictionarySuggestionRetrievalResult {
+        await performSuggestionRetrieval(for: text, limit: limit, allowSemantic: true, semanticProgress: { _ in }, reuseLexicalGate: reuseLexicalGate, semanticSearch: semanticSearch)
+    }
+    #endif
+
+    nonisolated private func performSuggestionRetrieval(
+        for text: String, limit: Int, allowSemantic: Bool,
+        semanticProgress: @Sendable @escaping (Double) -> Void,
+        reuseLexicalGate: Bool = true,
+        semanticSearch: LegalDictionarySemanticSearchHandler? = nil
+    ) async -> LegalDictionarySuggestionRetrievalResult {
+        var diagnostics = LegalLexicalRetrievalDiagnostics()
+        func diagnosed(_ result: LegalDictionarySuggestionRetrievalResult) -> LegalDictionarySuggestionRetrievalResult {
+            #if DEBUG
+            var result = result
+            result.lexicalDiagnostics = diagnostics
+            return result
+            #else
+            return result
+            #endif
+        }
         guard limit > 0 else {
             return LegalDictionarySuggestionRetrievalResult(
                 matches: [],
@@ -822,23 +911,31 @@ nonisolated struct LegalDictionaryStore: Sendable {
             )
         }
 
+        let gateLimit = max(limit, 100)
+        let hybridRequestLimit = max(3, min(100, corpusStore?.manifest.retrieval.semanticTopK ?? 100))
+        let hybridLexicalLimit = max(hybridRequestLimit, corpusStore?.manifest.retrieval.lexicalTopK ?? 0)
+        let preparationLimit = reuseLexicalGate ? max(gateLimit, hybridLexicalLimit) : gateLimit
+        let gate = corpusStore == nil ? LegalLexicalSearchSnapshot(matches: [], evaluatedCandidateCount: 0) : lexicalSearch(text, limit: preparationLimit)
+        diagnostics.searchCount = corpusStore == nil ? 0 : 1
+        diagnostics.evaluatedCandidateCount = gate.evaluatedCandidateCount
+        let gateQueryKey = Self.normalize(text)
         let lexical = makeSuggestionMatches(
-            from: lexicalMatches(for: text, limit: max(limit, 100), origin: .lexical),
+            from: makeLexicalMatches(from: Array(gate.matches.prefix(gateLimit)), origin: .lexical),
             text: text, limit: limit
         )
         let lowered = text.lowercased()
         let hasDefinitionCue = ["adalah", "merupakan", "didefinisikan", "diartikan", "selanjutnya disebut"].contains { lowered.contains($0) }
         // A policy skip is not evidence that semantic review completed.
         if !allowSemantic {
-            return LegalDictionarySuggestionRetrievalResult(
+            return diagnosed(LegalDictionarySuggestionRetrievalResult(
                 matches: corpusStore == nil ? suggestionCandidates(for: text, limit: limit).filter { $0.entry.isActionable } : lexical,
                 queryCount: 1, semanticQueryCount: 0
-            )
+            ))
         }
         if corpusStore != nil, lexical.isEmpty && !hasDefinitionCue {
-            return LegalDictionarySuggestionRetrievalResult(matches: [], queryCount: 1, semanticQueryCount: 0)
+            return diagnosed(LegalDictionarySuggestionRetrievalResult(matches: [], queryCount: 1, semanticQueryCount: 0))
         }
-        if corpusStore != nil, semanticRetriever != nil {
+        if corpusStore != nil, semanticRetriever != nil || semanticSearch != nil {
             let effectiveLimit = limit
             guard effectiveLimit > 0 else {
                 return LegalDictionarySuggestionRetrievalResult(
@@ -855,11 +952,11 @@ nonisolated struct LegalDictionaryStore: Sendable {
 
             for (queryIndex, query) in queries.enumerated() {
                 if Task.isCancelled {
-                    return LegalDictionarySuggestionRetrievalResult(
+                    return diagnosed(LegalDictionarySuggestionRetrievalResult(
                         matches: [],
                         queryCount: queryIndex,
                         semanticQueryCount: semanticQueryCount
-                    )
+                    ))
                 }
                 semanticQueryCount += 1
                 let request = LegalRetrievalRequest(
@@ -870,6 +967,16 @@ nonisolated struct LegalDictionaryStore: Sendable {
                         min(100, corpusStore?.manifest.retrieval.semanticTopK ?? 100)
                     )
                 )
+                let queryLexical: [(entry: LegalDictionaryEntry, score: Double)]
+                if reuseLexicalGate, Self.normalize(query) == gateQueryKey {
+                    queryLexical = Array(gate.matches.prefix(hybridLexicalLimit))
+                    diagnostics.reuseCount += 1
+                } else {
+                    let searched = lexicalSearch(query, limit: hybridLexicalLimit)
+                    queryLexical = searched.matches
+                    diagnostics.searchCount += 1
+                    diagnostics.evaluatedCandidateCount += searched.evaluatedCandidateCount
+                }
                 guard let hybrid = try? await hybridMatches(
                     request,
                     semanticProgress: { progress in
@@ -880,18 +987,20 @@ nonisolated struct LegalDictionaryStore: Sendable {
                         if queryIndex == 0, !semanticModelAlreadyLoaded {
                             semanticProgress(progress)
                         }
-                    }
+                    },
+                    lexicalResults: queryLexical,
+                    semanticSearch: semanticSearch
                 ) else {
                     semanticFailed = true
                     for match in lexical { matchesByEntryID[match.entry.id] = match }
                     continue
                 }
                 if Task.isCancelled {
-                    return LegalDictionarySuggestionRetrievalResult(
+                    return diagnosed(LegalDictionarySuggestionRetrievalResult(
                         matches: [],
                         queryCount: queryIndex + 1,
                         semanticQueryCount: semanticQueryCount
-                    )
+                    ))
                 }
 
                 for match in makeSuggestionMatches(
@@ -916,20 +1025,20 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 }
                 .prefix(effectiveLimit)
                 .map { $0 }
-            return LegalDictionarySuggestionRetrievalResult(
+            return diagnosed(LegalDictionarySuggestionRetrievalResult(
                 matches: matches,
                 queryCount: queries.count,
                 semanticQueryCount: semanticQueryCount,
                 semanticFailed: semanticFailed
-            )
+            ))
         }
 
-        return LegalDictionarySuggestionRetrievalResult(
+        return diagnosed(LegalDictionarySuggestionRetrievalResult(
             matches: suggestionCandidates(for: text, limit: limit)
                 .filter { $0.entry.isActionable },
             queryCount: 1,
             semanticQueryCount: 0
-        )
+        ))
     }
 
     private nonisolated func lexicalMatches(
@@ -937,9 +1046,16 @@ nonisolated struct LegalDictionaryStore: Sendable {
         limit: Int,
         origin: LegalRetrievalOrigin
     ) -> [LegalRetrievalMatch] {
-        guard let corpusStore, limit > 0 else { return [] }
+        guard corpusStore != nil, limit > 0 else { return [] }
 
-        return rankedSearch(query, limit: limit).enumerated().compactMap { rank, item in
+        return makeLexicalMatches(from: rankedSearch(query, limit: limit), origin: origin)
+    }
+
+    private nonisolated func makeLexicalMatches(
+        from ranked: [(entry: LegalDictionaryEntry, score: Double)], origin: LegalRetrievalOrigin
+    ) -> [LegalRetrievalMatch] {
+        guard let corpusStore else { return [] }
+        return ranked.enumerated().compactMap { rank, item in
             guard let concept = corpusStore.concept(id: item.entry.id) else { return nil }
             let evidence = concept.actionableEvidence ?? concept.evidence.first
             return LegalRetrievalMatch(
@@ -957,9 +1073,12 @@ nonisolated struct LegalDictionaryStore: Sendable {
 
     private nonisolated func hybridMatches(
         _ request: LegalRetrievalRequest,
-        semanticProgress: @Sendable @escaping (Double) -> Void
+        semanticProgress: @Sendable @escaping (Double) -> Void,
+        lexicalResults: [(entry: LegalDictionaryEntry, score: Double)]? = nil,
+        semanticSearch: LegalDictionarySemanticSearchHandler? = nil
     ) async throws -> [LegalRetrievalMatch] {
-        guard let corpusStore, let semanticRetriever else { return [] }
+        guard let corpusStore else { return [] }
+        guard semanticRetriever != nil || semanticSearch != nil else { return [] }
 
         let retrievalConfiguration = corpusStore.manifest.retrieval
         let lexicalLimit = max(
@@ -970,12 +1089,13 @@ nonisolated struct LegalDictionaryStore: Sendable {
             request.limit,
             retrievalConfiguration.semanticTopK
         )
-        let lexical = rankedSearch(request.query, limit: lexicalLimit)
-        let semantic = try await semanticRetriever.search(
-            request.query,
-            limit: semanticLimit,
-            progress: semanticProgress
-        )
+        let lexical = lexicalResults ?? rankedSearch(request.query, limit: lexicalLimit)
+        let semantic: [LegalRetrievalMatch]
+        if let semanticSearch {
+            semantic = try await semanticSearch(request.query, semanticLimit, semanticProgress)
+        } else if let semanticRetriever {
+            semantic = try await semanticRetriever.search(request.query, limit: semanticLimit, progress: semanticProgress)
+        } else { return [] }
 
         struct Accumulator {
             let concept: LegalConcept
@@ -1253,9 +1373,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
             entries[index].authority == .verified
                 && entries[index].isActionable
         }
-        let uniqueTermIndices = Dictionary(grouping: eligibleIndices, by: { index in
-            Self.normalize(entries[index].term)
-        })
+        let uniqueTermIndices = Dictionary(grouping: eligibleIndices, by: { retrievalIndex[$0].normalizedTerm })
             .compactMapValues { indices in
                 indices.max { lhs, rhs in
                     bm25Score(queryTokens: queryTokens, documentIndex: lhs)
@@ -1483,10 +1601,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
         }
     }
 
-    nonisolated private static func retrievalDefinition(for entry: LegalDictionaryEntry) -> String {
-        let normalizedTerm = normalize(entry.term)
-        let normalizedDefinition = normalize(entry.definition)
-
+    nonisolated private static func retrievalDefinition(normalizedTerm: String, normalizedDefinition: String) -> String {
         for connector in ["adalah", "ialah", "merupakan"] {
             let prefix = "\(normalizedTerm) \(connector) "
             if normalizedDefinition.hasPrefix(prefix) {

@@ -297,6 +297,9 @@ final class AIConnectorSegmentProcessor {
         stageCoverage[segment.id, default: [:]]["semanticRetrieval"] = retrieval.semanticFailed ? .failed : (retrieval.semanticQueryCount == 0 ? .skippedByPolicy : .completed)
         stageCoverage[segment.id, default: [:]]["lexicalRetrieval"] = .completed
         if let observationCollector {
+            #if DEBUG
+            await observationCollector.recordSuggestionLexicalDiagnostics(retrieval.lexicalDiagnostics)
+            #endif
             await observationCollector.recordStage(
                 .suggestionRetrieval,
                 duration: AIConnectorObservationTiming.seconds(
@@ -386,7 +389,7 @@ final class AIConnectorSegmentProcessor {
             semanticModelRevision: dictionaryStore.semanticModelRevision,
             semanticEmbeddingSchema: dictionaryStore.semanticEmbeddingSchema,
             semanticRetrievalProfile: dictionaryStore.semanticRetrievalProfile,
-            reviewPolicyVersion: "progressive-v2-\(phaseTwoEnabled)-\(forceDeterministic)-thinking-\(thinkingEnabled)",
+            reviewPolicyVersion: "progressive-v3-\(AIConnectorDefinitionAnalyzer.policyVersion)-\(phaseTwoEnabled)-\(forceDeterministic)-thinking-\(thinkingEnabled)",
             validatorVersion: AIConnectorSuggestionValidator.version,
             outputSchemaVersion: QwenSuggestionService.candidateOutputSchemaVersion,
             protectionContext: documentProtectionContext,
@@ -527,7 +530,8 @@ final class AIConnectorSegmentProcessor {
             ].joined(separator: "\u{1E}")
         }.joined(separator: "\u{1D}")
         let material = [
-            "definition-comparison-cache-v2-meaning-operators",
+            "definition-comparison-cache-v3-structural-disagreement",
+            AIConnectorDefinitionAnalyzer.policyVersion,
             "\(segment.id):\(segment.sourceLocation):\(segment.sourceLength)",
             segment.targetText,
             segment.previousContext ?? "-",

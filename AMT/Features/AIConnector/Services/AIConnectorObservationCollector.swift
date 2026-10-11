@@ -78,6 +78,15 @@ actor AIConnectorObservationCollector {
     private var definitionResolutionCacheHitCount = 0
     private var definitionResolutionDuration: TimeInterval = 0
     private var incrementalAnalysisMetrics: AIConnectorIncrementalAnalysisMetrics?
+    #if DEBUG
+    private var suggestionLexicalDiagnostics = LegalLexicalRetrievalDiagnostics()
+
+    func recordSuggestionLexicalDiagnostics(_ diagnostics: LegalLexicalRetrievalDiagnostics) {
+        suggestionLexicalDiagnostics.searchCount += diagnostics.searchCount
+        suggestionLexicalDiagnostics.evaluatedCandidateCount += diagnostics.evaluatedCandidateCount
+        suggestionLexicalDiagnostics.reuseCount += diagnostics.reuseCount
+    }
+    #endif
 
     init(
         runID: UUID = UUID(),
@@ -351,7 +360,7 @@ actor AIConnectorObservationCollector {
             Self.seconds(startedAt.duration(to: endedAt))
         )
 
-        return AIConnectorObservationReport(
+        var report = AIConnectorObservationReport(
             schemaVersion: AIConnectorObservationReport.schemaVersion,
             runID: runID,
             generatedAt: Date(),
@@ -405,6 +414,10 @@ actor AIConnectorObservationCollector {
             accuracy: accuracy,
             incrementalAnalysis: incrementalAnalysisMetrics
         )
+        #if DEBUG
+        report.suggestionLexicalDiagnostics = suggestionLexicalDiagnostics
+        #endif
+        return report
     }
 
     private static func metrics(from samples: [StageSample]) -> [AIConnectorStageMetric] {

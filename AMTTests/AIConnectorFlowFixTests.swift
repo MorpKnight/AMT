@@ -6,6 +6,28 @@ import XCTest
 
 @MainActor
 final class AIConnectorFlowFixTests: XCTestCase {
+    func testDefinitionHeadingChangeInvalidatesCacheAndMatchesFresh() async throws {
+        let store = LegalDictionaryStore(entries: [LegalDictionaryEntry(id: "data", term: "Data", definition: "informasi yang tidak dapat dipublikasikan", regulation: "Uji", regulationTitle: "Uji", sourceURL: nil, authority: .verified, corpusVersion: "heading-test", applicabilityStatus: .inForce)])
+        let processor = AIConnectorSegmentProcessor(service: QwenSuggestionService(), dictionaryStore: store, ruleStore: AIConnectorRuleStore(version: "empty", rules: []))
+        let text = #""Data" adalah informasi yang tidak dapat dipublikasikan."#
+        func run(_ heading: String) async throws -> AIConnectorSegmentResult {
+            let context = AIConnectorSegmentContext(sectionID: "s", headingPath: [heading], parentClause: nil, relevantDefinedTerms: [], relevantParties: [], sectionRegulationReferences: [], documentTypeCandidates: [], legalDomainCandidates: [], profileFingerprint: "p", structureFingerprint: heading)
+            let segment = AIReviewSegment(id: 1, sourceLocation: 0, sourceLength: text.utf16.count, targetText: text, previousContext: nil, nextContext: nil, context: context)
+            return try await processor.process(segment: segment, documentProtectionContext: .empty, mode: .deterministic, modelVariant: .qwen35Base4B, thinkingEnabled: false, forceDeterministic: false, downloadProgress: { _ in }, generationProgress: { _ in })
+        }
+        _ = try await run("Pendahuluan")
+        let cached = try await run("Pendahuluan")
+        XCTAssertTrue(cached.cacheHit)
+        let changed = try await run("Definisi")
+        XCTAssertFalse(changed.cacheHit)
+        XCTAssertFalse(changed.definitionCacheHit)
+        await processor.clearCache()
+        let fresh = try await run("Definisi")
+        XCTAssertEqual(changed.definitionAssessment, fresh.definitionAssessment)
+        let vm = AIConnectorViewModel(service: QwenSuggestionService(), dictionaryStore: store)
+        XCTAssertTrue(vm.currentAnalysisProfile.pipelineVersion.contains(AIConnectorDefinitionAnalyzer.policyVersion))
+    }
+
     func testCacheSeparatesThinkingAndRematerializesMovedDefinitions() async throws {
         let entry = LegalDictionaryEntry(id: "data", term: "Data", definition: "informasi mengenai orang yang teridentifikasi", regulation: "Uji", regulationTitle: "Uji", sourceURL: nil, authority: .verified, corpusVersion: "test", applicabilityStatus: .inForce, isActionable: true)
         let processor = AIConnectorSegmentProcessor(service: QwenSuggestionService(), dictionaryStore: LegalDictionaryStore(entries: [entry]), ruleStore: AIConnectorRuleStore())

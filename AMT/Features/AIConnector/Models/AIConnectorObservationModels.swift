@@ -309,6 +309,9 @@ nonisolated struct AIConnectorBaselineSuiteReport: Codable, Hashable, Sendable {
 /// lengths; no target, replacement, reason, definition, URL, or raw output is
 /// represented here.
 nonisolated struct AIConnectorObservationReport: Codable, Hashable, Sendable {
+    #if DEBUG
+    var suggestionLexicalDiagnostics: LegalLexicalRetrievalDiagnostics? = nil
+    #endif
     static let schemaVersion = "phase0-observability-v1"
 
     let schemaVersion: String

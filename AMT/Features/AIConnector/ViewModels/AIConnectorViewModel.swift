@@ -8,6 +8,7 @@ final class AIConnectorViewModel {
     static let maximumDocumentCharacters = 4_000
     private static let analysisPipelineVersion = [
         "document-analysis-progressive-v2",
+        AIConnectorDefinitionAnalyzer.policyVersion,
         "phase7-incremental-analysis-v1",
         "review-pipeline-phase4-context-profile-v1",
         AIConnectorDocumentReviewDetector.version,

@@ -68,11 +68,25 @@ struct AIConnectorDefinitionCandidate: Identifiable, Hashable, Sendable {
     var sourceDefinition: String { match.entry.definition }
 }
 
+enum AIConnectorDefinitionSignalStrength: Hashable, Sendable {
+    case ambiguous
+    case strong
+}
+
 struct AIConnectorDefinitionDetectionResult: Hashable, Sendable {
     let term: String?
     let statementText: String
     let detection: AIConnectorDefinitionDetection?
     let candidates: [AIConnectorDefinitionCandidate]
+    let explicitSignalStrength: AIConnectorDefinitionSignalStrength
+
+    init(term: String?, statementText: String, detection: AIConnectorDefinitionDetection?, candidates: [AIConnectorDefinitionCandidate], explicitSignalStrength: AIConnectorDefinitionSignalStrength = .ambiguous) {
+        self.term = term
+        self.statementText = statementText
+        self.detection = detection
+        self.candidates = candidates
+        self.explicitSignalStrength = explicitSignalStrength
+    }
 }
 
 /// Read-only result of checking one segmented sentence. A positive match is

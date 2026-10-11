@@ -10,6 +10,7 @@ typealias AIConnectorDefinitionReviewHandler = @MainActor @Sendable (
 /// an optional Qwen semantic judgment. It never returns a replacement text.
 @MainActor
 struct AIConnectorDefinitionAnalyzer: Sendable {
+    nonisolated static let policyVersion = "definition-policy-v3-structural-disagreement"
     private let dictionaryStore: LegalDictionaryStore
     private let detector: AIConnectorDefinitionDetector
     private let reviewHandler: AIConnectorDefinitionReviewHandler?
@@ -329,6 +330,11 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
             classification = .needsReview
             alignment = .needsReview
             reason = "Sebagian kandidat pengertian gagal diperiksa oleh model; pilih evidence dan verifikasi manusia."
+        } else if detection.explicitSignalStrength == .strong,
+                  outcomes.contains(where: { $0.result.classification == .notDefinition && $0.result.alignment == .notApplicable }) {
+            classification = .needsReview
+            alignment = .needsReview
+            reason = "Pola definisi eksplisit yang kuat bertentangan dengan keputusan model bahwa kalimat bukan definisi; struktur dan kesetaraan makna perlu diverifikasi manusia."
         } else if !matching.isEmpty, !mismatching.isEmpty {
             classification = .needsReview
             alignment = .needsReview

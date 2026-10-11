@@ -195,3 +195,5 @@ git diff --check
 ## Eksperimen flow backend
 
 Perubahan flow dibahas dalam [implementasi](docs/flow-fix-implementation.md), dengan [metode dan reproduksi benchmark](docs/flow-fix-methodology.md). Hasil sebelum–sesudah dicatat dalam [laporan benchmark](docs/flow-fix-benchmark.md). Benchmark model bersifat opt-in; unit test reguler tetap offline.
+
+Perbaikan berikutnya pada analisis definisi dan retrieval lexical, beserta benchmark terfokus dan instruksi reproduksi, tersedia dalam [laporan backend](docs/definition-retrieval-improvements.md).

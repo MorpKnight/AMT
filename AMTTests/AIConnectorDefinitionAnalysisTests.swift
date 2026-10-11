@@ -4,6 +4,85 @@ import XCTest
 
 @MainActor
 final class AIConnectorDefinitionAnalysisTests: XCTestCase {
+    func testStrongDefinitionSignalsRetainReviewWhenQwenRejectsThem() async throws {
+        let cases: [(String, [String])] = [
+            (#""Data" adalah informasi yang tidak dapat dipublikasikan."#, []),
+            ("“Data” adalah informasi yang tidak dapat dipublikasikan.", []),
+            ("‘Data’ merupakan informasi yang tidak dapat dipublikasikan.", []),
+            ("Yang dimaksud dengan Data adalah informasi yang tidak dapat dipublikasikan.", []),
+            ("Data didefinisikan sebagai informasi yang tidak dapat dipublikasikan.", []),
+            ("Data diartikan sebagai informasi yang tidak dapat dipublikasikan.", []),
+            ("Data adalah informasi yang tidak dapat dipublikasikan.", ["DEFINISI UMUM"]),
+            ("Data adalah informasi yang tidak dapat dipublikasikan.", ["Pengertian"])
+        ]
+        for (text, headings) in cases {
+            let entry = makeEntry(id: "data", term: "Data", definition: "informasi yang tidak dapat dipublikasikan")
+            let segment = makeSegment(id: 4, location: 120, target: text, context: definitionContext(headings))
+            let detection = AIConnectorDefinitionDetector(dictionaryStore: LegalDictionaryStore(entries: [entry]))
+                .detect(segment: segment, glossaryMatches: [])
+            XCTAssertEqual(detection.explicitSignalStrength, .strong, text)
+            XCTAssertEqual(detection.candidates.map { $0.match.entry.id }, [entry.id], text)
+            let result = try await rejectedDefinition(segment: segment, entries: [entry])
+            let assessment = try XCTUnwrap(result.assessment)
+            XCTAssertEqual(assessment.classification, .needsReview, text)
+            XCTAssertEqual(assessment.alignment, .needsReview, text)
+            XCTAssertEqual(assessment.segment, segment)
+            XCTAssertEqual(result.modelCallCount, 1)
+            XCTAssertTrue(result.isComplete)
+            XCTAssertTrue(assessment.modelReviewed)
+            XCTAssertTrue(assessment.requiresHumanReview)
+        }
+    }
+
+    func testAmbiguousDescriptionAndUnbalancedQuotesCanStillBeRejected() async throws {
+        for text in ["Data adalah bagian penting dari kegiatan ini.", "Data merupakan bagian penting dari kegiatan ini.", #""Data adalah informasi."#] {
+            let entry = makeEntry(id: "data", term: "Data", definition: "informasi")
+            let segment = makeSegment(target: text, context: definitionContext(["Ketentuan Umum", "Pendefinisian kegiatan"]))
+            let detection = AIConnectorDefinitionDetector(dictionaryStore: LegalDictionaryStore(entries: [entry]))
+                .detect(segment: segment, glossaryMatches: [])
+            XCTAssertEqual(detection.explicitSignalStrength, .ambiguous, text)
+            let result = try await rejectedDefinition(segment: segment, entries: [entry])
+            XCTAssertEqual(result.assessment?.classification, .notDefinition, text)
+            XCTAssertEqual(result.assessment?.alignment, .notApplicable, text)
+        }
+    }
+
+    func testStrongSignalDoesNotCreateEvidenceOrMaskModelFailure() async throws {
+        let text = #""Data" adalah informasi."#
+        let legacy = makeEntry(id: "data", term: "Data", definition: "informasi", authority: .legacy)
+        let missing = try await rejectedDefinition(segment: makeSegment(target: text), entries: [legacy])
+        XCTAssertNil(missing.assessment?.candidate)
+        XCTAssertEqual(missing.modelCallCount, 0)
+        XCTAssertEqual(missing.assessment?.alignment, .needsReview)
+        let entry = makeEntry(id: "data", term: "Data", definition: "informasi")
+        let failed = try await rejectedDefinition(segment: makeSegment(target: text), entries: [entry], fail: true)
+        XCTAssertFalse(failed.isComplete)
+        XCTAssertFalse(try XCTUnwrap(failed.assessment).modelReviewed)
+        XCTAssertEqual(failed.assessment?.classification, .needsReview)
+    }
+
+    func testStrongSignalConflictAcrossCandidatesRequiresReview() async throws {
+        let entries = ["a", "b"].map { makeEntry(id: $0, term: "Data", definition: "informasi") }
+        let result = try await rejectedDefinition(segment: makeSegment(target: #""Data" adalah informasi."#), entries: entries, matchSecond: true)
+        XCTAssertEqual(result.modelCallCount, 2)
+        XCTAssertTrue(result.isComplete)
+        XCTAssertEqual(result.assessment?.classification, .needsReview)
+        XCTAssertEqual(result.assessment?.alignment, .needsReview)
+    }
+
+    private func rejectedDefinition(segment: AIReviewSegment, entries: [LegalDictionaryEntry], fail: Bool = false, matchSecond: Bool = false) async throws -> AIConnectorDefinitionAnalysisResult {
+        let analyzer = AIConnectorDefinitionAnalyzer(dictionaryStore: LegalDictionaryStore(entries: entries), reviewHandler: { request, _, _ in
+            if fail { throw DefinitionPolicyTestError.unavailable }
+            let matches = matchSecond && request.candidate.match.entry.id == "b"
+            return QwenDefinitionReviewResult(candidateID: request.candidate.id, classification: matches ? .explicitDefinition : .notDefinition, alignment: matches ? .matches : .notApplicable, metrics: Self.testMetrics(), containsReasoningMarkers: false)
+        })
+        return try await analyzer.analyze(segment: segment, glossaryMatches: [], mode: .hybrid, modelVariant: .qwen35Base4B, thinkingEnabled: false, forceDeterministic: false, generationProfile: AIConnectorGenerationProfilePreset.greedy.profile(for: .qwen35Base4B, thinkingEnabled: false), downloadProgress: { _ in }, generationProgress: { _ in }, semanticProgress: { _ in }, progressStage: { _ in })
+    }
+
+    private func definitionContext(_ headings: [String]) -> AIConnectorSegmentContext {
+        AIConnectorSegmentContext(sectionID: "section", headingPath: headings, parentClause: nil, relevantDefinedTerms: [], relevantParties: [], sectionRegulationReferences: [], documentTypeCandidates: [], legalDomainCandidates: [], profileFingerprint: "profile", structureFingerprint: "structure")
+    }
+
     func testLexicalSimilarityDoesNotEraseNegationModalityOrException() async throws {
         let entry = makeEntry(id: "data", term: "Data", definition: "informasi yang tidak dapat dipublikasikan kecuali dengan izin Pihak Pertama")
         let processor = AIConnectorSegmentProcessor(service: QwenSuggestionService(), dictionaryStore: LegalDictionaryStore(entries: [entry]), ruleStore: AIConnectorRuleStore(version: "empty", rules: []))
@@ -316,7 +395,8 @@ final class AIConnectorDefinitionAnalysisTests: XCTestCase {
     private func makeSegment(
         id: Int = 1,
         location: Int = 0,
-        target: String
+        target: String,
+        context: AIConnectorSegmentContext? = nil
     ) -> AIReviewSegment {
         AIReviewSegment(
             id: id,
@@ -324,7 +404,8 @@ final class AIConnectorDefinitionAnalysisTests: XCTestCase {
             sourceLength: target.utf16.count,
             targetText: target,
             previousContext: nil,
-            nextContext: nil
+            nextContext: nil,
+            context: context
         )
     }
 
@@ -362,6 +443,8 @@ final class AIConnectorDefinitionAnalysisTests: XCTestCase {
         )
     }
 }
+
+private enum DefinitionPolicyTestError: Error { case unavailable }
 
 @MainActor
 private final class DefinitionCallBox {
