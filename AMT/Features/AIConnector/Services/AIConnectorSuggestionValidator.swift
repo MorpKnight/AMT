@@ -51,7 +51,7 @@ enum AIConnectorValidationError: Error, Equatable, Sendable {
 }
 
 struct AIConnectorSuggestionValidator: Sendable {
-    nonisolated static let version = "validator-v4-anchored-locality-grounding"
+    nonisolated static let version = "validator-v5-source-applicability-anchored"
     private static let legalModalities: Set<String> = [
         "wajib",
         "harus",
@@ -171,6 +171,9 @@ struct AIConnectorSuggestionValidator: Sendable {
         }
         if parsedReview.category == .terminology {
             guard let glossaryMatch,
+                  glossaryMatch.entry.authority == .verified,
+                  glossaryMatch.entry.isActionable,
+                  glossaryMatch.entry.applicabilityStatus == .inForce,
                   replacement == glossaryMatch.entry.term else {
                 throw AIConnectorValidationError.invalidGlossaryReference
             }

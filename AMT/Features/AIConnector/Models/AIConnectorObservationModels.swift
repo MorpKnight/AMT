@@ -4,6 +4,7 @@ import Foundation
 /// work spans, not percentages: some spans intentionally overlap because a
 /// model preparation span can contain the first retrieval or review call.
 nonisolated enum AIConnectorObservationStage: String, Codable, CaseIterable, Hashable, Sendable {
+    case localReview
     case segmenting
     case documentStructure
     case contextExtraction
@@ -172,6 +173,7 @@ nonisolated struct AIConnectorSegmentObservation: Codable, Identifiable, Hashabl
     let challengeCount: Int
     let fallbackCount: Int
     let modelOriginCount: Int
+    var stageCoverage: [String: AIConnectorStageCoverage] = [:]
 
     var id: Int { segmentID }
 }

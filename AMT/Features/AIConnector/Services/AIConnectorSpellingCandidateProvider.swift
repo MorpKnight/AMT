@@ -59,7 +59,6 @@ final class NSSpellCheckerAdapter: AIConnectorSystemSpellChecker {
 @MainActor
 final class SystemIndonesianSpellingCandidateProvider: AIConnectorSpellingCandidateProviding {
     static let language = "id"
-    static let maximumMisspelledWordsPerSegment = 2
     static let maximumGuessesPerWord = 6
 
     private let checker: any AIConnectorSystemSpellChecker
@@ -83,12 +82,10 @@ final class SystemIndonesianSpellingCandidateProvider: AIConnectorSpellingCandid
             excludedOriginals: excludedOriginals
         )
         var candidates: [AIConnectorSpellingCandidate] = []
-        var misspelledWordCount = 0
         var searchLocation = 0
         let normalizedExcluded = Set(excludedOriginals.map(normalizeWord))
 
-        while searchLocation < nsText.length,
-              misspelledWordCount < Self.maximumMisspelledWordsPerSegment {
+        while searchLocation < nsText.length, !Task.isCancelled {
             let range = checker.checkSpelling(
                 in: text,
                 startingAt: searchLocation,
@@ -130,7 +127,6 @@ final class SystemIndonesianSpellingCandidateProvider: AIConnectorSpellingCandid
             }
             guard !eligibleGuesses.isEmpty else { continue }
 
-            misspelledWordCount += 1
             candidates.append(contentsOf: eligibleGuesses.prefix(Self.maximumGuessesPerWord).map {
                 guess, rank in
                 AIConnectorSpellingCandidate(

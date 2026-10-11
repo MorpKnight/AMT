@@ -181,6 +181,8 @@ final class AIConnectorBenchmarkRunner {
                 for await event in stream {
                     try Task.checkCancellation()
                     switch event {
+                    case .localResult:
+                        await workQueue.acknowledgeResult()
                     case let .result(result):
                         resultBySegmentID[result.segment.id] = result
                         resultObserver?(result)

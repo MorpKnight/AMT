@@ -351,7 +351,9 @@ final class AIConnectorModelBenchmarkTests: XCTestCase {
                 regulation: "Undang-Undang Nomor 27 Tahun 2022",
                 regulationTitle: "Pelindungan Data Pribadi",
                 sourceURL: nil,
-                authority: .verified
+                authority: .verified,
+                corpusVersion: "verified-flow-benchmark-v1",
+                applicabilityStatus: .inForce
             ),
             LegalDictionaryEntry(
                 id: "p011-korporasi",
@@ -360,7 +362,9 @@ final class AIConnectorModelBenchmarkTests: XCTestCase {
                 regulation: "Undang-Undang Nomor 1 Tahun 2023",
                 regulationTitle: "Kitab Undang-Undang Hukum Pidana",
                 sourceURL: nil,
-                authority: .verified
+                authority: .verified,
+                corpusVersion: "verified-flow-benchmark-v1",
+                applicabilityStatus: .inForce
             ),
             LegalDictionaryEntry(
                 id: "p011-keadaan-kahar",
@@ -369,7 +373,9 @@ final class AIConnectorModelBenchmarkTests: XCTestCase {
                 regulation: "P011 Test Corpus",
                 regulationTitle: "Verified synthetic fixture",
                 sourceURL: nil,
-                authority: .verified
+                authority: .verified,
+                corpusVersion: "verified-flow-benchmark-v1",
+                applicabilityStatus: .inForce
             )
         ]
 

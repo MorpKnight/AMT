@@ -892,7 +892,12 @@ enum AIConnectorQueueState: String, Hashable, Sendable {
     case cancelled
 }
 
+nonisolated enum AIConnectorStageCoverage: String, Codable, Hashable, Sendable {
+    case completed, notApplicable, skippedByPolicy, failed, tooLong, cancelled
+}
+
 struct AIConnectorSegmentResult: Sendable {
+    var stageCoverage: [String: AIConnectorStageCoverage] = [:]
     let segment: AIReviewSegment
     let glossaryMatches: [LegalDictionaryMatch]
     let reviews: [AIValidatedReview]
@@ -902,7 +907,7 @@ struct AIConnectorSegmentResult: Sendable {
     let parsedStatus: AIReviewStatus?
     let parsedCategory: AIReviewCategory?
     let rejections: [AIReviewRejection]
-    let cacheHit: Bool
+    var cacheHit: Bool
     let modelAttempts: Int
     let repairAttempted: Bool
     let usedFallback: Bool
@@ -922,7 +927,7 @@ struct AIConnectorSegmentResult: Sendable {
     let challengeCount: Int
     let definitionAssessment: AIConnectorDefinitionAssessment?
     let definitionModelCallCount: Int
-    let definitionCacheHit: Bool
+    var definitionCacheHit: Bool
 
     init(
         segment: AIReviewSegment,
@@ -1019,6 +1024,7 @@ struct AIConnectorSegmentResult: Sendable {
 
 enum AIConnectorWorkQueueEvent: Sendable {
     case stateChanged(segmentID: Int, state: AIConnectorQueueState)
+    case localResult(AIConnectorSegmentResult)
     case result(AIConnectorSegmentResult)
     case progress(completed: Int, total: Int)
     case circuitBreakerActivated

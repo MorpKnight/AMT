@@ -4,7 +4,7 @@ import XCTest
 
 @MainActor
 final class AIConnectorP011CandidateFirstTests: XCTestCase {
-    func testCandidateBuilderUsesStableIDsAndCapsAtThree() {
+    func testCandidateBuilderUsesStableIDsAndRetainsAdditionalOccurrences() {
         let rules = [
             makeRule(
                 id: "spelling-ditanda-tangani",
@@ -44,11 +44,11 @@ final class AIConnectorP011CandidateFirstTests: XCTestCase {
 
         let candidates = builder.build(for: segment, glossaryMatches: [])
 
-        XCTAssertEqual(candidates.count, 3)
-        XCTAssertEqual(candidates.map(\.id), ["C1", "C2", "C3"])
+        XCTAssertEqual(candidates.count, 4)
+        XCTAssertEqual(candidates.map(\.id), ["C1", "C2", "C3", "C4"])
         XCTAssertEqual(
             candidates.compactMap(\.ruleID),
-            ["spelling-ditanda-tangani", "grammar-wajib-untuk", "spelling-di-simpan"]
+            ["spelling-ditanda-tangani", "grammar-wajib-untuk", "spelling-di-simpan", "spelling-di-buat"]
         )
         XCTAssertTrue(candidates.allSatisfy { $0.confidenceTier == .deterministicRule })
     }
@@ -368,9 +368,11 @@ final class AIConnectorP011CandidateFirstTests: XCTestCase {
         XCTAssertTrue(hybrid.usedFallback)
         XCTAssertEqual(hybrid.reviews.first?.origin, .deterministicFallback)
         XCTAssertEqual(hybrid.rejections.first?.classification, .modelFailure)
+        XCTAssertEqual(hybrid.stageCoverage["candidateReview"], .failed)
         XCTAssertFalse(modelOnly.usedFallback)
         XCTAssertTrue(modelOnly.reviews.isEmpty)
         XCTAssertEqual(modelOnly.rejections.first?.classification, .modelFailure)
+        XCTAssertEqual(modelOnly.stageCoverage["candidateReview"], .failed)
     }
 
     func testCacheIncludesCandidateAndGenerationProfile() async throws {
@@ -757,7 +759,8 @@ final class AIConnectorP011CandidateFirstTests: XCTestCase {
             authority: authority,
             corpusVersion: authority == .verified
                 ? "verified-test-v1"
-                : LegalDictionaryCorpusVersion.legacyKamusV1
+                : LegalDictionaryCorpusVersion.legacyKamusV1,
+            applicabilityStatus: .inForce
         )
     }
 

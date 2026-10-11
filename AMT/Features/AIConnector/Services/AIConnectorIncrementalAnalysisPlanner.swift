@@ -86,6 +86,9 @@ struct AIConnectorIncrementalAnalysisPlanner: Sendable {
         }
 
         if let currentAnalysisProfile {
+            if baseline.analysisProfile != currentAnalysisProfile {
+                reasons.insert(.profileChanged)
+            }
             if baseline.analysisProfile.corpusVersion != currentAnalysisProfile.corpusVersion {
                 reasons.insert(.corpusChanged)
             }
@@ -177,11 +180,12 @@ struct AIConnectorIncrementalAnalysisPlanner: Sendable {
                 return sectionID(for: segment, in: structure)
             }
         )
+        let originalImpactedSegmentIDs = impactedSegmentIDs
         for contextSectionID in changedSectionForContext {
             let sameSection = segmentation.segments.filter {
                 sectionID(for: $0, in: structure) == contextSectionID
             }
-            for segment in sameSection where impactedSegmentIDs.contains(segment.id) {
+            for segment in sameSection where originalImpactedSegmentIDs.contains(segment.id) {
                 if let index = sameSection.firstIndex(where: { $0.id == segment.id }) {
                     if index > sameSection.startIndex {
                         impactedSegmentIDs.insert(sameSection[index - 1].id)
@@ -197,8 +201,9 @@ struct AIConnectorIncrementalAnalysisPlanner: Sendable {
         let mappedOldIDs = Set(mappingPairs.map(\.oldSegmentID))
         let currentIDs = Set(segmentation.segments.map(\.id))
         let oldIDs = Set(baseline.segmentation.segments.map(\.id))
-        let reusable = Set(
+        var reusable = Set(
             mappingPairs
+                .filter { baseline.completedSegmentIDs?.contains($0.oldSegmentID) ?? true }
                 .map(\.newSegmentID)
                 .filter { !impactedSegmentIDs.contains($0) }
         )
@@ -217,8 +222,12 @@ struct AIConnectorIncrementalAnalysisPlanner: Sendable {
             // We can only use a full-document fallback when no section
             // boundary can be proven. If a section is known, its members are
             // invalidated conservatively and unrelated sections stay reusable.
+            reusable.removeAll()
             reprocess = currentIDs
         }
+
+        reusable.subtract(impactedSegmentIDs)
+        reprocess.formUnion(currentIDs.subtracting(reusable))
 
         if reasons.isEmpty {
             reasons.insert(.editedSegment)
@@ -558,7 +567,11 @@ struct AIConnectorIncrementalAnalysisPlanner: Sendable {
         _ old: AIConnectorDocumentContextProfile,
         _ new: AIConnectorDocumentContextProfile
     ) -> Bool {
-        localFactValues(old.documentTypeCandidates) != localFactValues(new.documentTypeCandidates)
+        let classifiedFactsChanged = new.classificationStatus == .succeeded && (
+            old.documentTypeCandidates.map(\.value).sorted() != new.documentTypeCandidates.map(\.value).sorted()
+                || old.legalDomains.map(\.value).sorted() != new.legalDomains.map(\.value).sorted()
+        )
+        return classifiedFactsChanged || localFactValues(old.documentTypeCandidates) != localFactValues(new.documentTypeCandidates)
             || localFactValues(old.legalDomains) != localFactValues(new.legalDomains)
             || localFactValues(old.parties) != localFactValues(new.parties)
             || localFactValues(old.definedTerms) != localFactValues(new.definedTerms)

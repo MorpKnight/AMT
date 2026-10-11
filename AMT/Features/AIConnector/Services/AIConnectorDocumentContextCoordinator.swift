@@ -31,6 +31,7 @@ final class AIConnectorDocumentContextCoordinator {
         generationProfile: AIConnectorGenerationProfile,
         downloadProgress: @escaping @Sendable (Double) -> Void = { _ in },
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void = { _ in },
+        localPreparation: @escaping @MainActor @Sendable (AIConnectorDocumentContextPreparation) async throws -> Void = { _ in },
         stage: @escaping @MainActor @Sendable (AIConnectorDocumentContextPreparationStage) -> Void = { _ in }
     ) async throws -> AIConnectorDocumentContextPreparation {
         let clock = ContinuousClock()
@@ -56,6 +57,15 @@ final class AIConnectorDocumentContextCoordinator {
         profile = profile.withCoverage(sample.coverage)
         let extractionDuration = Self.seconds(extractionStartedAt.duration(to: clock.now))
 
+        let localSegmentation = LegalTextSegmenter().segment(documentText: documentText, structure: structure, profile: profile)
+        try await localPreparation(AIConnectorDocumentContextPreparation(
+            structure: structure, profile: profile, segmentation: localSegmentation,
+            structureDuration: structureDuration, extractionDuration: extractionDuration,
+            segmentationDuration: 0, preparationDuration: Self.seconds(startedAt.duration(to: clock.now)),
+            classificationDuration: 0,
+            cacheKey: Self.cacheKey(documentText: documentText, structure: structure, modelVariant: modelVariant, mode: mode)
+        ))
+        try Task.checkCancellation()
         var classificationDuration = 0.0
         if mode.usesModel, profile.requiresClassification {
             stage(.classification)

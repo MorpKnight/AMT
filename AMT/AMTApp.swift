@@ -9,8 +9,14 @@ import SwiftUI
 
 @main
 struct AMTApp: App {
-    private let qwenSuggestionService = QwenSuggestionService()
-    private let dictionaryStore = LegalDictionaryStore()
+    private let qwenSuggestionService: QwenSuggestionService
+    private let dictionaryStore: LegalDictionaryStore
+
+    init() {
+        let service = QwenSuggestionService()
+        qwenSuggestionService = service
+        dictionaryStore = LegalDictionaryStore(inferenceScheduler: service.inferenceScheduler)
+    }
 
     var body: some Scene {
         WindowGroup {

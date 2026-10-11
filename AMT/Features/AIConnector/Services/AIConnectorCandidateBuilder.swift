@@ -40,6 +40,7 @@ struct AIConnectorCandidateBuilder: Sendable {
         let verifiedMatches = glossaryMatches.filter {
             $0.entry.authority == .verified
                 && $0.entry.isActionable
+                && $0.entry.applicabilityStatus == .inForce
                 && $0.entry.corpusVersion != LegalDictionaryCorpusVersion.legacyKamusV1
                 && $0.entry.corpusVersion != LegalDictionaryCorpusVersion.legacyRAGExportV1
         }
@@ -132,7 +133,6 @@ struct AIConnectorCandidateBuilder: Sendable {
                 }
                 return lhs.sourceRank < rhs.sourceRank
             }
-            .prefix(1)
             .compactMap { candidate -> Proposal? in
                 guard let evidence = candidate.evidence,
                       AIConnectorLanguageScorePolicy.isEligible(evidence),
@@ -222,8 +222,7 @@ struct AIConnectorCandidateBuilder: Sendable {
         }
 
         let selected = proposals.reduce(into: [Proposal]()) { selected, proposal in
-            guard selected.count < AIConnectorSuggestionConflictResolver.maximumSuggestionsPerSegment,
-                  !selected.contains(where: { other in
+            guard !selected.contains(where: { other in
                       NSIntersectionRange(proposal.range, other.range).length > 0
                   }) else {
                 return

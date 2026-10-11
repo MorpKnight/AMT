@@ -136,6 +136,7 @@ nonisolated struct LegalDictionarySuggestionRetrievalResult: Sendable {
     let matches: [LegalDictionaryMatch]
     let queryCount: Int
     let semanticQueryCount: Int
+    var semanticFailed: Bool = false
 }
 
 nonisolated struct LegalDictionaryStore: Sendable {
@@ -233,7 +234,8 @@ nonisolated struct LegalDictionaryStore: Sendable {
         bundle: Bundle = .main,
         localRAG: LocalRAG = .shared,
         corpusStore: LegalCorpusStore? = nil,
-        semanticRetriever: LegalSemanticRetriever? = nil
+        semanticRetriever: LegalSemanticRetriever? = nil,
+        inferenceScheduler: AIConnectorInferenceScheduler = AIConnectorInferenceScheduler()
     ) {
         let loadedCorpus = corpusStore ?? (try? LegalCorpusStore(bundle: bundle))
         if let loadedCorpus {
@@ -257,7 +259,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
                 entries: corpusEntries + supplementalLegacyEntries,
                 localRAG: localRAG,
                 corpusStore: loadedCorpus,
-                semanticRetriever: semanticRetriever ?? LegalSemanticRetriever(corpus: loadedCorpus)
+                semanticRetriever: semanticRetriever ?? LegalSemanticRetriever(corpus: loadedCorpus, inferenceScheduler: inferenceScheduler)
             )
         } else if Self.legacyCSVRuntimeEnabled,
                   let resourceURL = bundle.url(forResource: "kamus_hukum", withExtension: "csv"),
@@ -809,6 +811,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
     nonisolated func suggestionCandidateResultAsync(
         for text: String,
         limit: Int = 3,
+        allowSemantic: Bool = true,
         semanticProgress: @Sendable @escaping (Double) -> Void = { _ in }
     ) async -> LegalDictionarySuggestionRetrievalResult {
         guard limit > 0 else {
@@ -819,11 +822,24 @@ nonisolated struct LegalDictionaryStore: Sendable {
             )
         }
 
-        if corpusStore != nil, semanticRetriever != nil {
-            let effectiveLimit = min(
-                limit,
-                corpusStore?.manifest.retrieval.suggestionCandidateLimit ?? limit
+        let lexical = makeSuggestionMatches(
+            from: lexicalMatches(for: text, limit: max(limit, 100), origin: .lexical),
+            text: text, limit: limit
+        )
+        let lowered = text.lowercased()
+        let hasDefinitionCue = ["adalah", "merupakan", "didefinisikan", "diartikan", "selanjutnya disebut"].contains { lowered.contains($0) }
+        // A policy skip is not evidence that semantic review completed.
+        if !allowSemantic {
+            return LegalDictionarySuggestionRetrievalResult(
+                matches: corpusStore == nil ? suggestionCandidates(for: text, limit: limit).filter { $0.entry.isActionable } : lexical,
+                queryCount: 1, semanticQueryCount: 0
             )
+        }
+        if corpusStore != nil, lexical.isEmpty && !hasDefinitionCue {
+            return LegalDictionarySuggestionRetrievalResult(matches: [], queryCount: 1, semanticQueryCount: 0)
+        }
+        if corpusStore != nil, semanticRetriever != nil {
+            let effectiveLimit = limit
             guard effectiveLimit > 0 else {
                 return LegalDictionarySuggestionRetrievalResult(
                     matches: [],
@@ -835,6 +851,7 @@ nonisolated struct LegalDictionaryStore: Sendable {
             let semanticModelAlreadyLoaded = await semanticRetriever?.isLoaded ?? true
             var matchesByEntryID: [String: LegalDictionaryMatch] = [:]
             var semanticQueryCount = 0
+            var semanticFailed = false
 
             for (queryIndex, query) in queries.enumerated() {
                 if Task.isCancelled {
@@ -865,6 +882,8 @@ nonisolated struct LegalDictionaryStore: Sendable {
                         }
                     }
                 ) else {
+                    semanticFailed = true
+                    for match in lexical { matchesByEntryID[match.entry.id] = match }
                     continue
                 }
                 if Task.isCancelled {
@@ -900,7 +919,8 @@ nonisolated struct LegalDictionaryStore: Sendable {
             return LegalDictionarySuggestionRetrievalResult(
                 matches: matches,
                 queryCount: queries.count,
-                semanticQueryCount: semanticQueryCount
+                semanticQueryCount: semanticQueryCount,
+                semanticFailed: semanticFailed
             )
         }
 

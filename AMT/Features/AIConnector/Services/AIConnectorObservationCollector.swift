@@ -22,6 +22,7 @@ actor AIConnectorObservationCollector {
     }
 
     private struct SegmentAccumulator: Sendable {
+        var stageCoverage: [String: AIConnectorStageCoverage] = [:]
         var utf16Length = 0
         var duration: TimeInterval = 0
         var stageSamples: [StageSample] = []
@@ -165,6 +166,7 @@ actor AIConnectorObservationCollector {
         duration: TimeInterval
     ) {
         var segment = segments[result.segment.id] ?? SegmentAccumulator()
+        segment.stageCoverage = result.stageCoverage
         segment.utf16Length = result.segment.targetText.utf16.count
         segment.duration = Self.safeDuration(duration)
         segment.suggestionCount = result.reviews.filter {
@@ -316,7 +318,8 @@ actor AIConnectorObservationCollector {
                 repairCount: value.repairCount,
                 challengeCount: value.challengeCount,
                 fallbackCount: value.fallbackCount,
-                modelOriginCount: value.modelOriginCount
+                modelOriginCount: value.modelOriginCount,
+                stageCoverage: value.stageCoverage
             )
         }
 

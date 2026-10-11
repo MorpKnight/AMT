@@ -149,7 +149,7 @@ nonisolated struct AIConnectorDefinitionResolutionOption: Codable, Hashable, Ide
 /// are kept separately from options so an ineligible source remains visible
 /// to the lawyer without accidentally becoming an edit.
 nonisolated struct AIConnectorDefinitionResolution: Codable, Hashable, Identifiable, Sendable {
-    static let version = "phase6-definition-resolution-v1"
+    static let version = "phase6-definition-resolution-v2-source-context"
 
     let id: String
     let assessmentID: String

@@ -60,12 +60,27 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
            mode.usesModel,
            !forceDeterministic,
            looksDefinitionLike(segment.targetText) {
-            let retrievedMatches = try await retrieveDefinitionCandidates(
-                for: segment.targetText,
-                semanticProgress: semanticProgress,
-                segmentID: segment.id,
-                observationCollector: observationCollector
-            )
+            let retrievedMatches: [LegalDictionaryMatch]
+            do {
+                retrievedMatches = try await retrieveDefinitionCandidates(
+                    for: segment.targetText,
+                    semanticProgress: semanticProgress,
+                    segmentID: segment.id,
+                    observationCollector: observationCollector
+                )
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                return AIConnectorDefinitionAnalysisResult(
+                    assessment: assessmentWithoutEvidence(
+                        segment: segment, detection: detection,
+                        classification: .needsReview, alignment: .needsReview,
+                        reason: "Retrieval pengertian gagal; cakupan analisis belum lengkap dan memerlukan review manusia.",
+                        origin: .deterministicFallback
+                    ),
+                    isComplete: false
+                )
+            }
             progressStage(.semanticRetrieval)
             if !retrievedMatches.isEmpty {
                 let secondDetectionClock = ContinuousClock()
@@ -199,7 +214,8 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
                     origin: .deterministicFallback,
                     modelReviewed: false
                 ),
-                modelCallCount: modelCallCount
+                modelCallCount: modelCallCount,
+                isComplete: false
             )
         }
 
@@ -210,7 +226,8 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
                 outcomes: outcomes,
                 hadFailure: lastFailure != nil
             ),
-            modelCallCount: modelCallCount
+            modelCallCount: modelCallCount,
+            isComplete: lastFailure == nil
         )
     }
 
@@ -292,6 +309,7 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
         let matching = outcomes.filter {
             $0.result.alignment == .matches
                 && $0.result.classification != .notDefinition
+                && meaningOperators(in: $0.candidate.statementText) == meaningOperators(in: $0.candidate.sourceDefinition)
         }
         let mismatching = outcomes.filter {
             $0.result.alignment == .mismatch
@@ -299,6 +317,7 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
         let needsReview = outcomes.filter {
             $0.result.alignment == .needsReview
                 || $0.result.classification == .needsReview
+                || ($0.result.alignment == .matches && meaningOperators(in: $0.candidate.statementText) != meaningOperators(in: $0.candidate.sourceDefinition))
         }
 
         let selected = matching.first ?? mismatching.first ?? needsReview.first ?? outcomes[0]
@@ -409,6 +428,21 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
         )
     }
 
+    /// Different legal operators never become equivalent through token overlap
+    /// or an unqualified model MATCH decision.
+    private func meaningOperators(in text: String) -> [String] {
+        let operators: Set<String> = ["tidak", "bukan", "tanpa", "wajib", "harus", "dapat", "boleh", "dilarang", "akan", "jika", "apabila", "kecuali", "sepanjang", "hanya", "dan", "atau"]
+        var signature = Self.tokenize(text).filter { operators.contains($0) || $0.contains(where: \.isNumber) }
+        let pattern = #"(?i)\bpihak\s+(?:pertama|kedua|ketiga|keempat|kesatu|a|b)\b"#
+        if let expression = try? NSRegularExpression(pattern: pattern) {
+            let source = text as NSString
+            signature += expression.matches(in: text, range: NSRange(location: 0, length: source.length)).map {
+                source.substring(with: $0.range).lowercased()
+            }
+        }
+        return signature
+    }
+
     private func lexicalAlignment(
         statement: String,
         sourceDefinition: String,
@@ -424,12 +458,9 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
             return .matches
         }
 
-        let shared = Set(statementTokens).intersection(sourceTokens).count
-        let sourceCoverage = Double(shared) / Double(Set(sourceTokens).count)
-        let statementCoverage = Double(shared) / Double(Set(statementTokens).count)
-        return sourceCoverage >= 0.80 && statementCoverage >= 0.45
-            ? .matches
-            : .needsReview
+        // Token overlap cannot establish semantic equivalence. Preserve operators,
+        // actors, quantities and conditions; paraphrases require contextual review.
+        return .needsReview
     }
 
     private func retrieveDefinitionCandidates(
@@ -472,7 +503,7 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
                     semanticQueryCount: semanticQueryCount
                 )
             }
-            return []
+            throw error
         }
         if let observationCollector {
             await observationCollector.recordStage(
@@ -527,9 +558,7 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
     private func looksDefinitionLike(_ text: String) -> Bool {
         let tokens = Self.tokenize(text)
         guard tokens.count >= 4 else { return false }
-        if tokens.contains("yang") {
-            return true
-        }
+        if tokens.contains(where: Self.definitionCues.contains) { return true }
         return Self.definitionLeadTokens.contains(tokens[0])
     }
 
@@ -564,7 +593,7 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
                 }
             }
         }
-        return tokens.filter { !Self.stopWords.contains($0) }
+        return tokens
     }
 
     private static func tokenize(_ value: String) -> [String] {
@@ -582,18 +611,10 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
         "adalah", "ialah", "merupakan", "berarti", "didefinisikan", "diartikan"
     ]
 
-    private static let stopWords: Set<String> = [
-        "adalah", "ialah", "merupakan", "berarti", "didefinisikan", "diartikan",
-        "sebagai", "yang", "dan", "atau", "serta", "dalam", "dengan", "untuk",
-        "dari", "pada", "oleh", "terhadap", "suatu", "sebuah", "dapat", "telah",
-        "akan", "tidak", "secara", "baik", "lebih", "lain", "lainnya", "ini", "itu"
-    ]
-
     private static let definitionLeadTokens: Set<String> = [
         "orang", "individu", "badan", "data", "informasi", "rangkaian", "kegiatan",
-        "proses", "keadaan", "hubungan", "sistem", "pihak", "perjanjian", "tindakan",
-        "kondisi", "barang", "jasa", "hak", "kewajiban", "dokumen", "penyelenggara",
-        "setiap", "segala", "sesuatu"
+        "proses", "keadaan", "hubungan", "sistem", "tindakan",
+        "kondisi", "barang", "jasa"
     ]
 
     private struct ModelOutcome: Sendable {

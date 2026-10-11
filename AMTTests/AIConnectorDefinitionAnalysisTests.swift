@@ -4,6 +4,20 @@ import XCTest
 
 @MainActor
 final class AIConnectorDefinitionAnalysisTests: XCTestCase {
+    func testLexicalSimilarityDoesNotEraseNegationModalityOrException() async throws {
+        let entry = makeEntry(id: "data", term: "Data", definition: "informasi yang tidak dapat dipublikasikan kecuali dengan izin Pihak Pertama")
+        let processor = AIConnectorSegmentProcessor(service: QwenSuggestionService(), dictionaryStore: LegalDictionaryStore(entries: [entry]), ruleStore: AIConnectorRuleStore(version: "empty", rules: []))
+        for text in [
+            "Data adalah informasi yang dapat dipublikasikan kecuali dengan izin Pihak Pertama.",
+            "Data adalah informasi yang tidak wajib dipublikasikan kecuali dengan izin Pihak Pertama.",
+            "Data adalah informasi yang tidak dapat dipublikasikan dengan izin Pihak Pertama.",
+            "Data adalah informasi yang tidak dapat dipublikasikan kecuali dengan izin Pihak Kedua."
+        ] {
+            let result = try await processor.process(segment: makeSegment(target: text), documentProtectionContext: .empty, mode: .deterministic, modelVariant: .qwen35Base4B, thinkingEnabled: false, forceDeterministic: false, downloadProgress: { _ in }, generationProgress: { _ in })
+            XCTAssertEqual(result.definitionAssessment?.alignment, .needsReview, text)
+        }
+    }
+
     func testDetectorFindsExplicitDefinitionAndOnlyUsesVerifiedEvidence() {
         let entry = makeEntry(
             id: "data-pribadi-definition",
@@ -45,7 +59,7 @@ final class AIConnectorDefinitionAnalysisTests: XCTestCase {
         XCTAssertEqual(legacyResult.detection, .explicitPattern)
     }
 
-    func testAnalyzerUsesMockedQwenForImplicitParaphrase() async throws {
+    func testAnalyzerKeepsChangedOperatorsUnresolvedDespiteModelMatch() async throws {
         let entry = makeEntry(
             id: "data-pribadi-definition",
             term: "Data Pribadi",
@@ -100,8 +114,8 @@ final class AIConnectorDefinitionAnalysisTests: XCTestCase {
         let result = try XCTUnwrap(assessment.assessment)
         XCTAssertEqual(calls.requests.count, 1)
         XCTAssertEqual(result.detection, .retrievedCandidate)
-        XCTAssertEqual(result.classification, .implicitDefinition)
-        XCTAssertEqual(result.alignment, .matches)
+        XCTAssertEqual(result.classification, .needsReview)
+        XCTAssertEqual(result.alignment, .needsReview)
         XCTAssertTrue(result.modelReviewed)
         XCTAssertEqual(result.semanticScore, 0.86)
         XCTAssertTrue(result.requiresHumanReview)

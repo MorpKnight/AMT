@@ -139,6 +139,7 @@ struct AIConnectorDefinitionAssessment: Identifiable, Hashable, Sendable {
 }
 
 struct AIConnectorDefinitionAnalysisResult: Hashable, Sendable {
+    let isComplete: Bool
     let assessment: AIConnectorDefinitionAssessment?
     let modelCallCount: Int
     let cacheHit: Bool
@@ -146,8 +147,10 @@ struct AIConnectorDefinitionAnalysisResult: Hashable, Sendable {
     init(
         assessment: AIConnectorDefinitionAssessment? = nil,
         modelCallCount: Int = 0,
-        cacheHit: Bool = false
+        cacheHit: Bool = false,
+        isComplete: Bool = true
     ) {
+        self.isComplete = isComplete
         self.assessment = assessment
         self.modelCallCount = modelCallCount
         self.cacheHit = cacheHit
@@ -157,7 +160,8 @@ struct AIConnectorDefinitionAnalysisResult: Hashable, Sendable {
         Self(
             assessment: assessment,
             modelCallCount: 0,
-            cacheHit: true
+            cacheHit: true,
+            isComplete: isComplete
         )
     }
 }

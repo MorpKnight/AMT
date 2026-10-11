@@ -48,12 +48,14 @@ enum QwenSuggestionError: LocalizedError {
 
 @MainActor
 final class QwenSuggestionService {
+    let inferenceScheduler = AIConnectorInferenceScheduler()
+    lazy var languageScorer = TataKataLanguageScorer(inferenceScheduler: inferenceScheduler)
     static let maximumTargetTokens = 512
     nonisolated static let promptVersion = "p0.10-six-line-v2-minimal-span"
     nonisolated static let outputSchemaVersion = "six-line-v1"
     nonisolated static let candidatePromptVersion = "p0.11-candidate-first-v1"
     nonisolated static let candidateOutputSchemaVersion = "submit-review-tool-v1"
-    nonisolated static let definitionPromptVersion = "p0.13-definition-review-v1"
+    nonisolated static let definitionPromptVersion = "p0.13-definition-review-v2-meaning-guards"
     nonisolated static let definitionOutputSchemaVersion = "submit-definition-review-tool-v1"
     nonisolated static let contextPromptVersion = "phase4-context-classifier-v1"
     nonisolated static let contextOutputSchemaVersion = "classify-document-context-tool-v1"
@@ -152,7 +154,10 @@ final class QwenSuggestionService {
     langsung, tetapi jelas berfungsi sebagai uraian definisional untuk istilah
     kandidat. Padanan kata, infleksi, dan parafrasa boleh dianggap selaras jika
     relasi, cakupan, dan pengecualian maknanya tetap sama. Jangan menganggap
-    kemiripan satu atau dua kata sebagai kesetaraan.
+    kemiripan satu atau dua kata sebagai kesetaraan. Negasi, modalitas, angka,
+    aktor, kondisi, dan pengecualian wajib tetap sama. Perbedaan siapa yang
+    bertindak atau menerima tindakan tidak boleh dinilai MATCH; jika referennya
+    belum jelas, gunakan NEEDS_REVIEW.
 
     NOT_A_DEFINITION dipakai jika TARGET hanya menyebut, mengatur, mewajibkan,
     melarang, memberi hak, atau memakai istilah tersebut dalam konteks lain.
@@ -383,6 +388,10 @@ final class QwenSuggestionService {
         for modelVariant: AIConnectorModelVariant,
         downloadProgress: @escaping @Sendable (Double) -> Void = { _ in }
     ) async throws {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         _ = try await loadModel(
             modelVariant: modelVariant,
             downloadProgress: downloadProgress
@@ -414,6 +423,10 @@ final class QwenSuggestionService {
         modelVariant: AIConnectorModelVariant = .qwen35Base4B,
         repairInstruction: String? = nil
     ) async throws -> QwenReviewResult {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         guard !segment.targetText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw QwenSuggestionError.emptyInput
         }
@@ -508,6 +521,10 @@ final class QwenSuggestionService {
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void
     ) async throws -> QwenCandidateDecisionResult {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         guard !request.segment.targetText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw QwenSuggestionError.emptyInput
         }
@@ -632,6 +649,10 @@ final class QwenSuggestionService {
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void
     ) async throws -> QwenDefinitionReviewResult {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         guard !request.segment.targetText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw QwenSuggestionError.emptyInput
         }
@@ -725,6 +746,10 @@ final class QwenSuggestionService {
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void
     ) async throws -> AIConnectorDocumentContextClassificationResult {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         guard !request.sampledText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw QwenSuggestionError.emptyInput
         }
@@ -804,6 +829,10 @@ final class QwenSuggestionService {
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void
     ) async throws -> AIConnectorRiskReviewResult {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         guard !request.targetText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw QwenSuggestionError.emptyInput
         }
@@ -893,6 +922,10 @@ final class QwenSuggestionService {
         downloadProgress: @escaping @Sendable (Double) -> Void,
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void
     ) async throws -> AIConnectorDefinitionResolutionReviewResult {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         guard !request.documentDefinition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !request.candidateTerm.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !request.candidateDefinition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty

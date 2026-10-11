@@ -19,7 +19,7 @@ nonisolated enum AIConnectorLanguageScorerConfiguration {
 
     /// Bumping this value invalidates cached analysis when the scoring policy
     /// or the pinned TataKata artifact changes.
-    static let pipelineVersion = "tatakata-pilot-v1-mean-pll-64wp-delta-025"
+    static let pipelineVersion = "tatakata-occurrences-v2-mean-pll-64wp-delta-025"
     static let cacheKey = "\(modelID)@\(revision):\(pipelineVersion)"
 }
 
@@ -165,13 +165,21 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
 
     nonisolated static let pipelineVersion = AIConnectorLanguageScorerConfiguration.pipelineVersion
 
+    private let inferenceScheduler: AIConnectorInferenceScheduler
     private let modelDirectory: URL?
     private var runtime: TataKataRuntime?
     private var loadingTask: Task<TataKataRuntime, Error>?
 
-    init(modelDirectory: URL? = nil) {
+    init(modelDirectory: URL? = nil, inferenceScheduler: AIConnectorInferenceScheduler = AIConnectorInferenceScheduler()) {
+        self.inferenceScheduler = inferenceScheduler
         self.modelDirectory = modelDirectory
     }
+
+#if DEBUG
+    func flowBenchmarkClearScoreCache() async { await clearCachedScores() }
+#endif
+
+    func clearCachedScores() async { await runtime?.clearCachedScores() }
 
     var isLoaded: Bool {
         runtime != nil
@@ -180,6 +188,10 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
     func load(
         progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void = { _ in }
     ) async throws {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         _ = try await resolvedRuntime(progress: progress)
     }
 
@@ -194,6 +206,10 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
         candidates: [AIConnectorSpellingCandidate],
         progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void = { _ in }
     ) async throws -> [AIConnectorSpellingCandidate] {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         guard !candidates.isEmpty else { return [] }
         let runtime = try await resolvedRuntime(progress: progress)
         await progress(.scoring(0))
@@ -214,6 +230,10 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
         candidates: [AIConnectorSpellingCandidate],
         progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void = { _ in }
     ) async throws -> [AIConnectorSpellingCandidate] {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         guard !candidates.isEmpty else { return [] }
         let runtime = try await resolvedRuntime(progress: progress)
         await progress(.scoring(0))
@@ -298,6 +318,7 @@ private actor TataKataRuntime {
     private let specialTokenIDs: Set<Int>
     private let revision: String
     private var scoreCache: [AIConnectorLanguageScoreCacheKey: Double] = [:]
+    func clearCachedScores() { scoreCache.removeAll() }
 
     private init(
         tokenizer: any Tokenizers.Tokenizer,
@@ -502,7 +523,7 @@ private actor TataKataRuntime {
                     replacement: candidate.replacement,
                     sourceRange: window.range
                 )
-                if best == nil || score > best!.score {
+                if best.map({ score > $0.score }) ?? true {
                     best = (candidate, score)
                 }
             }
@@ -539,7 +560,7 @@ private actor TataKataRuntime {
             let rhsDelta = rhs.evidence?.delta ?? -.greatestFiniteMagnitude
             if lhsDelta != rhsDelta { return lhsDelta > rhsDelta }
             return lhs.sourceLocation < rhs.sourceLocation
-        }.prefix(1).map { $0 }
+        }
     }
 
     private func scoreVariant(
@@ -555,7 +576,7 @@ private actor TataKataRuntime {
             replacementSourceLocation: sourceRange?.location,
             replacementSourceLength: sourceRange?.length
         )
-        if let cached = scoreCache[cacheKey] {
+        if AIConnectorInferenceContext.reuseScoringCache, let cached = scoreCache[cacheKey] {
             return cached
         }
 

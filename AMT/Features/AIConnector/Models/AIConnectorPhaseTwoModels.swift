@@ -147,7 +147,7 @@ struct AIConnectorCandidateBuildResult: Hashable, Sendable {
 /// routing for narrow, exact local rules while keeping legal terminology and
 /// semantic matches behind model/human review.
 struct AIConnectorPhaseTwoPolicy: Sendable {
-    static let version = "phase2-policy-v1"
+    static let version = "phase2-policy-v2-complete-occurrences"
     static let disabledVersion = "phase1-compatible"
     static let minimumSemanticScore: Double = 0.70
 
@@ -296,7 +296,7 @@ struct AIConnectorPhaseTwoPolicy: Sendable {
 /// Ranks local candidates using explicit evidence before the model is called.
 /// It preserves a stable maximum while making the tie-breaking rule auditable.
 struct AIConnectorPhaseTwoCandidateRanker: Sendable {
-    static let maximumCandidates = 3
+    static let batchSize = 3
 
     func select(
         _ candidates: [AIConnectorReviewCandidate]
@@ -325,11 +325,6 @@ struct AIConnectorPhaseTwoCandidateRanker: Sendable {
         var conflictCount = 0
 
         for candidate in ordered {
-            guard selected.count < Self.maximumCandidates else {
-                droppedCount += 1
-                continue
-            }
-
             let overlaps = selected.filter { existing in
                 rangesOverlap(candidate.evidence, existing.evidence)
             }

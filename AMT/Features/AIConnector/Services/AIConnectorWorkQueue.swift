@@ -139,7 +139,7 @@ final class AIConnectorSegmentProcessor {
         )
         self.spellingCandidateProvider = spellingCandidateProvider
             ?? SystemIndonesianSpellingCandidateProvider()
-        self.languageScorer = languageScorer ?? TataKataLanguageScorer()
+        self.languageScorer = languageScorer ?? service.languageScorer
         self.phaseTwoEnabled = enablePhaseTwo
         self.usesLegacyModelReviewHandler = modelReviewHandler != nil
         self.enableCandidateChallenge = enableCandidateChallenge
@@ -180,7 +180,25 @@ final class AIConnectorSegmentProcessor {
         )
     }
 
+#if DEBUG
+    func flowBenchmarkClearScoreCache() async {
+        if let scorer = languageScorer as? TataKataLanguageScorer {
+            await scorer.flowBenchmarkClearScoreCache()
+        }
+    }
+#endif
+
+    func clearLanguageScoreCache() async {
+        if let scorer = languageScorer as? TataKataLanguageScorer { await scorer.clearCachedScores() }
+    }
+
+    var reuseScoreCache = true
+    private var stageCoverage: [Int: [String: AIConnectorStageCoverage]] = [:]
+    private var completeResultCache: [String: AIConnectorSegmentResult] = [:]
+
     func clearCache() async {
+        stageCoverage.removeAll()
+        completeResultCache.removeAll()
         await segmentCache.removeAll()
         definitionAnalysisCache.removeAll()
     }
@@ -264,6 +282,7 @@ final class AIConnectorSegmentProcessor {
     private func retrieveSuggestionCandidates(
         for segment: AIReviewSegment,
         limit: Int,
+        allowSemantic: Bool,
         semanticProgress: @escaping @Sendable (Double) -> Void,
         observationCollector: AIConnectorObservationCollector?
     ) async -> LegalDictionarySuggestionRetrievalResult {
@@ -272,8 +291,11 @@ final class AIConnectorSegmentProcessor {
         let retrieval = await dictionaryStore.suggestionCandidateResultAsync(
             for: segment.targetText,
             limit: limit,
+            allowSemantic: allowSemantic,
             semanticProgress: semanticProgress
         )
+        stageCoverage[segment.id, default: [:]]["semanticRetrieval"] = retrieval.semanticFailed ? .failed : (retrieval.semanticQueryCount == 0 ? .skippedByPolicy : .completed)
+        stageCoverage[segment.id, default: [:]]["lexicalRetrieval"] = .completed
         if let observationCollector {
             await observationCollector.recordStage(
                 .suggestionRetrieval,
@@ -355,8 +377,30 @@ final class AIConnectorSegmentProcessor {
         generationProfile: AIConnectorGenerationProfile? = nil,
         observationCollector: AIConnectorObservationCollector? = nil
     ) async throws -> AIConnectorSegmentResult {
+        let requestProfile = generationProfile ?? AIConnectorGenerationProfilePreset.greedy.profile(for: modelVariant, thinkingEnabled: thinkingEnabled)
+        let requestKey = AIConnectorSegmentCache.key(from: AIConnectorCacheKeyComponents(
+            segment: segment, reviewMode: mode, modelVariant: modelVariant,
+            generationProfile: requestProfile,
+            promptVersion: QwenSuggestionService.candidatePromptVersion + QwenSuggestionService.definitionPromptVersion,
+            rulePackVersion: ruleStore.version, corpusVersion: dictionaryStore.activeCorpusVersion,
+            semanticModelRevision: dictionaryStore.semanticModelRevision,
+            semanticEmbeddingSchema: dictionaryStore.semanticEmbeddingSchema,
+            semanticRetrievalProfile: dictionaryStore.semanticRetrievalProfile,
+            reviewPolicyVersion: "progressive-v2-\(phaseTwoEnabled)-\(forceDeterministic)-thinking-\(thinkingEnabled)",
+            validatorVersion: AIConnectorSuggestionValidator.version,
+            outputSchemaVersion: QwenSuggestionService.candidateOutputSchemaVersion,
+            protectionContext: documentProtectionContext,
+            candidateFingerprint: "preflight-\(segment.id)-\(segment.sourceLocation)"
+        ))
+        if var cached = completeResultCache[requestKey] {
+            cached.cacheHit = true
+            cached.definitionCacheHit = true
+            if let observationCollector { await observationCollector.recordSegmentResult(cached, duration: 0) }
+            return cached
+        }
         let observationClock = ContinuousClock()
         let startedAt = observationClock.now
+        stageCoverage[segment.id] = ["localReview": .completed, "languageScoring": .notApplicable]
         let result: AIConnectorSegmentResult
         if usesLegacyModelReviewHandler {
             result = try await processLegacy(
@@ -426,10 +470,16 @@ final class AIConnectorSegmentProcessor {
                 progressStage: progressStage,
                 observationCollector: observationCollector
             )
-            definitionAnalysisCache[definitionCacheKey] = computed
+            if computed.isComplete { definitionAnalysisCache[definitionCacheKey] = computed }
             definitionAnalysis = computed
         }
-        let finalResult = result.withDefinitionAnalysis(definitionAnalysis)
+        var finalResult = result.withDefinitionAnalysis(definitionAnalysis)
+        finalResult.stageCoverage = stageCoverage[segment.id] ?? [:]
+        if !mode.usesModel { finalResult.stageCoverage["semanticRetrieval"] = .notApplicable }
+        if finalResult.skipped { finalResult.stageCoverage["candidateReview"] = .tooLong }
+        else if (mode.usesModel && forceDeterministic) || finalResult.usedFallback || finalResult.rejections.contains(where: { $0.classification == .modelFailure }) { finalResult.stageCoverage["candidateReview"] = .failed }
+        else { finalResult.stageCoverage["candidateReview"] = finalResult.modelCallCount == 0 ? .notApplicable : .completed }
+        finalResult.stageCoverage["definitionReview"] = segment.isTooLong ? .tooLong : (!definitionAnalysis.isComplete ? .failed : (finalResult.definitionAssessment == nil ? .notApplicable : .completed))
         if let observationCollector {
             let duration = AIConnectorObservationTiming.seconds(
                 startedAt.duration(to: observationClock.now)
@@ -443,6 +493,10 @@ final class AIConnectorSegmentProcessor {
                 finalResult,
                 duration: duration
             )
+        }
+        if !finalResult.skipped, !finalResult.usedFallback, finalResult.rejections.isEmpty, !finalResult.stageCoverage.values.contains(.failed) {
+            if completeResultCache.count >= 512 { completeResultCache.removeAll() }
+            completeResultCache[requestKey] = finalResult
         }
         return finalResult
     }
@@ -473,7 +527,8 @@ final class AIConnectorSegmentProcessor {
             ].joined(separator: "\u{1E}")
         }.joined(separator: "\u{1D}")
         let material = [
-            "definition-comparison-cache-v1",
+            "definition-comparison-cache-v2-meaning-operators",
+            "\(segment.id):\(segment.sourceLocation):\(segment.sourceLength)",
             segment.targetText,
             segment.previousContext ?? "-",
             segment.nextContext ?? "-",
@@ -484,7 +539,7 @@ final class AIConnectorSegmentProcessor {
             modelVariant.revision,
             thinkingEnabled ? "thinking" : "no-thinking",
             forceDeterministic ? "deterministic" : "model",
-            "\(profile.maxTokens):\(profile.temperature):\(profile.topP):\(profile.topK):\(profile.seed)",
+            "\(profile.maxTokens):\(profile.temperature):\(profile.topP):\(profile.topK):\(profile.presencePenalty.map { String($0) } ?? "nil"):\(profile.seed)",
             QwenSuggestionService.definitionPromptVersion,
             QwenSuggestionService.definitionOutputSchemaVersion,
             corpusVersion,
@@ -538,6 +593,7 @@ final class AIConnectorSegmentProcessor {
             let retrieval = await retrieveSuggestionCandidates(
                 for: segment,
                 limit: 1,
+                allowSemantic: mode.usesModel && !forceDeterministic,
                 semanticProgress: semanticProgress,
                 observationCollector: observationCollector
             )
@@ -547,6 +603,7 @@ final class AIConnectorSegmentProcessor {
             let retrieval = await retrieveSuggestionCandidates(
                 for: segment,
                 limit: 1,
+                allowSemantic: mode.usesModel && !forceDeterministic,
                 semanticProgress: semanticProgress,
                 observationCollector: observationCollector
             )
@@ -578,9 +635,9 @@ final class AIConnectorSegmentProcessor {
                 semanticModelRevision: dictionaryStore.semanticModelRevision,
                 semanticEmbeddingSchema: dictionaryStore.semanticEmbeddingSchema,
                 semanticRetrievalProfile: dictionaryStore.semanticRetrievalProfile,
-                reviewPolicyVersion: phaseTwoEnabled
+                reviewPolicyVersion: (phaseTwoEnabled
                     ? AIConnectorPhaseTwoPolicy.version
-                    : AIConnectorPhaseTwoPolicy.disabledVersion,
+                    : AIConnectorPhaseTwoPolicy.disabledVersion) + "-thinking-\(thinkingEnabled)",
                 validatorVersion: AIConnectorSuggestionValidator.version,
                 outputSchemaVersion: QwenSuggestionService.outputSchemaVersion,
                 protectionContext: documentProtectionContext
@@ -874,7 +931,8 @@ final class AIConnectorSegmentProcessor {
             }
             let retrieval = await retrieveSuggestionCandidates(
                 for: segment,
-                limit: 3,
+                limit: 24,
+                allowSemantic: mode.usesModel && !forceDeterministic,
                 semanticProgress: semanticProgress,
                 observationCollector: observationCollector
             )
@@ -883,7 +941,8 @@ final class AIConnectorSegmentProcessor {
         } else {
             let retrieval = await retrieveSuggestionCandidates(
                 for: segment,
-                limit: 3,
+                limit: 24,
+                allowSemantic: mode.usesModel && !forceDeterministic,
                 semanticProgress: semanticProgress,
                 observationCollector: observationCollector
             )
@@ -931,23 +990,26 @@ final class AIConnectorSegmentProcessor {
                 let scoringClock = ContinuousClock()
                 let scoringStartedAt = scoringClock.now
                 do {
-                    scoredSpellingCandidates = try await languageScorer.score(
-                        segment: segment,
-                        candidates: rawSpellingCandidates,
-                        progress: { @MainActor event in
-                            switch event {
-                            case let .downloading(progress):
-                                progressStage(.languageModelDownload)
-                                languageProgress(progress)
-                            case .loading:
-                                progressStage(.languageModelLoading)
-                                languageProgress(0)
-                            case let .scoring(progress):
-                                progressStage(.languageScoring)
-                                languageProgress(progress)
+                    scoredSpellingCandidates = try await AIConnectorInferenceContext.$reuseScoringCache.withValue(reuseScoreCache) {
+                        try await languageScorer.score(
+                            segment: segment,
+                            candidates: rawSpellingCandidates,
+                            progress: { @MainActor event in
+                                switch event {
+                                case let .downloading(progress):
+                                    progressStage(.languageModelDownload)
+                                    languageProgress(progress)
+                                case .loading:
+                                    progressStage(.languageModelLoading)
+                                    languageProgress(0)
+                                case let .scoring(progress):
+                                    progressStage(.languageScoring)
+                                    languageProgress(progress)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
+                    stageCoverage[segment.id, default: [:]]["languageScoring"] = .completed
                     if let observationCollector {
                         await observationCollector.recordStage(
                             .tataKataScoring,
@@ -960,6 +1022,7 @@ final class AIConnectorSegmentProcessor {
                 } catch is CancellationError {
                     throw CancellationError()
                 } catch {
+                    stageCoverage[segment.id, default: [:]]["languageScoring"] = .failed
                     // TataKata is an optional precision filter. A failed
                     // download, load, tokenization, or inference must not
                     // suppress deterministic or verified-glossary work.
@@ -1027,9 +1090,9 @@ final class AIConnectorSegmentProcessor {
                 semanticModelRevision: dictionaryStore.semanticModelRevision,
                 semanticEmbeddingSchema: dictionaryStore.semanticEmbeddingSchema,
                 semanticRetrievalProfile: dictionaryStore.semanticRetrievalProfile,
-                reviewPolicyVersion: phaseTwoEnabled
+                reviewPolicyVersion: (phaseTwoEnabled
                     ? AIConnectorPhaseTwoPolicy.version
-                    : AIConnectorPhaseTwoPolicy.disabledVersion,
+                    : AIConnectorPhaseTwoPolicy.disabledVersion) + "-thinking-\(thinkingEnabled)",
                 validatorVersion: AIConnectorSuggestionValidator.version,
                 outputSchemaVersion: QwenSuggestionService.candidateOutputSchemaVersion,
                 protectionContext: documentProtectionContext,
@@ -1210,91 +1273,94 @@ final class AIConnectorSegmentProcessor {
         var reasoningMarkerDetected = false
         var sourceClaimDetected = false
 
-        for candidate in candidates {
-            try Task.checkCancellation()
-            let route = candidateRoutes.first(where: { $0.candidateID == candidate.id })
-            if phaseTwoEnabled, let route {
-                switch route.route {
-                case .deterministic:
-                    if let review = validatedCandidateReview(
-                        for: candidate,
-                        segment: segment,
-                        origin: .deterministic,
-                        protectionContext: documentProtectionContext
-                    ) {
-                        reviews.append(review)
+        for batchStart in stride(from: 0, to: candidates.count, by: AIConnectorPhaseTwoCandidateRanker.batchSize) {
+            let batchEnd = min(batchStart + AIConnectorPhaseTwoCandidateRanker.batchSize, candidates.count)
+            for candidate in candidates[batchStart..<batchEnd] {
+                try Task.checkCancellation()
+                let route = candidateRoutes.first(where: { $0.candidateID == candidate.id })
+                if phaseTwoEnabled, let route {
+                    switch route.route {
+                    case .deterministic:
+                        if let review = validatedCandidateReview(
+                            for: candidate,
+                            segment: segment,
+                            origin: .deterministic,
+                            protectionContext: documentProtectionContext
+                        ) {
+                            reviews.append(review)
+                        }
+                        decisions.append(
+                            deterministicDecisionRecord(
+                                for: candidate,
+                                route: route
+                            )
+                        )
+                        continue
+
+                    case .needsReview:
+                        if let review = needsReviewCandidate(
+                            for: candidate,
+                            segment: segment,
+                            protectionContext: documentProtectionContext,
+                            reason: route.reason
+                        ) {
+                            reviews.append(review)
+                        }
+                        decisions.append(
+                            deterministicDecisionRecord(
+                                for: candidate,
+                                route: route,
+                                decision: .needsReview
+                            )
+                        )
+                        continue
+
+                    case .suppressed:
+                        decisions.append(
+                            deterministicDecisionRecord(
+                                for: candidate,
+                                route: route
+                            )
+                        )
+                        continue
+
+                    case .modelReview:
+                        break
                     }
-                    decisions.append(
-                        deterministicDecisionRecord(
-                            for: candidate,
-                            route: route
-                        )
-                    )
-                    continue
-
-                case .needsReview:
-                    if let review = needsReviewCandidate(
-                        for: candidate,
-                        segment: segment,
-                        protectionContext: documentProtectionContext,
-                        reason: route.reason
-                    ) {
-                        reviews.append(review)
-                    }
-                    decisions.append(
-                        deterministicDecisionRecord(
-                            for: candidate,
-                            route: route,
-                            decision: .needsReview
-                        )
-                    )
-                    continue
-
-                case .suppressed:
-                    decisions.append(
-                        deterministicDecisionRecord(
-                            for: candidate,
-                            route: route
-                        )
-                    )
-                    continue
-
-                case .modelReview:
-                    break
                 }
+                let outcome = try await judgeCandidate(
+                    candidate,
+                    segment: segment,
+                    mode: mode,
+                    modelVariant: modelVariant,
+                    thinkingEnabled: thinkingEnabled,
+                    generationProfile: profile,
+                    glossaryMatches: actionableGlossaryMatches,
+                    protectionContext: documentProtectionContext,
+                    downloadProgress: downloadProgress,
+                    generationProgress: generationProgress,
+                    observationCollector: observationCollector
+                )
+                totalAttempts += outcome.attemptCount
+                repairAttempted = repairAttempted || outcome.repairAttempted
+                usedFallback = usedFallback || outcome.usedFallback
+                firstPassSucceeded = firstPassSucceeded && outcome.firstPassSucceeded
+                latestMetrics = outcome.generationMetrics ?? latestMetrics
+                repeatedSixGramRatio = Self.maximum(
+                    repeatedSixGramRatio,
+                    outcome.repeatedSixGramRatio
+                )
+                outputWasTruncated = outputWasTruncated || outcome.outputWasTruncated
+                reasoningMarkerDetected = reasoningMarkerDetected || outcome.reasoningMarkerDetected
+                sourceClaimDetected = sourceClaimDetected || outcome.sourceClaimDetected
+                if let review = outcome.review {
+                    reviews.append(review)
+                }
+                if let rejection = outcome.rejection {
+                    rejections.append(rejection)
+                }
+                decisions.append(outcome.diagnostic)
             }
-            let outcome = try await judgeCandidate(
-                candidate,
-                segment: segment,
-                mode: mode,
-                modelVariant: modelVariant,
-                thinkingEnabled: thinkingEnabled,
-                generationProfile: profile,
-                glossaryMatches: actionableGlossaryMatches,
-                protectionContext: documentProtectionContext,
-                downloadProgress: downloadProgress,
-                generationProgress: generationProgress,
-                observationCollector: observationCollector
-            )
-            totalAttempts += outcome.attemptCount
-            repairAttempted = repairAttempted || outcome.repairAttempted
-            usedFallback = usedFallback || outcome.usedFallback
-            firstPassSucceeded = firstPassSucceeded && outcome.firstPassSucceeded
-            latestMetrics = outcome.generationMetrics ?? latestMetrics
-            repeatedSixGramRatio = Self.maximum(
-                repeatedSixGramRatio,
-                outcome.repeatedSixGramRatio
-            )
-            outputWasTruncated = outputWasTruncated || outcome.outputWasTruncated
-            reasoningMarkerDetected = reasoningMarkerDetected || outcome.reasoningMarkerDetected
-            sourceClaimDetected = sourceClaimDetected || outcome.sourceClaimDetected
-            if let review = outcome.review {
-                reviews.append(review)
-            }
-            if let rejection = outcome.rejection {
-                rejections.append(rejection)
-            }
-            decisions.append(outcome.diagnostic)
         }
 
         let resolvedReviews = conflictResolver.resolve(reviews)
@@ -2113,6 +2179,10 @@ final class AIConnectorSegmentProcessor {
         let sourceClaimDetected: Bool
     }
 
+    func localResult(for segment: AIReviewSegment, protectionContext: AIConnectorDocumentProtectionContext) -> AIConnectorSegmentResult {
+        deterministicResult(for: segment, glossaryMatches: [], origin: .deterministic, protectionContext: protectionContext)
+    }
+
     private func deterministicResult(
         for segment: AIReviewSegment,
         glossaryMatches: [LegalDictionaryMatch],
@@ -2162,8 +2232,8 @@ final class AIConnectorSegmentProcessor {
 
     /// Hybrid is an ensemble, not merely an error fallback. Deterministic
     /// low-risk candidates remain eligible when Qwen returns a valid
-    /// NO_SUGGESTION, then the shared resolver removes overlaps and caps the
-    /// segment at three reviews. Model-only stays isolated for quality gates.
+    /// NO_SUGGESTION, then the shared resolver removes overlapping alternatives.
+    /// Model-only stays isolated for quality gates.
     private func successfulReviews(
         modelReview: AIValidatedReview,
         mode: AIConnectorReviewMode,
@@ -2550,6 +2620,39 @@ actor AIConnectorWorkQueue {
         self.processor = processor
     }
 
+    /// Local results have the same acknowledgement boundary as final results.
+    func startLocalPass(
+        runID: UUID,
+        segments: [AIReviewSegment],
+        protectionContext: AIConnectorDocumentProtectionContext
+    ) -> AsyncStream<AIConnectorWorkQueueEvent> {
+        activeContinuation?.finish()
+        cancellationSignal.cancel()
+        resumeAdvanceWaiter()
+        activeTask?.cancel()
+        let (stream, continuation) = AsyncStream<AIConnectorWorkQueueEvent>.makeStream()
+        activeRunID = runID
+        cancellationSignal.reset()
+        activeContinuation = continuation
+        activeTask = Task {
+            for segment in segments {
+                guard self.isActive(runID), !Task.isCancelled,
+                      !self.cancellationSignal.isCancelled else { break }
+                let result = await self.processor.localResult(for: segment, protectionContext: protectionContext)
+                guard self.isActive(runID), !Task.isCancelled else { break }
+                continuation.yield(.localResult(result))
+                await self.waitForResultAcknowledgement()
+            }
+            continuation.finish()
+            if self.isActive(runID) {
+                self.activeContinuation = nil
+                self.activeTask = nil
+                self.activeRunID = nil
+            }
+        }
+        return stream
+    }
+
     func start(
         runID: UUID,
         segments: [AIReviewSegment],
@@ -2610,7 +2713,8 @@ actor AIConnectorWorkQueue {
         cancellationSignal.cancel()
     }
 
-    func cancel() {
+    func cancel(runID: UUID? = nil) {
+        if let runID, activeRunID != runID { return }
         cancellationSignal.cancel()
         resumeAdvanceWaiter()
         activeTask?.cancel()
