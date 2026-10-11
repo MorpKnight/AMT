@@ -160,6 +160,20 @@ final class AIConnectorViewModel {
 #if DEBUG
     /// Measurement-only controls; normal application runs never set these.
     var flowBenchmarkReuseCaches = false
+    @ObservationIgnored private(set) var mappingBenchmarkMetrics = AIConnectorMappingBenchmarkMetrics()
+
+    /// Offline replay enters the same local/final result handlers as the queue.
+    func mappingBenchmarkReset(documentText: String) {
+        resetInputMetadata()
+        editorSourceText = documentText
+        exposesEditorSuggestions = true
+        editorAnalysisProfile = currentAnalysisProfile
+        mappingBenchmarkMetrics = AIConnectorMappingBenchmarkMetrics()
+    }
+
+    func mappingBenchmarkApplyLocal(_ result: AIConnectorSegmentResult) { applyLocal(result: result) }
+    func mappingBenchmarkApplyFinal(_ result: AIConnectorSegmentResult) async { await apply(result: result) }
+
     func flowBenchmarkInvalidSourceCount() -> Int {
         validatedReviews.filter { review in
             guard review.status == .suggestion, review.category == .terminology else { return false }
@@ -228,6 +242,7 @@ final class AIConnectorViewModel {
     private var editorAnalysisProfile: AIConnectorAnalysisProfile?
     private var analysisSnapshotEligible = false
     private var editorSourceText = ""
+    @ObservationIgnored private let editorMappingState = AIConnectorEditorMappingState()
     private var contextPreparationCache = AIConnectorAnalysisLRUCache<AIConnectorDocumentContextPreparation>()
     private var documentReviewCache = AIConnectorAnalysisLRUCache<AIConnectorDocumentReviewResult>()
     private var definitionResolutionCache = AIConnectorAnalysisLRUCache<AIConnectorDefinitionResolutionResult>()
@@ -1186,6 +1201,7 @@ final class AIConnectorViewModel {
         )
         observationCollector = runObservationCollector
         observationReport = nil
+        mappingBenchmarkMetrics = AIConnectorMappingBenchmarkMetrics()
 #endif
 
         let riskReviewer: AIConnectorDocumentReviewDetector.RiskReviewer?
@@ -1364,7 +1380,7 @@ final class AIConnectorViewModel {
                 documentFindings = documentReviewResult.findings
                 documentFindingMetrics = documentReviewResult.metrics
                 if exposesEditorSuggestions {
-                    rebuildEditorMappings()
+                    updateDocumentFindingMappings()
                 }
 
 #if DEBUG
@@ -1718,6 +1734,7 @@ final class AIConnectorViewModel {
                             observationReport = await observationCollector.finish(
                                 status: summary.wasPartial ? .cancelled : .completed
                             )
+                            observationReport?.mappingMetrics = mappingBenchmarkMetrics
                         }
 #endif
 
@@ -1979,6 +1996,7 @@ final class AIConnectorViewModel {
         ignoredReviewItemIDs.remove(suggestion.id)
         selectedReviewItemID = nil
         editorSourceText = updatedText
+        editorMappingState.invalidate()
         definitionResolutions = [:]
         definitionResolutionMetrics = [:]
         definitionResolutionCache.removeAll()
@@ -2088,6 +2106,7 @@ final class AIConnectorViewModel {
         ignoredReviewItemIDs.remove(resolutionEntry.key)
         selectedReviewItemID = nil
         editorSourceText = updatedText
+        editorMappingState.invalidate()
         definitionAssessments = []
         definitionModelCallCount = 0
         definitionResolutions = [:]
@@ -2169,6 +2188,7 @@ final class AIConnectorViewModel {
     }
 
     func clearEditorSuggestions() {
+        editorMappingState.invalidate()
         editorSuggestions = []
         reviewAnnotations = []
         definitionMatchAnnotations = []
@@ -2441,30 +2461,37 @@ final class AIConnectorViewModel {
     }
 
     private func preservingOccurrenceIDs(_ reviews: [AIValidatedReview]) -> [AIValidatedReview] {
-        reviews.map { review in
-            guard let previous = validatedReviews.first(where: {
-                $0.segment.id == review.segment.id && $0.sourceAnchor == review.sourceAnchor
-                    && $0.status == review.status && $0.category == review.category
-                    && $0.original == review.original && $0.replacement == review.replacement
-            }) else { return review }
-            return AIValidatedReview(
-                id: previous.id, segment: review.segment, status: review.status,
-                category: review.category, original: review.original, replacement: review.replacement,
-                reason: review.reason, glossaryMatch: review.glossaryMatch,
-                origin: review.origin, ruleID: review.ruleID, sourceAnchor: review.sourceAnchor
-            )
-        }
+        editorMappingState.preservingOccurrenceIDs(reviews, existingReviews: validatedReviews)
     }
 
     private func applyLocal(result: AIConnectorSegmentResult) {
+#if DEBUG
+        let eventStarted = ContinuousClock.now
+        defer { mappingBenchmarkMetrics.localApplyDuration += AIConnectorObservationTiming.seconds(eventStarted.duration(to: .now)) }
+#endif
         let reviews = preservingOccurrenceIDs(result.reviews.filter { $0.status != .noSuggestion })
         validatedReviews.removeAll { $0.segment.id == result.segment.id }
         validatedReviews.append(contentsOf: reviews)
-        if exposesEditorSuggestions { rebuildEditorMappings() }
+        if !exposesEditorSuggestions {
+            editorMappingState.recordReviews(for: result.segment.id, reviews: validatedReviews.filter { $0.segment.id == result.segment.id })
+        }
+        if exposesEditorSuggestions {
+#if DEBUG
+            let mappingStarted = ContinuousClock.now
+#endif
+            updateEditorMappings(for: result)
+#if DEBUG
+            mappingBenchmarkMetrics.localMappingDuration += AIConnectorObservationTiming.seconds(mappingStarted.duration(to: .now))
+#endif
+        }
         updateOutput()
     }
 
     private func apply(result: AIConnectorSegmentResult) async {
+#if DEBUG
+        let eventStarted = ContinuousClock.now
+        defer { mappingBenchmarkMetrics.finalApplyDuration += AIConnectorObservationTiming.seconds(eventStarted.duration(to: .now)) }
+#endif
         let stableReviews = preservingOccurrenceIDs(result.reviews)
         validatedReviews.removeAll { $0.segment.id == result.segment.id && !result.skipped }
         rejectedReviews.removeAll { $0.segment.id == result.segment.id }
@@ -2495,6 +2522,9 @@ final class AIConnectorViewModel {
         }
 
         validatedReviews.append(contentsOf: stableReviews)
+        if !exposesEditorSuggestions {
+            editorMappingState.recordReviews(for: result.segment.id, reviews: validatedReviews.filter { $0.segment.id == result.segment.id })
+        }
         rejectedReviews.append(contentsOf: result.rejections)
         if let definitionAssessment = result.definitionAssessment {
             definitionAssessments.append(definitionAssessment)
@@ -2532,9 +2562,10 @@ final class AIConnectorViewModel {
         if exposesEditorSuggestions {
             let mappingClock = ContinuousClock()
             let mappingStartedAt = mappingClock.now
-            rebuildEditorMappings()
+            updateEditorMappings(for: result)
             definitionDebugSuggestions = []
 #if DEBUG
+            mappingBenchmarkMetrics.finalMappingDuration += AIConnectorObservationTiming.seconds(mappingStartedAt.duration(to: mappingClock.now))
             if let observationCollector {
                 await observationCollector.recordStage(
                     .editorMapping,
@@ -2552,24 +2583,64 @@ final class AIConnectorViewModel {
     }
 
     private func rebuildEditorMappings() {
-        editorSuggestions = EditorSuggestionMapper.make(
-            reviews: validatedReviews,
-            definitionAssessments: definitionAssessments,
-            documentText: editorSourceText
-        )
-        reviewAnnotations = EditorSuggestionMapper.makeReviewAnnotations(
-            reviews: validatedReviews,
-            definitionAssessments: definitionAssessments,
-            documentText: editorSourceText
-        ) + EditorSuggestionMapper.makeFindingAnnotations(
-            findings: documentFindings,
-            documentText: editorSourceText
-        )
-        definitionMatchAnnotations = EditorSuggestionMapper.makeDefinitionMatchAnnotations(
-            assessments: definitionAssessments,
-            documentText: editorSourceText
-        )
+#if DEBUG
+        let previous = editorMappingState.diagnostics
+#endif
+        editorMappingState.rebuild(reviews: validatedReviews, assessments: definitionAssessments,
+                                   findings: documentFindings, documentText: editorSourceText)
+        publishEditorMappings()
+#if DEBUG
+        recordMappingWork(since: previous)
+#endif
     }
+
+    private func updateEditorMappings(for result: AIConnectorSegmentResult) {
+        let segment = result.segment
+        guard result.reviews.allSatisfy({ $0.segment == segment }),
+              result.definitionAssessment.map({ $0.segment == segment }) ?? true else {
+            rebuildEditorMappings()
+            return
+        }
+#if DEBUG
+        let previous = editorMappingState.diagnostics
+#endif
+        editorMappingState.updateSegment(segment,
+            reviews: validatedReviews.filter { $0.segment.id == segment.id },
+            assessments: definitionAssessments.filter { $0.segment.id == segment.id },
+            allReviews: validatedReviews, allAssessments: definitionAssessments,
+            findings: documentFindings, documentText: editorSourceText)
+        publishEditorMappings()
+#if DEBUG
+        recordMappingWork(since: previous)
+#endif
+    }
+
+    private func updateDocumentFindingMappings() {
+#if DEBUG
+        let previous = editorMappingState.diagnostics
+#endif
+        editorMappingState.updateFindings(documentFindings, reviews: validatedReviews,
+                                         assessments: definitionAssessments, documentText: editorSourceText)
+        publishEditorMappings()
+#if DEBUG
+        recordMappingWork(since: previous)
+#endif
+    }
+
+    private func publishEditorMappings() {
+        editorSuggestions = editorMappingState.suggestions
+        reviewAnnotations = editorMappingState.annotations
+        definitionMatchAnnotations = editorMappingState.definitionMatches
+    }
+
+#if DEBUG
+    private func recordMappingWork(since previous: AIConnectorMappingBenchmarkMetrics) {
+        let current = editorMappingState.diagnostics
+        mappingBenchmarkMetrics.fullRebuildCount += current.fullRebuildCount - previous.fullRebuildCount
+        mappingBenchmarkMetrics.remappedSegmentCount += current.remappedSegmentCount - previous.remappedSegmentCount
+        mappingBenchmarkMetrics.findingMappingCount += current.findingMappingCount - previous.findingMappingCount
+    }
+#endif
 
     private func prepareDefinitionResolutions(
         documentText: String,
@@ -2836,6 +2907,7 @@ final class AIConnectorViewModel {
 #if DEBUG
         observationCollector = nil
         observationReport = nil
+        mappingBenchmarkMetrics = AIConnectorMappingBenchmarkMetrics()
 #endif
         analysisSnapshotEligible = false
     }
@@ -2905,6 +2977,7 @@ final class AIConnectorViewModel {
 #if DEBUG
         observationCollector = nil
         observationReport = nil
+        mappingBenchmarkMetrics = AIConnectorMappingBenchmarkMetrics()
 #endif
         clearEditorSuggestions()
         analysisSnapshotEligible = false
