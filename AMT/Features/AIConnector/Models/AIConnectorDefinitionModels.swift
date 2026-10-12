@@ -108,6 +108,7 @@ struct AIConnectorDefinitionAssessment: Identifiable, Hashable, Sendable {
     let retrievalOrigin: LegalRetrievalOrigin?
     let semanticScore: Float?
     let requiresHumanReview: Bool
+    let isNarrowNegationMismatch: Bool
 
     init(
         segment: AIReviewSegment,
@@ -124,7 +125,8 @@ struct AIConnectorDefinitionAssessment: Identifiable, Hashable, Sendable {
         retrievalOrigin: LegalRetrievalOrigin?,
         semanticScore: Float?,
         requiresHumanReview: Bool,
-        candidates: [AIConnectorDefinitionCandidate] = []
+        candidates: [AIConnectorDefinitionCandidate] = [],
+        isNarrowNegationMismatch: Bool = false
     ) {
         self.segment = segment
         self.term = term
@@ -143,6 +145,7 @@ struct AIConnectorDefinitionAssessment: Identifiable, Hashable, Sendable {
         self.retrievalOrigin = retrievalOrigin
         self.semanticScore = semanticScore
         self.requiresHumanReview = requiresHumanReview
+        self.isNarrowNegationMismatch = isNarrowNegationMismatch
     }
 
     var id: String { "definition-\(segment.id)" }
@@ -153,6 +156,7 @@ struct AIConnectorDefinitionAssessment: Identifiable, Hashable, Sendable {
 }
 
 struct AIConnectorDefinitionAnalysisResult: Hashable, Sendable {
+    let repairCount: Int
     let inputCoverage: AIConnectorInputCoverage?
     let isComplete: Bool
     let assessment: AIConnectorDefinitionAssessment?
@@ -164,9 +168,11 @@ struct AIConnectorDefinitionAnalysisResult: Hashable, Sendable {
         modelCallCount: Int = 0,
         cacheHit: Bool = false,
         isComplete: Bool = true,
-        inputCoverage: AIConnectorInputCoverage? = nil
+        inputCoverage: AIConnectorInputCoverage? = nil,
+        repairCount: Int = 0
     ) {
         self.inputCoverage = inputCoverage
+        self.repairCount = repairCount
         self.isComplete = isComplete
         self.assessment = assessment
         self.modelCallCount = modelCallCount
@@ -186,6 +192,8 @@ struct AIConnectorDefinitionAnalysisResult: Hashable, Sendable {
 
 struct AIConnectorDefinitionReviewRequest: Sendable {
     let segment: AIReviewSegment
+    let documentTerm: String
+    var sourceTerm: String { candidate.term }
     let candidate: AIConnectorDefinitionCandidate
     let thinkingEnabled: Bool
     let modelVariant: AIConnectorModelVariant
@@ -200,7 +208,8 @@ struct AIConnectorDefinitionReviewRequest: Sendable {
         modelVariant: AIConnectorModelVariant,
         generationProfile: AIConnectorGenerationProfile,
         retryInstruction: String?,
-        context: AIConnectorSegmentContext? = nil
+        context: AIConnectorSegmentContext? = nil,
+        documentTerm: String? = nil
     ) {
         self.segment = segment
         self.candidate = candidate
@@ -209,6 +218,7 @@ struct AIConnectorDefinitionReviewRequest: Sendable {
         self.generationProfile = generationProfile
         self.retryInstruction = retryInstruction
         self.context = context
+        self.documentTerm = documentTerm ?? candidate.term
     }
 }
 

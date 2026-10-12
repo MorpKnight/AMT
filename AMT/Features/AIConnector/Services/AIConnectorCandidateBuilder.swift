@@ -35,7 +35,8 @@ struct AIConnectorCandidateBuilder: Sendable {
         for segment: AIReviewSegment,
         glossaryMatches: [LegalDictionaryMatch],
         spellingCandidates: [AIConnectorSpellingCandidate] = [],
-        phaseTwoEnabled: Bool = false
+        phaseTwoEnabled: Bool = false,
+        protectionContext: AIConnectorDocumentProtectionContext = .empty
     ) -> AIConnectorCandidateBuildResult {
         let verifiedMatches = glossaryMatches.filter {
             $0.entry.authority == .verified
@@ -121,8 +122,16 @@ struct AIConnectorCandidateBuilder: Sendable {
 
         let spellingProposals = spellingCandidates
             .filter { candidate in
-                guard let evidence = candidate.evidence else { return false }
-                return AIConnectorLanguageScorePolicy.isEligible(evidence)
+                let proof = candidate.restorationEvidence
+                let validRestoration = proof?.isValid(in: segment, context: protectionContext) == true
+                    && proof?.permitsContextualReview == true
+                if let evidence = candidate.evidence {
+                    guard AIConnectorLanguageScorePolicy.isValidEvidence(evidence),
+                          evidence.sourceWindow.contains(candidate.original),
+                          segment.targetText.contains(evidence.sourceWindow) else { return false }
+                    return AIConnectorLanguageScorePolicy.isEligible(evidence) || (phaseTwoEnabled && validRestoration)
+                }
+                return phaseTwoEnabled && validRestoration
             }
             .sorted { lhs, rhs in
                 let lhsDelta = lhs.evidence?.delta ?? -.greatestFiniteMagnitude
@@ -134,9 +143,8 @@ struct AIConnectorCandidateBuilder: Sendable {
                 return lhs.sourceRank < rhs.sourceRank
             }
             .compactMap { candidate -> Proposal? in
-                guard let evidence = candidate.evidence,
-                      AIConnectorLanguageScorePolicy.isEligible(evidence),
-                      candidate.sourceLocation >= 0,
+                let evidence = candidate.evidence
+                guard candidate.sourceLocation >= 0,
                       candidate.sourceLength == candidate.original.utf16.count,
                       candidate.sourceLocation + candidate.sourceLength
                           <= segment.targetText.utf16.count,
@@ -165,7 +173,7 @@ struct AIConnectorCandidateBuilder: Sendable {
                 original: candidate.original,
                 replacement: candidate.replacement,
                 glossaryID: nil,
-                reason: "TataKata menilai penggantian \(candidate.original) menjadi \(candidate.replacement) lebih sesuai dengan konteks kalimat."
+                reason: "Kandidat restorasi ejaan \(candidate.original) menjadi \(candidate.replacement) memerlukan pemeriksaan konteks."
             )
             return Proposal(
                 parsedReview: parsedReview,
@@ -175,8 +183,9 @@ struct AIConnectorCandidateBuilder: Sendable {
                 ),
                 priority: 50,
                 glossaryMatch: nil,
-                confidenceTier: .tataKataScored,
-                languageScoreEvidence: evidence
+                confidenceTier: evidence == nil ? .localSpellingRestoration : .tataKataScored,
+                languageScoreEvidence: evidence,
+                restorationEvidence: candidate.restorationEvidence
             )
         }
         proposals.append(contentsOf: spellingProposals)
@@ -194,7 +203,8 @@ struct AIConnectorCandidateBuilder: Sendable {
                 explanation: proposal.parsedReview.reason,
                 confidenceTier: proposal.confidenceTier,
                 languageScoreEvidence: proposal.languageScoreEvidence,
-                evidence: evidence(for: proposal)
+                evidence: evidence(for: proposal),
+                restorationEvidence: proposal.restorationEvidence
             )
         }
 
@@ -242,7 +252,8 @@ struct AIConnectorCandidateBuilder: Sendable {
                 explanation: proposal.parsedReview.reason,
                 confidenceTier: proposal.confidenceTier,
                 languageScoreEvidence: proposal.languageScoreEvidence,
-                evidence: evidence(for: proposal)
+                evidence: evidence(for: proposal),
+                restorationEvidence: proposal.restorationEvidence
             )
         }
         return AIConnectorCandidateBuildResult(
@@ -257,7 +268,7 @@ struct AIConnectorCandidateBuilder: Sendable {
         switch proposal.confidenceTier {
         case .deterministicRule:
             tier = .exactRule
-        case .tataKataScored:
+        case .tataKataScored, .localSpellingRestoration:
             tier = .scoredSpelling
         case .verifiedGlossary:
             tier = proposal.glossaryMatch?.isDirectTermMatch == true
@@ -495,6 +506,7 @@ struct AIConnectorCandidateBuilder: Sendable {
         let priority: Int
         let glossaryMatch: LegalDictionaryMatch?
         let confidenceTier: AIConnectorCandidateConfidence
+        let restorationEvidence: AIConnectorSpellingRestorationEvidence?
         let languageScoreEvidence: AIConnectorLanguageScoreEvidence?
 
         init(
@@ -503,7 +515,8 @@ struct AIConnectorCandidateBuilder: Sendable {
             priority: Int,
             glossaryMatch: LegalDictionaryMatch?,
             confidenceTier: AIConnectorCandidateConfidence,
-            languageScoreEvidence: AIConnectorLanguageScoreEvidence? = nil
+            languageScoreEvidence: AIConnectorLanguageScoreEvidence? = nil,
+            restorationEvidence: AIConnectorSpellingRestorationEvidence? = nil
         ) {
             self.parsedReview = parsedReview
             self.range = range
@@ -511,6 +524,7 @@ struct AIConnectorCandidateBuilder: Sendable {
             self.glossaryMatch = glossaryMatch
             self.confidenceTier = confidenceTier
             self.languageScoreEvidence = languageScoreEvidence
+            self.restorationEvidence = restorationEvidence
         }
     }
 }

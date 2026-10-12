@@ -147,7 +147,7 @@ struct AIConnectorCandidateBuildResult: Hashable, Sendable {
 /// routing for narrow, exact local rules while keeping legal terminology and
 /// semantic matches behind model/human review.
 struct AIConnectorPhaseTwoPolicy: Sendable {
-    static let version = "phase2-policy-v2-complete-occurrences"
+    static let version = "phase2-policy-v3-restoration-review"
     static let disabledVersion = "phase1-compatible"
     static let minimumSemanticScore: Double = 0.70
 
@@ -189,6 +189,12 @@ struct AIConnectorPhaseTwoPolicy: Sendable {
             )
         }
 
+        if candidate.restorationEvidence != nil,
+           AIConnectorSuggestionValidator().requiresHumanSpellingReview(from: candidate.original, to: candidate.replacement) {
+            return AIConnectorPhaseTwoCandidateRoute(candidateID: candidate.id, route: .needsReview,
+                reason: .protectedContent, modelCallRequired: false)
+        }
+
         if mode == .deterministic || forceDeterministic {
             guard evidence.tier == .exactRule,
                   candidate.category == .spelling || candidate.category == .grammar else {
@@ -225,8 +231,11 @@ struct AIConnectorPhaseTwoPolicy: Sendable {
             )
 
         case .scoredSpelling:
-            guard let delta = evidence.languageScoreDelta,
-                  delta >= AIConnectorLanguageScorerConfiguration.minimumImprovementInNats else {
+            let restoration = candidate.restorationEvidence
+            let validRestoration = restoration?.isValid(in: segment, context: protectionContext) == true
+                && restoration?.permitsContextualReview == true
+            guard (evidence.languageScoreDelta ?? -.infinity) >= AIConnectorLanguageScorerConfiguration.minimumImprovementInNats
+                    || validRestoration else {
                 return AIConnectorPhaseTwoCandidateRoute(
                     candidateID: candidate.id,
                     route: .suppressed,

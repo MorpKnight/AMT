@@ -44,7 +44,7 @@ struct AIConnectorDefinitionResolutionService: Sendable {
         var references: [EditorSuggestionReference] = []
         var candidateCount = 0
 
-        for candidate in sourceCandidates {
+        for candidate in sourceCandidates where !assessment.isNarrowNegationMismatch {
             let reference = makeReference(
                 for: candidate,
                 sourceDefinition: sourceDefinitionBody(
@@ -163,7 +163,7 @@ struct AIConnectorDefinitionResolutionService: Sendable {
 
         var queryCount = 0
         var semanticMatches: [LegalDictionaryMatch] = []
-        if includeReverseTermCandidates,
+        if includeReverseTermCandidates && !assessment.isNarrowNegationMismatch,
            anchors.bodyOriginal != nil,
            !contractDefined(in: assessment.segment.targetText),
            assessment.alignment == .mismatch {
@@ -267,7 +267,7 @@ struct AIConnectorDefinitionResolutionService: Sendable {
             )
         }
 
-        if assessment.alignment == .mismatch {
+        if assessment.alignment == .mismatch && !assessment.isNarrowNegationMismatch {
             options.append(
                 AIConnectorDefinitionResolutionOption(
                     id: "\(assessment.id)-reject",

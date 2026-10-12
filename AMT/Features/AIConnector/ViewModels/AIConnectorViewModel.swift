@@ -1667,11 +1667,12 @@ final class AIConnectorViewModel {
                         errorMessage = "Model dialihkan ke pemulihan deterministik untuk sisa dokumen."
 
                     case let .finished(summary):
+                        let wasCancelled = summary.wasPartial && summary.processedSegmentCount < summary.totalSegmentCount
                         recordProgressActivity()
                         runSummary = currentSummary(wasPartial: summary.wasPartial)
-                        currentQueueState = summary.wasPartial ? .cancelled : .completed
-                        currentSegmentPreview = summary.wasPartial ? currentSegmentPreview : ""
-                        currentSegmentID = summary.wasPartial ? currentSegmentID : nil
+                        currentQueueState = wasCancelled ? .cancelled : .completed
+                        currentSegmentPreview = wasCancelled ? currentSegmentPreview : ""
+                        currentSegmentID = wasCancelled ? currentSegmentID : nil
                         if let sampleForRun {
                             fixtureEvaluation = fixtureEvaluator.evaluate(
                                 sample: sampleForRun,
@@ -1698,11 +1699,12 @@ final class AIConnectorViewModel {
                                 definitionResolutionMetrics = [:]
                             }
                         }
-                        setProgressStage(summary.wasPartial ? .cancelled : .completed)
-                        state = summary.wasPartial ? .cancelled : .completed
+                        setProgressStage(wasCancelled ? .cancelled : .completed)
+                        state = wasCancelled ? .cancelled : .completed
                         analysisSnapshotEligible = !summary.wasPartial && skippedSegmentCount == 0 && fallbackCount == 0 && documentContextProfile?.classificationStatus != .fallback && documentFindingMetrics.riskFallbackCount == 0 && !segmentCoverage.values.contains(where: { $0.values.contains(.failed) || $0.values.contains(.tooLong) })
                         if summary.wasPartial {
-                            let completed = completedRunSegmentIDs
+                            let incomplete = Set(segmentCoverage.filter { $0.value.values.contains { [.failed, .tooLong, .cancelled].contains($0) } }.map(\.key))
+                            let completed = completedRunSegmentIDs.subtracting(incomplete)
                             let remaining = runPlan.reprocessSegmentIDs.subtracting(completed)
                             let nextChangeSet = AIConnectorAnalysisChangeSet(
                                 scope: runPlan.changeSet.scope,
@@ -1713,7 +1715,7 @@ final class AIConnectorViewModel {
                                 changedOldBlockIDs: runPlan.changeSet.changedOldBlockIDs,
                                 changedBlockIDs: runPlan.changeSet.changedBlockIDs,
                                 changedSectionIDs: runPlan.changeSet.changedSectionIDs,
-                                reasons: runPlan.changeSet.reasons.union([.cancelled]),
+                                reasons: wasCancelled ? runPlan.changeSet.reasons.union([.cancelled]) : runPlan.changeSet.reasons,
                                 isAmbiguous: runPlan.changeSet.isAmbiguous
                             )
                             let nextPlan = AIConnectorAnalysisPlan(
@@ -2476,8 +2478,8 @@ final class AIConnectorViewModel {
         segmentationResult = preparation.segmentation
         let localClock = ContinuousClock()
         let localStartedAt = localClock.now
-        let protection = AIConnectorDocumentProtectionContextBuilder().build(
-            documentText: documentText,
+        let protection = segmentProcessor.protectionContext(
+            for: documentText,
             additionalDefinedTerms: Set(preparation.profile.definedTerms.map(\.value))
         )
         let segments = preparation.segmentation.segments.filter {
@@ -2855,7 +2857,9 @@ final class AIConnectorViewModel {
             repairAttemptCount: repairAttemptCount,
             fallbackCount: fallbackCount,
             circuitBreakerActivated: circuitBreakerActivated,
-            wasPartial: wasPartial,
+            wasPartial: wasPartial || documentContextProfile?.classificationStatus == .fallback
+                || documentFindingMetrics.riskFallbackCount > 0
+                || segmentCoverage.values.contains { $0.values.contains { [.failed, .tooLong, .cancelled].contains($0) } },
             candidateCount: candidateCount,
             acceptedCandidateCount: acceptedCandidateCount,
             modelCallCount: modelCallCount,

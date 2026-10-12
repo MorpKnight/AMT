@@ -38,7 +38,7 @@ final class AIConnectorFlowBenchmarkTests: XCTestCase {
         vm.modelVariant = .qwen35Base4B
         vm.generationProfilePreset = .greedy
         vm.thinkingEnabled = false
-        vm.flowBenchmarkReuseCaches = true
+        vm.flowBenchmarkReuseCaches = false
         var records: [FlowMeasurement] = []
         var preparation: Double?
         if phase == "prepare" || phase == "warm" || phase == "cached" || phase == "incremental" || phase == "quality" || phase == "stress" {
@@ -58,7 +58,7 @@ final class AIConnectorFlowBenchmarkTests: XCTestCase {
                 if iteration % 4 == 0 {
                     _ = await vm.flowBenchmarkPressure(critical: iteration % 12 == 0)
                     vm = AIConnectorViewModel(service: service, dictionaryStore: store)
-                    vm.reviewMode = .hybrid; vm.modelVariant = .qwen35Base4B; vm.generationProfilePreset = .greedy; vm.thinkingEnabled = false; vm.flowBenchmarkReuseCaches = true
+                    vm.reviewMode = .hybrid; vm.modelVariant = .qwen35Base4B; vm.generationProfilePreset = .greedy; vm.thinkingEnabled = false; vm.flowBenchmarkReuseCaches = false
                 }
                 records.append(try await measure(vm, fixture: item, iteration: iteration))
             }
@@ -81,7 +81,7 @@ final class AIConnectorFlowBenchmarkTests: XCTestCase {
                     incremental.incrementalEquivalentToFresh = expected == normalized(vm)
                     records.append(incremental)
                 } else {
-                    records.append(try await measure(vm, fixture: fixture, iteration: iteration))
+                    records.append(try await measure(vm, fixture: fixture, iteration: iteration, incremental: phase == "cached"))
                 }
             }
         }

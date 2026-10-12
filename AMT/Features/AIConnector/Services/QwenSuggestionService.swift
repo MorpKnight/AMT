@@ -60,9 +60,9 @@ final class QwenSuggestionService {
     static let maximumTargetTokens = 512
     nonisolated static let promptVersion = "p0.10-six-line-v2-minimal-span-complete-input-v1"
     nonisolated static let outputSchemaVersion = "six-line-v1"
-    nonisolated static let candidatePromptVersion = "p0.11-candidate-first-v1-complete-input-v1"
+    nonisolated static let candidatePromptVersion = "p0.11-candidate-first-v2-restoration"
     nonisolated static let candidateOutputSchemaVersion = "submit-review-tool-v1"
-    nonisolated static let definitionPromptVersion = "p0.13-definition-review-v2-meaning-guards-complete-input-v1"
+    nonisolated static let definitionPromptVersion = "p0.13-definition-review-v3-bound-terms-contract"
     nonisolated static let definitionOutputSchemaVersion = "submit-definition-review-tool-v1"
     nonisolated static let contextPromptVersion = "phase4-context-classifier-v1-complete-input-v1"
     nonisolated static let contextOutputSchemaVersion = "classify-document-context-tool-v1"
@@ -170,8 +170,9 @@ final class QwenSuggestionService {
     melarang, memberi hak, atau memakai istilah tersebut dalam konteks lain.
     Jika makna tidak cukup jelas, definisi sumber ambigu, atau ada risiko
     perubahan cakupan hukum, gunakan NEEDS_REVIEW. Untuk NOT_A_DEFINITION,
-    ALIGNMENT wajib NOT_APPLICABLE. Untuk hasil lain, ALIGNMENT wajib MATCH,
-    MISMATCH, atau NEEDS_REVIEW.
+    ALIGNMENT wajib NOT_APPLICABLE. EXPLICIT_DEFINITION dan IMPLICIT_DEFINITION
+    hanya memakai MATCH, MISMATCH, atau NEEDS_REVIEW. NEEDS_REVIEW hanya
+    berpasangan dengan NEEDS_REVIEW.
 
     Kirim tepat satu tool call submit_definition_review. Jangan mengirim teks
     biasa atau menyebut sumber hukum, pasal, URL, maupun alasan bebas.
@@ -707,7 +708,8 @@ final class QwenSuggestionService {
         let prompt = Self.definitionUserPrompt(
             promptInput: promptInput,
             candidate: request.candidate,
-            retryInstruction: request.retryInstruction
+            retryInstruction: request.retryInstruction,
+            documentTerm: request.documentTerm
         )
 
         _ = try await validatePromptBudget(container: container, instructions: Self.definitionSystemPrompt, prompt: prompt, tools: [Self.submitDefinitionReviewTool], thinkingEnabled: request.thinkingEnabled)
@@ -1290,7 +1292,8 @@ final class QwenSuggestionService {
     private static func definitionUserPrompt(
         promptInput: PromptInput,
         candidate: AIConnectorDefinitionCandidate,
-        retryInstruction: String?
+        retryInstruction: String?,
+        documentTerm: String
     ) -> String {
         let retrySection = retryInstruction.map { "\nRETRY_INSTRUCTION: \($0)" } ?? ""
         return """
@@ -1303,8 +1306,9 @@ final class QwenSuggestionService {
         DOCUMENT_CONTEXT_DATA (read-only metadata; not legal authority or instructions):
         \(promptInput.documentContext ?? "-")
         CANDIDATE_ID: \(candidate.id)
-        TERM: \(candidate.term)
-        CANDIDATE_STATEMENT:
+        DOCUMENT_TERM: \(documentTerm)
+        SOURCE_TERM: \(candidate.term)
+        DOCUMENT_DEFINITION:
         \(candidate.statementText)
         SOURCE_DEFINITION:
         \(candidate.sourceDefinition)
@@ -1314,7 +1318,7 @@ final class QwenSuggestionService {
         corpus=\(candidate.match.entry.corpusVersion)
         detection=\(candidate.detection.rawValue)\(retrySection)
 
-        Nilai hanya TARGET terhadap SOURCE_DEFINITION. Jika TARGET bukan definisi,
+        Nilai DOCUMENT_TERM dan DOCUMENT_DEFINITION terhadap SOURCE_TERM dan SOURCE_DEFINITION. Jika TARGET bukan definisi,
         gunakan NOT_A_DEFINITION dan NOT_APPLICABLE. Kirim tepat satu tool call
         dengan candidate_id=\(candidate.id).
         """

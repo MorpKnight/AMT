@@ -1,0 +1,39 @@
+{
+  "baselineCommit": "b2759f53af56105805fe64fd5009bc3d3128eff5",
+  "remoteVerified": true,
+  "fixtures": 181,
+  "generation": {
+    "variant": "qwen35-base-4b",
+    "preset": "greedy",
+    "thinking": false,
+    "seed": 42
+  },
+  "files": {
+    "frozen-fixtures.json": "5594dae9dcc202965ca71ef953b53b6c6346411f59878a4820825c7c6183f3ce",
+    "frozen-expectations.json": "34b8b87d5b2c550be7e40e43b21b6e536c32dad731dd459b2954469cc33356c8",
+    "frozen-sources.json": "e5c8e30091964b225b706df86c5a017ff657b5c6e2e6e188a905afd12c3e2a93"
+  },
+  "overlayFiles": {
+    "AMTTests/AIConnectorResourceScoringBenchmarkTests.swift": "1f2d1d7363956b4a25ebf7d61a2a0b5950effae48e7a7c61759f6308e1b9ea3d",
+    "AMTTests/AIConnectorFlowBenchmarkTests.swift": "a4a02d8875e44b9e5d57ea21fc8c113e7ea1e9f92c81794d94b0cb88cb1a9940",
+    "AMT/Features/AIConnector/ViewModels/AIConnectorQualityViewModel+Phase8.swift": "98e3854484b811de1bb26280fcf06a4b580c94b13d99f7ffdf32754dfececaa5",
+    "AMTTests/AIConnectorAccuracyMatrixTests.swift": "b7c11ef934b2b67c7772b0a8a8151fd16c742d1d3f1fe51371e6f8774fbc6037"
+  },
+  "resourceFiles": {
+    "AMT/Resources/legal_corpus/concepts.json": "f38f3d94abbcd591a025e62e4573907fa60445237c6d048b90463bf09768e48e",
+    "AMT/Resources/legal_corpus/dictionary_alternatives.json": "d7488ed7fb4fa68bd52be5d72f25f1150d12582ddc3406d18629a89364d49d5c",
+    "AMT/Resources/legal_corpus/dictionary_primary.json": "238cc9e10617734b4d3ef2d78c675b9781f5676cc694f8940db480d4ae911d16",
+    "AMT/Resources/legal_corpus/dictionary_terms.json": "56760088821fdbc07e9f9688631e847724585111f9b843b0143b423acc90d7ce",
+    "AMT/Resources/legal_corpus/manifest.json": "2c3ccbc43f0d58da676a7ae3356834f987bf7d8d901e88b65af01cbd45ac2536",
+    "AMT/Resources/legal_corpus/regulations.json": "b75a3df15250c0f201ad43958118fa6aa98f8e3ebb3f485c25df7814c1d30f0b",
+    "AMT/Resources/legal_corpus/relations.json": "d82d0e3ec0ee14cc205cd2af32beb3cd644c53c1a4eec6f158d2d40f07fab144",
+    "AMT/Resources/legal_corpus/source_passages.json": "26fed603664977a6586c58f5e49d645ec40866b52ee8852c04e1fe77176ad384"
+  },
+  "configurationSourceFiles": {
+    "AMT/Features/AIConnector/Models/AIConnectorModels.swift": "e7e3db41603655128540b60360530ae71a3b4e992698d56249cef805ae8da632",
+    "AMT/Features/AIConnector/Services/TataKataLanguageScorer.swift": "cd3c4f32ab98525f2c2651511611cb6c4259b7a81506f664105393c4877cb688",
+    "AMT/Shared/LegalKnowledge/Services/LegalSemanticRetriever.swift": "af725a35603e676b1136e6d562dd05f29974dabd69c45dcf03591aeb3297c2b0"
+  },
+  "baselineProductionSHA256": "720be1a27702ab08de1cfa04868f2bde4b6ee2d0b0ce345c34087498575b04c3",
+  "expectationProvenance": "Retrospective labels from the prior manual review; synthetic labels pending; no measured semantic output used as gold."
+}

@@ -28,6 +28,8 @@ actor AIConnectorObservationCollector {
         var stageSamples: [StageSample] = []
         var retrievalQueryCount = 0
         var semanticQueryCount = 0
+        var definitionRepairCount = 0
+        var candidateFilterReasons: [String: Int] = [:]
         var spellingCandidateCount = 0
         var scoredSpellingCandidateCount = 0
         var candidateCount = 0
@@ -161,6 +163,18 @@ actor AIConnectorObservationCollector {
         var segment = segments[segmentID] ?? SegmentAccumulator()
         segment.retrievalQueryCount += max(0, queryCount)
         segment.semanticQueryCount += max(0, semanticQueryCount)
+        segments[segmentID] = segment
+    }
+
+    func recordDefinitionRepairs(segmentID: Int, count: Int) {
+        var segment = segments[segmentID] ?? SegmentAccumulator()
+        segment.definitionRepairCount = max(0, count)
+        segments[segmentID] = segment
+    }
+
+    func recordCandidateFilterReasons(segmentID: Int, reasons: [String: Int]) {
+        var segment = segments[segmentID] ?? SegmentAccumulator()
+        for (key, count) in reasons { segment.candidateFilterReasons[key, default: 0] += count }
         segments[segmentID] = segment
     }
 
@@ -337,6 +351,8 @@ actor AIConnectorObservationCollector {
                 challengeCount: value.challengeCount,
                 fallbackCount: value.fallbackCount,
                 modelOriginCount: value.modelOriginCount,
+                definitionRepairCount: value.definitionRepairCount,
+                candidateFilterReasons: value.candidateFilterReasons,
                 stageCoverage: value.stageCoverage
             )
         }

@@ -28,6 +28,10 @@ nonisolated enum AIConnectorLanguageScorerConfiguration {
 /// malformed mock must never turn an arbitrary replacement into a Qwen input.
 nonisolated enum AIConnectorLanguageScorePolicy {
     static func isEligible(_ evidence: AIConnectorLanguageScoreEvidence) -> Bool {
+        isValidEvidence(evidence) && evidence.delta >= AIConnectorLanguageScorerConfiguration.minimumImprovementInNats
+    }
+
+    static func isValidEvidence(_ evidence: AIConnectorLanguageScoreEvidence) -> Bool {
         evidence.modelID == AIConnectorLanguageScorerConfiguration.modelID
             && evidence.revision == AIConnectorLanguageScorerConfiguration.revision
             && evidence.tokenizerVocabularyCount
@@ -37,7 +41,6 @@ nonisolated enum AIConnectorLanguageScorePolicy {
             && evidence.originalScore.isFinite
             && evidence.replacementScore.isFinite
             && evidence.delta.isFinite
-            && evidence.delta >= AIConnectorLanguageScorerConfiguration.minimumImprovementInNats
             && !evidence.sourceWindow.isEmpty
     }
 }
@@ -222,10 +225,16 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
         )
     }
 
+    func scoreForReview(segment: AIReviewSegment, candidates: [AIConnectorSpellingCandidate],
+        progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void
+    ) async throws -> [AIConnectorSpellingCandidate] {
+        try await scoreForDiagnostics(segment: segment, candidates: candidates, progress: progress)
+    }
+
     /// Returns the best scored candidate per source span, including candidates
     /// below the production threshold. This is intentionally a diagnostics
-    /// boundary for opt-in benchmark tests; candidate-first production flow
-    /// uses `score`, which returns only threshold-qualified candidates.
+    /// boundary also shared by scoreForReview; routing still validates the
+    /// evidence and requires model approval before accepting a restoration.
     func scoreForDiagnostics(
         segment: AIReviewSegment,
         candidates: [AIConnectorSpellingCandidate],
@@ -558,7 +567,8 @@ private actor TataKataRuntime {
                         sourceLocation: best.candidate.sourceLocation,
                         sourceLength: best.candidate.sourceLength,
                         sourceRank: best.candidate.sourceRank,
-                        evidence: evidence
+                        evidence: evidence,
+                        restorationEvidence: best.candidate.restorationEvidence
                     )
                 )
             }

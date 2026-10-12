@@ -1,0 +1,4145 @@
+[
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "memasukan",
+          "readOnly": false,
+          "replacement": "memasukkan",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-01",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-01",
+    "sources": [],
+    "split": "calibration",
+    "text": "Pihak 1 memasukan laporan dan data pendukung kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "memasukan",
+          "readOnly": false,
+          "replacement": "memasukkan",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-02",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-02",
+    "sources": [],
+    "split": "calibration",
+    "text": "Pihak 2 memasukan laporan dan data pendukung kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "memasukan",
+          "readOnly": false,
+          "replacement": "memasukkan",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-03",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-03",
+    "sources": [],
+    "split": "calibration",
+    "text": "Pihak 3 memasukan laporan dan data pendukung kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "memasukan",
+          "readOnly": false,
+          "replacement": "memasukkan",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-04",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-04",
+    "sources": [],
+    "split": "calibration",
+    "text": "Pihak 4 memasukan laporan dan data pendukung kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "memasukan",
+          "readOnly": false,
+          "replacement": "memasukkan",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-05",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-05",
+    "sources": [],
+    "split": "calibration",
+    "text": "Pihak 5 memasukan laporan dan data pendukung kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "ditanda tangani",
+          "readOnly": false,
+          "replacement": "ditandatangani",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-06",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-06",
+    "sources": [],
+    "split": "calibration",
+    "text": "Perjanjian 1 telah ditanda tangani oleh Para Pihak pada tanggal 10 Agustus 2026."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "ditanda tangani",
+          "readOnly": false,
+          "replacement": "ditandatangani",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-07",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-07",
+    "sources": [],
+    "split": "calibration",
+    "text": "Perjanjian 2 telah ditanda tangani oleh Para Pihak pada tanggal 10 Agustus 2026."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "ditanda tangani",
+          "readOnly": false,
+          "replacement": "ditandatangani",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-08",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-08",
+    "sources": [],
+    "split": "calibration",
+    "text": "Perjanjian 3 telah ditanda tangani oleh Para Pihak pada tanggal 10 Agustus 2026."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "ditanda tangani",
+          "readOnly": false,
+          "replacement": "ditandatangani",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-09",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-09",
+    "sources": [],
+    "split": "calibration",
+    "text": "Perjanjian 4 telah ditanda tangani oleh Para Pihak pada tanggal 10 Agustus 2026."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "ditanda tangani",
+          "readOnly": false,
+          "replacement": "ditandatangani",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-10",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-10",
+    "sources": [],
+    "split": "calibration",
+    "text": "Perjanjian 5 telah ditanda tangani oleh Para Pihak pada tanggal 10 Agustus 2026."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "di simpan",
+          "readOnly": false,
+          "replacement": "disimpan",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-11",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-11",
+    "sources": [],
+    "split": "calibration",
+    "text": "Dokumen 1 di simpan oleh Pihak Kedua dalam arsip elektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "di simpan",
+          "readOnly": false,
+          "replacement": "disimpan",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-12",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-12",
+    "sources": [],
+    "split": "calibration",
+    "text": "Dokumen 2 di simpan oleh Pihak Kedua dalam arsip elektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "di simpan",
+          "readOnly": false,
+          "replacement": "disimpan",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-13",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-13",
+    "sources": [],
+    "split": "calibration",
+    "text": "Dokumen 3 di simpan oleh Pihak Kedua dalam arsip elektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "di simpan",
+          "readOnly": false,
+          "replacement": "disimpan",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-14",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-14",
+    "sources": [],
+    "split": "calibration",
+    "text": "Dokumen 4 di simpan oleh Pihak Kedua dalam arsip elektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "di simpan",
+          "readOnly": false,
+          "replacement": "disimpan",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-spelling-15",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-spelling-15",
+    "sources": [],
+    "split": "calibration",
+    "text": "Dokumen 5 di simpan oleh Pihak Kedua dalam arsip elektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-01",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-01",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 1 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-02",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-02",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 2 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-03",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-03",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 3 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-04",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-04",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 4 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-05",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-05",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 5 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-06",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-06",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 6 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-07",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-07",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 7 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-08",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-08",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 8 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-09",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-09",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 9 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-10",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-10",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 10 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-11",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-11",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 11 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-12",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-12",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 12 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-13",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-13",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 13 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-14",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-14",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 14 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-grammar-15",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-grammar-15",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak 15 wajib untuk menyerahkan laporan berkala kepada Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [
+        {
+          "category": "terminology",
+          "occurrence": 0,
+          "original": "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik",
+          "readOnly": false,
+          "replacement": "Data Pribadi",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-terminology-01",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-terminology-01",
+    "sources": [],
+    "split": "holdout",
+    "text": "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [
+        {
+          "category": "terminology",
+          "occurrence": 0,
+          "original": "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik",
+          "readOnly": false,
+          "replacement": "Data Pribadi",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-terminology-02",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-terminology-02",
+    "sources": [],
+    "split": "holdout",
+    "text": "Dalam dokumen 2, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [
+        {
+          "category": "terminology",
+          "occurrence": 0,
+          "original": "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik",
+          "readOnly": false,
+          "replacement": "Data Pribadi",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-terminology-03",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-terminology-03",
+    "sources": [],
+    "split": "holdout",
+    "text": "Dalam dokumen 3, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [
+        {
+          "category": "terminology",
+          "occurrence": 0,
+          "original": "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik",
+          "readOnly": false,
+          "replacement": "Data Pribadi",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-terminology-04",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-terminology-04",
+    "sources": [],
+    "split": "holdout",
+    "text": "Dalam dokumen 4, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [
+        {
+          "category": "terminology",
+          "occurrence": 0,
+          "original": "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik",
+          "readOnly": false,
+          "replacement": "Data Pribadi",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-terminology-05",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-terminology-05",
+    "sources": [],
+    "split": "holdout",
+    "text": "Dalam dokumen 5, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [
+        {
+          "category": "terminology",
+          "occurrence": 0,
+          "original": "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik",
+          "readOnly": false,
+          "replacement": "Data Pribadi",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-terminology-06",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-terminology-06",
+    "sources": [],
+    "split": "holdout",
+    "text": "Dalam dokumen 6, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [
+        {
+          "category": "terminology",
+          "occurrence": 0,
+          "original": "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik",
+          "readOnly": false,
+          "replacement": "Data Pribadi",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-terminology-07",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-terminology-07",
+    "sources": [],
+    "split": "holdout",
+    "text": "Dalam dokumen 7, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [
+        {
+          "category": "terminology",
+          "occurrence": 0,
+          "original": "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik",
+          "readOnly": false,
+          "replacement": "Data Pribadi",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-terminology-08",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-terminology-08",
+    "sources": [],
+    "split": "holdout",
+    "text": "Dalam dokumen 8, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [
+        {
+          "category": "definition",
+          "classification": "MATCH",
+          "occurrence": 0,
+          "original": "Data Pribadi",
+          "readOnly": true,
+          "status": "EXPLICIT_DEFINITION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-definition-explicit-match-1",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-definition-explicit-match-1",
+    "sources": [],
+    "split": "calibration",
+    "text": "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [
+        {
+          "category": "definition",
+          "classification": "MATCH",
+          "occurrence": 0,
+          "original": "Data Pribadi",
+          "readOnly": true,
+          "status": "EXPLICIT_DEFINITION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-definition-explicit-match-2",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-definition-explicit-match-2",
+    "sources": [],
+    "split": "calibration",
+    "text": "Data Pribadi merupakan data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [
+        {
+          "category": "definition",
+          "classification": "MATCH",
+          "occurrence": 0,
+          "original": "Data Pribadi",
+          "readOnly": true,
+          "status": "EXPLICIT_DEFINITION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-definition-explicit-match-3",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-definition-explicit-match-3",
+    "sources": [],
+    "split": "calibration",
+    "text": "Yang dimaksud dengan Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [
+        {
+          "category": "definition",
+          "classification": "MISMATCH",
+          "occurrence": 0,
+          "original": "Data Pribadi",
+          "readOnly": true,
+          "status": "EXPLICIT_DEFINITION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-definition-explicit-mismatch-1",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-definition-explicit-mismatch-1",
+    "sources": [],
+    "split": "calibration",
+    "text": "Data Pribadi adalah segala sesuatu yang berkaitan dengan kegiatan usaha dan pembayaran."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [
+        {
+          "category": "definition",
+          "classification": "MISMATCH",
+          "occurrence": 0,
+          "original": "Data Pribadi",
+          "readOnly": true,
+          "status": "EXPLICIT_DEFINITION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-definition-explicit-mismatch-2",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-definition-explicit-mismatch-2",
+    "sources": [],
+    "split": "calibration",
+    "text": "Data Pribadi merupakan dokumen komersial yang ditandatangani para pihak."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-definition-mention-not-definition",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-definition-mention-not-definition",
+    "sources": [],
+    "split": "calibration",
+    "text": "Data Pribadi wajib dilindungi oleh Pengendali Data Pribadi."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-definition-mention-not-definition-2",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-definition-mention-not-definition-2",
+    "sources": [],
+    "split": "calibration",
+    "text": "Para Pihak wajib menjaga keamanan Data Pribadi sesuai kebijakan internal."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-01",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-01",
+    "sources": [],
+    "split": "holdout",
+    "text": "Perjanjian ini berlaku sejak tanggal ditandatangani oleh Para Pihak."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-02",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-02",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pembayaran dilakukan melalui rekening yang disepakati Para Pihak."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-03",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-03",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pemberitahuan disampaikan secara tertulis kepada alamat resmi."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-04",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-04",
+    "sources": [],
+    "split": "holdout",
+    "text": "Setiap perubahan Perjanjian dibuat dalam bentuk tertulis."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-05",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-05",
+    "sources": [],
+    "split": "holdout",
+    "text": "Perusahaan menyimpan catatan transaksi sesuai kebijakan internal."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-06",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-06",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Pertama menerima laporan pada hari kerja berikutnya."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-07",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-07",
+    "sources": [],
+    "split": "holdout",
+    "text": "Para Pihak menyelesaikan perselisihan melalui musyawarah."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-08",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-08",
+    "sources": [],
+    "split": "holdout",
+    "text": "Kerahasiaan informasi tetap berlaku setelah Perjanjian berakhir."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-09",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-09",
+    "sources": [],
+    "split": "holdout",
+    "text": "Dokumen pendukung menjadi bagian yang tidak terpisahkan dari Perjanjian."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-10",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-10",
+    "sources": [],
+    "split": "holdout",
+    "text": "Jangka waktu Perjanjian adalah dua belas bulan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-11",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-11",
+    "sources": [],
+    "split": "holdout",
+    "text": "Kewajiban pembayaran tidak menghapus kewajiban pelaporan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-12",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-12",
+    "sources": [],
+    "split": "holdout",
+    "text": "Perusahaan menunjuk wakil yang berwenang untuk komunikasi."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-13",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-13",
+    "sources": [],
+    "split": "holdout",
+    "text": "Hak dan kewajiban Para Pihak mengikuti ketentuan Perjanjian."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-14",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-14",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pengakhiran Perjanjian tidak menghapus kewajiban yang telah timbul."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-p0-hard-negative-15",
+    "provenance": "synthetic",
+    "question": "Apakah klasifikasi dan rekomendasi pada fixture ini tepat untuk penggunaan drafting hukum?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "p0-hard-negative-15",
+    "sources": [],
+    "split": "holdout",
+    "text": "Lampiran ini dibaca bersama dengan dokumen utama."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definedTerm",
+    "expected": {
+      "findings": [
+        {
+          "category": "definedTerm",
+          "occurrence": 0,
+          "original": "data pribadi",
+          "readOnly": true,
+          "status": "flagged"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-defined-term-casing",
+    "provenance": "synthetic",
+    "question": "Apakah penggunaan defined term dan perbedaan casing ditandai dengan bukti yang tepat?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "defined-term-casing",
+    "sources": [],
+    "split": "calibration",
+    "text": "Para Pihak menyepakati bahwa Data Pribadi wajib dilindungi. data pribadi dapat diproses sesuai Perjanjian."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "internalReference",
+    "expected": {
+      "findings": [
+        {
+          "category": "internalReference",
+          "occurrence": 0,
+          "original": "Pasal 99",
+          "readOnly": true,
+          "status": "flagged"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-internal-reference-missing",
+    "provenance": "synthetic",
+    "question": "Apakah rujukan internal yang tidak ditemukan dibedakan dari rujukan eksternal?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "internal-reference-missing",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak Kedua wajib memenuhi Pasal 99 dan Lampiran C yang tidak tersedia pada dokumen ini."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-risk-hard-negative-modal",
+    "provenance": "synthetic",
+    "question": "Apakah kata modalitas yang berdiri sendiri tidak menghasilkan legal-risk finding?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "isolated-modal-hard-negative",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Pertama dapat menyampaikan pemberitahuan kepada Pihak Kedua."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definitionResolution",
+    "expected": {
+      "findings": [
+        {
+          "category": "definitionResolution",
+          "classification": "MISMATCH",
+          "occurrence": 0,
+          "original": "Data Pribadi",
+          "readOnly": true,
+          "sourceID": "term:b5f759d772843a00fa7c",
+          "status": "EXPLICIT_DEFINITION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": [
+        "phase8-data-pribadi-source"
+      ]
+    },
+    "id": "phase8-definition-resolution-source",
+    "provenance": "synthetic",
+    "question": "Apakah pilihan resolusi definisi mempertahankan anchor istilah dan body serta sumber yang terverifikasi?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "definition-resolution-source",
+    "sources": [
+      {
+        "applicabilityStatus": "in_force",
+        "corpusEntryID": "term:b5f759d772843a00fa7c",
+        "evidenceID": "peraturan.go.id:uu-no-27-tahun-2022:combined#body-chapter_heading-2-0002",
+        "id": "phase8-data-pribadi-source",
+        "isActionable": false,
+        "referenceID": "peraturan.go.id:uu-no-27-tahun-2022",
+        "verified": false
+      }
+    ],
+    "split": "regression",
+    "text": "\"Data Pribadi\" adalah data mengenai pelanggan korporat."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "incremental",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "phase8-incremental-definition-change",
+    "provenance": "synthetic",
+    "question": "Apakah perubahan definisi memperluas pemeriksaan ke seluruh dependensi yang relevan?",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "incremental-definition-change",
+    "sources": [],
+    "split": "holdout",
+    "text": "BAB I\n\"Data\" adalah informasi umum.\nBAB II\nPihak Kedua wajib menjaga Data."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "perjanijan",
+          "readOnly": false,
+          "replacement": "perjanjian",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-spelling-1",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok spelling.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-spelling-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak Kedua menandatangani perjanijan secara tertulis."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "kewajban",
+          "readOnly": false,
+          "replacement": "kewajiban",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-spelling-2",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok spelling.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-spelling-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Pembayaran memenuhi kewajban yang disepakati."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "pemabyaran",
+          "readOnly": false,
+          "replacement": "pembayaran",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-spelling-3",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok spelling.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-spelling-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Bukti pemabyaran disimpan oleh Perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "perjanjain",
+          "readOnly": false,
+          "replacement": "perjanjian",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-spelling-4",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok spelling.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-spelling-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pelaksanaan perjanjain diawasi setiap bulan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "dokumne",
+          "readOnly": false,
+          "replacement": "dokumen",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-spelling-5",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok spelling.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-spelling-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Penerima menyimpan dokumne pendukung."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "laproan",
+          "readOnly": false,
+          "replacement": "laporan",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-spelling-6",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok spelling.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-spelling-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Pertama menyerahkan laproan bulanan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-grammar-1",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok grammar.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-grammar-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak Kedua wajib untuk menyampaikan laporan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-grammar-2",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok grammar.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-grammar-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Para Pihak wajib menyimpan arsip."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-grammar-3",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok grammar.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-grammar-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Pembayaran dilakukan sesuai dengan jadwal yang disepakati."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [
+        {
+          "category": "grammar",
+          "occurrence": 0,
+          "original": "wajib untuk",
+          "readOnly": false,
+          "replacement": "wajib",
+          "status": "SUGGESTION"
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-grammar-4",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok grammar.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-grammar-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Pertama wajib untuk menjaga kerahasiaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-grammar-5",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok grammar.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-grammar-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Kedua dapat memilih jadwal pengiriman."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "grammar",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-grammar-6",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok grammar.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-grammar-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Dokumen telah diterima oleh Pihak Pertama."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-paraphrase-1",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok paraphrase.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-paraphrase-1",
+    "sources": [],
+    "split": "regression",
+    "text": "\"Data Pribadi\" adalah data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-paraphrase-2",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok paraphrase.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-paraphrase-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak Kedua menyimpan informasi mengenai orang yang dapat dikenali."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-paraphrase-3",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok paraphrase.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-paraphrase-3",
+    "sources": [],
+    "split": "regression",
+    "text": "\"Korporasi\" adalah kumpulan orang dan/atau kekayaan yang terorganisasi."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-paraphrase-4",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok paraphrase.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-paraphrase-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Informasi mengenai pelanggan korporat merupakan Data Pribadi."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-paraphrase-5",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok paraphrase.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-paraphrase-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Pertama mengelola data tentang orang yang identitasnya dapat diketahui."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-paraphrase-6",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok paraphrase.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-paraphrase-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Korporasi menyerahkan laporan yang telah disetujui."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-operators-1",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok operators.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-operators-1",
+    "sources": [],
+    "split": "regression",
+    "text": "\"Data\" adalah informasi yang tidak dapat dipublikasikan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-operators-2",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok operators.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-operators-2",
+    "sources": [],
+    "split": "regression",
+    "text": "\"Data\" adalah informasi yang dapat dipublikasikan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-operators-3",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok operators.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-operators-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak Kedua wajib menjaga arsip kecuali terdapat persetujuan tertulis."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-operators-4",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok operators.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-operators-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Pertama tidak wajib menyerahkan salinan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-operators-5",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok operators.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-operators-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Kedua dapat mengungkapkan informasi hanya jika diizinkan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-operators-6",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok operators.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-operators-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Pertama dilarang mengubah data tanpa persetujuan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-quantities-1",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok quantities.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-quantities-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Pembayaran paling banyak Rp10.000.000 dilakukan dalam 10 hari kerja."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-quantities-2",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok quantities.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-quantities-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Pembayaran paling sedikit Rp10.000.000 dilakukan dalam 10 hari kalender."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-quantities-3",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok quantities.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-quantities-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Pembeli membayar Penjual sebesar Rp500.000."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-quantities-4",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok quantities.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-quantities-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Penjual membayar Pembeli sebesar Rp500.000."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-quantities-5",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok quantities.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-quantities-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Nilai kurang dari 10 kilogram wajib dicatat."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-quantities-6",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok quantities.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-quantities-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Nilai lebih dari 10 gram dapat diterima."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-eligibility-1",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok eligibility.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-eligibility-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Istilah \"Data Pribadi\" disebut dalam laporan tahunan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-eligibility-2",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok eligibility.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-eligibility-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Korporasi adalah pihak yang berkepentingan menurut kamus lama."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-eligibility-3",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok eligibility.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-eligibility-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak Pertama mengutip peraturan yang statusnya belum diketahui."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-eligibility-4",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok eligibility.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-eligibility-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Istilah adat digunakan sebagai referensi bacaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-eligibility-5",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok eligibility.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-eligibility-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "\"Perusahaan\" adalah badan usaha menurut dokumen ini."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "terminology",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-eligibility-6",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok eligibility.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-eligibility-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Kedua menggunakan definisi internal Perjanjian."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-long-1",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok long.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-long-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak Kedua memasukan arsip, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, kecuali terdapat persetujuan tertulis."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-long-2",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok long.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-long-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak Kedua menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan dan memasukan tanggal hanya jika disetujui."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-long-3",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok long.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-long-3",
+    "sources": [],
+    "split": "regression",
+    "text": "\"Data\" adalah informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan, kecuali catatan yang tidak boleh dipublikasikan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-long-4",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok long.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-long-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Pertama wajib menjaga arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, kecuali diwajibkan oleh hukum."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-long-5",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok long.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-long-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Nama | Kewajiban\nPihak Kedua | menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui tanpa mengubah tanggal."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-long-6",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok long.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-long-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "😀 Pihak Pertama menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan memasukan catatan yang tidak dapat diubah."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-protected-1",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok protected.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-protected-1",
+    "sources": [],
+    "split": "regression",
+    "text": "\"Memasukan\" adalah nama produk yang disepakati Para Pihak."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-protected-2",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok protected.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-protected-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Nama perusahaan adalah PT Di Simpan Indonesia."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-protected-3",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok protected.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-protected-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Nomor dokumen ABC-123 tidak boleh diubah."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-protected-4",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok protected.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-protected-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "\"Data\" adalah informasi rahasia.\nPihak Kedua wajib menjaga Data."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-protected-5",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok protected.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-protected-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "BAB I\n\"Arsip\" adalah dokumen pendukung.\nBAB II\nArsip disimpan oleh Pihak Kedua."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "backend46-protected-6",
+    "provenance": "synthetic",
+    "question": "Periksa ketepatan temuan, abstention, sumber, cakupan, dan perubahan makna; kelompok protected.",
+    "reviewStatus": "pending",
+    "revision": 1,
+    "rightsDeclared": true,
+    "scenarioID": "backend46-protected-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak Pertama wajib memenuhi Pasal 2.\nPasal 2\nPihak Kedua menyimpan laporan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Datta",
+          "replacement": "Data",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g1-1",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g1-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Data harus disimpan. Datta harus dikirim."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Lapporan",
+          "replacement": "Laporan",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g1-2",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g1-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak pertama mengirim Lapporan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Dokumenn",
+          "replacement": "Dokumen",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g1-3",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g1-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Dokumenn harus diserahkan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Datta",
+          "replacement": "Data",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g1-4",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g1-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Para pihak menyimpan Datta."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Pembayarran",
+          "replacement": "Pembayaran",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g1-5",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g1-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak kedua menerima Pembayarran."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g1-6",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g1-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Data dan laporan telah lengkap."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "laproan",
+          "replacement": "laporan",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g2-1",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g2-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak mengirim laproan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "perjanjain",
+          "replacement": "perjanjian",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g2-2",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g2-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Para pihak menandatangani perjanjain."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "dokumne",
+          "replacement": "dokumen",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g2-3",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g2-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Para pihak menyimpan dokumne."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Laproan",
+          "replacement": "Laporan",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g2-4",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g2-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak menyerahkan Laproan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Pemabyaran",
+          "replacement": "Pembayaran",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g2-5",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g2-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pemabyaran dilakukan hari ini."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g2-6",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g2-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Laporan dan dokumen disimpan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "kewajban",
+          "replacement": null,
+          "status": "NEEDS_REVIEW",
+          "readOnly": true
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g3-1",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g3-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Para pihak menjalankan kewajban."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Kewajban",
+          "replacement": null,
+          "status": "NEEDS_REVIEW",
+          "readOnly": true
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g3-2",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g3-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Kewajban pihak kedua tetap berlaku."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g3-3",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g3-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak memiliki kewajiban."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "kewajban",
+          "replacement": null,
+          "status": "NEEDS_REVIEW",
+          "readOnly": true
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g3-4",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g3-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak memenuhi kewajban pembayaran."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Kewajban",
+          "replacement": null,
+          "status": "NEEDS_REVIEW",
+          "readOnly": true
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g3-5",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g3-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Kewajban tetap berlaku kecuali dibebaskan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g3-6",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g3-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Hak dan kewajiban tetap sama."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g4-1",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g4-1",
+    "sources": [],
+    "split": "regression",
+    "text": "PT Datta Nusantara menyerahkan laporan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g4-2",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g4-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Produk bernama “Laproan” tetap digunakan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g4-3",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g4-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Identifier Datta_ID tidak diubah."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g4-4",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g4-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "“Datta Pribadi” adalah nama produk."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g4-5",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g4-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "PT Dokumne Indonesia melaksanakan pekerjaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g4-6",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g4-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Akronim DATTA dipakai para pihak."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Datta",
+          "replacement": "Data",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g5-1",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g5-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Data Pribadi adalah data tentang individu. Datta Pribadi disimpan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g5-2",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g5-2",
+    "sources": [],
+    "split": "regression",
+    "text": "“Memasukan” adalah produk perusahaan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g5-3",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g5-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Data Pribadi adalah data perseorangan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Datta",
+          "replacement": "Data",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g5-4",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g5-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Definisi\n“Data Pribadi” adalah data tentang individu. Pihak memproses Datta Pribadi."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g5-5",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g5-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Yang dimaksud dengan Nama Perusahaan adalah nama badan usaha."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g5-6",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g5-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Yang dimaksud dengan Data adalah informasi elektronik."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g6-1",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g6-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Informasi adalah data yang tidak dapat diumumkan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g6-2",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g6-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Informasi adalah data yang dapat diumumkan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g6-3",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g6-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak pertama wajib membayar 10 hari."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g6-4",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g6-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak kedua dapat membayar 20 hari."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g6-5",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g6-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak tidak wajib menyerahkan data kecuali diminta."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g6-6",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g6-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak wajib menyerahkan data hanya jika disetujui."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "internalReference",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g7-1",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g7-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Nilai transaksi Rp10.000.000 dibayarkan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "internalReference",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g7-2",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g7-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Volume 2.500,5 kg dan bunga 2,5 persen."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "internalReference",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g7-3",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g7-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Lampiran ini merupakan bagian perjanjian."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "internalReference",
+    "expected": {
+      "findings": [
+        {
+          "category": "internalReference",
+          "occurrence": 0,
+          "original": "Lampiran C",
+          "replacement": null,
+          "status": "NEEDS_REVIEW",
+          "readOnly": true
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g7-4",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g7-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "Lampiran C tidak tersedia."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "internalReference",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g7-5",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g7-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Pihak membayar Rp2.500.000 dengan bunga 2,5%."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "internalReference",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g7-6",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g7-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "1.2 Ketentuan\nLihat angka 1.2 dan Lampiran tersebut."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "laproan",
+          "replacement": "laporan",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g8-1",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g8-1",
+    "sources": [],
+    "split": "regression",
+    "text": "😀 Pihak menyerahkan laproan dan dokumne."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Datta",
+          "replacement": "Data",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g8-2",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g8-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Data Pribadi adalah data tentang individu. 😀 Datta Pribadi disimpan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "memasukan",
+          "replacement": "memasukkan",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g8-3",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g8-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak mengirim memasukan data kecuali dilarang."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "perjanjain",
+          "replacement": "perjanjian",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g8-4",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g8-4",
+    "sources": [],
+    "split": "holdout",
+    "text": "🇮🇩 Pihak menyerahkan perjanjain."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "laproan",
+          "replacement": "laporan",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g8-5",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g8-5",
+    "sources": [],
+    "split": "holdout",
+    "text": "Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Pihak menerima laproan kecuali dilarang."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "accuracy-v2-g8-6",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "accuracy-v2-g8-6",
+    "sources": [],
+    "split": "holdout",
+    "text": "👩🏽‍💻 “Datta” adalah nama produk. Data Pribadi tetap disimpan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-1",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-1",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Sarana perkeretaapian adalah kendaraan yang dapat bergerak di jalan rel."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-2",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-2",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Sarana perkeretaapian adalah kendaraan yang tidak dapat bergerak di jalan rel."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-3",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-3",
+    "sources": [],
+    "split": "regression",
+    "text": "Para Pihak membicarakan Sarana perkeretaapian."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-4",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-4",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Sertifikat Deposito adalah simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya dapat dipindahtangankan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-5",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-5",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Sertifikat Deposito adalah simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya tidak dapat dipindahtangankan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-6",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-6",
+    "sources": [],
+    "split": "regression",
+    "text": "Para Pihak membicarakan Sertifikat Deposito."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-7",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-7",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Usia Pensiun adalah usia saat peserta dapat mulai menerima manfaat pensiun."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-8",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-8",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Usia Pensiun adalah usia saat peserta tidak dapat mulai menerima manfaat pensiun."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-9",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-9",
+    "sources": [],
+    "split": "regression",
+    "text": "Para Pihak membicarakan Usia Pensiun."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-10",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-10",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan WUPK adalah bagian dari WPN yang dapat diusahakan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-11",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-11",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan WUPK adalah bagian dari WPN yang tidak dapat diusahakan."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-12",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-12",
+    "sources": [],
+    "split": "regression",
+    "text": "Para Pihak membicarakan WUPK."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-13",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-13",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Objek Sita adalah barang Penanggung Pajak yang dapat dijadikan jaminan utang pajak."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-14",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-14",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Objek Sita adalah barang Penanggung Pajak yang tidak dapat dijadikan jaminan utang pajak."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-15",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-15",
+    "sources": [],
+    "split": "regression",
+    "text": "Para Pihak membicarakan Objek Sita."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-16",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-16",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Tempat Uji Kompetensi adalah tempat kerja dan/atau lembaga yang dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-17",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-17",
+    "sources": [],
+    "split": "regression",
+    "text": "Yang dimaksud dengan Tempat Uji Kompetensi adalah tempat kerja dan/atau lembaga yang tidak dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "definition",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "control-18",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "control-18",
+    "sources": [],
+    "split": "regression",
+    "text": "Para Pihak membicarakan Tempat Uji Kompetensi."
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "hard-negative",
+    "expected": {
+      "findings": [],
+      "noChange": true,
+      "requiredSourceIDs": []
+    },
+    "id": "dummy-original",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "dummy-original",
+    "sources": [],
+    "split": "regression",
+    "text": "PERJANJIAN KERJA SAMA\nPENGELOLAAN LAYANAN DIGITAL DAN DATA\n\nNomor: AMT/PKS/2026/001\n\nPada hari Senin, tanggal 10 Agustus 2026, bertempat di Jakarta, telah dibuat dan ditanda tangani Perjanjian Kerja Sama Pengelolaan Layanan Digital dan Data (selanjutnya disebut “Perjanjian”) oleh dan antara:\n\n1. PT Arunika Data Nusantara, suatu perseroan terbatas yang didirikan berdasarkan hukum Republik Indonesia, berkedudukan di Jakarta, dalam hal ini diwakili oleh Raka Pratama selaku Direktur, selanjutnya disebut “Pihak Pertama”; dan\n\n2. PT Cakrawala Legal Teknologi, suatu perseroan terbatas yang didirikan berdasarkan hukum Republik Indonesia, berkedudukan di Bandung, dalam hal ini diwakili oleh Nadia Kurnia selaku Direktur, selanjutnya disebut “Pihak Kedua”.\n\nPihak Pertama dan Pihak Kedua secara bersama-sama disebut “Para Pihak” dan masing-masing disebut “Pihak”. Para Pihak terlebih dahulu menerangkan hal-hal sebagai berikut:\n\na. Pihak Pertama mengelola platform digital untuk administrasi dokumen dan memerlukan dukungan pengelolaan data;\n\nb. Pihak Kedua mempunyai kemampuan teknis untuk menyediakan layanan tersebut; dan\n\nc. Para Pihak sepakat untuk melaksanakan kerja sama ini berdasarkan syarat dan ketentuan dalam Perjanjian.\n\nPASAL 1\nDEFINISI DAN INTERPRETASI\n\n1. “Layanan” adalah penyediaan, pemeliharaan, dan dukungan teknis atas platform digital sebagaimana dijelaskan dalam Lampiran I.\n\n2. Untuk keperluan pelaksanaan Layanan, data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik selanjutnya disebut “Data Pribadi”.\n\n3. Dalam Perjanjian ini, kumpulan orang dan/atau kekayaan yang terorganisasi, baik merupakan badan hukum maupun bukan badan hukum, yang dapat dimintakan pertanggungjawaban hukum selanjutnya disebut “Korporasi”.\n\n4. Suatu keadaan yang terjadi di luar kehendak para pihak dalam Kontrak dan tidak dapat diperkirakan sebelumnya, sehingga kewajiban yang ditentukan dalam Kontrak menjadi tidak dapat dipenuhi, selanjutnya disebut “Keadaan Kahar”.\n\n5. “Informasi Rahasia” berarti seluruh informasi yang diterima oleh salah satu Pihak dari Pihak lainnya dalam rangka pelaksanaan Perjanjian, baik dalam bentuk tertulis, lisan, elektronik maupun bentuk lainnya.\n\n6. Judul pasal dibuat untuk kemudahan membaca dan tidak mempengaruhi penafsiran ketentuan dalam Perjanjian. Istilah dalam bentuk tunggal mencakup bentuk jamak dan sebaliknya sepanjang konteksnya menghendaki demikian.\n\nPASAL 2\nRUANG LINGKUP LAYANAN\n\n1. Pihak Pertama menunjuk Pihak Kedua untuk menyediakan Layanan pengelolaan dokumen, pencadangan, dan dukungan teknis sesuai dengan ruang lingkup yang disepakati Para Pihak.\n\n2. Pihak Kedua wajib untuk menyediakan Layanan secara profesional, aman, dan sesuai dengan jadwal yang telah disepakati.\n\n3. Pihak Kedua akan melakukan konfigurasi awal, pemantauan sistem, dan pemeliharaan berkala terhadap komponen Layanan.\n\n4. Setiap pekerjaan tambahan di luar ruang lingkup tersebut harus disetujui secara tertulis oleh Para Pihak sebelum pekerjaan dimulai.\n\nPASAL 3\nHAK DAN KEWAJIBAN PARA PIHAK\n\n1. Pihak Kedua bertanggungjawab untuk menjaga ketersediaan Layanan dan wajib memberikan laporan bulanan paling lambat tanggal 5 setiap bulan.\n\n2. Pihak Kedua wajib untuk menyampaikan laporan tersebut kepada Pihak Pertama melalui alamat surat elektronik yang telah ditentukan.\n\n3. Pihak Pertama wajib memberikan akses, informasi, dan persetujuan yang secara wajar diperlukan agar Pihak Kedua dapat melaksanakan kewajibannya.\n\n4. Para Pihak akan melakukan kerjasama dengan itikad baik dan saling memberitahukan setiap kendala yang dapat mempengaruhi pelaksanaan Perjanjian.\n\n5. Pihak yang mengetahui adanya kesalahan atau gangguan pada Layanan wajib segera memberitahukan Pihak lainnya tanpa menunda-nunda.\n\nPASAL 4\nDATA PRIBADI DAN INFORMASI RAHASIA\n\n1. Pihak Kedua hanya boleh memproses Data Pribadi untuk tujuan pelaksanaan Layanan dan berdasarkan instruksi tertulis dari Pihak Pertama.\n\n2. Pada saat pendaftaran pengguna, Pihak Kedua hanya mengumpulkan data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik sejauh diperlukan untuk pelaksanaan Layanan.\n\n3. Pihak Kedua wajib menerapkan langkah teknis dan organisatoris yang patut untuk mencegah akses, penggunaan, pengungkapan, perubahan, atau pemusnahan Data Pribadi tanpa hak.\n\n4. Apabila Layanan digunakan untuk data yang berasal dari kelompok masyarakat yang secara turun-temurun bermukim di wilayah geografis tertentu karena adanya ikatan pada asal usul leluhur, hubungan yang kuat dengan lingkungan hidup, serta sistem nilai yang menentukan pranata ekonomi, politik, sosial, dan hukum, Para Pihak wajib melakukan penilaian tambahan sebelum data tersebut diproses.\n\n5. Para Pihak wajib menjaga kerahasiaan Informasi Rahasia selama jangka waktu Perjanjian dan setelah Perjanjian ini berakhir.\n\n6. Kewajiban kerahasiaan tidak berlaku terhadap informasi yang telah tersedia untuk umum bukan karena pelanggaran Perjanjian atau wajib diungkapkan berdasarkan putusan pengadilan yang berkekuatan hukum tetap.\n\n7. Pihak Kedua harus mengembalikan atau memusnahkan Data Pribadi dan Informasi Rahasia setelah menerima permintaan tertulis dari Pihak Pertama, kecuali penyimpanan diwajibkan oleh peraturan yang berlaku.\n\nPASAL 5\nKEAMANAN DAN PENCATATAN\n\n1. Pihak Kedua wajib melakukan pencadangan Data Pribadi secara berkala dan menyimpan catatan akses selama 12 (dua belas) bulan.\n\n2. Dokumen pendukung harus di simpan oleh Pihak Kedua selama 5 (lima) tahun sejak tanggal penerimaan.\n\n3. Setiap perubahan konfigurasi penting harus dicatat dan dapat ditelusuri oleh Para Pihak.\n\n4. Pihak Kedua harus segera memulihkan Layanan apabila terjadi gangguan, tetapi upaya pemulihan tersebut tidak boleh mengurangi kewajiban keamanan berdasarkan Perjanjian.\n\nPASAL 6\nBIAYA DAN PEMBAYARAN\n\n1. Pihak Pertama wajib membayar biaya Layanan sebesar Rp100.000.000 (seratus juta rupiah) untuk setiap periode sebagaimana disepakati dalam Lampiran II.\n\n2. Pembayaran biaya Layanan dikenakan pajak pertambahan nilai sebesar 11% sesuai dengan ketentuan perpajakan yang berlaku.\n\n3. Pihak Pertama melakukan pembayaran paling lambat 14 (empat belas) hari kalender sejak diterimanya tagihan yang lengkap dan benar.\n\n4. Apabila terdapat perbedaan antara jumlah dalam angka dan jumlah dalam huruf, Para Pihak wajib melakukan klarifikasi tertulis sebelum pembayaran dilakukan.\n\nPASAL 7\nKEPEMILIKAN DAN PENGGUNAAN\n\n1. Seluruh dokumen, data, dan materi yang disediakan oleh Pihak Pertama tetap menjadi milik Pihak Pertama.\n\n2. Dalam pemeriksaan mitra, Pihak Kedua wajib mencatat informasi mengenai kumpulan orang dan/atau kekayaan yang terorganisasi, baik merupakan badan hukum maupun bukan badan hukum, sebelum memberikan akses ke Layanan.\n\n3. Pihak Kedua tidak memperoleh hak untuk menggunakan dokumen atau data tersebut selain untuk menjalankan Layanan berdasarkan Perjanjian.\n\n4. Setiap perangkat lunak yang dikembangkan secara khusus untuk Pihak Pertama harus diserahkan bersama dokumentasi teknis yang memadai.\n\n5. Para Pihak sepakat bahwa penggunaan data untuk tujuan lain memerlukan persetujuan tertulis terlebih dahulu.\n\n6. Pihak Kedua tidak dapat mengalihkan hak dan kewajibannya berdasarkan Perjanjian ini tanpa persetujuan tertulis dari Pihak Pertama.\n\nPASAL 8\nJANGKA WAKTU DAN PERUBAHAN\n\n1. Perjanjian ini berlaku sejak 1 September 2026 sampai dengan 31 Agustus 2027.\n\n2. Perjanjian ini dapat diperpanjang berdasarkan kesepakatan tertulis Para Pihak paling lambat 30 (tiga puluh) hari kalender sebelum berakhirnya jangka waktu.\n\n3. Pihak Kedua dapat meminta perubahan jadwal penyampaian laporan, tetapi perubahan tersebut hanya berlaku setelah disetujui secara tertulis oleh Pihak Pertama.\n\n4. Setiap perubahan atas Perjanjian harus dibuat secara tertulis dan ditanda tangani oleh Para Pihak.\n\nPASAL 9\nKEADAAN KAHAR DAN TANGGUNG JAWAB\n\n1. Perusahaan tidak bertanggung jawab atas keterlambatan yang disebabkan oleh Keadaan Kahar, kecuali apabila keterlambatan tersebut timbul karena kesengajaan atau kelalaian berat.\n\n2. Pihak yang mengalami Keadaan Kahar wajib memberikan pemberitahuan tertulis paling lambat 3 (tiga) hari kerja sejak keadaan tersebut diketahui.\n\n3. Para Pihak wajib melakukan upaya yang wajar untuk mengurangi resiko dan dampak Keadaan Kahar terhadap pelaksanaan Perjanjian.\n\n4. Keadaan Kahar tidak menghapus kewajiban pembayaran yang telah jatuh tempo sebelum terjadinya keadaan tersebut.\n\nPASAL 10\nPENGAKHIRAN\n\n1. Pihak Pertama dapat mengakhiri Perjanjian ini sewaktu-waktu tanpa pemberitahuan kepada Pihak Kedua apabila terdapat pelanggaran material yang tidak diperbaiki dalam waktu 30 (tiga puluh) hari kalender.\n\n2. Masing-masing Pihak dapat mengakhiri Perjanjian dengan memberikan pemberitahuan tertulis sekurang-kurangnya 30 (tiga puluh) hari kalender sebelum tanggal pengakhiran.\n\n3. Pengakhiran Perjanjian tidak membebaskan Para Pihak dari hak dan kewajiban yang telah timbul sebelum tanggal pengakhiran.\n\nPASAL 11\nPEMBERITAHUAN DAN PENYELESAIAN SENGKETA\n\n1. Setiap pemberitahuan berdasarkan Perjanjian harus dibuat secara tertulis dan dikirimkan ke alamat Para Pihak yang tercantum di bawah ini.\n\n2. Borrower wajib memberikan notice tertulis kepada Lender paling lambat 7 (tujuh) hari kerja setelah menerima permintaan pembayaran.\n\n3. Borrower wajib mengirimkan quarterly report kepada Lender paling lambat 3 (tiga) hari kerja setelah akhir setiap kuartal.\n\n4. Apabila terjadi sengketa, Para Pihak terlebih dahulu akan menyelesaikannya melalui musyawarah dalam waktu 30 (tiga puluh) hari kalender.\n\n5. Apabila musyawarah tidak mencapai kesepakatan, sengketa diselesaikan melalui Pengadilan Negeri Jakarta Pusat.\n\nPASAL 12\nKETENTUAN PENUTUP\n\n1. Perjanjian ini diatur dan ditafsirkan berdasarkan hukum Republik Indonesia.\n\n2. Perusahaan wajib mematuhi seluruh peraturan yang berlaku dalam melaksanakan kewajibannya berdasarkan Perjanjian.\n\n3. Apabila salah satu ketentuan dalam Perjanjian dinyatakan tidak berlaku, ketentuan lainnya tetap berlaku sepenuhnya.\n\n4. Perjanjian ini dibuat dalam 2 (dua) rangkap asli, masing-masing mempunyai kekuatan hukum yang sama.\n\n5. Setelah membaca dan memahami seluruh isinya, Para Pihak sepakat untuk menandatangani Perjanjian ini tanpa adanya paksaan dari pihak manapun.\n\nPIHAK PERTAMA                                      PIHAK KEDUA\nPT Arunika Data Nusantara                          PT Cakrawala Legal Teknologi\n\nRaka Pratama                                       Nadia Kurnia\nDirektur                                            Direktur\n"
+  },
+  {
+    "anonymizationChecked": false,
+    "category": "spelling",
+    "expected": {
+      "findings": [
+        {
+          "category": "spelling",
+          "occurrence": 0,
+          "original": "Datta",
+          "replacement": "Data",
+          "status": "SUGGESTION",
+          "readOnly": false
+        }
+      ],
+      "noChange": false,
+      "requiredSourceIDs": []
+    },
+    "id": "dummy-datta",
+    "provenance": "synthetic",
+    "question": "Pending synthetic experiment, not a human quality approval.",
+    "reviewStatus": "pending",
+    "revision": 2,
+    "rightsDeclared": true,
+    "scenarioID": "dummy-datta",
+    "sources": [],
+    "split": "regression",
+    "text": "PERJANJIAN KERJA SAMA\nPENGELOLAAN LAYANAN DIGITAL DAN DATA\n\nNomor: AMT/PKS/2026/001\n\nPada hari Senin, tanggal 10 Agustus 2026, bertempat di Jakarta, telah dibuat dan ditanda tangani Perjanjian Kerja Sama Pengelolaan Layanan Digital dan Data (selanjutnya disebut “Perjanjian”) oleh dan antara:\n\n1. PT Arunika Data Nusantara, suatu perseroan terbatas yang didirikan berdasarkan hukum Republik Indonesia, berkedudukan di Jakarta, dalam hal ini diwakili oleh Raka Pratama selaku Direktur, selanjutnya disebut “Pihak Pertama”; dan\n\n2. PT Cakrawala Legal Teknologi, suatu perseroan terbatas yang didirikan berdasarkan hukum Republik Indonesia, berkedudukan di Bandung, dalam hal ini diwakili oleh Nadia Kurnia selaku Direktur, selanjutnya disebut “Pihak Kedua”.\n\nPihak Pertama dan Pihak Kedua secara bersama-sama disebut “Para Pihak” dan masing-masing disebut “Pihak”. Para Pihak terlebih dahulu menerangkan hal-hal sebagai berikut:\n\na. Pihak Pertama mengelola platform digital untuk administrasi dokumen dan memerlukan dukungan pengelolaan data;\n\nb. Pihak Kedua mempunyai kemampuan teknis untuk menyediakan layanan tersebut; dan\n\nc. Para Pihak sepakat untuk melaksanakan kerja sama ini berdasarkan syarat dan ketentuan dalam Perjanjian.\n\nPASAL 1\nDEFINISI DAN INTERPRETASI\n\n1. “Layanan” adalah penyediaan, pemeliharaan, dan dukungan teknis atas platform digital sebagaimana dijelaskan dalam Lampiran I.\n\n2. Untuk keperluan pelaksanaan Layanan, data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik selanjutnya disebut “Data Pribadi”.\n\n3. Dalam Perjanjian ini, kumpulan orang dan/atau kekayaan yang terorganisasi, baik merupakan badan hukum maupun bukan badan hukum, yang dapat dimintakan pertanggungjawaban hukum selanjutnya disebut “Korporasi”.\n\n4. Suatu keadaan yang terjadi di luar kehendak para pihak dalam Kontrak dan tidak dapat diperkirakan sebelumnya, sehingga kewajiban yang ditentukan dalam Kontrak menjadi tidak dapat dipenuhi, selanjutnya disebut “Keadaan Kahar”.\n\n5. “Informasi Rahasia” berarti seluruh informasi yang diterima oleh salah satu Pihak dari Pihak lainnya dalam rangka pelaksanaan Perjanjian, baik dalam bentuk tertulis, lisan, elektronik maupun bentuk lainnya.\n\n6. Judul pasal dibuat untuk kemudahan membaca dan tidak mempengaruhi penafsiran ketentuan dalam Perjanjian. Istilah dalam bentuk tunggal mencakup bentuk jamak dan sebaliknya sepanjang konteksnya menghendaki demikian.\n\nPASAL 2\nRUANG LINGKUP LAYANAN\n\n1. Pihak Pertama menunjuk Pihak Kedua untuk menyediakan Layanan pengelolaan dokumen, pencadangan, dan dukungan teknis sesuai dengan ruang lingkup yang disepakati Para Pihak.\n\n2. Pihak Kedua wajib untuk menyediakan Layanan secara profesional, aman, dan sesuai dengan jadwal yang telah disepakati.\n\n3. Pihak Kedua akan melakukan konfigurasi awal, pemantauan sistem, dan pemeliharaan berkala terhadap komponen Layanan.\n\n4. Setiap pekerjaan tambahan di luar ruang lingkup tersebut harus disetujui secara tertulis oleh Para Pihak sebelum pekerjaan dimulai.\n\nPASAL 3\nHAK DAN KEWAJIBAN PARA PIHAK\n\n1. Pihak Kedua bertanggungjawab untuk menjaga ketersediaan Layanan dan wajib memberikan laporan bulanan paling lambat tanggal 5 setiap bulan.\n\n2. Pihak Kedua wajib untuk menyampaikan laporan tersebut kepada Pihak Pertama melalui alamat surat elektronik yang telah ditentukan.\n\n3. Pihak Pertama wajib memberikan akses, informasi, dan persetujuan yang secara wajar diperlukan agar Pihak Kedua dapat melaksanakan kewajibannya.\n\n4. Para Pihak akan melakukan kerjasama dengan itikad baik dan saling memberitahukan setiap kendala yang dapat mempengaruhi pelaksanaan Perjanjian.\n\n5. Pihak yang mengetahui adanya kesalahan atau gangguan pada Layanan wajib segera memberitahukan Pihak lainnya tanpa menunda-nunda.\n\nPASAL 4\nDATA PRIBADI DAN INFORMASI RAHASIA\n\n1. Pihak Kedua hanya boleh memproses Datta Pribadi untuk tujuan pelaksanaan Layanan dan berdasarkan instruksi tertulis dari Pihak Pertama.\n\n2. Pada saat pendaftaran pengguna, Pihak Kedua hanya mengumpulkan data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik sejauh diperlukan untuk pelaksanaan Layanan.\n\n3. Pihak Kedua wajib menerapkan langkah teknis dan organisatoris yang patut untuk mencegah akses, penggunaan, pengungkapan, perubahan, atau pemusnahan Data Pribadi tanpa hak.\n\n4. Apabila Layanan digunakan untuk data yang berasal dari kelompok masyarakat yang secara turun-temurun bermukim di wilayah geografis tertentu karena adanya ikatan pada asal usul leluhur, hubungan yang kuat dengan lingkungan hidup, serta sistem nilai yang menentukan pranata ekonomi, politik, sosial, dan hukum, Para Pihak wajib melakukan penilaian tambahan sebelum data tersebut diproses.\n\n5. Para Pihak wajib menjaga kerahasiaan Informasi Rahasia selama jangka waktu Perjanjian dan setelah Perjanjian ini berakhir.\n\n6. Kewajiban kerahasiaan tidak berlaku terhadap informasi yang telah tersedia untuk umum bukan karena pelanggaran Perjanjian atau wajib diungkapkan berdasarkan putusan pengadilan yang berkekuatan hukum tetap.\n\n7. Pihak Kedua harus mengembalikan atau memusnahkan Data Pribadi dan Informasi Rahasia setelah menerima permintaan tertulis dari Pihak Pertama, kecuali penyimpanan diwajibkan oleh peraturan yang berlaku.\n\nPASAL 5\nKEAMANAN DAN PENCATATAN\n\n1. Pihak Kedua wajib melakukan pencadangan Data Pribadi secara berkala dan menyimpan catatan akses selama 12 (dua belas) bulan.\n\n2. Dokumen pendukung harus di simpan oleh Pihak Kedua selama 5 (lima) tahun sejak tanggal penerimaan.\n\n3. Setiap perubahan konfigurasi penting harus dicatat dan dapat ditelusuri oleh Para Pihak.\n\n4. Pihak Kedua harus segera memulihkan Layanan apabila terjadi gangguan, tetapi upaya pemulihan tersebut tidak boleh mengurangi kewajiban keamanan berdasarkan Perjanjian.\n\nPASAL 6\nBIAYA DAN PEMBAYARAN\n\n1. Pihak Pertama wajib membayar biaya Layanan sebesar Rp100.000.000 (seratus juta rupiah) untuk setiap periode sebagaimana disepakati dalam Lampiran II.\n\n2. Pembayaran biaya Layanan dikenakan pajak pertambahan nilai sebesar 11% sesuai dengan ketentuan perpajakan yang berlaku.\n\n3. Pihak Pertama melakukan pembayaran paling lambat 14 (empat belas) hari kalender sejak diterimanya tagihan yang lengkap dan benar.\n\n4. Apabila terdapat perbedaan antara jumlah dalam angka dan jumlah dalam huruf, Para Pihak wajib melakukan klarifikasi tertulis sebelum pembayaran dilakukan.\n\nPASAL 7\nKEPEMILIKAN DAN PENGGUNAAN\n\n1. Seluruh dokumen, data, dan materi yang disediakan oleh Pihak Pertama tetap menjadi milik Pihak Pertama.\n\n2. Dalam pemeriksaan mitra, Pihak Kedua wajib mencatat informasi mengenai kumpulan orang dan/atau kekayaan yang terorganisasi, baik merupakan badan hukum maupun bukan badan hukum, sebelum memberikan akses ke Layanan.\n\n3. Pihak Kedua tidak memperoleh hak untuk menggunakan dokumen atau data tersebut selain untuk menjalankan Layanan berdasarkan Perjanjian.\n\n4. Setiap perangkat lunak yang dikembangkan secara khusus untuk Pihak Pertama harus diserahkan bersama dokumentasi teknis yang memadai.\n\n5. Para Pihak sepakat bahwa penggunaan data untuk tujuan lain memerlukan persetujuan tertulis terlebih dahulu.\n\n6. Pihak Kedua tidak dapat mengalihkan hak dan kewajibannya berdasarkan Perjanjian ini tanpa persetujuan tertulis dari Pihak Pertama.\n\nPASAL 8\nJANGKA WAKTU DAN PERUBAHAN\n\n1. Perjanjian ini berlaku sejak 1 September 2026 sampai dengan 31 Agustus 2027.\n\n2. Perjanjian ini dapat diperpanjang berdasarkan kesepakatan tertulis Para Pihak paling lambat 30 (tiga puluh) hari kalender sebelum berakhirnya jangka waktu.\n\n3. Pihak Kedua dapat meminta perubahan jadwal penyampaian laporan, tetapi perubahan tersebut hanya berlaku setelah disetujui secara tertulis oleh Pihak Pertama.\n\n4. Setiap perubahan atas Perjanjian harus dibuat secara tertulis dan ditanda tangani oleh Para Pihak.\n\nPASAL 9\nKEADAAN KAHAR DAN TANGGUNG JAWAB\n\n1. Perusahaan tidak bertanggung jawab atas keterlambatan yang disebabkan oleh Keadaan Kahar, kecuali apabila keterlambatan tersebut timbul karena kesengajaan atau kelalaian berat.\n\n2. Pihak yang mengalami Keadaan Kahar wajib memberikan pemberitahuan tertulis paling lambat 3 (tiga) hari kerja sejak keadaan tersebut diketahui.\n\n3. Para Pihak wajib melakukan upaya yang wajar untuk mengurangi resiko dan dampak Keadaan Kahar terhadap pelaksanaan Perjanjian.\n\n4. Keadaan Kahar tidak menghapus kewajiban pembayaran yang telah jatuh tempo sebelum terjadinya keadaan tersebut.\n\nPASAL 10\nPENGAKHIRAN\n\n1. Pihak Pertama dapat mengakhiri Perjanjian ini sewaktu-waktu tanpa pemberitahuan kepada Pihak Kedua apabila terdapat pelanggaran material yang tidak diperbaiki dalam waktu 30 (tiga puluh) hari kalender.\n\n2. Masing-masing Pihak dapat mengakhiri Perjanjian dengan memberikan pemberitahuan tertulis sekurang-kurangnya 30 (tiga puluh) hari kalender sebelum tanggal pengakhiran.\n\n3. Pengakhiran Perjanjian tidak membebaskan Para Pihak dari hak dan kewajiban yang telah timbul sebelum tanggal pengakhiran.\n\nPASAL 11\nPEMBERITAHUAN DAN PENYELESAIAN SENGKETA\n\n1. Setiap pemberitahuan berdasarkan Perjanjian harus dibuat secara tertulis dan dikirimkan ke alamat Para Pihak yang tercantum di bawah ini.\n\n2. Borrower wajib memberikan notice tertulis kepada Lender paling lambat 7 (tujuh) hari kerja setelah menerima permintaan pembayaran.\n\n3. Borrower wajib mengirimkan quarterly report kepada Lender paling lambat 3 (tiga) hari kerja setelah akhir setiap kuartal.\n\n4. Apabila terjadi sengketa, Para Pihak terlebih dahulu akan menyelesaikannya melalui musyawarah dalam waktu 30 (tiga puluh) hari kalender.\n\n5. Apabila musyawarah tidak mencapai kesepakatan, sengketa diselesaikan melalui Pengadilan Negeri Jakarta Pusat.\n\nPASAL 12\nKETENTUAN PENUTUP\n\n1. Perjanjian ini diatur dan ditafsirkan berdasarkan hukum Republik Indonesia.\n\n2. Perusahaan wajib mematuhi seluruh peraturan yang berlaku dalam melaksanakan kewajibannya berdasarkan Perjanjian.\n\n3. Apabila salah satu ketentuan dalam Perjanjian dinyatakan tidak berlaku, ketentuan lainnya tetap berlaku sepenuhnya.\n\n4. Perjanjian ini dibuat dalam 2 (dua) rangkap asli, masing-masing mempunyai kekuatan hukum yang sama.\n\n5. Setelah membaca dan memahami seluruh isinya, Para Pihak sepakat untuk menandatangani Perjanjian ini tanpa adanya paksaan dari pihak manapun.\n\nPIHAK PERTAMA                                      PIHAK KEDUA\nPT Arunika Data Nusantara                          PT Cakrawala Legal Teknologi\n\nRaka Pratama                                       Nadia Kurnia\nDirektur                                            Direktur\n"
+  }
+]

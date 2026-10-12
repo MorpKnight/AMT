@@ -166,18 +166,27 @@ final class AIConnectorSegmentProcessor {
         self.candidateDecisionHandler = candidateDecisionHandler ?? defaultCandidateHandler
     }
 
+    private var preparedProtectionText: String?
+    private var preparedProtectionContext: AIConnectorDocumentProtectionContext = .empty
+
     func protectionContext(for documentText: String) -> AIConnectorDocumentProtectionContext {
-        protectionContextBuilder.build(documentText: documentText)
+        if preparedProtectionText != documentText {
+            preparedProtectionContext = protectionContextBuilder.build(documentText: documentText)
+            preparedProtectionText = documentText
+        }
+        return preparedProtectionContext
     }
 
     func protectionContext(
         for documentText: String,
         additionalDefinedTerms: Set<String>
     ) -> AIConnectorDocumentProtectionContext {
-        protectionContextBuilder.build(
-            documentText: documentText,
-            additionalDefinedTerms: additionalDefinedTerms
-        )
+        var context = protectionContext(for: documentText)
+        context = AIConnectorDocumentProtectionContext(definedTerms: context.definedTerms.union(additionalDefinedTerms),
+            partyNames: context.partyNames, acronyms: context.acronyms, quotedTerms: context.quotedTerms,
+            identifiers: context.identifiers, explicitDocumentTerms: context.explicitDocumentTerms,
+            revisionText: context.revisionText, protectedSourceRanges: context.protectedSourceRanges, explicitTermScopes: context.explicitTermScopes)
+        return context
     }
 
 #if DEBUG
@@ -403,7 +412,7 @@ final class AIConnectorSegmentProcessor {
             semanticModelRevision: dictionaryStore.semanticModelRevision,
             semanticEmbeddingSchema: dictionaryStore.semanticEmbeddingSchema,
             semanticRetrievalProfile: dictionaryStore.semanticRetrievalProfile,
-            reviewPolicyVersion: "progressive-v3-\(AIConnectorDefinitionAnalyzer.policyVersion)-\(phaseTwoEnabled)-\(forceDeterministic)-thinking-\(thinkingEnabled)",
+            reviewPolicyVersion: "progressive-v4-\(AIConnectorDefinitionAnalyzer.policyVersion)-\(phaseTwoEnabled)-\(forceDeterministic)-thinking-\(thinkingEnabled)",
             validatorVersion: AIConnectorSuggestionValidator.version,
             outputSchemaVersion: QwenSuggestionService.candidateOutputSchemaVersion,
             protectionContext: documentProtectionContext,
@@ -510,6 +519,8 @@ final class AIConnectorSegmentProcessor {
                 finalResult,
                 duration: duration
             )
+            await observationCollector.recordDefinitionRepairs(segmentID: segment.id,
+                count: definitionAnalysis.cacheHit ? 0 : definitionAnalysis.repairCount)
         }
         if !finalResult.skipped, !finalResult.usedFallback, finalResult.rejections.isEmpty, !finalResult.stageCoverage.values.contains(.failed), !finalResult.stageCoverage.values.contains(.tooLong), !finalResult.stageCoverage.values.contains(.cancelled) {
             completeResultCache[requestKey] = finalResult
@@ -536,6 +547,10 @@ final class AIConnectorSegmentProcessor {
                 match.entry.id,
                 match.entry.term,
                 match.entry.definition,
+                match.entry.authority.rawValue,
+                match.entry.applicabilityStatus.rawValue,
+                String(match.entry.isActionable),
+                match.entry.corpusVersion,
                 match.entry.referenceID ?? "-",
                 match.entry.sourcePassageID ?? "-",
                 String(match.score),
@@ -543,7 +558,7 @@ final class AIConnectorSegmentProcessor {
             ].joined(separator: "\u{1E}")
         }.joined(separator: "\u{1D}")
         let material = [
-            "definition-comparison-cache-v3-structural-disagreement",
+            "definition-comparison-cache-v4-bound-terms",
             AIConnectorDefinitionAnalyzer.policyVersion,
             "\(segment.id):\(segment.sourceLocation):\(segment.sourceLength)",
             segment.targetText,
@@ -961,7 +976,7 @@ final class AIConnectorSegmentProcessor {
         }
 
         var scoredSpellingCandidates: [AIConnectorSpellingCandidate] = []
-        if mode.usesModel, !forceDeterministic {
+        if phaseTwoEnabled || (mode.usesModel && !forceDeterministic) {
             let excludedOriginals = Set(ruleStore.activeRules.map(\.value))
             let spellingClock = ContinuousClock()
             let spellingStartedAt = spellingClock.now
@@ -971,6 +986,9 @@ final class AIConnectorSegmentProcessor {
                 excludedOriginals: excludedOriginals
             )
             if let observationCollector {
+                if let provider = spellingCandidateProvider as? SystemIndonesianSpellingCandidateProvider {
+                    await observationCollector.recordCandidateFilterReasons(segmentID: segment.id, reasons: provider.filterReasons)
+                }
                 await observationCollector.recordStage(
                     .spellingCandidateGeneration,
                     duration: AIConnectorObservationTiming.seconds(
@@ -983,7 +1001,9 @@ final class AIConnectorSegmentProcessor {
                     spellingCandidateCount: rawSpellingCandidates.count
                 )
             }
-            if !rawSpellingCandidates.isEmpty {
+            if !mode.usesModel || forceDeterministic {
+                scoredSpellingCandidates = rawSpellingCandidates
+            } else if !rawSpellingCandidates.isEmpty {
                 let languageModelLoaded = await languageScorer.isLoaded
                 if !languageModelLoaded {
                     progressStage(.languageModelDownload)
@@ -992,7 +1012,7 @@ final class AIConnectorSegmentProcessor {
                 let scoringStartedAt = scoringClock.now
                 do {
                     scoredSpellingCandidates = try await AIConnectorInferenceContext.$reuseScoringCache.withValue(reuseScoreCache) {
-                        try await languageScorer.score(
+                        try await languageScorer.scoreForReview(
                             segment: segment,
                             candidates: rawSpellingCandidates,
                             progress: { @MainActor event in
@@ -1047,10 +1067,18 @@ final class AIConnectorSegmentProcessor {
             for: segment,
             glossaryMatches: actionableGlossaryMatches,
             spellingCandidates: scoredSpellingCandidates,
-            phaseTwoEnabled: phaseTwoEnabled
+            phaseTwoEnabled: phaseTwoEnabled,
+            protectionContext: documentProtectionContext
         )
         let candidates = candidateBuild.candidates
         if let observationCollector {
+            let mappedAnchors = Set(candidates.filter { $0.category == .spelling }.map { $0.evidence.sourceLocation })
+            var reasons: [String: Int] = [:]
+            for value in scoredSpellingCandidates where !mappedAnchors.contains(value.sourceLocation) {
+                let valid = value.evidence.map(AIConnectorLanguageScorePolicy.isValidEvidence) ?? (value.restorationEvidence != nil)
+                reasons[valid ? "routing.lowOrAmbiguousEvidence" : "scoring.invalidEvidence", default: 0] += 1
+            }
+            await observationCollector.recordCandidateFilterReasons(segmentID: segment.id, reasons: reasons)
             await observationCollector.recordStage(
                 .candidateBuilding,
                 duration: AIConnectorObservationTiming.seconds(
@@ -1424,7 +1452,8 @@ final class AIConnectorSegmentProcessor {
             glossaryMatches: candidate.glossaryMatch.map { [$0] } ?? [],
             origin: origin,
             protectionContext: protectionContext,
-            sourceAnchor: sourceAnchor(for: candidate, in: segment)
+            sourceAnchor: sourceAnchor(for: candidate, in: segment),
+                    restorationEvidence: candidate.restorationEvidence
         )
     }
 
@@ -1478,7 +1507,8 @@ final class AIConnectorSegmentProcessor {
             glossaryMatches: [],
             origin: .deterministic,
             protectionContext: protectionContext,
-            sourceAnchor: sourceAnchor(for: candidate, in: segment)
+            sourceAnchor: sourceAnchor(for: candidate, in: segment),
+                    restorationEvidence: candidate.restorationEvidence
         )
     }
 
@@ -1830,7 +1860,8 @@ final class AIConnectorSegmentProcessor {
                    glossaryMatches: [],
                    origin: .deterministic,
                    protectionContext: protectionContext,
-                   sourceAnchor: sourceAnchor(for: candidate, in: segment)
+                   sourceAnchor: sourceAnchor(for: candidate, in: segment),
+                    restorationEvidence: candidate.restorationEvidence
                ) {
                 return CandidateProcessingOutcome(
                     review: deterministicReview,
@@ -1910,7 +1941,8 @@ final class AIConnectorSegmentProcessor {
                     glossaryMatches: validationMatches,
                     origin: origin,
                     protectionContext: protectionContext,
-                    sourceAnchor: sourceAnchor(for: candidate, in: segment)
+                    sourceAnchor: sourceAnchor(for: candidate, in: segment),
+                    restorationEvidence: candidate.restorationEvidence
                 )
                 return CandidateProcessingOutcome(
                     review: review,
@@ -1998,7 +2030,8 @@ final class AIConnectorSegmentProcessor {
                 glossaryMatches: glossaryMatches,
                 origin: .deterministicFallback,
                 protectionContext: protectionContext,
-                sourceAnchor: sourceAnchor(for: candidate, in: segment)
+                sourceAnchor: sourceAnchor(for: candidate, in: segment),
+                    restorationEvidence: candidate.restorationEvidence
             )
         } else {
             fallbackReview = nil
@@ -2062,7 +2095,8 @@ final class AIConnectorSegmentProcessor {
                 glossaryMatches: matches,
                 origin: origin,
                 protectionContext: protectionContext,
-                sourceAnchor: sourceAnchor(for: candidate, in: segment)
+                sourceAnchor: sourceAnchor(for: candidate, in: segment),
+                    restorationEvidence: candidate.restorationEvidence
             )
         }
     }
@@ -2106,6 +2140,7 @@ final class AIConnectorSegmentProcessor {
         } ?? "-"
         let components = [
             candidate.id,
+            candidate.restorationEvidence?.fingerprint ?? "-",
             candidate.original,
             candidate.replacement,
             candidate.category.rawValue,
@@ -2368,7 +2403,7 @@ final class AIConnectorSegmentProcessor {
         challengeCount: Int = 0,
         shouldCache: Bool = true
     ) async -> AIConnectorSegmentResult {
-        if shouldCache, !rejections.contains(where: { $0.classification == .segmentTooLong }), !(stageCoverage[segment.id]?.values.contains(.tooLong) ?? false) {
+        if shouldCache, !rejections.contains(where: { $0.classification == .segmentTooLong }), !(stageCoverage[segment.id]?.values.contains(where: { [.failed, .tooLong, .cancelled].contains($0) }) ?? false) {
             await segmentCache.insert(
                 AIConnectorCachedSegmentResult(
                     reviews: reviews.map(AIConnectorCachedReview.init),
@@ -2943,7 +2978,7 @@ actor AIConnectorWorkQueue {
             mode: mode,
             modelVariant: modelVariant,
             circuitBreakerActivated: circuitBreakerActivated,
-            wasPartial: false
+            wasPartial: results.contains { $0.stageCoverage.values.contains { [.failed, .tooLong, .cancelled].contains($0) } }
         )
         continuation.yield(.finished(summary))
         continuation.finish()

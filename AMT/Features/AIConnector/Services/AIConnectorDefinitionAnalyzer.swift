@@ -10,7 +10,7 @@ typealias AIConnectorDefinitionReviewHandler = @MainActor @Sendable (
 /// an optional Qwen semantic judgment. It never returns a replacement text.
 @MainActor
 struct AIConnectorDefinitionAnalyzer: Sendable {
-    nonisolated static let policyVersion = "definition-policy-v4-complete-evidence"
+    nonisolated static let policyVersion = "definition-policy-v5-term-binding-bounded-repair"
     private let dictionaryStore: LegalDictionaryStore
     private let detector: AIConnectorDefinitionDetector
     private let reviewHandler: AIConnectorDefinitionReviewHandler?
@@ -54,6 +54,7 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
             )
         }
         if detection.candidates.isEmpty,
+           detection.detection != .explicitPattern,
            mode.usesModel,
            !forceDeterministic,
            looksDefinitionLike(segment.targetText) {
@@ -110,12 +111,21 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
                 assessment: assessmentWithoutEvidence(
                     segment: segment,
                     detection: detection,
-                    classification: .needsReview,
+                    classification: detection.explicitSignalStrength == .strong ? .explicitDefinition : .needsReview,
                     alignment: .needsReview,
-                    reason: "Pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.",
+                    reason: "Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.",
                     origin: forceDeterministic ? .deterministicFallback : .deterministic
                 )
             )
+        }
+
+        if detection.detection == .explicitPattern,
+           detection.candidates.allSatisfy({ narrowNegationMismatch($0.statementText, $0.sourceDefinition) }),
+           let candidate = detection.candidates.first {
+            return AIConnectorDefinitionAnalysisResult(assessment: makeAssessment(segment: segment, detection: detection,
+                candidate: candidate, classification: .explicitDefinition, alignment: .mismatch,
+                reason: "Mismatch lokal: body lengkap hanya berbeda satu negasi tidak tepat sebelum dapat; tanpa proposal edit.",
+                origin: .deterministic, modelReviewed: false, isNarrowNegationMismatch: true))
         }
 
         guard mode.usesModel, !forceDeterministic else {
@@ -137,6 +147,7 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
         progressStage(.definitionReview)
         var outcomes: [ModelOutcome] = []
         var modelCallCount = 0
+        var repairCount = 0
         var lastFailure: Error?
 
         for candidate in detection.candidates {
@@ -147,20 +158,31 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
                 let reviewClock = ContinuousClock()
                 let reviewStartedAt = reviewClock.now
                 let result: QwenDefinitionReviewResult
+                func request(_ retry: String?) -> AIConnectorDefinitionReviewRequest {
+                    AIConnectorDefinitionReviewRequest(segment: segment, candidate: candidate,
+                        thinkingEnabled: thinkingEnabled, modelVariant: modelVariant,
+                        generationProfile: generationProfile, retryInstruction: retry,
+                        context: segment.context, documentTerm: detection.term ?? candidate.term)
+                }
+                func validate(_ result: QwenDefinitionReviewResult) throws -> QwenDefinitionReviewResult {
+                    guard !result.containsReasoningMarkers else { throw AIConnectorDefinitionReviewParserError.reasoningOrTemplateToken }
+                    _ = try AIConnectorDefinitionReviewParser().parse(toolCalls: [
+                        AIConnectorToolDecisionPayload(name: AIConnectorDefinitionReviewParser.toolName, arguments: [
+                            "candidate_id": result.candidateID, "classification": result.classification.rawValue,
+                            "alignment": result.alignment.rawValue])
+                    ], visibleText: "", expectedCandidateID: candidate.id)
+                    return result
+                }
                 do {
-                    result = try await reviewHandler(
-                    AIConnectorDefinitionReviewRequest(
-                        segment: segment,
-                        candidate: candidate,
-                        thinkingEnabled: thinkingEnabled,
-                        modelVariant: modelVariant,
-                        generationProfile: generationProfile,
-                        retryInstruction: nil,
-                        context: segment.context
-                    ),
-                    downloadProgress,
-                    generationProgress
-                    )
+                    do {
+                        result = try validate(await reviewHandler(request(nil), downloadProgress, generationProgress))
+                    } catch let error as AIConnectorDefinitionReviewParserError where error.isRecoverable {
+                        modelCallCount += 1
+                        repairCount += 1
+                        result = try validate(await reviewHandler(request("Perbaiki format/kontrak output: " + error.message
+                            + " Gunakan pasangan NOT_A_DEFINITION/NOT_APPLICABLE, NEEDS_REVIEW/NEEDS_REVIEW, atau EXPLICIT_DEFINITION/IMPLICIT_DEFINITION dengan MATCH/MISMATCH/NEEDS_REVIEW."),
+                            downloadProgress, generationProgress))
+                    }
                 } catch {
                     if let observationCollector {
                         await observationCollector.recordStage(
@@ -198,7 +220,7 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
                 return AIConnectorDefinitionAnalysisResult(assessment: makeAssessment(segment: segment, detection: detection,
                     candidate: candidate, classification: .needsReview, alignment: .needsReview,
                     reason: error.localizedDescription, origin: .deterministic, modelReviewed: false),
-                    modelCallCount: modelCallCount, isComplete: false, inputCoverage: error.coverage)
+                    modelCallCount: modelCallCount, isComplete: false, inputCoverage: error.coverage, repairCount: repairCount)
             } catch {
                 lastFailure = error
                 break
@@ -219,7 +241,8 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
                     modelReviewed: false
                 ),
                 modelCallCount: modelCallCount,
-                isComplete: false
+                isComplete: false,
+                repairCount: repairCount
             )
         }
 
@@ -231,7 +254,8 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
                 hadFailure: lastFailure != nil
             ),
             modelCallCount: modelCallCount,
-            isComplete: lastFailure == nil
+            isComplete: lastFailure == nil,
+            repairCount: repairCount
         )
     }
 
@@ -416,7 +440,8 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
         alignment: AIConnectorDefinitionAlignment,
         reason: String,
         origin: AIReviewOrigin,
-        modelReviewed: Bool
+        modelReviewed: Bool,
+        isNarrowNegationMismatch: Bool = false
     ) -> AIConnectorDefinitionAssessment {
         AIConnectorDefinitionAssessment(
             segment: segment,
@@ -433,8 +458,25 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
             retrievalOrigin: candidate.match.retrievalOrigin,
             semanticScore: candidate.match.semanticScore,
             requiresHumanReview: true,
-            candidates: detection.candidates
+            candidates: detection.candidates,
+            isNarrowNegationMismatch: isNarrowNegationMismatch
         )
+    }
+
+    private func narrowNegationMismatch(_ statement: String, _ source: String) -> Bool {
+        func normalized(_ value: String) -> String {
+            value.precomposedStringWithCanonicalMapping.lowercased()
+                .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let a = normalized(statement), b = normalized(source)
+        guard a != b, let regex = try? NSRegularExpression(pattern: #"\btidak (?=dapat\b)"#) else { return false }
+        for (negative, positive) in [(a, b), (b, a)] {
+            let ns = negative as NSString
+            let matches = regex.matches(in: negative, range: NSRange(location: 0, length: ns.length))
+            for match in matches where ns.replacingCharacters(in: match.range, with: "") == positive { return true }
+        }
+        return false
     }
 
     /// Different legal operators never become equivalent through token overlap

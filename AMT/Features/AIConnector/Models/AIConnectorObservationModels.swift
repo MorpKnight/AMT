@@ -173,6 +173,8 @@ nonisolated struct AIConnectorSegmentObservation: Codable, Identifiable, Hashabl
     let challengeCount: Int
     let fallbackCount: Int
     let modelOriginCount: Int
+    var definitionRepairCount: Int? = nil
+    var candidateFilterReasons: [String: Int]? = nil
     var stageCoverage: [String: AIConnectorStageCoverage] = [:]
 
     var id: Int { segmentID }

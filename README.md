@@ -21,6 +21,8 @@ Lawtionary helps legal teams keep a draft, a review queue, and source-backed ter
 - [What Lawtionary does](#what-lawtionary-does)
 - [Document workflow](#document-workflow)
 - [Dictionary workflow](#dictionary-workflow)
+- [Backend analysis](#backend-analysis)
+- [Measured results](#measured-results)
 - [Local-first boundaries](#local-first-boundaries)
 - [Getting started](#getting-started)
 - [Developer workflow](#developer-workflow)
@@ -92,6 +94,80 @@ An entry may include a primary definition, contextual alternatives, legal refere
 
 > [!NOTE]
 > The first semantic search can take longer because the local retrieval model may need to be loaded. Model-assisted review can also download model components on first use.
+
+## Backend analysis
+
+The SwiftUI app follows MVVM. Each document owns its analysis and mapping state;
+shared application resources schedule local inference across documents.
+
+```mermaid
+flowchart LR
+    A[Document text and revision] --> B[Structure, scope and protected spans]
+    B --> C[Local rules and spelling candidates]
+    C --> D[Publish validated local findings]
+    C --> E[TataKata scoring and contextual Qwen review]
+    B --> F[Lexical retrieval and optional E5 retrieval]
+    F --> G[Definition and document review]
+    E --> H[Validation, conflict resolution and incremental mapping]
+    G --> H
+    H --> I[User review]
+    I --> J[Revision and anchor validation before edit]
+```
+
+- **Local findings first:** validated local results appear before model review
+  finishes. Final events update the same occurrences without duplicating progress.
+- **Candidate-first review:** the system spell checker and explicit document terms
+  propose spelling candidates; Qwen evaluates those proposals. TataKata scores
+  language plausibility. Model review does not invent new replacements.
+- **Source-aware definitions:** explicit terms require matching source identity or
+  an explicit document alias. Negation, modality, actors, numbers, conditions,
+  exceptions, and conflicting sources remain guarded. `needsReview` is not an
+  actionable correction.
+- **Bounded work:** serial inference, bounded repair, token-budgeted windows,
+  count/cost-limited LRU caches, and memory-pressure handling control resource use.
+  Failed or incomplete required stages retain local findings and report partial
+  coverage rather than producing a complete analysis snapshot.
+- **Safe edits:** revision, corpus, option identity, and anchors are checked before
+  mutation. Valid edits retain Undo/Redo and local saving. The user approves edits.
+
+Deterministic mode runs local rules and offers new model-dependent candidates as
+read-only review. Hybrid and model-only modes use local model review; model-only
+still follows the candidate-first design. `fullFresh` bypasses analysis-result
+caches while allowing loaded models to remain resident.
+
+## Measured results
+
+The [accuracy v2 experiment](docs/backend-accuracy-v2-comparison.md) compares a
+frozen baseline with the updated backend on 181 synthetic inputs, using Qwen 4B,
+TataKata, E5, and the same corpus on a MacBook Pro M5 with 24 GB RAM. Each version
+includes three warm and three cached runs in all three modes: 3,258 matrix records.
+
+| Hybrid metric | Before | After |
+| --- | ---: | ---: |
+| Required spelling detection recall | 44.2% | 90.7% |
+| Correct actionable spelling recall | 44.2% | 74.4% |
+| Actionable spelling precision on the fully labelled local subset | 100% | 100% |
+
+`Datta` in the full dummy document is now detected, but remains `needsReview`;
+it does not yet offer an actionable `Data` replacement. Long-text scoring
+failures and read-only false alarms on product names remain known limitations.
+
+Speed depends on the workload. Median warm analysis for 180 local segments was
+16.42 → 16.31 seconds. Definition routing was 4.77 → 0.38 seconds after excluding
+irrelevant sources; its decisions changed. The spelling/TataKata workload was
+4.47 → 10.89 seconds while producing six findings instead of zero. The report
+includes regressions, coverage changes, memory, stage counters, and reproduction.
+
+> [!IMPORTANT]
+> These are fixture-specific experimental results, not overall application
+> accuracy or legal correctness. Labels remain pending human review; the quality
+> gate remains `insufficientEvidence`. Three repeats do not establish statistical
+> significance. Detection, actionable correction, and abstention are measured
+> separately.
+
+The validated source passed Debug/Release builds and the offline suite:
+333 passed, 15 opt-in skipped, zero failures. All nine measured
+incremental/fresh pairs were equivalent under the harness normalization.
 
 ## Local-first boundaries
 
@@ -183,6 +259,15 @@ git diff --check
 
 ## Documentation
 
+- [Accuracy v2 comparison](docs/backend-accuracy-v2-comparison.md) — spelling, source binding, references, coverage, performance, and remaining issues.
+- [Accuracy v2 reproduction](docs/benchmarks/accuracy-v2/README.md) — frozen synthetic fixtures, expectations, evaluator, and opt-in benchmark commands.
+- [Staged analysis implementation](docs/flow-fix-implementation.md) and [benchmark methodology](docs/flow-fix-methodology.md).
+- [Initial flow benchmark](docs/flow-fix-benchmark.md).
+- [Definition and lexical retrieval improvements](docs/definition-retrieval-improvements.md).
+- [Incremental mapping benchmark](docs/incremental-mapping-benchmark.md).
+- [Cache, resource lifecycle, and long-text coverage](docs/backend-resource-coverage-benchmark.md).
+- [Earlier accuracy benchmark](docs/backend-accuracy-benchmark.md) and [manual fixture review](docs/backend-accuracy-manual-review.md).
+
 - [Document product audit](docs/document-product-audit-2026-09-08.md) — current behavior, known limitations, and validation boundaries.
 - [Document future development](docs/document-future-development.md) — proposed roadmap; future sections are not automatically available in the current app.
 - [Bundled corpus manifest](AMT/Resources/legal_corpus/manifest.json) — version and integrity metadata for the local dictionary.
@@ -191,13 +276,3 @@ git diff --check
 <div align="center">
   <sub>Lawtionary — review locally, decide deliberately.</sub>
 </div>
-
-## Eksperimen flow backend
-
-Perubahan flow dibahas dalam [implementasi](docs/flow-fix-implementation.md), dengan [metode dan reproduksi benchmark](docs/flow-fix-methodology.md). Hasil sebelum–sesudah dicatat dalam [laporan benchmark](docs/flow-fix-benchmark.md). Benchmark model bersifat opt-in; unit test reguler tetap offline.
-
-Perbaikan berikutnya pada analisis definisi dan retrieval lexical, beserta benchmark terfokus dan instruksi reproduksi, tersedia dalam [laporan backend](docs/definition-retrieval-improvements.md).
-
-Optimisasi mapping hasil per segmen, validasi kesetaraan, dan pengukuran sebelum–sesudah tersedia dalam [laporan mapping incremental](docs/incremental-mapping-benchmark.md).
-
-Pengelolaan cache/resource, cakupan teks panjang, serta evaluasi fixture pending dibahas dalam [laporan cache dan cakupan backend](docs/backend-resource-coverage-benchmark.md), termasuk benchmark terfokus dan stress memori.

@@ -17,7 +17,7 @@ final class AIConnectorResourceScoringBenchmarkTests: XCTestCase {
         try await scorer.prepare()
         let preparation = AIConnectorObservationTiming.seconds(preparationStart.duration(to: .now))
         var records: [[String: Double]] = []
-        for iteration in 0..<3 {
+        for iteration in (phase == "cached" ? -1 : 0)..<3 {
             if phase == "warm" { await scorer.clearCachedScores() }
             let start = ContinuousClock.now
             var scored = 0
@@ -35,7 +35,7 @@ final class AIConnectorResourceScoringBenchmarkTests: XCTestCase {
                     improvement += values.first?.evidence?.delta ?? 0
                 }
             }
-            records.append(["iteration": Double(iteration + 1), "total": AIConnectorObservationTiming.seconds(start.duration(to: .now)), "scored": Double(scored), "deltaSum": improvement, "mlxActive": Double(Memory.activeMemory), "mlxCache": Double(Memory.cacheMemory)])
+            if iteration >= 0 { records.append(["iteration": Double(iteration + 1), "total": AIConnectorObservationTiming.seconds(start.duration(to: .now)), "scored": Double(scored), "deltaSum": improvement, "mlxActive": Double(Memory.activeMemory), "mlxCache": Double(Memory.cacheMemory)]) }
         }
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let report = Report(phase: phase, buildIdentity: env["AMT_FLOW_BUILD"] ?? "unknown", preparation: preparation, records: records)

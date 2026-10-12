@@ -40,8 +40,12 @@ struct AIConnectorDefinitionDetector: Sendable {
     ) -> AIConnectorDefinitionDetectionResult {
         let explicitSignal = explicitSignal(in: segment.targetText, headingPath: segment.context?.headingPath ?? [])
         let usableExplicitEntries = explicitSignal.flatMap { signal in
-            termRecords.first {
-                Self.normalize($0.displayTerm) == Self.normalize(signal.termText)
+            termRecords.first { record in
+                Self.normalize(record.displayTerm) == Self.normalize(signal.termText)
+                    || segment.context?.explicitTermAliases.contains(where: {
+                        Self.normalize($0.key) == Self.normalize(signal.termText)
+                            && Self.normalize($0.value) == Self.normalize(record.displayTerm)
+                    }) == true
             }?.entries.filter(Self.isUsableEvidence)
         } ?? []
 
@@ -62,7 +66,18 @@ struct AIConnectorDefinitionDetector: Sendable {
         }
 
         let retrievedCandidates = makeRetrievedCandidates(
-            from: glossaryMatches,
+            from: glossaryMatches.filter { match in
+                guard let signal = explicitSignal else {
+                    return match.isDirectTermMatch
+                        || (match.semanticScore.map { Double($0) >= AIConnectorPhaseTwoPolicy.minimumSemanticScore } ?? false)
+                        || sharedTokenCount(segment.targetText, match.entry.definition) >= 3
+                }
+                return Self.normalize(match.entry.term) == Self.normalize(signal.termText)
+                    || segment.context?.explicitTermAliases.contains(where: {
+                        Self.normalize($0.key) == Self.normalize(signal.termText)
+                            && Self.normalize($0.value) == Self.normalize(match.entry.term)
+                    }) == true
+            },
             statementText: explicitSignal?.statementText ?? segment.targetText,
             detection: explicitSignal == nil
                 ? .retrievedCandidate
@@ -166,6 +181,9 @@ struct AIConnectorDefinitionDetector: Sendable {
     }
 
     private func explicitSignal(in text: String, headingPath: [String]) -> ExplicitSignal? {
+        // Bind the complete declared term before considering corpus vocabulary.
+        // A corpus term embedded in a product/name is not the declaration's identity.
+        if let declared = regexExplicitSignal(in: text, headingPath: headingPath) { return declared }
         let tokens = wordTokens(in: text)
 
         for record in termRecords {
