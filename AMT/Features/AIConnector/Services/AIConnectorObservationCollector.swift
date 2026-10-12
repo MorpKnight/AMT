@@ -78,7 +78,16 @@ actor AIConnectorObservationCollector {
     private var definitionResolutionCacheHitCount = 0
     private var definitionResolutionDuration: TimeInterval = 0
     private var incrementalAnalysisMetrics: AIConnectorIncrementalAnalysisMetrics?
+    #if !DEBUG
+    /// Release keeps no prompt/window diagnostics; shared call sites remain available.
+    func recordInputCoverage(_ value: AIConnectorInputCoverage, segmentID: Int, role: String) {}
+    #endif
+
     #if DEBUG
+    private var inputCoverage: [String: AIConnectorInputCoverage] = [:]
+    func recordInputCoverage(_ value: AIConnectorInputCoverage, segmentID: Int, role: String) {
+        inputCoverage["\(segmentID):\(role)"] = value
+    }
     private var suggestionLexicalDiagnostics = LegalLexicalRetrievalDiagnostics()
 
     func recordSuggestionLexicalDiagnostics(_ diagnostics: LegalLexicalRetrievalDiagnostics) {
@@ -416,6 +425,7 @@ actor AIConnectorObservationCollector {
         )
         #if DEBUG
         report.suggestionLexicalDiagnostics = suggestionLexicalDiagnostics
+        report.inputCoverage = inputCoverage
         #endif
         return report
     }

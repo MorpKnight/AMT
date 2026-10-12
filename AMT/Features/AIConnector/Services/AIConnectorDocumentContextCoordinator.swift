@@ -118,7 +118,7 @@ final class AIConnectorDocumentContextCoordinator {
                     documentTypes: [],
                     domains: [],
                     status: .fallback,
-                    modelCallCount: 1,
+                    modelCallCount: error is AIConnectorInputBudgetError ? 0 : 1,
                     duration: classificationDuration
                 )
             }
@@ -233,8 +233,7 @@ struct AIConnectorDocumentContextSample: Sendable {
 }
 
 struct AIConnectorDocumentContextSampler: Sendable {
-    /// Conservative UTF-16 cap. It leaves headroom below the 2,048-token
-    /// classification input limit for tokenizers with larger tokenization.
+    /// Select complete evidence lines; the resource tokenizer validates the full templated prompt.
     static let maximumUTF16Length = 7_000
 
     func sample(
@@ -254,15 +253,8 @@ struct AIConnectorDocumentContextSampler: Sendable {
             let separatorLength = parts.isEmpty ? 0 : 1
             let available = Self.maximumUTF16Length - length - separatorLength
             guard available > 0 else { return }
-            let clipped: String
-            if line.utf16.count > available {
-                clipped = available == 1
-                    ? "…"
-                    : String(line.prefix(available - 1)) + "…"
-            } else {
-                clipped = line
-            }
-            guard !clipped.isEmpty else { return }
+            guard line.utf16.count <= available else { return }
+            let clipped = line
             parts.append(clipped)
             length += clipped.utf16.count + separatorLength
             evidenceIDs.append(label)

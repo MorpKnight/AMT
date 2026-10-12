@@ -183,48 +183,22 @@ actor AIConnectorSegmentCache {
     /// Explicit namespace bump for the Phase 3 anchored result shape. This
     /// keeps any future persisted/injected cache namespace from reusing
     /// unanchored Phase 2 results even when the other inputs happen to match.
-    nonisolated static let keyVersion = "segment-cache-v4-context-profile"
+    nonisolated static let keyVersion = "segment-cache-v5-complete-input"
     nonisolated static let maximumEntriesPerDocument = 256
 
-    private var values: [String: AIConnectorCachedSegmentResult] = [:]
-    private var recency: [String] = []
+    private var cache = AIConnectorAnalysisLRUCache<AIConnectorCachedSegmentResult>(capacity: maximumEntriesPerDocument, maximumCost: 16 * 1_024 * 1_024)
 
-    func value(for key: String) -> AIConnectorCachedSegmentResult? {
-        guard let value = values[key] else { return nil }
-        touch(key)
-        return value
-    }
-
-    func insert(_ value: AIConnectorCachedSegmentResult, for key: String) {
-        values[key] = value
-        touch(key)
-        while recency.count > Self.maximumEntriesPerDocument {
-            let evicted = recency.removeFirst()
-            values.removeValue(forKey: evicted)
-        }
-    }
-
-    func removeAll() {
-        values.removeAll()
-        recency.removeAll()
-    }
-
-    func snapshot() -> [String: AIConnectorCachedSegmentResult] {
-        values
-    }
-
+    func value(for key: String) -> AIConnectorCachedSegmentResult? { cache[key] }
+    func insert(_ value: AIConnectorCachedSegmentResult, for key: String) { cache[key] = value }
+    func removeAll() { cache.removeAll() }
+    func snapshot() -> [String: AIConnectorCachedSegmentResult] { cache.snapshot }
     func restore(_ snapshot: [String: AIConnectorCachedSegmentResult]) {
-        values = Dictionary(
-            uniqueKeysWithValues: snapshot.prefix(Self.maximumEntriesPerDocument).map {
-                ($0.key, $0.value)
-            }
-        )
-        recency = Array(values.keys)
+        cache.removeAll()
+        for key in snapshot.keys.sorted() { cache[key] = snapshot[key] }
     }
-
-    private func touch(_ key: String) {
-        recency.removeAll { $0 == key }
-        recency.append(key)
+    func diagnostics() -> [String: Int] {
+        ["entries": cache.count, "cost": cache.totalCost, "hits": cache.statistics.hits,
+         "misses": cache.statistics.misses, "evictions": cache.statistics.evictions]
     }
 
     nonisolated static func key(from components: AIConnectorCacheKeyComponents) -> String {

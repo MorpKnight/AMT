@@ -176,6 +176,7 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
     }
 
 #if DEBUG
+    func cacheDiagnostics() async -> [String: Int] { await runtime?.cacheDiagnostics() ?? [:] }
     func flowBenchmarkClearScoreCache() async { await clearCachedScores() }
 #endif
 
@@ -244,6 +245,9 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
             minimumImprovement: nil
         )
     }
+
+    /// Called only while application maintenance owns the shared inference lease.
+    func releaseIdleRuntimeForMaintenance() { runtime = nil }
 
     private func resolvedRuntime(
         progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void
@@ -317,8 +321,14 @@ private actor TataKataRuntime {
     private let unknownTokenID: Int?
     private let specialTokenIDs: Set<Int>
     private let revision: String
-    private var scoreCache: [AIConnectorLanguageScoreCacheKey: Double] = [:]
+    private var scoreCache = AIConnectorBoundedLRUCache<AIConnectorLanguageScoreCacheKey, Double>(capacity: 2_048, maximumCost: 8 * 1_024 * 1_024)
     func clearCachedScores() { scoreCache.removeAll() }
+#if DEBUG
+    func cacheDiagnostics() -> [String: Int] {
+        ["entries": scoreCache.count, "cost": scoreCache.totalCost, "hits": scoreCache.statistics.hits,
+         "misses": scoreCache.statistics.misses, "evictions": scoreCache.statistics.evictions]
+    }
+#endif
 
     private init(
         tokenizer: any Tokenizers.Tokenizer,

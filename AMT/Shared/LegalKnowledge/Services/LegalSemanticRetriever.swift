@@ -7,12 +7,14 @@ import HuggingFace
 import Tokenizers
 
 nonisolated enum LegalSemanticRetrieverError: Error, Equatable, LocalizedError, Sendable {
+    case inputTooLong
     case emptyQuery
     case invalidEmbeddingDimension
     case modelUnavailable(String)
 
     var errorDescription: String? {
         switch self {
+        case .inputTooLong: "Input semantik melebihi 512 token; retrieval semantic tidak lengkap."
         case .emptyQuery:
             "Query semantik kosong."
         case .invalidEmbeddingDimension:
@@ -78,6 +80,9 @@ actor LegalSemanticRetriever {
         return corpus.semanticMatches(for: vector, limit: limit)
     }
 
+    /// Called only while application maintenance owns the shared inference lease.
+    func releaseIdleRuntimeForMaintenance() { modelContainer = nil }
+
     private func resolvedContainer(
         progress: @Sendable @escaping (Double) -> Void
     ) async throws -> EmbedderModelContainer {
@@ -126,6 +131,7 @@ actor LegalSemanticRetriever {
                 throw LegalSemanticRetrieverError.emptyQuery
             }
 
+            guard tokenIDs.count <= 512 else { throw LegalSemanticRetrieverError.inputTooLong }
             let input = stacked([MLXArray(tokenIDs)])
             let eosTokenID = context.tokenizer.eosTokenId ?? 0
             let mask = input .!= eosTokenID

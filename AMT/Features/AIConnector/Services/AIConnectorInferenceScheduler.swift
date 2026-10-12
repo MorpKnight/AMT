@@ -3,6 +3,7 @@ import Foundation
 nonisolated enum AIConnectorInferencePriority: Sendable {
     case background
     case interactive
+    case maintenance
 }
 
 nonisolated enum AIConnectorInferenceContext {
@@ -45,9 +46,10 @@ actor AIConnectorInferenceScheduler {
         guard activeID == id else { return }
         activeID = nil
         guard !requests.isEmpty else { return }
+        let maintenance = requests.firstIndex { $0.priority == .maintenance }
         let background = requests.firstIndex { $0.priority == .background }
         let interactive = requests.firstIndex { $0.priority == .interactive }
-        let index = interactiveStreak >= 3 ? (background ?? interactive ?? 0) : (interactive ?? background ?? 0)
+        let index = maintenance ?? (interactiveStreak >= 3 ? (background ?? interactive ?? 0) : (interactive ?? background ?? 0))
         let next = requests.remove(at: index)
         interactiveStreak = next.priority == .interactive ? interactiveStreak + 1 : 0
         activeID = next.id

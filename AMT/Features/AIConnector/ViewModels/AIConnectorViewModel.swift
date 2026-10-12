@@ -7,7 +7,7 @@ final class AIConnectorViewModel {
     private static let previewCharacters = 2_000
     static let maximumDocumentCharacters = 4_000
     private static let analysisPipelineVersion = [
-        "document-analysis-progressive-v2",
+        "document-analysis-progressive-v3-bounded-input",
         AIConnectorDefinitionAnalyzer.policyVersion,
         "phase7-incremental-analysis-v1",
         "review-pipeline-phase4-context-profile-v1",
@@ -191,6 +191,34 @@ final class AIConnectorViewModel {
         try await segmentProcessor.prepareResources(modelVariant: modelVariant)
     }
 
+    func flowBenchmarkPressure(critical: Bool) async -> Bool {
+        await service.resourceLifecycle.handle(critical ? .critical : .warning)
+        await service.resourceLifecycle.handle(.normal)
+        return true
+    }
+
+    func flowBenchmarkCacheCounts() async -> [String: Int] {
+        var result = await segmentProcessor.flowBenchmarkCacheCounts()
+        result["qwenLoads"] = service.resourceLoadCount
+        result["qwenReleases"] = service.resourceReleaseCount
+        result["mlxRuntimePeak"] = service.resourceLifecycle.runtimePeakMemory
+        result["maintenance"] = service.resourceLifecycle.maintenanceCount
+        result["maintenanceActiveBefore"] = service.resourceLifecycle.lastMaintenanceActiveBefore
+        result["maintenanceActiveAfter"] = service.resourceLifecycle.lastMaintenanceActiveAfter
+        result["maintenanceCacheAfter"] = service.resourceLifecycle.lastMaintenanceCacheAfter
+        result["contextHits"] = contextPreparationCache.statistics.hits
+        result["contextMisses"] = contextPreparationCache.statistics.misses
+        result["contextEvictions"] = contextPreparationCache.statistics.evictions
+        result["riskHits"] = documentReviewCache.statistics.hits
+        result["riskMisses"] = documentReviewCache.statistics.misses
+        result["riskEvictions"] = documentReviewCache.statistics.evictions
+        result["resolutionHits"] = definitionResolutionCache.statistics.hits
+        result["resolutionMisses"] = definitionResolutionCache.statistics.misses
+        result["resolutionEvictions"] = definitionResolutionCache.statistics.evictions
+        for (key, value) in await service.languageScorer.cacheDiagnostics() { result["tata-" + key] = value }
+        return result
+    }
+
     func flowBenchmarkClearCaches() async {
         await segmentProcessor.clearCache()
         await segmentProcessor.flowBenchmarkClearScoreCache()
@@ -202,6 +230,7 @@ final class AIConnectorViewModel {
     }
 #endif
 
+    private let cacheOwnerID = UUID()
     private let service: QwenSuggestionService
     private let dictionaryStore: LegalDictionaryStore
     private let segmenter = LegalTextSegmenter()
@@ -307,6 +336,18 @@ final class AIConnectorViewModel {
             pipelineVersion: Self.analysisPipelineVersion
         )
 #endif
+        service.resourceLifecycle.attach(dictionaryStore.semanticRetriever)
+        service.resourceLifecycle.registerDocument(owner: cacheOwnerID) { [weak self] in
+            guard let self else { return false }
+            await self.trimResourceCaches()
+            return true
+        }
+    }
+
+    /// Evicts only derived caches; current findings, baseline and editor state remain intact.
+    private func trimResourceCaches() async {
+        await segmentProcessor.trimDerivedCaches()
+        contextPreparationCache.removeAll(); documentReviewCache.removeAll(); definitionResolutionCache.removeAll()
     }
 
     var isRunning: Bool {

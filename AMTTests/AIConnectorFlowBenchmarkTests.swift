@@ -2,6 +2,7 @@ import AppKit
 import CryptoKit
 import Darwin
 import Foundation
+import MLX
 import XCTest
 @testable import AMT
 
@@ -23,10 +24,16 @@ final class AIConnectorFlowBenchmarkTests: XCTestCase {
         let directory = env("AMT_FLOW_OUTPUT") ?? "/private/tmp/amt-flow-fix-task/reports/before"
         guard directory.hasPrefix("/private/tmp/") else { throw XCTSkip("Reports require /private/tmp/.") }
         let fixture = try XCTUnwrap(Self.fixtures.first { $0.id == fixtureID })
-        let store = LegalDictionaryStore()
-        XCTAssertNotNil(store.corpusStore, "Must use the production corpus, never preview fallback.")
         let service = QwenSuggestionService()
-        let vm = AIConnectorViewModel(service: service, dictionaryStore: store)
+        let productionStore = LegalDictionaryStore(inferenceScheduler: service.inferenceScheduler)
+        let store: LegalDictionaryStore
+        if fixtureID == "long-source" {
+            // Explicit synthetic source: the current production corpus has no eligible definition over 1,000 characters.
+            let source = LegalDictionaryEntry(id: "benchmark-synthetic-long-source", term: "Dokumen Uji", definition: AIConnectorBackendEvaluationFixtures.longSourceDefinition, regulation: "Sumber sintetis benchmark", regulationTitle: "Bukan otoritas hukum", sourceURL: nil, authority: .verified, corpusVersion: "benchmark-synthetic-v1", applicabilityStatus: .inForce, isActionable: true)
+            store = LegalDictionaryStore(entries: productionStore.entries + [source], corpusStore: productionStore.corpusStore, semanticRetriever: productionStore.semanticRetriever)
+        } else { store = productionStore }
+        XCTAssertNotNil(store.corpusStore, "Must use the production corpus, never preview fallback.")
+        var vm = AIConnectorViewModel(service: service, dictionaryStore: store)
         vm.reviewMode = phase == "control" ? .deterministic : .hybrid
         vm.modelVariant = .qwen35Base4B
         vm.generationProfilePreset = .greedy
@@ -34,12 +41,28 @@ final class AIConnectorFlowBenchmarkTests: XCTestCase {
         vm.flowBenchmarkReuseCaches = true
         var records: [FlowMeasurement] = []
         var preparation: Double?
-        if phase == "prepare" || phase == "warm" || phase == "cached" || phase == "incremental" {
+        if phase == "prepare" || phase == "warm" || phase == "cached" || phase == "incremental" || phase == "quality" || phase == "stress" {
             let start = ContinuousClock.now
             try await vm.flowBenchmarkPrepareResources()
             preparation = seconds(start.duration(to: .now))
         }
-        if phase != "prepare" {
+        if phase == "quality" {
+            for (index, item) in AIConnectorBackendEvaluationFixtures.fixtures.enumerated() {
+                await vm.flowBenchmarkClearCaches()
+                records.append(try await measure(vm, fixture: FlowFixture(id: item.id, text: item.text, expected: item.expected.findings.compactMap { f in guard let original = f.original, let replacement = f.replacement else { return nil }; return "\(f.category.rawValue.uppercased())|\(original)|\(replacement)" }), iteration: index + 1))
+            }
+        } else if phase == "stress" {
+            try await vm.flowBenchmarkPrepareResources()
+            for iteration in 1...36 {
+                let item = Self.fixtures.first { $0.id == ["local-60", "definitions", "tatakata"][((iteration-1) / 12 + iteration-1) % 3] }!
+                if iteration % 4 == 0 {
+                    _ = await vm.flowBenchmarkPressure(critical: iteration % 12 == 0)
+                    vm = AIConnectorViewModel(service: service, dictionaryStore: store)
+                    vm.reviewMode = .hybrid; vm.modelVariant = .qwen35Base4B; vm.generationProfilePreset = .greedy; vm.thinkingEnabled = false; vm.flowBenchmarkReuseCaches = true
+                }
+                records.append(try await measure(vm, fixture: item, iteration: iteration))
+            }
+        } else if phase != "prepare" {
             let repetitions = ["warm", "cached", "incremental"].contains(phase) ? 3 : 1
             if phase == "cached" { _ = try await measure(vm, fixture: fixture, iteration: 0) }
             for iteration in 1...repetitions {
@@ -91,6 +114,9 @@ final class AIConnectorFlowBenchmarkTests: XCTestCase {
         var firstVisible: Double?
         var firstActionable: Double?
         var peakMemory = residentBytes()
+        let mlxStart = Memory.snapshot()
+        var mlxActivePeak = mlxStart.activeMemory
+        var mlxCachePeak = mlxStart.cacheMemory
         if incremental { vm.rerunIncrementally(documentText: fixture.text) }
         else { vm.run(documentText: fixture.text) }
         while vm.isRunning {
@@ -101,6 +127,7 @@ final class AIConnectorFlowBenchmarkTests: XCTestCase {
                 firstActionable = seconds(start.duration(to: clock.now))
             }
             if let bytes = residentBytes() { peakMemory = max(peakMemory ?? 0, bytes) }
+            let mlx = Memory.snapshot(); mlxActivePeak = max(mlxActivePeak, mlx.activeMemory); mlxCachePeak = max(mlxCachePeak, mlx.cacheMemory)
             if seconds(start.duration(to: clock.now)) > 900 {
                 vm.cancel()
                 throw FlowBenchmarkError.timeout
@@ -129,7 +156,7 @@ final class AIConnectorFlowBenchmarkTests: XCTestCase {
             let range = NSRange(location: review.segment.sourceLocation + anchor.sourceLocation, length: anchor.sourceLength)
             return !anchor.isValid(for: review.segment, original: original) || range.location < 0 || NSMaxRange(range) > fixture.text.utf16.count || (fixture.text as NSString).substring(with: range) != original
         }.count
-        return FlowMeasurement(iteration: iteration, complete: { if case .completed = vm.state { return true }; return false }(), firstVisible: firstVisible, firstLocalActionable: firstActionable, total: duration, peakResidentBytes: peakMemory, segmentCount: vm.segmentationResult?.segments.count ?? 0, processedSegments: vm.processedSegmentCount, skippedSegments: vm.skippedSegmentCount, truePositives: tp, falsePositives: remaining.count, falseNegatives: fixture.expected.count - tp, invalidAnchors: invalidAnchors, invalidSources: vm.flowBenchmarkInvalidSourceCount(), normalizedFindings: output, observation: vm.observationReport, contextModelCalls: vm.contextPreparationCacheHit ? 0 : (vm.documentContextProfile?.modelCallCount ?? 0), incrementalEquivalentToFresh: nil)
+        return FlowMeasurement(fixtureID: fixture.id, cacheCounts: await vm.flowBenchmarkCacheCounts(), mlxActivePeak: mlxActivePeak, mlxCachePeak: mlxCachePeak, mlxEndActive: Memory.activeMemory, mlxEndCache: Memory.cacheMemory, definitionDecisions: vm.definitionAssessments.map { "\($0.classification)|\($0.alignment)" }, iteration: iteration, complete: { if case .completed = vm.state { return true }; return false }(), firstVisible: firstVisible, firstLocalActionable: firstActionable, total: duration, peakResidentBytes: peakMemory, segmentCount: vm.segmentationResult?.segments.count ?? 0, processedSegments: vm.processedSegmentCount, skippedSegments: vm.skippedSegmentCount, truePositives: tp, falsePositives: remaining.count, falseNegatives: fixture.expected.count - tp, invalidAnchors: invalidAnchors, invalidSources: vm.flowBenchmarkInvalidSourceCount(), normalizedFindings: output, observation: vm.observationReport, contextModelCalls: vm.contextPreparationCacheHit ? 0 : (vm.documentContextProfile?.modelCallCount ?? 0), incrementalEquivalentToFresh: nil)
     }
 
     private func normalized(_ vm: AIConnectorViewModel) -> [String] {
@@ -164,6 +191,10 @@ final class AIConnectorFlowBenchmarkTests: XCTestCase {
         fixtures.append(FlowFixture(id: "definitions", text: "BAB I\n\"Data\" adalah informasi yang tidak dapat dipublikasikan.\n\"Data Pribadi\" adalah data mengenai pelanggan korporat.\nBAB II\nPihak Kedua wajib menjaga Data.\nPihak Pertama tidak dapat membuka Data kecuali mendapatkan persetujuan tertulis.\nPihak Kedua wajib memenuhi Pasal 99.\nPihak Pertama dapat menyampaikan pemberitahuan.", expected: []))
         let mixed = (1...60).map { i in "\(i). Pihak Kedua wajib untuk memastikan dokumen nomor \(i) di simpan, ditanda tangani, dan memasukan tanggal sebelum diserahkan." }.joined(separator: "\n")
         fixtures.append(FlowFixture(id: "mixed", text: "PERJANJIAN\n\"Data\" adalah informasi umum.\n" + mixed + "\nLampiran A\nNama | Kewajiban\nPihak Kedua | menjaga Data\nPihak Pertama | tidak mengubah Data\n" + Array(repeating: "dokumen pendukung harus tersedia untuk pemeriksaan", count: 150).joined(separator: " ") + ".", expected: []))
+        fixtures.append(FlowFixture(id: "tatakata", text: AIConnectorBackendEvaluationFixtures.fixtures.filter { $0.id.contains("-spelling-") }.map(\.text).joined(separator: "\n"), expected: []))
+        fixtures.append(FlowFixture(id: "long-clauses", text: AIConnectorBackendEvaluationFixtures.fixtures.filter { $0.id.contains("-long-") }.map(\.text).joined(separator: "\n"), expected: []))
+        fixtures.append(FlowFixture(id: "long-source", text: AIConnectorBackendEvaluationFixtures.longSourceText, expected: []))
+        fixtures.append(FlowFixture(id: "hard-negative", text: AIConnectorBackendEvaluationFixtures.fixtures.filter { $0.id.contains("-quantities-") || $0.id.contains("-protected-") }.map(\.text).joined(separator: "\n"), expected: []))
         return fixtures
     }()
 }
@@ -171,6 +202,13 @@ final class AIConnectorFlowBenchmarkTests: XCTestCase {
 private enum FlowBenchmarkError: Error { case timeout }
 private struct FlowFixture { let id: String; let text: String; let expected: [String] }
 private struct FlowMeasurement: Codable {
+    let fixtureID: String
+    let cacheCounts: [String: Int]
+    let mlxActivePeak: Int
+    let mlxCachePeak: Int
+    let mlxEndActive: Int
+    let mlxEndCache: Int
+    let definitionDecisions: [String]
     let iteration: Int
     let complete: Bool
     let firstVisible: Double?

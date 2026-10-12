@@ -10,7 +10,7 @@ typealias AIConnectorDefinitionReviewHandler = @MainActor @Sendable (
 /// an optional Qwen semantic judgment. It never returns a replacement text.
 @MainActor
 struct AIConnectorDefinitionAnalyzer: Sendable {
-    nonisolated static let policyVersion = "definition-policy-v3-structural-disagreement"
+    nonisolated static let policyVersion = "definition-policy-v4-complete-evidence"
     private let dictionaryStore: LegalDictionaryStore
     private let detector: AIConnectorDefinitionDetector
     private let reviewHandler: AIConnectorDefinitionReviewHandler?
@@ -38,10 +38,6 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
         progressStage: @escaping @MainActor @Sendable (AIConnectorProgressStage) -> Void,
         observationCollector: AIConnectorObservationCollector? = nil
     ) async throws -> AIConnectorDefinitionAnalysisResult {
-        guard !segment.isTooLong else {
-            return AIConnectorDefinitionAnalysisResult()
-        }
-
         let detectionClock = ContinuousClock()
         let detectionStartedAt = detectionClock.now
         var detection = detector.detect(
@@ -196,6 +192,13 @@ struct AIConnectorDefinitionAnalyzer: Sendable {
                 )
             } catch is CancellationError {
                 throw CancellationError()
+            } catch let error as AIConnectorInputBudgetError {
+                modelCallCount -= 1
+                if let observationCollector { await observationCollector.recordInputCoverage(error.coverage, segmentID: segment.id, role: "definition") }
+                return AIConnectorDefinitionAnalysisResult(assessment: makeAssessment(segment: segment, detection: detection,
+                    candidate: candidate, classification: .needsReview, alignment: .needsReview,
+                    reason: error.localizedDescription, origin: .deterministic, modelReviewed: false),
+                    modelCallCount: modelCallCount, isComplete: false, inputCoverage: error.coverage)
             } catch {
                 lastFailure = error
                 break

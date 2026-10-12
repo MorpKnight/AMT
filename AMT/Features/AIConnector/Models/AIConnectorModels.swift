@@ -620,6 +620,7 @@ struct AIConnectorCandidateReviewRequest: Sendable {
 }
 
 struct QwenCandidateDecisionResult: Sendable {
+    let inputCoverage: AIConnectorInputCoverage?
     let candidateID: String
     let decision: AIConnectorCandidateDecision
     let metrics: AIConnectorGenerationMetrics
@@ -629,10 +630,12 @@ struct QwenCandidateDecisionResult: Sendable {
     init(
         candidateID: String,
         decision: AIConnectorCandidateDecision,
+        inputCoverage: AIConnectorInputCoverage? = nil,
         metrics: AIConnectorGenerationMetrics,
         containsReasoningMarkers: Bool,
         repeatedSixGramRatio: Double? = nil
     ) {
+        self.inputCoverage = inputCoverage
         self.candidateID = candidateID
         self.decision = decision
         self.metrics = metrics

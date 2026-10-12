@@ -86,7 +86,7 @@ final class AIConnectorSegmentProcessor {
     private let conflictResolver = AIConnectorSuggestionConflictResolver()
     private let protectionContextBuilder = AIConnectorDocumentProtectionContextBuilder()
     private let definitionAnalyzer: AIConnectorDefinitionAnalyzer
-    private var definitionAnalysisCache = AIConnectorAnalysisLRUCache<AIConnectorDefinitionAnalysisResult>()
+    private var definitionAnalysisCache = AIConnectorAnalysisLRUCache<AIConnectorDefinitionAnalysisResult>(maximumCost: 16 * 1_024 * 1_024)
     private let spellingCandidateProvider: any AIConnectorSpellingCandidateProviding
     private let languageScorer: any AIConnectorLanguageCandidateScoring
     private let phaseTwoEnabled: Bool
@@ -181,6 +181,15 @@ final class AIConnectorSegmentProcessor {
     }
 
 #if DEBUG
+    func flowBenchmarkCacheCounts() async -> [String: Int] {
+        var result = ["complete": completeResultCache.count, "definition": definitionAnalysisCache.count,
+            "completeCost": completeResultCache.totalCost, "completeEvictions": completeResultCache.statistics.evictions,
+            "completeHits": completeResultCache.statistics.hits, "completeMisses": completeResultCache.statistics.misses,
+            "definitionCost": definitionAnalysisCache.totalCost, "definitionEvictions": definitionAnalysisCache.statistics.evictions]
+        for (key, value) in await segmentCache.diagnostics() { result["segment-" + key] = value }
+        return result
+    }
+
     func flowBenchmarkClearScoreCache() async {
         if let scorer = languageScorer as? TataKataLanguageScorer {
             await scorer.flowBenchmarkClearScoreCache()
@@ -194,10 +203,15 @@ final class AIConnectorSegmentProcessor {
 
     var reuseScoreCache = true
     private var stageCoverage: [Int: [String: AIConnectorStageCoverage]] = [:]
-    private var completeResultCache: [String: AIConnectorSegmentResult] = [:]
+    private var completeResultCache = AIConnectorAnalysisLRUCache<AIConnectorSegmentResult>(capacity: 512, maximumCost: 16 * 1_024 * 1_024)
 
     func clearCache() async {
         stageCoverage.removeAll()
+        await trimDerivedCaches()
+    }
+
+    /// Pressure eviction preserves in-flight coverage and published results.
+    func trimDerivedCaches() async {
         completeResultCache.removeAll()
         await segmentCache.removeAll()
         definitionAnalysisCache.removeAll()
@@ -482,7 +496,7 @@ final class AIConnectorSegmentProcessor {
         if finalResult.skipped { finalResult.stageCoverage["candidateReview"] = .tooLong }
         else if (mode.usesModel && forceDeterministic) || finalResult.usedFallback || finalResult.rejections.contains(where: { $0.classification == .modelFailure }) { finalResult.stageCoverage["candidateReview"] = .failed }
         else { finalResult.stageCoverage["candidateReview"] = finalResult.modelCallCount == 0 ? .notApplicable : .completed }
-        finalResult.stageCoverage["definitionReview"] = segment.isTooLong ? .tooLong : (!definitionAnalysis.isComplete ? .failed : (finalResult.definitionAssessment == nil ? .notApplicable : .completed))
+        finalResult.stageCoverage["definitionReview"] = definitionAnalysis.inputCoverage?.isComplete == false ? .tooLong : (!definitionAnalysis.isComplete ? .failed : (finalResult.definitionAssessment == nil ? .notApplicable : .completed))
         if let observationCollector {
             let duration = AIConnectorObservationTiming.seconds(
                 startedAt.duration(to: observationClock.now)
@@ -497,8 +511,7 @@ final class AIConnectorSegmentProcessor {
                 duration: duration
             )
         }
-        if !finalResult.skipped, !finalResult.usedFallback, finalResult.rejections.isEmpty, !finalResult.stageCoverage.values.contains(.failed) {
-            if completeResultCache.count >= 512 { completeResultCache.removeAll() }
+        if !finalResult.skipped, !finalResult.usedFallback, finalResult.rejections.isEmpty, !finalResult.stageCoverage.values.contains(.failed), !finalResult.stageCoverage.values.contains(.tooLong), !finalResult.stageCoverage.values.contains(.cancelled) {
             completeResultCache[requestKey] = finalResult
         }
         return finalResult
@@ -904,22 +917,6 @@ final class AIConnectorSegmentProcessor {
         generationProfile: AIConnectorGenerationProfile? = nil,
         observationCollector: AIConnectorObservationCollector?
     ) async throws -> AIConnectorSegmentResult {
-        if segment.isTooLong {
-            return AIConnectorSegmentResult(
-                segment: segment,
-                glossaryMatches: [],
-                rejections: [
-                    AIReviewRejection(
-                        segment: segment,
-                        rawOutput: "",
-                        reason: "Segmen melebihi batas 512 token; dilewati tanpa dipotong.",
-                        classification: .segmentTooLong
-                    )
-                ],
-                skipped: true
-            )
-        }
-
         let usesSemanticRetrieval = mode.usesModel
             && !forceDeterministic
             && dictionaryStore.corpusStore != nil
@@ -1543,6 +1540,20 @@ final class AIConnectorSegmentProcessor {
             latestMetrics = firstResult.metrics
         } catch is CancellationError {
             throw CancellationError()
+        } catch let error as AIConnectorInputBudgetError {
+            stageCoverage[segment.id, default: [:]]["candidateInput"] = .tooLong
+            if let observationCollector { await observationCollector.recordInputCoverage(error.coverage, segmentID: segment.id, role: "candidate-\(candidate.id)") }
+            let parsed = AIParsedReview(status: .needsReview, category: candidate.category, original: candidate.original,
+                                       replacement: nil, glossaryID: nil, reason: error.localizedDescription, ruleID: candidate.ruleID)
+            let review = try? validator.validate(parsed, for: segment, glossaryMatches: [], origin: .deterministic,
+                                                protectionContext: protectionContext, sourceAnchor: sourceAnchor(for: candidate, in: segment))
+            return CandidateProcessingOutcome(review: review,
+                rejection: AIReviewRejection(segment: segment, rawOutput: "", reason: error.localizedDescription, classification: .segmentTooLong),
+                diagnostic: AIConnectorCandidateDecisionRecord(candidateID: candidate.id, candidateCategory: candidate.category,
+                    confidenceTier: candidate.confidenceTier, decision: .needsReview, attemptCount: 0, repairAttempted: false,
+                    challengeAttempted: false, usedFallback: false, rejectionClass: .segmentTooLong, generationMetrics: nil, finalOrigin: .deterministic),
+                attemptCount: 0, repairAttempted: false, usedFallback: false, firstPassSucceeded: false, generationMetrics: nil,
+                outputWasTruncated: false, reasoningMarkerDetected: false, repeatedSixGramRatio: nil, sourceClaimDetected: false)
         } catch let failure as AIConnectorCandidateModelFailure {
             latestMetrics = failure.metrics
             guard failure.recoverable else {
@@ -1731,8 +1742,16 @@ final class AIConnectorSegmentProcessor {
                     segmentID: segment.id
                 )
             }
+            if let coverage = result.inputCoverage {
+                if !coverage.isComplete { stageCoverage[segment.id, default: [:]]["candidateInput"] = .tooLong }
+                if let observationCollector { await observationCollector.recordInputCoverage(coverage, segmentID: segment.id, role: "candidate-\(candidate.id)") }
+            }
             return result
         } catch {
+            if let refusal = error as? AIConnectorInputBudgetError {
+                stageCoverage[segment.id, default: [:]]["candidateInput"] = .tooLong
+                if let observationCollector { await observationCollector.recordInputCoverage(refusal.coverage, segmentID: segment.id, role: "candidate-\(candidate.id)") }
+            }
             if let observationCollector {
                 await observationCollector.recordStage(
                     Self.observationStage(for: retryInstruction),
@@ -1959,6 +1978,7 @@ final class AIConnectorSegmentProcessor {
         glossaryMatches: [LegalDictionaryMatch]
     ) -> CandidateProcessingOutcome {
         let canFallback = mode == .hybrid
+            && failure.classification != .segmentTooLong
             && candidate.confidenceTier == .deterministicRule
             && candidate.category != .terminology
         let fallbackReview: AIValidatedReview?
@@ -2133,6 +2153,10 @@ final class AIConnectorSegmentProcessor {
     }
 
     private static func genericCandidateFailure(from error: Error) -> AIConnectorCandidateModelFailure {
+        if error is AIConnectorInputBudgetError {
+            return AIConnectorCandidateModelFailure(message: error.localizedDescription, classification: .segmentTooLong,
+                recoverable: false, metrics: nil, reasoningMarkerDetected: false, outputWasTruncated: false)
+        }
         if let qwenError = error as? QwenSuggestionError {
             switch qwenError {
             case .incompleteThinking:
@@ -2344,7 +2368,7 @@ final class AIConnectorSegmentProcessor {
         challengeCount: Int = 0,
         shouldCache: Bool = true
     ) async -> AIConnectorSegmentResult {
-        if shouldCache {
+        if shouldCache, !rejections.contains(where: { $0.classification == .segmentTooLong }), !(stageCoverage[segment.id]?.values.contains(.tooLong) ?? false) {
             await segmentCache.insert(
                 AIConnectorCachedSegmentResult(
                     reviews: reviews.map(AIConnectorCachedReview.init),
@@ -2795,15 +2819,13 @@ actor AIConnectorWorkQueue {
                     .stateChanged(segmentID: segment.id, state: .retrieving)
                 )
 
-                let useDeterministic = segment.isTooLong || mode == .deterministic
+                let useDeterministic = mode == .deterministic
                     || (mode == .hybrid && circuitBreakerActivated)
 
                 continuation.yield(
                     .stateChanged(
                         segmentID: segment.id,
-                        state: segment.isTooLong
-                            ? .skipped
-                            : (useDeterministic ? .validating : .generating)
+                        state: useDeterministic ? .validating : .generating
                     )
                 )
 
@@ -2858,7 +2880,9 @@ actor AIConnectorWorkQueue {
                     // must not make a healthy model look unreliable. The
                     // modelAttempts fallback keeps the historical injected
                     // six-line test path compatible.
-                    let hadModelWork = !result.candidates.isEmpty || result.modelAttempts > 0
+                    // Budget refusals describe missing coverage, not model reliability.
+                    let hadModelWork = (!result.candidates.isEmpty || result.modelAttempts > 0)
+                        && result.stageCoverage["candidateInput"] != .tooLong
                     if mode.usesModel && !useDeterministic && !result.cacheHit
                         && !result.skipped && hadModelWork {
                         modelEligibleCount += 1

@@ -312,6 +312,7 @@ nonisolated struct AIConnectorObservationReport: Codable, Hashable, Sendable {
     #if DEBUG
     var suggestionLexicalDiagnostics: LegalLexicalRetrievalDiagnostics? = nil
     var mappingMetrics: AIConnectorMappingBenchmarkMetrics? = nil
+    var inputCoverage: [String: AIConnectorInputCoverage]? = nil
     #endif
     static let schemaVersion = "phase0-observability-v1"
 

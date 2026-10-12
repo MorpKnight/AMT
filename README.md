@@ -199,3 +199,5 @@ Perubahan flow dibahas dalam [implementasi](docs/flow-fix-implementation.md), de
 Perbaikan berikutnya pada analisis definisi dan retrieval lexical, beserta benchmark terfokus dan instruksi reproduksi, tersedia dalam [laporan backend](docs/definition-retrieval-improvements.md).
 
 Optimisasi mapping hasil per segmen, validasi kesetaraan, dan pengukuran sebelum–sesudah tersedia dalam [laporan mapping incremental](docs/incremental-mapping-benchmark.md).
+
+Pengelolaan cache/resource, cakupan teks panjang, serta evaluasi fixture pending dibahas dalam [laporan cache dan cakupan backend](docs/backend-resource-coverage-benchmark.md), termasuk benchmark terfokus dan stress memori.

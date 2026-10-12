@@ -141,6 +141,7 @@ struct AIConnectorDocumentReviewDetector {
                     wasCancelled = true
                     break
                 } catch {
+                    if error is AIConnectorInputBudgetError { modelCallCount = max(modelCallCount - 1, 0) }
                     fallbackCount += 1
                     findings = replace(candidate, in: findings, with: candidate.withReview(
                         origin: .deterministicFallback,

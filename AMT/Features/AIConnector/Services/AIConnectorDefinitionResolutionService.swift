@@ -236,6 +236,7 @@ struct AIConnectorDefinitionResolutionService: Sendable {
                 } catch is CancellationError {
                     throw CancellationError()
                 } catch {
+                    if error is AIConnectorInputBudgetError { modelCallCount = max(modelCallCount - 1, 0) }
                     fallbackCount += 1
                     status = .needsReview
                     message = "Penilaian model gagal; kandidat tetap harus diverifikasi manusia."
