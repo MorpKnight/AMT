@@ -4,7 +4,7 @@ import XCTest
 
 @MainActor
 final class AIConnectorTataKataPilotTests: XCTestCase {
-    func testIndonesianSpellCheckerUsesGuessesAndCapsTrustedCandidates() {
+    func testIndonesianSpellCheckerUsesGuessesForEveryOccurrence() {
         let text = "datta penggua salah"
         let checker = StubSpellChecker(issues: [
             issue(for: "datta", in: text, guesses: ["data", "darta", "ditta"]),
@@ -19,15 +19,15 @@ final class AIConnectorTataKataPilotTests: XCTestCase {
             excludedOriginals: []
         )
 
-        XCTAssertEqual(Set(candidates.map(\.sourceLocation)).count, 2)
+        XCTAssertEqual(Set(candidates.map(\.sourceLocation)).count, 3)
         XCTAssertLessThanOrEqual(
             candidates.count,
-            SystemIndonesianSpellingCandidateProvider.maximumMisspelledWordsPerSegment
+            3
                 * SystemIndonesianSpellingCandidateProvider.maximumGuessesPerWord
         )
         XCTAssertEqual(
             Set(candidates.map(\.original)),
-            Set(["datta", "penggua"])
+            Set(["datta", "penggua", "salah"])
         )
         XCTAssertTrue(candidates.contains { $0.original == "datta" && $0.replacement == "data" })
         XCTAssertTrue(candidates.contains { $0.original == "penggua" && $0.replacement == "pengguna" })
@@ -145,7 +145,7 @@ final class AIConnectorTataKataPilotTests: XCTestCase {
         )
     }
 
-    func testCandidateBuilderKeepsTheBestSingleTataKataCandidatePerSegment() {
+    func testCandidateBuilderRetainsTataKataCandidatesAtDifferentOccurrences() {
         let target = "Pihak datta dan penggua menyerahkan dokumen."
         let builder = AIConnectorCandidateBuilder(
             ruleStore: AIConnectorRuleStore(version: "empty", rules: [])
@@ -169,8 +169,8 @@ final class AIConnectorTataKataPilotTests: XCTestCase {
             ]
         )
 
-        XCTAssertEqual(candidates.count, 1)
-        XCTAssertEqual(candidates.first?.original, "penggua")
+        XCTAssertEqual(candidates.count, 2)
+        XCTAssertEqual(Set(candidates.map(\.original)), Set(["datta", "penggua"]))
         XCTAssertEqual(candidates.first?.confidenceTier, .tataKataScored)
     }
 
@@ -642,7 +642,8 @@ private final class StubSpellingCandidateProvider: AIConnectorSpellingCandidateP
     }
 }
 
-private actor StubLanguageScorer: AIConnectorLanguageCandidateScoring {
+@MainActor
+private final class StubLanguageScorer: AIConnectorLanguageCandidateScoring {
     let scoredCandidates: [AIConnectorSpellingCandidate]
     let shouldThrow: Bool
     let throwsCancellation: Bool

@@ -51,7 +51,7 @@ enum AIConnectorValidationError: Error, Equatable, Sendable {
 }
 
 struct AIConnectorSuggestionValidator: Sendable {
-    nonisolated static let version = "validator-v4-anchored-locality-grounding"
+    nonisolated static let version = "validator-v6-restoration-proof"
     private static let legalModalities: Set<String> = [
         "wajib",
         "harus",
@@ -84,7 +84,8 @@ struct AIConnectorSuggestionValidator: Sendable {
         glossaryMatches: [LegalDictionaryMatch],
         origin: AIReviewOrigin = .qwen,
         protectionContext: AIConnectorDocumentProtectionContext = .empty,
-        sourceAnchor: AIConnectorReviewAnchor? = nil
+        sourceAnchor: AIConnectorReviewAnchor? = nil,
+        restorationEvidence: AIConnectorSpellingRestorationEvidence? = nil
     ) throws -> AIValidatedReview {
         guard !containsUnsupportedSourceClaim(in: parsedReview.reason) else {
             throw AIConnectorValidationError.unsupportedSourceClaim
@@ -117,7 +118,12 @@ struct AIConnectorSuggestionValidator: Sendable {
                 segment: segment,
                 glossaryMatch: glossaryMatch,
                 protectionContext: protectionContext,
-                sourceAnchor: sourceAnchor
+                sourceAnchor: sourceAnchor,
+                allowCapitalRestoration: (origin == .qwen || origin == .qwenRepaired) && parsedReview.category == .spelling
+                    && restorationEvidence?.original == parsedReview.original
+                    && restorationEvidence?.replacement == parsedReview.replacement
+                    && restorationEvidence?.isValid(in: segment, context: protectionContext) == true
+                    && restorationEvidence?.permitsContextualReview == true
             )
 
         case .needsReview:
@@ -154,7 +160,8 @@ struct AIConnectorSuggestionValidator: Sendable {
         segment: AIReviewSegment,
         glossaryMatch: LegalDictionaryMatch?,
         protectionContext: AIConnectorDocumentProtectionContext,
-        sourceAnchor: AIConnectorReviewAnchor?
+        sourceAnchor: AIConnectorReviewAnchor?,
+        allowCapitalRestoration: Bool
     ) throws {
         guard let original = parsedReview.original else {
             throw AIConnectorValidationError.missingOriginal
@@ -171,6 +178,9 @@ struct AIConnectorSuggestionValidator: Sendable {
         }
         if parsedReview.category == .terminology {
             guard let glossaryMatch,
+                  glossaryMatch.entry.authority == .verified,
+                  glossaryMatch.entry.isActionable,
+                  glossaryMatch.entry.applicabilityStatus == .inForce,
                   replacement == glossaryMatch.entry.term else {
                 throw AIConnectorValidationError.invalidGlossaryReference
             }
@@ -188,6 +198,7 @@ struct AIConnectorSuggestionValidator: Sendable {
             from: original,
             to: replacement,
             allowGlossaryProtectedTermChange: isTrustedGlossaryDefinitionReplacement,
+            allowCapitalRestoration: allowCapitalRestoration,
             protectionContext: protectionContext
         ) else {
             if changesLegalStructure(
@@ -317,6 +328,7 @@ struct AIConnectorSuggestionValidator: Sendable {
         from original: String,
         to replacement: String,
         allowGlossaryProtectedTermChange: Bool,
+        allowCapitalRestoration: Bool,
         protectionContext: AIConnectorDocumentProtectionContext
     ) -> Bool {
         // A canonical glossary term may replace its own complete, retrieved
@@ -369,7 +381,7 @@ struct AIConnectorSuggestionValidator: Sendable {
                 guard replacementCaseSensitiveTokens.contains(token) else { return false }
             }
 
-            guard capitalizedTokens(in: original) == capitalizedTokens(in: replacement) else {
+            guard allowCapitalRestoration || capitalizedTokens(in: original) == capitalizedTokens(in: replacement) else {
                 return false
             }
 
@@ -379,6 +391,13 @@ struct AIConnectorSuggestionValidator: Sendable {
         }
 
         return true
+    }
+
+    func requiresHumanSpellingReview(from original: String, to replacement: String) -> Bool {
+        protectedModalityTokens(in: normalizedTokens(original)) != protectedModalityTokens(in: normalizedTokens(replacement))
+            || protectedStructuralMarkers(in: original) != protectedStructuralMarkers(in: replacement)
+            || digitTokens(in: original) != digitTokens(in: replacement)
+            || normalizedTokens(original).filter(Self.numberWords.contains) != normalizedTokens(replacement).filter(Self.numberWords.contains)
     }
 
     private func changesLegalStructure(

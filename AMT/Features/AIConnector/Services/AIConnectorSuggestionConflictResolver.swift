@@ -1,7 +1,6 @@
 import Foundation
 
 struct AIConnectorSuggestionConflictResolver: Sendable {
-    static let maximumSuggestionsPerSegment = 3
 
     func resolve(_ reviews: [AIValidatedReview]) -> [AIValidatedReview] {
         let nonActionable = reviews.filter { $0.status != .suggestion }
@@ -23,12 +22,9 @@ struct AIConnectorSuggestionConflictResolver: Sendable {
             }
 
         var accepted: [AIValidatedReview] = []
-        var countsBySegment: [Int: Int] = [:]
 
         for review in actionable {
-            guard let localRange = sourceRange(for: review),
-                  countsBySegment[review.segment.id, default: 0]
-                    < Self.maximumSuggestionsPerSegment else {
+            guard let localRange = sourceRange(for: review) else {
                 continue
             }
 
@@ -42,7 +38,6 @@ struct AIConnectorSuggestionConflictResolver: Sendable {
             guard !conflicts else { continue }
 
             accepted.append(review)
-            countsBySegment[review.segment.id, default: 0] += 1
         }
 
         return (nonActionable + accepted).sorted { lhs, rhs in

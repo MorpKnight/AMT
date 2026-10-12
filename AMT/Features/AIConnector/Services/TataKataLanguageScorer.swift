@@ -19,7 +19,7 @@ nonisolated enum AIConnectorLanguageScorerConfiguration {
 
     /// Bumping this value invalidates cached analysis when the scoring policy
     /// or the pinned TataKata artifact changes.
-    static let pipelineVersion = "tatakata-pilot-v1-mean-pll-64wp-delta-025"
+    static let pipelineVersion = "tatakata-occurrences-v2-mean-pll-64wp-delta-025"
     static let cacheKey = "\(modelID)@\(revision):\(pipelineVersion)"
 }
 
@@ -28,6 +28,10 @@ nonisolated enum AIConnectorLanguageScorerConfiguration {
 /// malformed mock must never turn an arbitrary replacement into a Qwen input.
 nonisolated enum AIConnectorLanguageScorePolicy {
     static func isEligible(_ evidence: AIConnectorLanguageScoreEvidence) -> Bool {
+        isValidEvidence(evidence) && evidence.delta >= AIConnectorLanguageScorerConfiguration.minimumImprovementInNats
+    }
+
+    static func isValidEvidence(_ evidence: AIConnectorLanguageScoreEvidence) -> Bool {
         evidence.modelID == AIConnectorLanguageScorerConfiguration.modelID
             && evidence.revision == AIConnectorLanguageScorerConfiguration.revision
             && evidence.tokenizerVocabularyCount
@@ -37,7 +41,6 @@ nonisolated enum AIConnectorLanguageScorePolicy {
             && evidence.originalScore.isFinite
             && evidence.replacementScore.isFinite
             && evidence.delta.isFinite
-            && evidence.delta >= AIConnectorLanguageScorerConfiguration.minimumImprovementInNats
             && !evidence.sourceWindow.isEmpty
     }
 }
@@ -165,13 +168,22 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
 
     nonisolated static let pipelineVersion = AIConnectorLanguageScorerConfiguration.pipelineVersion
 
+    private let inferenceScheduler: AIConnectorInferenceScheduler
     private let modelDirectory: URL?
     private var runtime: TataKataRuntime?
     private var loadingTask: Task<TataKataRuntime, Error>?
 
-    init(modelDirectory: URL? = nil) {
+    init(modelDirectory: URL? = nil, inferenceScheduler: AIConnectorInferenceScheduler = AIConnectorInferenceScheduler()) {
+        self.inferenceScheduler = inferenceScheduler
         self.modelDirectory = modelDirectory
     }
+
+#if DEBUG
+    func cacheDiagnostics() async -> [String: Int] { await runtime?.cacheDiagnostics() ?? [:] }
+    func flowBenchmarkClearScoreCache() async { await clearCachedScores() }
+#endif
+
+    func clearCachedScores() async { await runtime?.clearCachedScores() }
 
     var isLoaded: Bool {
         runtime != nil
@@ -180,6 +192,10 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
     func load(
         progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void = { _ in }
     ) async throws {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         _ = try await resolvedRuntime(progress: progress)
     }
 
@@ -194,6 +210,10 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
         candidates: [AIConnectorSpellingCandidate],
         progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void = { _ in }
     ) async throws -> [AIConnectorSpellingCandidate] {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         guard !candidates.isEmpty else { return [] }
         let runtime = try await resolvedRuntime(progress: progress)
         await progress(.scoring(0))
@@ -205,15 +225,25 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
         )
     }
 
+    func scoreForReview(segment: AIReviewSegment, candidates: [AIConnectorSpellingCandidate],
+        progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void
+    ) async throws -> [AIConnectorSpellingCandidate] {
+        try await scoreForDiagnostics(segment: segment, candidates: candidates, progress: progress)
+    }
+
     /// Returns the best scored candidate per source span, including candidates
     /// below the production threshold. This is intentionally a diagnostics
-    /// boundary for opt-in benchmark tests; candidate-first production flow
-    /// uses `score`, which returns only threshold-qualified candidates.
+    /// boundary also shared by scoreForReview; routing still validates the
+    /// evidence and requires model approval before accepting a restoration.
     func scoreForDiagnostics(
         segment: AIReviewSegment,
         candidates: [AIConnectorSpellingCandidate],
         progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void = { _ in }
     ) async throws -> [AIConnectorSpellingCandidate] {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         guard !candidates.isEmpty else { return [] }
         let runtime = try await resolvedRuntime(progress: progress)
         await progress(.scoring(0))
@@ -224,6 +254,9 @@ actor TataKataLanguageScorer: AIConnectorLanguageCandidateScoring {
             minimumImprovement: nil
         )
     }
+
+    /// Called only while application maintenance owns the shared inference lease.
+    func releaseIdleRuntimeForMaintenance() { runtime = nil }
 
     private func resolvedRuntime(
         progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void
@@ -297,7 +330,14 @@ private actor TataKataRuntime {
     private let unknownTokenID: Int?
     private let specialTokenIDs: Set<Int>
     private let revision: String
-    private var scoreCache: [AIConnectorLanguageScoreCacheKey: Double] = [:]
+    private var scoreCache = AIConnectorBoundedLRUCache<AIConnectorLanguageScoreCacheKey, Double>(capacity: 2_048, maximumCost: 8 * 1_024 * 1_024)
+    func clearCachedScores() { scoreCache.removeAll() }
+#if DEBUG
+    func cacheDiagnostics() -> [String: Int] {
+        ["entries": scoreCache.count, "cost": scoreCache.totalCost, "hits": scoreCache.statistics.hits,
+         "misses": scoreCache.statistics.misses, "evictions": scoreCache.statistics.evictions]
+    }
+#endif
 
     private init(
         tokenizer: any Tokenizers.Tokenizer,
@@ -502,7 +542,7 @@ private actor TataKataRuntime {
                     replacement: candidate.replacement,
                     sourceRange: window.range
                 )
-                if best == nil || score > best!.score {
+                if best.map({ score > $0.score }) ?? true {
                     best = (candidate, score)
                 }
             }
@@ -527,7 +567,8 @@ private actor TataKataRuntime {
                         sourceLocation: best.candidate.sourceLocation,
                         sourceLength: best.candidate.sourceLength,
                         sourceRank: best.candidate.sourceRank,
-                        evidence: evidence
+                        evidence: evidence,
+                        restorationEvidence: best.candidate.restorationEvidence
                     )
                 )
             }
@@ -539,7 +580,7 @@ private actor TataKataRuntime {
             let rhsDelta = rhs.evidence?.delta ?? -.greatestFiniteMagnitude
             if lhsDelta != rhsDelta { return lhsDelta > rhsDelta }
             return lhs.sourceLocation < rhs.sourceLocation
-        }.prefix(1).map { $0 }
+        }
     }
 
     private func scoreVariant(
@@ -555,7 +596,7 @@ private actor TataKataRuntime {
             replacementSourceLocation: sourceRange?.location,
             replacementSourceLength: sourceRange?.length
         )
-        if let cached = scoreCache[cacheKey] {
+        if AIConnectorInferenceContext.reuseScoringCache, let cached = scoreCache[cacheKey] {
             return cached
         }
 

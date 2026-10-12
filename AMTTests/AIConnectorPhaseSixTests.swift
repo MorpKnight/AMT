@@ -440,6 +440,16 @@ final class AIConnectorPhaseSixTests: XCTestCase {
         )
     }
 
+    func testConflictingInternalDefinitionOnlyOffersReference() async throws {
+        let text = "Data Pribadi adalah informasi tentang badan hukum."
+        let entry = makeEntry(id: "data-pribadi", term: "Data Pribadi", definition: "Data Pribadi adalah informasi tentang orang perseorangan yang teridentifikasi.")
+        let assessment = makeAssessment(text: text, term: "Data Pribadi", candidate: makeCandidate(entry: entry), alignment: .mismatch)
+        let document = text + "\nData Pribadi adalah informasi yang hanya berlaku dalam perjanjian ini."
+        let result = try await AIConnectorDefinitionResolutionService(dictionaryStore: LegalDictionaryStore(entries: [entry])).resolve(assessment: assessment, documentText: document, mode: .deterministic, modelVariant: .qwen35Base4B)
+        XCTAssertFalse(result.resolution.sourceReferences.isEmpty)
+        XCTAssertTrue(result.resolution.options.allSatisfy { !$0.isActionable })
+    }
+
     private func makeAssessment(
         text: String,
         term: String,

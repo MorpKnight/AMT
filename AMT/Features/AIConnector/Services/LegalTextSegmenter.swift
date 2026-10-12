@@ -71,14 +71,19 @@ struct LegalTextSegmenter: Sendable {
             }
         }
 
+        let blockIDs = rawSegments.map { segment in
+            contentBlocks.first { NSLocationInRange(segment.sourceLocation, $0.sourceRange) }?.id
+        }
         let segments = rawSegments.enumerated().map { offset, rawSegment in
             AIReviewSegment(
                 id: offset + 1,
                 sourceLocation: rawSegment.sourceLocation,
                 sourceLength: rawSegment.sourceLength,
                 targetText: rawSegment.text,
-                previousContext: rawSegment.previousContext,
-                nextContext: rawSegment.nextContext,
+                previousContext: offset > 0 && blockIDs[offset - 1] == blockIDs[offset]
+                    ? rawSegments[offset - 1].text : rawSegment.previousContext,
+                nextContext: offset + 1 < rawSegments.count && blockIDs[offset + 1] == blockIDs[offset]
+                    ? rawSegments[offset + 1].text : rawSegment.nextContext,
                 isTooLong: rawSegment.isTooLong,
                 context: rawSegment.context
             )

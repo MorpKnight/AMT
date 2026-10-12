@@ -1,0 +1,200 @@
+[
+  {
+    "id": "control-1",
+    "kind": "exact",
+    "sourceDefinition": "kendaraan yang dapat bergerak di jalan rel.",
+    "sourceID": "term:13f0bf74ffc42ebac01b",
+    "term": "Sarana perkeretaapian",
+    "text": "Yang dimaksud dengan Sarana perkeretaapian adalah kendaraan yang dapat bergerak di jalan rel.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-2",
+    "kind": "negated",
+    "sourceDefinition": "kendaraan yang dapat bergerak di jalan rel.",
+    "sourceID": "term:13f0bf74ffc42ebac01b",
+    "term": "Sarana perkeretaapian",
+    "text": "Yang dimaksud dengan Sarana perkeretaapian adalah kendaraan yang tidak dapat bergerak di jalan rel.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-3",
+    "kind": "mention",
+    "sourceDefinition": "kendaraan yang dapat bergerak di jalan rel.",
+    "sourceID": "term:13f0bf74ffc42ebac01b",
+    "term": "Sarana perkeretaapian",
+    "text": "Para Pihak membicarakan Sarana perkeretaapian.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-4",
+    "kind": "exact",
+    "sourceDefinition": "simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya dapat dipindahtangankan.",
+    "sourceID": "term:33fb68bb40ddbb4ea94a",
+    "term": "Sertifikat Deposito",
+    "text": "Yang dimaksud dengan Sertifikat Deposito adalah simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya dapat dipindahtangankan.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-5",
+    "kind": "negated",
+    "sourceDefinition": "simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya dapat dipindahtangankan.",
+    "sourceID": "term:33fb68bb40ddbb4ea94a",
+    "term": "Sertifikat Deposito",
+    "text": "Yang dimaksud dengan Sertifikat Deposito adalah simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya tidak dapat dipindahtangankan.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-6",
+    "kind": "mention",
+    "sourceDefinition": "simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya dapat dipindahtangankan.",
+    "sourceID": "term:33fb68bb40ddbb4ea94a",
+    "term": "Sertifikat Deposito",
+    "text": "Para Pihak membicarakan Sertifikat Deposito.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-7",
+    "kind": "exact",
+    "sourceDefinition": "usia saat peserta dapat mulai menerima manfaat pensiun.",
+    "sourceID": "term:5145b2ca67b3dc4a0635",
+    "term": "Usia Pensiun",
+    "text": "Yang dimaksud dengan Usia Pensiun adalah usia saat peserta dapat mulai menerima manfaat pensiun.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-8",
+    "kind": "negated",
+    "sourceDefinition": "usia saat peserta dapat mulai menerima manfaat pensiun.",
+    "sourceID": "term:5145b2ca67b3dc4a0635",
+    "term": "Usia Pensiun",
+    "text": "Yang dimaksud dengan Usia Pensiun adalah usia saat peserta tidak dapat mulai menerima manfaat pensiun.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-9",
+    "kind": "mention",
+    "sourceDefinition": "usia saat peserta dapat mulai menerima manfaat pensiun.",
+    "sourceID": "term:5145b2ca67b3dc4a0635",
+    "term": "Usia Pensiun",
+    "text": "Para Pihak membicarakan Usia Pensiun.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-10",
+    "kind": "exact",
+    "sourceDefinition": "bagian dari WPN yang dapat diusahakan.",
+    "sourceID": "term:cfaa7a62e8f74b35ef62",
+    "term": "WUPK",
+    "text": "Yang dimaksud dengan WUPK adalah bagian dari WPN yang dapat diusahakan.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-11",
+    "kind": "negated",
+    "sourceDefinition": "bagian dari WPN yang dapat diusahakan.",
+    "sourceID": "term:cfaa7a62e8f74b35ef62",
+    "term": "WUPK",
+    "text": "Yang dimaksud dengan WUPK adalah bagian dari WPN yang tidak dapat diusahakan.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-12",
+    "kind": "mention",
+    "sourceDefinition": "bagian dari WPN yang dapat diusahakan.",
+    "sourceID": "term:cfaa7a62e8f74b35ef62",
+    "term": "WUPK",
+    "text": "Para Pihak membicarakan WUPK.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-13",
+    "kind": "exact",
+    "sourceDefinition": "barang Penanggung Pajak yang dapat dijadikan jaminan utang pajak.",
+    "sourceID": "term:b823097297b85876ab6c",
+    "term": "Objek Sita",
+    "text": "Yang dimaksud dengan Objek Sita adalah barang Penanggung Pajak yang dapat dijadikan jaminan utang pajak.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-14",
+    "kind": "negated",
+    "sourceDefinition": "barang Penanggung Pajak yang dapat dijadikan jaminan utang pajak.",
+    "sourceID": "term:b823097297b85876ab6c",
+    "term": "Objek Sita",
+    "text": "Yang dimaksud dengan Objek Sita adalah barang Penanggung Pajak yang tidak dapat dijadikan jaminan utang pajak.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-15",
+    "kind": "mention",
+    "sourceDefinition": "barang Penanggung Pajak yang dapat dijadikan jaminan utang pajak.",
+    "sourceID": "term:b823097297b85876ab6c",
+    "term": "Objek Sita",
+    "text": "Para Pihak membicarakan Objek Sita.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-16",
+    "kind": "exact",
+    "sourceDefinition": "tempat kerja dan/atau lembaga yang dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP.",
+    "sourceID": "term:db1e82f68218dd5d0186",
+    "term": "Tempat Uji Kompetensi",
+    "text": "Yang dimaksud dengan Tempat Uji Kompetensi adalah tempat kerja dan/atau lembaga yang dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-17",
+    "kind": "negated",
+    "sourceDefinition": "tempat kerja dan/atau lembaga yang dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP.",
+    "sourceID": "term:db1e82f68218dd5d0186",
+    "term": "Tempat Uji Kompetensi",
+    "text": "Yang dimaksud dengan Tempat Uji Kompetensi adalah tempat kerja dan/atau lembaga yang tidak dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  },
+  {
+    "id": "control-18",
+    "kind": "mention",
+    "sourceDefinition": "tempat kerja dan/atau lembaga yang dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP.",
+    "sourceID": "term:db1e82f68218dd5d0186",
+    "term": "Tempat Uji Kompetensi",
+    "text": "Para Pihak membicarakan Tempat Uji Kompetensi.",
+    "authority": "verified",
+    "isActionable": true,
+    "applicabilityStatus": "inForce"
+  }
+]

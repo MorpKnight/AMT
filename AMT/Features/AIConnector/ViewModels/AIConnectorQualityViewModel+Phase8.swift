@@ -187,6 +187,11 @@ extension AIConnectorViewModel {
         }
     }
 
+    /// Measurement-only accessor; preserves the existing finding mapping.
+    func accuracyMatrixObservedFindings(in text: String) -> [AIConnectorQualityObservedFinding] {
+        phaseEightObservedFindings(in: text, categoryOverride: nil)
+    }
+
     private func phaseEightObservedFindings(
         in documentText: String,
         categoryOverride: AIConnectorQualityCategory?

@@ -23,6 +23,8 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
     let onSelect: (UUID?) -> Void
     let onCaretLocationChanged: (Int?) -> Void
     let onTextEdited: () -> Void
+    let validateSuggestion: (EditorSuggestion, String) -> Bool
+    let validateDefinitionResolution: (AIConnectorDefinitionResolutionOption, String) -> Bool
     let onSuggestionAccepted: (EditorSuggestion, String, String) -> Void
     let onDismiss: (UUID) -> Void
     let onMarkReviewed: (UUID) -> Void
@@ -48,6 +50,8 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         onSelect: @escaping (UUID?) -> Void,
         onCaretLocationChanged: @escaping (Int?) -> Void = { _ in },
         onTextEdited: @escaping () -> Void,
+        validateSuggestion: @escaping (EditorSuggestion, String) -> Bool = { _, _ in false },
+        validateDefinitionResolution: @escaping (AIConnectorDefinitionResolutionOption, String) -> Bool = { _, _ in false },
         onSuggestionAccepted: @escaping (EditorSuggestion, String, String) -> Void,
         onDismiss: @escaping (UUID) -> Void,
         onMarkReviewed: @escaping (UUID) -> Void,
@@ -71,6 +75,8 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         self.onSelect = onSelect
         self.onCaretLocationChanged = onCaretLocationChanged
         self.onTextEdited = onTextEdited
+        self.validateSuggestion = validateSuggestion
+        self.validateDefinitionResolution = validateDefinitionResolution
         self.onSuggestionAccepted = onSuggestionAccepted
         self.onDismiss = onDismiss
         self.onMarkReviewed = onMarkReviewed
@@ -726,7 +732,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
 
         private func snapshot(from textView: NSTextView) -> EditorSnapshot {
             EditorSnapshot(
-                attributedText: textView.attributedString(),
+                attributedText: NSAttributedString(attributedString: textView.attributedString()),
                 selectedRange: textView.selectedRange(),
                 typingAttributes: textView.typingAttributes
             )
@@ -847,7 +853,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             guard let textView else { return }
             guard !suggestion.isReadOnlyDiagnostic else { return }
 
-            guard rangeContainsOriginal(suggestion) else {
+            guard parent.validateSuggestion(suggestion, textView.string), rangeContainsOriginal(suggestion) else {
                 presentPopover(
                     for: .suggestion(suggestion),
                     anchor: anchor(for: suggestion),
@@ -931,7 +937,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         func applyDefinitionResolution(_ option: AIConnectorDefinitionResolutionOption) {
             guard let textView, option.isActionable else { return }
 
-            guard rangeContainsOriginal(option) else {
+            guard parent.validateDefinitionResolution(option, textView.string), rangeContainsOriginal(option) else {
                 if let annotation = parent.annotations.first(where: { annotation in
                     parent.definitionResolutions[annotation.id]?.options.contains {
                         $0.id == option.id

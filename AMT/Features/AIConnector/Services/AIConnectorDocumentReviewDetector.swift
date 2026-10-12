@@ -9,7 +9,7 @@ struct AIConnectorDocumentReviewDetector {
         AIConnectorRiskReviewRequest
     ) async throws -> AIConnectorRiskReviewResult
 
-    static let version = "phase5-document-review-v1"
+    static let version = "phase5-document-review-v2-nominal-reference"
     static let promptVersion = "phase5-risk-review-v1"
     static let maximumModelCandidates = 8
 
@@ -141,6 +141,7 @@ struct AIConnectorDocumentReviewDetector {
                     wasCancelled = true
                     break
                 } catch {
+                    if error is AIConnectorInputBudgetError { modelCallCount = max(modelCallCount - 1, 0) }
                     fallbackCount += 1
                     findings = replace(candidate, in: findings, with: candidate.withReview(
                         origin: .deterministicFallback,
@@ -473,10 +474,24 @@ struct AIConnectorDocumentReviewDetector {
         let targets = internalTargets(documentText: documentText, structure: structure)
         var findings: [AIConnectorDocumentFinding] = []
         let references = regexMatches(
-            #"(?i)\b(?:Pasal\s+[0-9]+[A-Za-z]?|Ayat\s+\([0-9]+\)|Lampiran\s+[A-Za-z0-9IVX.-]+|[0-9]+(?:\.[0-9]+)+|\([a-z]\))"#,
+            #"(?i)\b(?:Pasal\s+[0-9]+[A-Za-z]?|Ayat\s+\([0-9]+\)|Lampiran\s+[A-Za-z0-9IVX]+(?:[.-][A-Za-z0-9IVX]+)*\b|[0-9]+(?:\.[0-9]+)+|\([a-z]\))"#,
             in: documentText
         )
+        let nominalRanges = regexMatches(
+            #"(?i)\b(?:Rp\.?|IDR|USD|EUR)\s*\d+(?:[.,]\d+)*(?:\s*[-–]\s*(?:(?:Rp\.?|IDR|USD|EUR)\s*)?\d+(?:[.,]\d+)*)?|\b\d+(?:[.,]\d+)+\s*(?:%|persen\b|kg\b|g\b|mg\b|km\b|m\b|cm\b|mm\b|liter\b|ml\b|ton\b|rupiah\b)"#,
+            in: documentText).map(\.range)
         for reference in references {
+            if nominalRanges.contains(where: { NSIntersectionRange($0, reference.range).length > 0 }) { continue }
+            if ["lampiran ini", "lampiran tersebut"].contains(reference.value.lowercased()) { continue }
+            let isDottedNumber = reference.value.range(of: #"^\d+(?:\.\d+)+$"#, options: .regularExpression) != nil
+            if isDottedNumber {
+                let prefixRange = NSRange(location: max(0, reference.range.location - 40),
+                    length: min(40, reference.range.location))
+                let prefix = (documentText as NSString).substring(with: prefixRange)
+                let explicitReferral = prefix.range(of: #"(?i)\b(?:angka|butir|lihat|merujuk|rujukan|bagian|klausul)\s*$"#, options: .regularExpression) != nil
+                let structured = targets.contains { normalizeReferenceLabel($0.label) == normalizeReferenceLabel(reference.value) }
+                if !explicitReferral && !structured { continue }
+            }
             let paragraph = enclosingBlock(for: reference.range, structure: structure)
             let paragraphText = paragraph.map { substring($0.sourceRange, in: documentText) } ?? ""
             if paragraphText.range(
@@ -688,7 +703,7 @@ struct AIConnectorDocumentReviewDetector {
             case .heading:
                 leadingPatterns = [
                     #"(?i)^\s*(Pasal\s+[0-9]+[A-Za-z]?)\b"#,
-                    #"(?i)^\s*(Lampiran\s+[A-Za-z0-9IVX.-]+)\b"#
+                    #"(?i)^\s*(Lampiran\s+[A-Za-z0-9IVX]+(?:[.-][A-Za-z0-9IVX]+)*\b)\b"#
                 ]
             case .numberedClause, .listItem:
                 leadingPatterns = [

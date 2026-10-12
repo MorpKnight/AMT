@@ -4,6 +4,7 @@ import Foundation
 /// work spans, not percentages: some spans intentionally overlap because a
 /// model preparation span can contain the first retrieval or review call.
 nonisolated enum AIConnectorObservationStage: String, Codable, CaseIterable, Hashable, Sendable {
+    case localReview
     case segmenting
     case documentStructure
     case contextExtraction
@@ -172,6 +173,9 @@ nonisolated struct AIConnectorSegmentObservation: Codable, Identifiable, Hashabl
     let challengeCount: Int
     let fallbackCount: Int
     let modelOriginCount: Int
+    var definitionRepairCount: Int? = nil
+    var candidateFilterReasons: [String: Int]? = nil
+    var stageCoverage: [String: AIConnectorStageCoverage] = [:]
 
     var id: Int { segmentID }
 }
@@ -307,6 +311,11 @@ nonisolated struct AIConnectorBaselineSuiteReport: Codable, Hashable, Sendable {
 /// lengths; no target, replacement, reason, definition, URL, or raw output is
 /// represented here.
 nonisolated struct AIConnectorObservationReport: Codable, Hashable, Sendable {
+    #if DEBUG
+    var suggestionLexicalDiagnostics: LegalLexicalRetrievalDiagnostics? = nil
+    var mappingMetrics: AIConnectorMappingBenchmarkMetrics? = nil
+    var inputCoverage: [String: AIConnectorInputCoverage]? = nil
+    #endif
     static let schemaVersion = "phase0-observability-v1"
 
     let schemaVersion: String

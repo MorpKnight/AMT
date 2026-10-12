@@ -1,6 +1,6 @@
 import Foundation
 
-enum AIConnectorDefinitionReviewParserError: Error, Equatable, Sendable {
+enum AIConnectorDefinitionReviewParserError: Error, Equatable, LocalizedError, Sendable {
     case missingToolCall
     case multipleToolCalls
     case unknownTool
@@ -9,6 +9,8 @@ enum AIConnectorDefinitionReviewParserError: Error, Equatable, Sendable {
     case reasoningOrTemplateToken
     case candidateIDMismatch
     case invalidDecision
+
+    var errorDescription: String? { message }
 
     var isRecoverable: Bool {
         switch self {

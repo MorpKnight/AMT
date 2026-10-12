@@ -7,12 +7,14 @@ import HuggingFace
 import Tokenizers
 
 nonisolated enum LegalSemanticRetrieverError: Error, Equatable, LocalizedError, Sendable {
+    case inputTooLong
     case emptyQuery
     case invalidEmbeddingDimension
     case modelUnavailable(String)
 
     var errorDescription: String? {
         switch self {
+        case .inputTooLong: "Input semantik melebihi 512 token; retrieval semantic tidak lengkap."
         case .emptyQuery:
             "Query semantik kosong."
         case .invalidEmbeddingDimension:
@@ -31,7 +33,10 @@ actor LegalSemanticRetriever {
     private var modelContainer: EmbedderModelContainer?
     private var loadingTask: Task<EmbedderModelContainer, Error>?
 
-    init(corpus: LegalCorpusStore) {
+    private let inferenceScheduler: AIConnectorInferenceScheduler
+
+    init(corpus: LegalCorpusStore, inferenceScheduler: AIConnectorInferenceScheduler = AIConnectorInferenceScheduler()) {
+        self.inferenceScheduler = inferenceScheduler
         self.corpus = corpus
     }
 
@@ -42,6 +47,10 @@ actor LegalSemanticRetriever {
     func load(
         progress: @Sendable @escaping (Double) -> Void = { _ in }
     ) async throws {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         _ = try await resolvedContainer(progress: progress)
     }
 
@@ -50,6 +59,10 @@ actor LegalSemanticRetriever {
         limit: Int,
         progress: @Sendable @escaping (Double) -> Void = { _ in }
     ) async throws -> [LegalRetrievalMatch] {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else {
             throw LegalSemanticRetrieverError.emptyQuery
@@ -66,6 +79,9 @@ actor LegalSemanticRetriever {
         }
         return corpus.semanticMatches(for: vector, limit: limit)
     }
+
+    /// Called only while application maintenance owns the shared inference lease.
+    func releaseIdleRuntimeForMaintenance() { modelContainer = nil }
 
     private func resolvedContainer(
         progress: @Sendable @escaping (Double) -> Void
@@ -115,6 +131,7 @@ actor LegalSemanticRetriever {
                 throw LegalSemanticRetrieverError.emptyQuery
             }
 
+            guard tokenIDs.count <= 512 else { throw LegalSemanticRetrieverError.inputTooLong }
             let input = stacked([MLXArray(tokenIDs)])
             let eosTokenID = context.tokenizer.eosTokenId ?? 0
             let mask = input .!= eosTokenID

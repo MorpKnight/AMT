@@ -31,6 +31,7 @@ final class AIConnectorDocumentContextCoordinator {
         generationProfile: AIConnectorGenerationProfile,
         downloadProgress: @escaping @Sendable (Double) -> Void = { _ in },
         generationProgress: @escaping @MainActor @Sendable (Int) -> Void = { _ in },
+        localPreparation: @escaping @MainActor @Sendable (AIConnectorDocumentContextPreparation) async throws -> Void = { _ in },
         stage: @escaping @MainActor @Sendable (AIConnectorDocumentContextPreparationStage) -> Void = { _ in }
     ) async throws -> AIConnectorDocumentContextPreparation {
         let clock = ContinuousClock()
@@ -56,6 +57,15 @@ final class AIConnectorDocumentContextCoordinator {
         profile = profile.withCoverage(sample.coverage)
         let extractionDuration = Self.seconds(extractionStartedAt.duration(to: clock.now))
 
+        let localSegmentation = LegalTextSegmenter().segment(documentText: documentText, structure: structure, profile: profile)
+        try await localPreparation(AIConnectorDocumentContextPreparation(
+            structure: structure, profile: profile, segmentation: localSegmentation,
+            structureDuration: structureDuration, extractionDuration: extractionDuration,
+            segmentationDuration: 0, preparationDuration: Self.seconds(startedAt.duration(to: clock.now)),
+            classificationDuration: 0,
+            cacheKey: Self.cacheKey(documentText: documentText, structure: structure, modelVariant: modelVariant, mode: mode)
+        ))
+        try Task.checkCancellation()
         var classificationDuration = 0.0
         if mode.usesModel, profile.requiresClassification {
             stage(.classification)
@@ -108,7 +118,7 @@ final class AIConnectorDocumentContextCoordinator {
                     documentTypes: [],
                     domains: [],
                     status: .fallback,
-                    modelCallCount: 1,
+                    modelCallCount: error is AIConnectorInputBudgetError ? 0 : 1,
                     duration: classificationDuration
                 )
             }
@@ -223,8 +233,7 @@ struct AIConnectorDocumentContextSample: Sendable {
 }
 
 struct AIConnectorDocumentContextSampler: Sendable {
-    /// Conservative UTF-16 cap. It leaves headroom below the 2,048-token
-    /// classification input limit for tokenizers with larger tokenization.
+    /// Select complete evidence lines; the resource tokenizer validates the full templated prompt.
     static let maximumUTF16Length = 7_000
 
     func sample(
@@ -244,15 +253,8 @@ struct AIConnectorDocumentContextSampler: Sendable {
             let separatorLength = parts.isEmpty ? 0 : 1
             let available = Self.maximumUTF16Length - length - separatorLength
             guard available > 0 else { return }
-            let clipped: String
-            if line.utf16.count > available {
-                clipped = available == 1
-                    ? "…"
-                    : String(line.prefix(available - 1)) + "…"
-            } else {
-                clipped = line
-            }
-            guard !clipped.isEmpty else { return }
+            guard line.utf16.count <= available else { return }
+            let clipped = line
             parts.append(clipped)
             length += clipped.utf16.count + separatorLength
             evidenceIDs.append(label)
