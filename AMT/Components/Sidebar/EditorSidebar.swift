@@ -64,15 +64,6 @@ struct EditorSidebar: View {
             .padding(.bottom, 16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .toolbar {
-            ToolbarItem(placement: .navigation) {
-                Button(action: onBackToDashboard) {
-                    Image(systemName: "folder")
-                        .font(.system(size: 13))
-                }
-                .help("Kembali ke Dashboard")
-            }
-        }
         .sheet(isPresented: $showingTermsSheet) {
             termsSheetView
         }

@@ -146,6 +146,9 @@ struct EditorToolbar: View {
     let saveState: DocumentSaveState
     let reviewNeedsRerun: Bool
     let aiConnectorViewModel: AIConnectorViewModel?
+    var isLeftSidebarVisible: Bool = true
+    var onToggleLeftSidebar: () -> Void = {}
+    var onBackToDashboard: () -> Void = {}
     var isRightSidebarVisible: Bool = true
     var onToggleRightSidebar: () -> Void = {}
     var onRetrySave: () -> Void = {}
@@ -161,6 +164,9 @@ struct EditorToolbar: View {
         canPreviewOriginal: Bool,
         saveState: DocumentSaveState,
         reviewNeedsRerun: Bool,
+        isLeftSidebarVisible: Bool = true,
+        onToggleLeftSidebar: @escaping () -> Void = {},
+        onBackToDashboard: @escaping () -> Void = {},
         isRightSidebarVisible: Bool = true,
         onToggleRightSidebar: @escaping () -> Void = {},
         onRetrySave: @escaping () -> Void = {},
@@ -176,6 +182,9 @@ struct EditorToolbar: View {
         self.canPreviewOriginal = canPreviewOriginal
         self.saveState = saveState
         self.reviewNeedsRerun = reviewNeedsRerun
+        self.isLeftSidebarVisible = isLeftSidebarVisible
+        self.onToggleLeftSidebar = onToggleLeftSidebar
+        self.onBackToDashboard = onBackToDashboard
         self.isRightSidebarVisible = isRightSidebarVisible
         self.onToggleRightSidebar = onToggleRightSidebar
         self.onRetrySave = onRetrySave
@@ -187,7 +196,32 @@ struct EditorToolbar: View {
     }
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
+            // Left Navigation Group: [folder] [sidebar.left]
+            HStack(spacing: 8) {
+                Button(action: onBackToDashboard) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.textPrimary)
+                }
+                .buttonStyle(.plain)
+                .help("Kembali ke Dashboard")
+
+                Button(action: onToggleLeftSidebar) {
+                    Image(systemName: "sidebar.left")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(isLeftSidebarVisible ? Color.textPrimary : Color.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .help(isLeftSidebarVisible ? "Sembunyikan Sidebar" : "Tampilkan Sidebar")
+            }
+
+            // Fixed vertical separator between navigation icons and title
+            Rectangle()
+                .fill(Color.borderSubtle)
+                .frame(width: 1, height: 16)
+                .padding(.horizontal, 2)
+
             documentTitleField
 
             Spacer()
@@ -210,7 +244,7 @@ struct EditorToolbar: View {
     private var documentTitleField: some View {
         TextField("Untitled", text: $documentTitle)
             .textFieldStyle(.plain)
-            .font(.system(size: 11, weight: .medium))
+            .font(.system(size: 11, weight: .bold))
             .foregroundStyle(Color.textPrimary)
             .frame(minWidth: 160, maxWidth: 460, alignment: .leading)
     }

@@ -29,7 +29,7 @@ struct DocumentEditorView: View {
     @State private var editorViewModel = EditorViewModel()
     @State private var presentationMode: DocumentPresentationMode
     @State private var showDefinitionMatches = false
-    @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
+    @State private var isLeftSidebarVisible = true
     @State private var isReviewSidebarVisible = true
     @State private var pendingSuggestionAccept: EditorSuggestion?
     @State private var pendingDefinitionResolution: AIConnectorDefinitionResolutionOption?
@@ -80,42 +80,45 @@ struct DocumentEditorView: View {
     }
     
     var body: some View {
-        NavigationSplitView(columnVisibility: $sidebarVisibility) {
-            EditorSidebar(
-                documents: documents,
-                selectedDocumentID: $selectedDocumentID,
-                onBackToDashboard: onBackToDashboard,
-                onImportDocument: onImportDocument
-            )
-            .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 280)
-            .navigationTitle("")
-            
-        } detail: {
+        VStack(spacing: 0) {
+            editorToolbar
+
+            Divider()
+                .overlay(Color.borderSubtle)
+
             HStack(spacing: 0) {
-                VStack(spacing: 0) {
-                    editorToolbar
+                if isLeftSidebarVisible {
+                    EditorSidebar(
+                        documents: documents,
+                        selectedDocumentID: $selectedDocumentID,
+                        onBackToDashboard: onBackToDashboard,
+                        onImportDocument: onImportDocument
+                    )
+                    .frame(width: 240)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+
                     Divider()
                         .overlay(Color.borderSubtle)
+                }
 
-                    GeometryReader { proxy in
-                        ZStack(alignment: .top) {
-                            Color.white
+                GeometryReader { proxy in
+                    ZStack(alignment: .top) {
+                        Color.white
 
-                            if presentationMode == .preview,
-                               let originalSourceURL {
-                                WordDocumentPreview(sourceURL: originalSourceURL)
-                                    .frame(
-                                        width: proxy.size.width,
-                                        height: proxy.size.height
-                                    )
-                            } else {
-                                editorView(for: proxy)
-                            }
+                        if presentationMode == .preview,
+                           let originalSourceURL {
+                            WordDocumentPreview(sourceURL: originalSourceURL)
+                                .frame(
+                                    width: proxy.size.width,
+                                    height: proxy.size.height
+                                )
+                        } else {
+                            editorView(for: proxy)
+                        }
 
-                            if presentationMode == .editing {
-                                EditorFloatingControls(viewModel: editorViewModel)
-                                    .padding(.top, 14)
-                            }
+                        if presentationMode == .editing {
+                            EditorFloatingControls(viewModel: editorViewModel)
+                                .padding(.top, 14)
                         }
                     }
                 }
@@ -153,11 +156,9 @@ struct DocumentEditorView: View {
                     .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
-            .frame(minWidth: 600, maxWidth: .infinity, maxHeight: .infinity)
-            .navigationTitle("")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationSplitViewStyle(.prominentDetail)
-        .navigationTitle("")
+        .frame(minWidth: 700, minHeight: 500)
         .onChange(of: selectedDocumentID) { _, newID in
             isDebugPanelPresented = false
             showDefinitionMatches = false
@@ -214,6 +215,13 @@ struct DocumentEditorView: View {
             canPreviewOriginal: originalSourceURL != nil,
             saveState: saveState,
             reviewNeedsRerun: reviewNeedsRerun,
+            isLeftSidebarVisible: isLeftSidebarVisible,
+            onToggleLeftSidebar: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isLeftSidebarVisible.toggle()
+                }
+            },
+            onBackToDashboard: onBackToDashboard,
             isRightSidebarVisible: isReviewSidebarVisible,
             onToggleRightSidebar: {
                 withAnimation(.easeInOut(duration: 0.2)) {
