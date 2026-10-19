@@ -639,7 +639,7 @@ nonisolated enum AIConnectorQualityPackageError: LocalizedError, Equatable, Send
 }
 
 nonisolated struct AIConnectorQualityFixtureCatalog {
-    static let version = "phase8-fixtures-v1"
+    static let version = "phase8-fixtures-v2-backend46"
 
     #if DEBUG
     static var fixtures: [AIConnectorQualityFixture] {
@@ -655,6 +655,7 @@ nonisolated struct AIConnectorQualityFixtureCatalog {
             )
         }
         result.append(contentsOf: documentFixtures)
+        result.append(contentsOf: AIConnectorBackendEvaluationFixtures.fixtures)
         return result
     }
 

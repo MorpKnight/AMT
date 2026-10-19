@@ -135,6 +135,7 @@ nonisolated struct AIConnectorDocumentContextProfile: Hashable, Sendable {
     let classifierVersion: String
     let modelCallCount: Int
     let classificationDuration: TimeInterval
+    var explicitTermAliases: [String: String] = [:]
 
     var requiresClassification: Bool {
         let knownTypes = documentTypeCandidates.filter { $0.value != "unknown" }
@@ -181,7 +182,8 @@ nonisolated struct AIConnectorDocumentContextProfile: Hashable, Sendable {
             extractorVersion: extractorVersion,
             classifierVersion: classifierVersion,
             modelCallCount: modelCallCount,
-            classificationDuration: duration
+            classificationDuration: duration,
+            explicitTermAliases: explicitTermAliases
         )
     }
 
@@ -203,7 +205,8 @@ nonisolated struct AIConnectorDocumentContextProfile: Hashable, Sendable {
             extractorVersion: extractorVersion,
             classifierVersion: classifierVersion,
             modelCallCount: modelCallCount,
-            classificationDuration: classificationDuration
+            classificationDuration: classificationDuration,
+            explicitTermAliases: explicitTermAliases
         )
     }
 
@@ -227,6 +230,7 @@ nonisolated struct AIConnectorSegmentContext: Hashable, Sendable {
     let legalDomainCandidates: [String]
     let profileFingerprint: String
     let structureFingerprint: String
+    var explicitTermAliases: [String: String] = [:]
 
     var fingerprint: String {
         [
@@ -239,6 +243,7 @@ nonisolated struct AIConnectorSegmentContext: Hashable, Sendable {
             documentTypeCandidates.joined(separator: ","),
             legalDomainCandidates.joined(separator: ","),
             profileFingerprint,
+            explicitTermAliases.keys.sorted().map { $0 + "=" + (explicitTermAliases[$0] ?? "") }.joined(separator: "|"),
             structureFingerprint
         ].joined(separator: "|")
     }

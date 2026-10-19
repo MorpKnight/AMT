@@ -117,6 +117,8 @@ nonisolated struct AIConnectorAnalysisBaseline: Sendable {
     let documentFindings: [AIConnectorDocumentFinding]
     let ignoredReviewItemIDs: Set<UUID>
     let reviewedReviewItemIDs: Set<UUID>
+    /// Nil denotes a complete legacy in-memory baseline; partial runs set this explicitly.
+    var completedSegmentIDs: Set<Int>? = nil
 }
 
 /// Privacy-safe metrics for one incremental run. No source text, evidence,

@@ -23,6 +23,8 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
     let onSelect: (UUID?) -> Void
     let onCaretLocationChanged: (Int?) -> Void
     let onTextEdited: () -> Void
+    let validateSuggestion: (EditorSuggestion, String) -> Bool
+    let validateDefinitionResolution: (AIConnectorDefinitionResolutionOption, String) -> Bool
     let onSuggestionAccepted: (EditorSuggestion, String, String) -> Void
     let onDismiss: (UUID) -> Void
     let onMarkReviewed: (UUID) -> Void
@@ -53,6 +55,8 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         onSelect: @escaping (UUID?) -> Void,
         onCaretLocationChanged: @escaping (Int?) -> Void = { _ in },
         onTextEdited: @escaping () -> Void,
+        validateSuggestion: @escaping (EditorSuggestion, String) -> Bool = { _, _ in false },
+        validateDefinitionResolution: @escaping (AIConnectorDefinitionResolutionOption, String) -> Bool = { _, _ in false },
         onSuggestionAccepted: @escaping (EditorSuggestion, String, String) -> Void,
         onDismiss: @escaping (UUID) -> Void,
         onMarkReviewed: @escaping (UUID) -> Void,
@@ -78,6 +82,8 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         self.onSelect = onSelect
         self.onCaretLocationChanged = onCaretLocationChanged
         self.onTextEdited = onTextEdited
+        self.validateSuggestion = validateSuggestion
+        self.validateDefinitionResolution = validateDefinitionResolution
         self.onSuggestionAccepted = onSuggestionAccepted
         self.onDismiss = onDismiss
         self.onMarkReviewed = onMarkReviewed
@@ -243,6 +249,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
         private var textContainer: NSTextContainer?
         private var boundsObserver: NSObjectProtocol?
         private var magnificationObserver: NSObjectProtocol?
+        private var scheduledZoomPercent: Int?
         private var popover: NSPopover?
         private var presentedSuggestionID: UUID?
         private var lastDefinitionResolutionSignature: String?
@@ -395,15 +402,57 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
             let clampedPercent = EditorZoom.clamp(percent)
             let magnification = EditorZoom.magnification(for: clampedPercent)
             let currentMagnification = scrollView.magnification
+
             guard !currentMagnification.isFinite
                     || abs(currentMagnification - magnification) > 0.001
-            else { return }
+            else {
+                scheduledZoomPercent = nil
+                return
+            }
 
-            let visibleRect = scrollView.documentVisibleRect
-            scrollView.setMagnification(
-                magnification,
-                centeredAt: NSPoint(x: visibleRect.midX, y: visibleRect.midY)
-            )
+            // A SwiftUI representable update can run from inside AppKit's
+            // layout transaction. Mutating NSScrollView.magnification here
+            // synchronously re-enters layout and AppKit raises an
+            // NSException (which appears in Xcode as EXC_BREAKPOINT at
+            // _crashOnException). Defer the mutation until the current
+            // layout pass has completed and discard stale requests when the
+            // user clicks the zoom controls repeatedly.
+            scheduledZoomPercent = clampedPercent
+            DispatchQueue.main.async { [weak self] in
+                guard let self,
+                      self.scheduledZoomPercent == clampedPercent,
+                      let scrollView = self.scrollView else {
+                    return
+                }
+                self.scheduledZoomPercent = nil
+
+                guard scrollView.window != nil,
+                      scrollView.bounds.width.isFinite,
+                      scrollView.bounds.height.isFinite,
+                      scrollView.bounds.width > 0,
+                      scrollView.bounds.height > 0 else {
+                    return
+                }
+
+                let visibleRect = scrollView.documentVisibleRect
+                guard visibleRect.origin.x.isFinite,
+                      visibleRect.origin.y.isFinite,
+                      visibleRect.size.width.isFinite,
+                      visibleRect.size.height.isFinite else {
+                    return
+                }
+
+                let currentMagnification = scrollView.magnification
+                guard !currentMagnification.isFinite
+                        || abs(currentMagnification - magnification) > 0.001 else {
+                    return
+                }
+
+                scrollView.setMagnification(
+                    magnification,
+                    centeredAt: NSPoint(x: visibleRect.midX, y: visibleRect.midY)
+                )
+            }
         }
 
         func updateFontSize(to newSize: CGFloat) {
@@ -647,7 +696,7 @@ struct HighlightedDocumentTextEditor: NSViewRepresentable {
 
         private func snapshot(from textView: NSTextView) -> EditorSnapshot {
             EditorSnapshot(
-                attributedText: textView.attributedString(),
+                attributedText: NSAttributedString(attributedString: textView.attributedString()),
                 selectedRange: textView.selectedRange(),
                 typingAttributes: textView.typingAttributes
             )

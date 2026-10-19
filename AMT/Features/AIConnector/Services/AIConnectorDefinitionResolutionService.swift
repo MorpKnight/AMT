@@ -44,7 +44,7 @@ struct AIConnectorDefinitionResolutionService: Sendable {
         var references: [EditorSuggestionReference] = []
         var candidateCount = 0
 
-        for candidate in sourceCandidates {
+        for candidate in sourceCandidates where !assessment.isNarrowNegationMismatch {
             let reference = makeReference(
                 for: candidate,
                 sourceDefinition: sourceDefinitionBody(
@@ -61,9 +61,12 @@ struct AIConnectorDefinitionResolutionService: Sendable {
                 from: candidate.sourceDefinition,
                 term: candidate.term
             )
-            let sourceEligible = isEligibleSource(candidate.match.entry)
+            let conflictsWithDocument = hasConflictingDocumentDefinition(term: candidate.term, sourceBody: sourceBody, documentText: documentText, excluding: assessment.segment)
+            let sourceEligible = isEligibleSource(candidate.match.entry) && !conflictsWithDocument
             let contractMessage = "Dokumen tampak memberi arti khusus pada istilah ini; perubahan otomatis tidak tersedia."
-            let sourceMessage = sourceEligibilityMessage(candidate.match.entry)
+            let sourceMessage = conflictsWithDocument
+                ? "Dokumen memiliki definisi internal yang berbeda; sumber ini tersedia sebagai referensi."
+                : sourceEligibilityMessage(candidate.match.entry)
 
             let useStatus: AIConnectorDefinitionResolutionOptionStatus
             let useMessage: String?
@@ -133,6 +136,9 @@ struct AIConnectorDefinitionResolutionService: Sendable {
                 } else if !sourceEligible {
                     termStatus = .informational
                     termMessage = sourceMessage
+                } else if normalizedDefinition(sourceBody) != normalizedDefinition(anchors.bodyOriginal ?? "") {
+                    termStatus = .needsReview
+                    termMessage = "Isi definisi berbeda; penggantian istilah memerlukan pemeriksaan konteks."
                 } else {
                     termStatus = .actionable
                     termMessage = nil
@@ -157,7 +163,7 @@ struct AIConnectorDefinitionResolutionService: Sendable {
 
         var queryCount = 0
         var semanticMatches: [LegalDictionaryMatch] = []
-        if includeReverseTermCandidates,
+        if includeReverseTermCandidates && !assessment.isNarrowNegationMismatch,
            anchors.bodyOriginal != nil,
            !contractDefined(in: assessment.segment.targetText),
            assessment.alignment == .mismatch {
@@ -230,6 +236,7 @@ struct AIConnectorDefinitionResolutionService: Sendable {
                 } catch is CancellationError {
                     throw CancellationError()
                 } catch {
+                    if error is AIConnectorInputBudgetError { modelCallCount = max(modelCallCount - 1, 0) }
                     fallbackCount += 1
                     status = .needsReview
                     message = "Penilaian model gagal; kandidat tetap harus diverifikasi manusia."
@@ -238,6 +245,10 @@ struct AIConnectorDefinitionResolutionService: Sendable {
                 fallbackCount += 1
             }
 
+            if !isEligibleSource(match.entry) || hasConflictingDocumentDefinition(term: match.entry.term, sourceBody: sourceDefinition, documentText: documentText, excluding: assessment.segment) {
+                status = .informational
+                message = sourceEligibilityMessage(match.entry)
+            }
             options.append(
                 AIConnectorDefinitionResolutionOption(
                     id: "\(assessment.id)-reverse-\(candidateID)",
@@ -256,7 +267,7 @@ struct AIConnectorDefinitionResolutionService: Sendable {
             )
         }
 
-        if assessment.alignment == .mismatch {
+        if assessment.alignment == .mismatch && !assessment.isNarrowNegationMismatch {
             options.append(
                 AIConnectorDefinitionResolutionOption(
                     id: "\(assessment.id)-reject",
@@ -480,6 +491,25 @@ struct AIConnectorDefinitionResolutionService: Sendable {
             + "(?:\\s*[\\\"“”‘’'])?"
             + "\\s*[,;:]?\\s*(?:adalah|ialah|merupakan|berarti|didefinisikan\\s+sebagai|diartikan\\s+sebagai)\\s+"
             + body + "[.!?;]?$"
+    }
+
+    /// A definition elsewhere in this document has its own scope. A corpus
+    /// reference cannot silently replace it through another occurrence.
+    private func hasConflictingDocumentDefinition(
+        term: String,
+        sourceBody: String,
+        documentText: String,
+        excluding segment: AIReviewSegment
+    ) -> Bool {
+        let pattern = "(?im)(?<![\\p{L}\\p{N}_])(?:[\"“”‘’'])?" + NSRegularExpression.escapedPattern(for: term)
+            + "(?:[\"“”‘’'])?\\s+(?:adalah|ialah|merupakan|berarti)\\s+([^\\n]+)"
+        guard let expression = try? NSRegularExpression(pattern: pattern) else { return true }
+        let text = documentText as NSString
+        let target = NSRange(location: segment.sourceLocation, length: segment.sourceLength)
+        return expression.matches(in: documentText, range: NSRange(location: 0, length: text.length)).contains { match in
+            NSIntersectionRange(match.range, target).length == 0
+                && normalizedDefinition(text.substring(with: match.range(at: 1))) != normalizedDefinition(sourceBody)
+        }
     }
 
     private func contractDefined(in text: String) -> Bool {

@@ -7,7 +7,8 @@ final class AIConnectorViewModel {
     private static let previewCharacters = 2_000
     static let maximumDocumentCharacters = 4_000
     private static let analysisPipelineVersion = [
-        "document-analysis-v1",
+        "document-analysis-progressive-v3-bounded-input",
+        AIConnectorDefinitionAnalyzer.policyVersion,
         "phase7-incremental-analysis-v1",
         "review-pipeline-phase4-context-profile-v1",
         AIConnectorDocumentReviewDetector.version,
@@ -156,6 +157,80 @@ final class AIConnectorViewModel {
     private(set) var reprocessedSegmentCount = 0
     private(set) var hasPendingAnalysisChanges = false
 
+#if DEBUG
+    /// Measurement-only controls; normal application runs never set these.
+    var flowBenchmarkReuseCaches = false
+    @ObservationIgnored private(set) var mappingBenchmarkMetrics = AIConnectorMappingBenchmarkMetrics()
+
+    /// Offline replay enters the same local/final result handlers as the queue.
+    func mappingBenchmarkReset(documentText: String) {
+        resetInputMetadata()
+        editorSourceText = documentText
+        exposesEditorSuggestions = true
+        editorAnalysisProfile = currentAnalysisProfile
+        mappingBenchmarkMetrics = AIConnectorMappingBenchmarkMetrics()
+    }
+
+    func mappingBenchmarkApplyLocal(_ result: AIConnectorSegmentResult) { applyLocal(result: result) }
+    func mappingBenchmarkApplyFinal(_ result: AIConnectorSegmentResult) async { await apply(result: result) }
+
+    func flowBenchmarkInvalidSourceCount() -> Int {
+        validatedReviews.filter { review in
+            guard review.status == .suggestion, review.category == .terminology else { return false }
+            guard let entry = review.glossaryMatch?.entry else { return true }
+            return entry.authority != .verified || !entry.isActionable || entry.applicabilityStatus != .inForce
+                || !dictionaryStore.entries(forTerm: entry.term).contains(entry)
+        }.count
+    }
+    func flowBenchmarkAwaitCompletion() async {
+        let runningTask = task
+        await runningTask?.value
+    }
+
+    func flowBenchmarkPrepareResources() async throws {
+        try await segmentProcessor.prepareResources(modelVariant: modelVariant)
+    }
+
+    func flowBenchmarkPressure(critical: Bool) async -> Bool {
+        await service.resourceLifecycle.handle(critical ? .critical : .warning)
+        await service.resourceLifecycle.handle(.normal)
+        return true
+    }
+
+    func flowBenchmarkCacheCounts() async -> [String: Int] {
+        var result = await segmentProcessor.flowBenchmarkCacheCounts()
+        result["qwenLoads"] = service.resourceLoadCount
+        result["qwenReleases"] = service.resourceReleaseCount
+        result["mlxRuntimePeak"] = service.resourceLifecycle.runtimePeakMemory
+        result["maintenance"] = service.resourceLifecycle.maintenanceCount
+        result["maintenanceActiveBefore"] = service.resourceLifecycle.lastMaintenanceActiveBefore
+        result["maintenanceActiveAfter"] = service.resourceLifecycle.lastMaintenanceActiveAfter
+        result["maintenanceCacheAfter"] = service.resourceLifecycle.lastMaintenanceCacheAfter
+        result["contextHits"] = contextPreparationCache.statistics.hits
+        result["contextMisses"] = contextPreparationCache.statistics.misses
+        result["contextEvictions"] = contextPreparationCache.statistics.evictions
+        result["riskHits"] = documentReviewCache.statistics.hits
+        result["riskMisses"] = documentReviewCache.statistics.misses
+        result["riskEvictions"] = documentReviewCache.statistics.evictions
+        result["resolutionHits"] = definitionResolutionCache.statistics.hits
+        result["resolutionMisses"] = definitionResolutionCache.statistics.misses
+        result["resolutionEvictions"] = definitionResolutionCache.statistics.evictions
+        for (key, value) in await service.languageScorer.cacheDiagnostics() { result["tata-" + key] = value }
+        return result
+    }
+
+    func flowBenchmarkClearCaches() async {
+        await segmentProcessor.clearCache()
+        await segmentProcessor.flowBenchmarkClearScoreCache()
+        contextPreparationCache.removeAll()
+        documentReviewCache.removeAll()
+        definitionResolutionCache.removeAll()
+        analysisBaseline = nil
+        pendingAnalysisPlan = nil
+    }
+#endif
+
+    private let cacheOwnerID = UUID()
     private let service: QwenSuggestionService
     private let dictionaryStore: LegalDictionaryStore
     private let segmenter = LegalTextSegmenter()
@@ -191,8 +266,12 @@ final class AIConnectorViewModel {
     private static let generationProgressUpdateInterval: TimeInterval = 0.1
     private var lastGenerationProgressPublicationAt: Date?
     private var exposesEditorSuggestions = false
+    private(set) var segmentCoverage: [Int: [String: AIConnectorStageCoverage]] = [:]
+    @ObservationIgnored private var definitionResolutionTasks: [UUID: Task<Void, Never>] = [:]
+    private var editorAnalysisProfile: AIConnectorAnalysisProfile?
     private var analysisSnapshotEligible = false
     private var editorSourceText = ""
+    @ObservationIgnored private let editorMappingState = AIConnectorEditorMappingState()
     private var contextPreparationCache = AIConnectorAnalysisLRUCache<AIConnectorDocumentContextPreparation>()
     private var documentReviewCache = AIConnectorAnalysisLRUCache<AIConnectorDocumentReviewResult>()
     private var definitionResolutionCache = AIConnectorAnalysisLRUCache<AIConnectorDefinitionResolutionResult>()
@@ -257,6 +336,18 @@ final class AIConnectorViewModel {
             pipelineVersion: Self.analysisPipelineVersion
         )
 #endif
+        service.resourceLifecycle.attach(dictionaryStore.semanticRetriever)
+        service.resourceLifecycle.registerDocument(owner: cacheOwnerID) { [weak self] in
+            guard let self else { return false }
+            await self.trimResourceCaches()
+            return true
+        }
+    }
+
+    /// Evicts only derived caches; current findings, baseline and editor state remain intact.
+    private func trimResourceCaches() async {
+        await segmentProcessor.trimDerivedCaches()
+        contextPreparationCache.removeAll(); documentReviewCache.removeAll(); definitionResolutionCache.removeAll()
     }
 
     var isRunning: Bool {
@@ -602,9 +693,9 @@ final class AIConnectorViewModel {
             currentAnalysisProfile: currentAnalysisProfile
         )
         let preserved = incrementalPlanner.rematerialize(
-            reviews: validatedReviews,
-            assessments: definitionAssessments,
-            findings: documentFindings,
+            reviews: oldBaseline.validatedReviews,
+            assessments: oldBaseline.definitionAssessments,
+            findings: oldBaseline.documentFindings,
             baseline: oldBaseline,
             plan: plan,
             newText: documentText,
@@ -644,22 +735,9 @@ final class AIConnectorViewModel {
             wasPartial: false
         )
 
-        // Keep a baseline for the current revision so another edit before a
-        // rerun can be planned from the already materialized anchors. Profile
-        // extraction remains outside the typing path and is refreshed when
-        // the user starts the expensive rerun.
-        analysisBaseline = AIConnectorAnalysisBaseline(
-            documentText: documentText,
-            structure: currentStructure,
-            profile: oldBaseline.profile,
-            segmentation: currentSegmentation,
-            analysisProfile: currentAnalysisProfile,
-            validatedReviews: validatedReviews,
-            definitionAssessments: definitionAssessments,
-            documentFindings: documentFindings,
-            ignoredReviewItemIDs: ignoredReviewItemIDs,
-            reviewedReviewItemIDs: reviewedReviewItemIDs
-        )
+        // Keep the last analyzed revision as the diff origin. Replacing it with
+        // this edited text would make invalidated, missing results look reusable.
+        editorAnalysisProfile = currentAnalysisProfile
         setProgressStage(.idle)
         state = .idle
     }
@@ -761,6 +839,7 @@ final class AIConnectorViewModel {
         definitionResolutions = [:]
         definitionResolutionMetrics = [:]
         definitionResolutionLoadingIDs = []
+        cancelDefinitionResolutionTasks()
         definitionResolutionOperationIDs.removeAll()
         definitionResolutionCache.removeAll()
     }
@@ -778,7 +857,6 @@ final class AIConnectorViewModel {
         guard canRunBenchmark else { return }
 
         cancelRunningTask()
-        service.cancelLoading()
         clearBenchmarkCallbacks()
         resetRunState()
         exposesEditorSuggestions = false
@@ -816,7 +894,6 @@ final class AIConnectorViewModel {
         guard canRunBenchmark else { return }
 
         cancelRunningTask()
-        service.cancelLoading()
         clearBenchmarkCallbacks()
         resetRunState()
         exposesEditorSuggestions = false
@@ -973,7 +1050,6 @@ final class AIConnectorViewModel {
 
     func cancelPhaseZeroBaseline() {
         phaseZeroBaselineTask?.cancel()
-        service.cancelLoading()
     }
 
     var isPhaseTwoComparisonRunning: Bool {
@@ -1024,7 +1100,6 @@ final class AIConnectorViewModel {
 
     func cancelPhaseTwoComparison() {
         phaseTwoComparisonTask?.cancel()
-        service.cancelLoading()
     }
 
     func runIncrementalPlannerBenchmark(documentText: String) {
@@ -1048,7 +1123,6 @@ final class AIConnectorViewModel {
         }
 
         cancelRunningTask()
-        service.cancelLoading()
         clearBenchmarkCallbacks()
 
         let sourceText = sourceText(documentText: documentText)
@@ -1071,13 +1145,11 @@ final class AIConnectorViewModel {
             structure: structureSeed,
             profile: profileSeed
         )
+        let runBaseline = analysisBaseline
+        let runAnalysisProfile = currentAnalysisProfile
         let proposedPlan: AIConnectorAnalysisPlan?
         if scope == .fullFresh {
             proposedPlan = nil
-        } else if let pendingAnalysisPlan,
-                  pendingAnalysisPlan.changeSet.newTextFingerprint
-                    == DocumentFingerprinting.contentSHA256(sourceText) {
-            proposedPlan = pendingAnalysisPlan
         } else if let baseline = analysisBaseline {
             proposedPlan = incrementalPlanner.makePlan(
                 previous: baseline,
@@ -1096,9 +1168,9 @@ final class AIConnectorViewModel {
         let canUseIncrementalPlan = proposedPlan.map { !$0.isFullRerun } ?? false
         if canUseIncrementalPlan, let plan = proposedPlan, let baseline = analysisBaseline {
             let preserved = incrementalPlanner.rematerialize(
-                reviews: validatedReviews,
-                assessments: definitionAssessments,
-                findings: documentFindings,
+                reviews: baseline.validatedReviews,
+                assessments: baseline.definitionAssessments,
+                findings: baseline.documentFindings,
                 baseline: baseline,
                 plan: plan,
                 newText: sourceText,
@@ -1141,6 +1213,7 @@ final class AIConnectorViewModel {
 
         exposesEditorSuggestions = inputSource == .currentDocument
         editorSourceText = inputSource == .currentDocument ? sourceText : ""
+        editorAnalysisProfile = currentAnalysisProfile
         analysisRunScope = scope
         hasPendingAnalysisChanges = false
         activeAnalysisRunStartedAt = now()
@@ -1169,6 +1242,7 @@ final class AIConnectorViewModel {
         )
         observationCollector = runObservationCollector
         observationReport = nil
+        mappingBenchmarkMetrics = AIConnectorMappingBenchmarkMetrics()
 #endif
 
         let riskReviewer: AIConnectorDocumentReviewDetector.RiskReviewer?
@@ -1188,11 +1262,24 @@ final class AIConnectorViewModel {
             guard let self else { return }
 
             do {
+                var reuseResultCaches = scope != .fullFresh
+#if DEBUG
+                reuseResultCaches = reuseResultCaches || flowBenchmarkReuseCaches
+#endif
+                segmentProcessor.reuseScoreCache = reuseResultCaches
+                if !reuseResultCaches {
+                    await segmentProcessor.clearCache()
+                    await segmentProcessor.clearLanguageScoreCache()
+                    contextPreparationCache.removeAll()
+                    documentReviewCache.removeAll()
+                    definitionResolutionCache.removeAll()
+                }
                 let observationClock = ContinuousClock()
                 let preparation: AIConnectorDocumentContextPreparation
                 if let cachedPreparation = contextPreparationCache[contextCacheKey] {
                     preparation = cachedPreparation
                     contextPreparationCacheHit = true
+                    try await publishLocalResults(preparation: cachedPreparation, documentText: sourceText, operationID: operationID, mode: runMode)
                 } else {
                     contextPreparationCacheHit = false
                     preparation = try await documentContextCoordinator.prepare(
@@ -1226,6 +1313,10 @@ final class AIConnectorViewModel {
                                 fallback: 1
                             )
                         },
+                        localPreparation: { [weak self] local in
+                            guard let self, self.activeOperationID == operationID else { throw CancellationError() }
+                            try await self.publishLocalResults(preparation: local, documentText: sourceText, operationID: operationID, mode: runMode)
+                        },
                         stage: { [weak self] stage in
                             guard let self,
                                   self.activeOperationID == operationID else { return }
@@ -1236,7 +1327,7 @@ final class AIConnectorViewModel {
                             }
                         }
                     )
-                    contextPreparationCache[contextCacheKey] = preparation
+                    if preparation.profile.classificationStatus != .fallback { contextPreparationCache[contextCacheKey] = preparation }
                 }
                 guard activeOperationID == operationID else { return }
 
@@ -1257,17 +1348,31 @@ final class AIConnectorViewModel {
                 }
 
                 let runPlan: AIConnectorAnalysisPlan
-                if let activeAnalysisPlan {
-                    runPlan = activeAnalysisPlan
-                } else {
-                    runPlan = .full(
-                        scope: analysisRunScope,
-                        documentText: sourceText,
-                        segmentation: segmentation
+                if scope != .fullFresh, let baseline = runBaseline {
+                    runPlan = incrementalPlanner.makePlan(
+                        previous: baseline, documentText: sourceText,
+                        structure: preparation.structure, segmentation: segmentation,
+                        scope: scope, selectedSectionID: selectedSectionID,
+                        currentAnalysisProfile: runAnalysisProfile,
+                        currentProfile: preparation.profile
                     )
-                    activeAnalysisPlan = runPlan
-                    pendingAnalysisPlan = runPlan
+                    let preserved = incrementalPlanner.rematerialize(
+                        reviews: baseline.validatedReviews,
+                        assessments: baseline.definitionAssessments,
+                        findings: baseline.documentFindings,
+                        baseline: baseline, plan: runPlan,
+                        newText: sourceText, newSegmentation: segmentation
+                    )
+                    let local = validatedReviews.filter { runPlan.reprocessSegmentIDs.contains($0.segment.id) }
+                    validatedReviews = preserved.reviews + local
+                    definitionAssessments = preserved.assessments
+                    documentFindings = preserved.findings
+                    rebuildEditorMappings()
+                } else {
+                    runPlan = .full(scope: analysisRunScope, documentText: sourceText, segmentation: segmentation)
                 }
+                activeAnalysisPlan = runPlan
+                pendingAnalysisPlan = runPlan
                 let segmentsToProcess = segmentation.segments.filter {
                     runPlan.reprocessSegmentIDs.contains($0.id)
                 }
@@ -1308,7 +1413,7 @@ final class AIConnectorViewModel {
                     )
                     guard activeOperationID == operationID else { return }
                     documentReviewResult = computedFindingResult
-                    if !computedFindingResult.metrics.wasCancelled {
+                    if !computedFindingResult.metrics.wasCancelled, computedFindingResult.metrics.riskFallbackCount == 0 {
                         documentReviewCache[documentFindingCacheKey] = computedFindingResult
                     }
                 }
@@ -1316,7 +1421,7 @@ final class AIConnectorViewModel {
                 documentFindings = documentReviewResult.findings
                 documentFindingMetrics = documentReviewResult.metrics
                 if exposesEditorSuggestions {
-                    rebuildEditorMappings()
+                    updateDocumentFindingMappings()
                 }
 
 #if DEBUG
@@ -1327,23 +1432,25 @@ final class AIConnectorViewModel {
                     utf16Length: sourceText.utf16.count,
                     segmentCount: segmentation.segments.count
                 )
-                await runObservationCollector.recordStage(
-                    .documentStructure,
-                    duration: preparation.structureDuration
-                )
-                await runObservationCollector.recordStage(
-                    .contextExtraction,
-                    duration: preparation.extractionDuration
-                )
-                await runObservationCollector.recordStage(
-                    .contextSegmentation,
-                    duration: preparation.segmentationDuration
-                )
-                if preparation.classificationDuration > 0 {
+                if !contextPreparationCacheHit {
                     await runObservationCollector.recordStage(
-                        .contextClassification,
-                        duration: preparation.classificationDuration
+                        .documentStructure,
+                        duration: preparation.structureDuration
                     )
+                    await runObservationCollector.recordStage(
+                        .contextExtraction,
+                        duration: preparation.extractionDuration
+                    )
+                    await runObservationCollector.recordStage(
+                        .contextSegmentation,
+                        duration: preparation.segmentationDuration
+                    )
+                    if preparation.classificationDuration > 0 {
+                        await runObservationCollector.recordStage(
+                            .contextClassification,
+                            duration: preparation.classificationDuration
+                        )
+                    }
                 }
 #endif
 
@@ -1521,6 +1628,10 @@ final class AIConnectorViewModel {
                             break
                         }
 
+                    case let .localResult(result):
+                        applyLocal(result: result)
+                        await workQueue.acknowledgeResult()
+
                     case let .result(result):
                         await apply(result: result)
                         let acknowledgementClock = ContinuousClock()
@@ -1556,11 +1667,12 @@ final class AIConnectorViewModel {
                         errorMessage = "Model dialihkan ke pemulihan deterministik untuk sisa dokumen."
 
                     case let .finished(summary):
+                        let wasCancelled = summary.wasPartial && summary.processedSegmentCount < summary.totalSegmentCount
                         recordProgressActivity()
                         runSummary = currentSummary(wasPartial: summary.wasPartial)
-                        currentQueueState = summary.wasPartial ? .cancelled : .completed
-                        currentSegmentPreview = summary.wasPartial ? currentSegmentPreview : ""
-                        currentSegmentID = summary.wasPartial ? currentSegmentID : nil
+                        currentQueueState = wasCancelled ? .cancelled : .completed
+                        currentSegmentPreview = wasCancelled ? currentSegmentPreview : ""
+                        currentSegmentID = wasCancelled ? currentSegmentID : nil
                         if let sampleForRun {
                             fixtureEvaluation = fixtureEvaluator.evaluate(
                                 sample: sampleForRun,
@@ -1587,11 +1699,12 @@ final class AIConnectorViewModel {
                                 definitionResolutionMetrics = [:]
                             }
                         }
-                        setProgressStage(summary.wasPartial ? .cancelled : .completed)
-                        state = summary.wasPartial ? .cancelled : .completed
-                        analysisSnapshotEligible = !summary.wasPartial
+                        setProgressStage(wasCancelled ? .cancelled : .completed)
+                        state = wasCancelled ? .cancelled : .completed
+                        analysisSnapshotEligible = !summary.wasPartial && skippedSegmentCount == 0 && fallbackCount == 0 && documentContextProfile?.classificationStatus != .fallback && documentFindingMetrics.riskFallbackCount == 0 && !segmentCoverage.values.contains(where: { $0.values.contains(.failed) || $0.values.contains(.tooLong) })
                         if summary.wasPartial {
-                            let completed = completedRunSegmentIDs
+                            let incomplete = Set(segmentCoverage.filter { $0.value.values.contains { [.failed, .tooLong, .cancelled].contains($0) } }.map(\.key))
+                            let completed = completedRunSegmentIDs.subtracting(incomplete)
                             let remaining = runPlan.reprocessSegmentIDs.subtracting(completed)
                             let nextChangeSet = AIConnectorAnalysisChangeSet(
                                 scope: runPlan.changeSet.scope,
@@ -1602,7 +1715,7 @@ final class AIConnectorViewModel {
                                 changedOldBlockIDs: runPlan.changeSet.changedOldBlockIDs,
                                 changedBlockIDs: runPlan.changeSet.changedBlockIDs,
                                 changedSectionIDs: runPlan.changeSet.changedSectionIDs,
-                                reasons: runPlan.changeSet.reasons.union([.cancelled]),
+                                reasons: wasCancelled ? runPlan.changeSet.reasons.union([.cancelled]) : runPlan.changeSet.reasons,
                                 isAmbiguous: runPlan.changeSet.isAmbiguous
                             )
                             let nextPlan = AIConnectorAnalysisPlan(
@@ -1664,6 +1777,7 @@ final class AIConnectorViewModel {
                             observationReport = await observationCollector.finish(
                                 status: summary.wasPartial ? .cancelled : .completed
                             )
+                            observationReport?.mappingMetrics = mappingBenchmarkMetrics
                         }
 #endif
 
@@ -1673,7 +1787,7 @@ final class AIConnectorViewModel {
                         state = .failed(message)
                     }
                 }
-                task = nil
+                if activeOperationID == operationID { task = nil }
             } catch is CancellationError {
                 guard activeOperationID == operationID else { return }
 #if DEBUG
@@ -1717,6 +1831,8 @@ final class AIConnectorViewModel {
         guard inputSource == .currentDocument,
               exposesEditorSuggestions,
               analysisSnapshotEligible,
+              editorAnalysisProfile == currentAnalysisProfile,
+              documentText == editorSourceText,
               state == .completed else {
             return nil
         }
@@ -1754,6 +1870,7 @@ final class AIConnectorViewModel {
 
         resetInputMetadata()
         editorSourceText = documentText
+        editorAnalysisProfile = currentAnalysisProfile
         exposesEditorSuggestions = true
         analysisSnapshotEligible = true
         editorSuggestions = snapshot.editorSuggestions
@@ -1790,15 +1907,17 @@ final class AIConnectorViewModel {
 #if DEBUG
         cancelPhaseTwoComparison()
 #endif
+        let cancelledRunID = activeOperationID
+        activeOperationID = nil
         cancelRunningTask()
-        service.cancelLoading()
         workQueue.requestCancellation()
-        Task { await workQueue.cancel() }
+        if let cancelledRunID { Task { await workQueue.cancel(runID: cancelledRunID) } }
         clearBenchmarkCallbacks()
         resetRunState()
         contextPreparationCache.removeAll()
         documentReviewCache.removeAll()
         definitionResolutionCache.removeAll()
+        cancelDefinitionResolutionTasks()
         definitionResolutionOperationIDs.removeAll()
         setProgressStage(.idle)
         state = .idle
@@ -1809,11 +1928,14 @@ final class AIConnectorViewModel {
         cancelPhaseTwoComparison()
 #endif
         guard isRunning else { return }
+        for segment in segmentationResult?.segments ?? [] where !completedRunSegmentIDs.contains(segment.id) {
+            segmentCoverage[segment.id, default: [:]]["candidateReview"] = .cancelled
+        }
+        let cancelledRunID = activeOperationID
         activeOperationID = nil
         cancelRunningTask()
-        service.cancelLoading()
         workQueue.requestCancellation()
-        Task { await workQueue.cancel() }
+        if let cancelledRunID { Task { await workQueue.cancel(runID: cancelledRunID) } }
         clearBenchmarkCallbacks()
         preservePartialAnalysisForResume()
 #if DEBUG
@@ -1840,6 +1962,7 @@ final class AIConnectorViewModel {
     }
 
     func dismissReviewItem(_ id: UUID) {
+        definitionResolutionTasks.removeValue(forKey: id)?.cancel()
         guard reviewItems(includeDefinitionMatches: true).contains(where: { $0.id == id }) else {
             return
         }
@@ -1873,6 +1996,8 @@ final class AIConnectorViewModel {
             return false
         }
 
+        let canPersistReviewState = analysisSnapshotEligible && !isRunning
+        stopAnalysisForAcceptedEdit()
         let acceptedRange = isAnchored
             ? suggestion.sourceRange
             : (editorSuggestions.first(where: { $0.id == suggestion.id })?.sourceRange ?? suggestion.sourceRange)
@@ -1914,9 +2039,11 @@ final class AIConnectorViewModel {
         ignoredReviewItemIDs.remove(suggestion.id)
         selectedReviewItemID = nil
         editorSourceText = updatedText
+        editorMappingState.invalidate()
         definitionResolutions = [:]
         definitionResolutionMetrics = [:]
         definitionResolutionCache.removeAll()
+        cancelDefinitionResolutionTasks()
         definitionResolutionOperationIDs.removeAll()
         definitionResolutionLoadingIDs = []
         contextPreparationCache.removeAll()
@@ -1930,7 +2057,7 @@ final class AIConnectorViewModel {
         contextClassificationDuration = 0
         contextPreparationCacheHit = false
         exposesEditorSuggestions = true
-        analysisSnapshotEligible = true
+        analysisSnapshotEligible = canPersistReviewState
         state = .completed
         return true
     }
@@ -1939,6 +2066,34 @@ final class AIConnectorViewModel {
     /// source-backed definition option. The option is accepted only while its
     /// resolution, term/body anchors, and document fingerprint still match
     /// the text in the editor.
+    private func stopAnalysisForAcceptedEdit() {
+        guard let runID = activeOperationID else { return }
+        activeOperationID = nil
+        cancelRunningTask()
+        workQueue.requestCancellation()
+        Task { await workQueue.cancel(runID: runID) }
+    }
+
+    func canApplySuggestion(_ suggestion: EditorSuggestion, to documentText: String) -> Bool {
+        guard !suggestion.isReadOnlyDiagnostic, !hasPendingAnalysisChanges,
+              editorAnalysisProfile == currentAnalysisProfile,
+              documentText == editorSourceText,
+              editorSuggestions.contains(suggestion),
+              suggestion.isAnchored(to: documentText) else { return false }
+        return true
+    }
+
+    func canApplyDefinitionResolution(_ option: AIConnectorDefinitionResolutionOption, to documentText: String) -> Bool {
+        guard !hasPendingAnalysisChanges, editorAnalysisProfile == currentAnalysisProfile,
+              documentText == editorSourceText, option.isActionable,
+              option.isAnchored(to: documentText),
+              let resolution = definitionResolutions.values.first(where: { $0.options.contains(option) }),
+              resolution.sourceFingerprint == DocumentFingerprinting.contentSHA256(documentText),
+              resolution.corpusVersion == dictionaryStore.activeCorpusVersion,
+              resolution.isAnchored(to: documentText) else { return false }
+        return true
+    }
+
     @discardableResult
     func reconcileAfterDefinitionResolution(
         _ option: AIConnectorDefinitionResolutionOption,
@@ -1958,6 +2113,8 @@ final class AIConnectorViewModel {
             return false
         }
 
+        let canPersistReviewState = analysisSnapshotEligible && !isRunning
+        stopAnalysisForAcceptedEdit()
         let acceptedRange = option.targetRange
         let delta = replacement.utf16.count - option.original.utf16.count
         editorSuggestions = editorSuggestions.compactMap { item in
@@ -1992,11 +2149,13 @@ final class AIConnectorViewModel {
         ignoredReviewItemIDs.remove(resolutionEntry.key)
         selectedReviewItemID = nil
         editorSourceText = updatedText
+        editorMappingState.invalidate()
         definitionAssessments = []
         definitionModelCallCount = 0
         definitionResolutions = [:]
         definitionResolutionMetrics = [:]
         definitionResolutionCache.removeAll()
+        cancelDefinitionResolutionTasks()
         definitionResolutionOperationIDs.removeAll()
         definitionResolutionLoadingIDs = []
         contextPreparationCache.removeAll()
@@ -2010,7 +2169,7 @@ final class AIConnectorViewModel {
         contextClassificationDuration = 0
         contextPreparationCacheHit = false
         exposesEditorSuggestions = true
-        analysisSnapshotEligible = true
+        analysisSnapshotEligible = canPersistReviewState
         state = .completed
         return true
     }
@@ -2072,12 +2231,14 @@ final class AIConnectorViewModel {
     }
 
     func clearEditorSuggestions() {
+        editorMappingState.invalidate()
         editorSuggestions = []
         reviewAnnotations = []
         definitionMatchAnnotations = []
         definitionResolutions = [:]
         definitionResolutionMetrics = [:]
         definitionResolutionLoadingIDs = []
+        cancelDefinitionResolutionTasks()
         definitionResolutionOperationIDs.removeAll()
         definitionResolutionCache.removeAll()
         ignoredReviewItemIDs = []
@@ -2305,7 +2466,81 @@ final class AIConnectorViewModel {
         benchmarkRunner.onProgressStage = nil
     }
 
+    private func publishLocalResults(
+        preparation: AIConnectorDocumentContextPreparation,
+        documentText: String,
+        operationID: UUID,
+        mode: AIConnectorReviewMode
+    ) async throws {
+        guard mode != .modelOnly else { return }
+        documentStructure = preparation.structure
+        documentContextProfile = preparation.profile
+        segmentationResult = preparation.segmentation
+        let localClock = ContinuousClock()
+        let localStartedAt = localClock.now
+        let protection = segmentProcessor.protectionContext(
+            for: documentText,
+            additionalDefinedTerms: Set(preparation.profile.definedTerms.map(\.value))
+        )
+        let segments = preparation.segmentation.segments.filter {
+            activeAnalysisPlan?.reprocessSegmentIDs.contains($0.id) ?? true
+        }
+        let events = await workQueue.startLocalPass(runID: operationID, segments: segments, protectionContext: protection)
+        for await event in events {
+            guard activeOperationID == operationID, !Task.isCancelled else {
+                await workQueue.cancel(runID: operationID)
+                throw CancellationError()
+            }
+            if case let .localResult(result) = event {
+                applyLocal(result: result)
+                await workQueue.acknowledgeResult()
+            }
+        }
+#if DEBUG
+        if let observationCollector {
+            await observationCollector.recordStage(.localReview, duration: AIConnectorObservationTiming.seconds(localStartedAt.duration(to: localClock.now)))
+        }
+#endif
+    }
+
+    private func preservingOccurrenceIDs(_ reviews: [AIValidatedReview]) -> [AIValidatedReview] {
+        editorMappingState.preservingOccurrenceIDs(reviews, existingReviews: validatedReviews)
+    }
+
+    private func applyLocal(result: AIConnectorSegmentResult) {
+#if DEBUG
+        let eventStarted = ContinuousClock.now
+        defer { mappingBenchmarkMetrics.localApplyDuration += AIConnectorObservationTiming.seconds(eventStarted.duration(to: .now)) }
+#endif
+        let reviews = preservingOccurrenceIDs(result.reviews.filter { $0.status != .noSuggestion })
+        validatedReviews.removeAll { $0.segment.id == result.segment.id }
+        validatedReviews.append(contentsOf: reviews)
+        if !exposesEditorSuggestions {
+            editorMappingState.recordReviews(for: result.segment.id, reviews: validatedReviews.filter { $0.segment.id == result.segment.id })
+        }
+        if exposesEditorSuggestions {
+#if DEBUG
+            let mappingStarted = ContinuousClock.now
+#endif
+            updateEditorMappings(for: result)
+#if DEBUG
+            mappingBenchmarkMetrics.localMappingDuration += AIConnectorObservationTiming.seconds(mappingStarted.duration(to: .now))
+#endif
+        }
+        updateOutput()
+    }
+
     private func apply(result: AIConnectorSegmentResult) async {
+#if DEBUG
+        let eventStarted = ContinuousClock.now
+        defer { mappingBenchmarkMetrics.finalApplyDuration += AIConnectorObservationTiming.seconds(eventStarted.duration(to: .now)) }
+#endif
+        let stableReviews = preservingOccurrenceIDs(result.reviews)
+        validatedReviews.removeAll { $0.segment.id == result.segment.id && !result.skipped }
+        rejectedReviews.removeAll { $0.segment.id == result.segment.id }
+        definitionAssessments.removeAll { $0.segment.id == result.segment.id }
+
+        segmentCoverage[result.segment.id] = result.stageCoverage
         recordProgressActivity()
         completedRunSegmentIDs.insert(result.segment.id)
         if firstIncrementalResultAt == nil, analysisRunScope != .fullFresh {
@@ -2329,7 +2564,10 @@ final class AIConnectorViewModel {
             )
         }
 
-        validatedReviews.append(contentsOf: result.reviews)
+        validatedReviews.append(contentsOf: stableReviews)
+        if !exposesEditorSuggestions {
+            editorMappingState.recordReviews(for: result.segment.id, reviews: validatedReviews.filter { $0.segment.id == result.segment.id })
+        }
         rejectedReviews.append(contentsOf: result.rejections)
         if let definitionAssessment = result.definitionAssessment {
             definitionAssessments.append(definitionAssessment)
@@ -2367,9 +2605,10 @@ final class AIConnectorViewModel {
         if exposesEditorSuggestions {
             let mappingClock = ContinuousClock()
             let mappingStartedAt = mappingClock.now
-            rebuildEditorMappings()
+            updateEditorMappings(for: result)
             definitionDebugSuggestions = []
 #if DEBUG
+            mappingBenchmarkMetrics.finalMappingDuration += AIConnectorObservationTiming.seconds(mappingStartedAt.duration(to: mappingClock.now))
             if let observationCollector {
                 await observationCollector.recordStage(
                     .editorMapping,
@@ -2387,24 +2626,64 @@ final class AIConnectorViewModel {
     }
 
     private func rebuildEditorMappings() {
-        editorSuggestions = EditorSuggestionMapper.make(
-            reviews: validatedReviews,
-            definitionAssessments: definitionAssessments,
-            documentText: editorSourceText
-        )
-        reviewAnnotations = EditorSuggestionMapper.makeReviewAnnotations(
-            reviews: validatedReviews,
-            definitionAssessments: definitionAssessments,
-            documentText: editorSourceText
-        ) + EditorSuggestionMapper.makeFindingAnnotations(
-            findings: documentFindings,
-            documentText: editorSourceText
-        )
-        definitionMatchAnnotations = EditorSuggestionMapper.makeDefinitionMatchAnnotations(
-            assessments: definitionAssessments,
-            documentText: editorSourceText
-        )
+#if DEBUG
+        let previous = editorMappingState.diagnostics
+#endif
+        editorMappingState.rebuild(reviews: validatedReviews, assessments: definitionAssessments,
+                                   findings: documentFindings, documentText: editorSourceText)
+        publishEditorMappings()
+#if DEBUG
+        recordMappingWork(since: previous)
+#endif
     }
+
+    private func updateEditorMappings(for result: AIConnectorSegmentResult) {
+        let segment = result.segment
+        guard result.reviews.allSatisfy({ $0.segment == segment }),
+              result.definitionAssessment.map({ $0.segment == segment }) ?? true else {
+            rebuildEditorMappings()
+            return
+        }
+#if DEBUG
+        let previous = editorMappingState.diagnostics
+#endif
+        editorMappingState.updateSegment(segment,
+            reviews: validatedReviews.filter { $0.segment.id == segment.id },
+            assessments: definitionAssessments.filter { $0.segment.id == segment.id },
+            allReviews: validatedReviews, allAssessments: definitionAssessments,
+            findings: documentFindings, documentText: editorSourceText)
+        publishEditorMappings()
+#if DEBUG
+        recordMappingWork(since: previous)
+#endif
+    }
+
+    private func updateDocumentFindingMappings() {
+#if DEBUG
+        let previous = editorMappingState.diagnostics
+#endif
+        editorMappingState.updateFindings(documentFindings, reviews: validatedReviews,
+                                         assessments: definitionAssessments, documentText: editorSourceText)
+        publishEditorMappings()
+#if DEBUG
+        recordMappingWork(since: previous)
+#endif
+    }
+
+    private func publishEditorMappings() {
+        editorSuggestions = editorMappingState.suggestions
+        reviewAnnotations = editorMappingState.annotations
+        definitionMatchAnnotations = editorMappingState.definitionMatches
+    }
+
+#if DEBUG
+    private func recordMappingWork(since previous: AIConnectorMappingBenchmarkMetrics) {
+        let current = editorMappingState.diagnostics
+        mappingBenchmarkMetrics.fullRebuildCount += current.fullRebuildCount - previous.fullRebuildCount
+        mappingBenchmarkMetrics.remappedSegmentCount += current.remappedSegmentCount - previous.remappedSegmentCount
+        mappingBenchmarkMetrics.findingMappingCount += current.findingMappingCount - previous.findingMappingCount
+    }
+#endif
 
     private func prepareDefinitionResolutions(
         documentText: String,
@@ -2498,23 +2777,31 @@ final class AIConnectorViewModel {
             reviewer = nil
         }
 
-        Task { @MainActor [weak self] in
+        definitionResolutionTasks[annotationID] = Task { @MainActor [weak self] in
             guard let self else { return }
+            defer {
+                if self.definitionResolutionOperationIDs[annotationID] == operationID
+                    || self.definitionResolutionOperationIDs[annotationID] == nil {
+                    self.definitionResolutionTasks.removeValue(forKey: annotationID)
+                }
+            }
             do {
-                let result = try await resolver.resolve(
+                let result = try await AIConnectorInferenceContext.$priority.withValue(.interactive) {
+                    try await resolver.resolve(
                     assessment: assessment,
                     documentText: documentText,
                     mode: mode,
                     modelVariant: modelVariant,
                     includeReverseTermCandidates: true,
                     reviewer: reviewer
-                )
+                    )
+                }
                 guard self.definitionResolutionOperationIDs[annotationID] == operationID,
                       DocumentFingerprinting.contentSHA256(self.editorSourceText)
                         == DocumentFingerprinting.contentSHA256(documentText) else {
                     return
                 }
-                self.definitionResolutionCache[cacheKey] = result
+                if result.metrics.fallbackCount == 0 { self.definitionResolutionCache[cacheKey] = result }
                 self.definitionResolutions[annotationID] = result.resolution
                 self.definitionResolutionMetrics[annotationID] = result.metrics
 #if DEBUG
@@ -2542,6 +2829,11 @@ final class AIConnectorViewModel {
         }
     }
 
+    private func cancelDefinitionResolutionTasks() {
+        for task in definitionResolutionTasks.values { task.cancel() }
+        definitionResolutionTasks.removeAll()
+    }
+
     private func currentPartialSummary() -> AIConnectorRunSummary {
         currentSummary(wasPartial: true)
     }
@@ -2565,7 +2857,9 @@ final class AIConnectorViewModel {
             repairAttemptCount: repairAttemptCount,
             fallbackCount: fallbackCount,
             circuitBreakerActivated: circuitBreakerActivated,
-            wasPartial: wasPartial,
+            wasPartial: wasPartial || documentContextProfile?.classificationStatus == .fallback
+                || documentFindingMetrics.riskFallbackCount > 0
+                || segmentCoverage.values.contains { $0.values.contains { [.failed, .tooLong, .cancelled].contains($0) } },
             candidateCount: candidateCount,
             acceptedCandidateCount: acceptedCandidateCount,
             modelCallCount: modelCallCount,
@@ -2576,7 +2870,7 @@ final class AIConnectorViewModel {
     private func makeAnalysisBaseline() -> AIConnectorAnalysisBaseline? {
         guard let structure = documentStructure,
               let segmentation = segmentationResult else { return nil }
-        return AIConnectorAnalysisBaseline(
+        var baseline = AIConnectorAnalysisBaseline(
             documentText: editorSourceText,
             structure: structure,
             profile: documentContextProfile,
@@ -2588,6 +2882,14 @@ final class AIConnectorViewModel {
             ignoredReviewItemIDs: ignoredReviewItemIDs,
             reviewedReviewItemIDs: reviewedReviewItemIDs
         )
+        let reusable = state == .completed
+            ? Set(segmentation.segments.map(\.id))
+            : (activeAnalysisPlan?.reusableSegmentIDs ?? [])
+        let incomplete = Set(segmentCoverage.compactMap { id, coverage in
+            coverage.values.contains(.failed) || coverage.values.contains(.tooLong) || coverage.values.contains(.cancelled) ? id : nil
+        })
+        baseline.completedSegmentIDs = completedRunSegmentIDs.union(reusable).subtracting(incomplete)
+        return baseline
     }
 
     private func resetTransientAnalysisState(keepDocumentContext: Bool) {
@@ -2650,11 +2952,13 @@ final class AIConnectorViewModel {
 #if DEBUG
         observationCollector = nil
         observationReport = nil
+        mappingBenchmarkMetrics = AIConnectorMappingBenchmarkMetrics()
 #endif
         analysisSnapshotEligible = false
     }
 
     private func resetRunState() {
+        segmentCoverage.removeAll()
         activeOperationID = nil
         progressStage = .idle
         progressTracker.reset()
@@ -2718,6 +3022,7 @@ final class AIConnectorViewModel {
 #if DEBUG
         observationCollector = nil
         observationReport = nil
+        mappingBenchmarkMetrics = AIConnectorMappingBenchmarkMetrics()
 #endif
         clearEditorSuggestions()
         analysisSnapshotEligible = false
@@ -2750,6 +3055,8 @@ final class AIConnectorViewModel {
             AIConnectorDocumentContextProfile.extractorVersion,
             AIConnectorDocumentContextProfile.classifierVersion,
             modelVariant.rawValue,
+            modelVariant.revision,
+            Self.analysisPipelineVersion,
             mode.rawValue
         ].joined(separator: "|")
     }
@@ -2768,6 +3075,8 @@ final class AIConnectorViewModel {
             AIConnectorDocumentReviewDetector.version,
             QwenSuggestionService.riskPromptVersion,
             modelVariant.rawValue,
+            modelVariant.revision,
+            Self.analysisPipelineVersion,
             mode.rawValue
         ].joined(separator: "|")
     }

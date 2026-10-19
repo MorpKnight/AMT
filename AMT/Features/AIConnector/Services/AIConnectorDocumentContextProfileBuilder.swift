@@ -124,7 +124,8 @@ struct AIConnectorDocumentContextProfileBuilder: Sendable {
             extractorVersion: SelfProfileVersions.extractor,
             classifierVersion: SelfProfileVersions.classifier,
             modelCallCount: 0,
-            classificationDuration: 0
+            classificationDuration: 0,
+            explicitTermAliases: explicitAliases(in: documentText)
         )
     }
 
@@ -150,6 +151,14 @@ struct AIConnectorDocumentContextProfileBuilder: Sendable {
                     ? previous.text
                     : nil
             }
+        let scopedAliases = profile.explicitTermAliases.filter { alias, _ in
+            guard let declaration = profile.definedTerms.first(where: { $0.value == alias }) else { return false }
+            let section = structure.section(for: declaration.sectionID)
+            let global = section == nil || (section?.headingPath ?? []).contains {
+                $0.range(of: #"(?i)definisi|pengertian|ketentuan\s+umum"#, options: .regularExpression) != nil
+            }
+            return global || declaration.sectionID == block.parentSectionID
+        }
         return AIConnectorSegmentContext(
             sectionID: block.parentSectionID,
             headingPath: block.headingPath,
@@ -160,8 +169,25 @@ struct AIConnectorDocumentContextProfileBuilder: Sendable {
             documentTypeCandidates: profile.documentTypeCandidates.map(\.value),
             legalDomainCandidates: profile.legalDomains.map(\.value),
             profileFingerprint: profile.fingerprint,
-            structureFingerprint: profile.structureFingerprint
+            structureFingerprint: profile.structureFingerprint,
+            explicitTermAliases: scopedAliases
         )
+    }
+
+    private func explicitAliases(in text: String) -> [String: String] {
+        let pattern = #"[“"]([^”"\n]+)[”"]\s*[,;()]?\s*(?i:yang\s+)?(?i:selanjutnya\s+disebut)\s+[“"]([^”"\n]+)[”"]"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [:] }
+        let ns = text as NSString
+        var result: [String: String] = [:]
+        var ambiguous: Set<String> = []
+        for match in regex.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+            let canonical = ns.substring(with: match.range(at: 1))
+            let alias = ns.substring(with: match.range(at: 2))
+            if let prior = result[alias], prior != canonical { ambiguous.insert(alias) }
+            result[alias] = canonical
+        }
+        for alias in ambiguous { result.removeValue(forKey: alias) }
+        return result
     }
 
     private func documentTypeFacts(

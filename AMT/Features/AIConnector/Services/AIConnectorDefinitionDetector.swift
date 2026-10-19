@@ -38,10 +38,14 @@ struct AIConnectorDefinitionDetector: Sendable {
         segment: AIReviewSegment,
         glossaryMatches: [LegalDictionaryMatch]
     ) -> AIConnectorDefinitionDetectionResult {
-        let explicitSignal = explicitSignal(in: segment.targetText)
+        let explicitSignal = explicitSignal(in: segment.targetText, headingPath: segment.context?.headingPath ?? [])
         let usableExplicitEntries = explicitSignal.flatMap { signal in
-            termRecords.first {
-                Self.normalize($0.displayTerm) == Self.normalize(signal.termText)
+            termRecords.first { record in
+                Self.normalize(record.displayTerm) == Self.normalize(signal.termText)
+                    || segment.context?.explicitTermAliases.contains(where: {
+                        Self.normalize($0.key) == Self.normalize(signal.termText)
+                            && Self.normalize($0.value) == Self.normalize(record.displayTerm)
+                    }) == true
             }?.entries.filter(Self.isUsableEvidence)
         } ?? []
 
@@ -55,13 +59,25 @@ struct AIConnectorDefinitionDetector: Sendable {
                     term: explicitSignal.termText,
                     statementText: explicitSignal.statementText,
                     detection: .explicitPattern,
-                    candidates: exactCandidates
+                    candidates: exactCandidates,
+                    explicitSignalStrength: explicitSignal.strength
                 )
             }
         }
 
         let retrievedCandidates = makeRetrievedCandidates(
-            from: glossaryMatches,
+            from: glossaryMatches.filter { match in
+                guard let signal = explicitSignal else {
+                    return match.isDirectTermMatch
+                        || (match.semanticScore.map { Double($0) >= AIConnectorPhaseTwoPolicy.minimumSemanticScore } ?? false)
+                        || sharedTokenCount(segment.targetText, match.entry.definition) >= 3
+                }
+                return Self.normalize(match.entry.term) == Self.normalize(signal.termText)
+                    || segment.context?.explicitTermAliases.contains(where: {
+                        Self.normalize($0.key) == Self.normalize(signal.termText)
+                            && Self.normalize($0.value) == Self.normalize(match.entry.term)
+                    }) == true
+            },
             statementText: explicitSignal?.statementText ?? segment.targetText,
             detection: explicitSignal == nil
                 ? .retrievedCandidate
@@ -74,7 +90,8 @@ struct AIConnectorDefinitionDetector: Sendable {
                 detection: explicitSignal == nil
                     ? .retrievedCandidate
                     : .explicitPattern,
-                candidates: retrievedCandidates
+                candidates: retrievedCandidates,
+                explicitSignalStrength: explicitSignal?.strength ?? .ambiguous
             )
         }
 
@@ -91,7 +108,8 @@ struct AIConnectorDefinitionDetector: Sendable {
             term: explicitSignal.termText,
             statementText: explicitSignal.statementText,
             detection: .explicitPattern,
-            candidates: []
+            candidates: [],
+            explicitSignalStrength: explicitSignal.strength
         )
     }
 
@@ -162,7 +180,10 @@ struct AIConnectorDefinitionDetector: Sendable {
             }
     }
 
-    private func explicitSignal(in text: String) -> ExplicitSignal? {
+    private func explicitSignal(in text: String, headingPath: [String]) -> ExplicitSignal? {
+        // Bind the complete declared term before considering corpus vocabulary.
+        // A corpus term embedded in a product/name is not the declaration's identity.
+        if let declared = regexExplicitSignal(in: text, headingPath: headingPath) { return declared }
         let tokens = wordTokens(in: text)
 
         for record in termRecords {
@@ -179,8 +200,10 @@ struct AIConnectorDefinitionDetector: Sendable {
                     length: NSMaxRange(tokens[end - 1].range)
                         - tokens[start].range.location
                 )
+                let quotedRange = quotedTermRange(around: termRange, in: text)
+                let statementTermRange = quotedRange ?? termRange
                 guard let statementText = definitionText(
-                    after: termRange,
+                    after: statementTermRange,
                     in: text
                 ) else {
                     continue
@@ -188,12 +211,18 @@ struct AIConnectorDefinitionDetector: Sendable {
 
                 return ExplicitSignal(
                     termText: record.displayTerm,
-                    statementText: statementText
+                    statementText: statementText,
+                    strength: signalStrength(
+                        quoted: quotedRange != nil,
+                        prefix: (text as NSString).substring(to: statementTermRange.location),
+                        suffix: (text as NSString).substring(from: NSMaxRange(statementTermRange)),
+                        headingPath: headingPath
+                    )
                 )
             }
         }
 
-        return regexExplicitSignal(in: text)
+        return regexExplicitSignal(in: text, headingPath: headingPath)
     }
 
     private func definitionText(after termRange: NSRange, in text: String) -> String? {
@@ -208,7 +237,7 @@ struct AIConnectorDefinitionDetector: Sendable {
         return definition.isEmpty ? nil : definition
     }
 
-    private func regexExplicitSignal(in text: String) -> ExplicitSignal? {
+    private func regexExplicitSignal(in text: String, headingPath: [String]) -> ExplicitSignal? {
         let pattern = #"(?is)(?:yang\s+dimaksud\s+dengan\s+)?([^,;:.!?]+?)\s+(?:adalah|ialah|merupakan|berarti|didefinisikan\s+sebagai|diartikan\s+sebagai)\s+(.+)$"#
         guard let match = firstMatch(pattern: pattern, in: text) else {
             return nil
@@ -217,13 +246,18 @@ struct AIConnectorDefinitionDetector: Sendable {
         let rawTerm = (text as NSString).substring(with: match.range(at: 1))
         let rawDefinition = (text as NSString).substring(with: match.range(at: 2))
         var term = rawTerm.trimmingCharacters(in: .whitespacesAndNewlines)
+        var hasIntroducer = false
         if let markerRange = term.range(
             of: "yang dimaksud dengan",
             options: [.caseInsensitive, .diacriticInsensitive]
         ) {
             term = String(term[markerRange.upperBound...])
                 .trimmingCharacters(in: .whitespacesAndNewlines)
+            hasIntroducer = true
         }
+
+        let quoted = Self.unquotedTerm(term)
+        term = quoted.text
 
         let termTokens = Self.tokenize(term)
         guard !termTokens.isEmpty,
@@ -235,7 +269,44 @@ struct AIConnectorDefinitionDetector: Sendable {
         let definition = rawDefinition.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !definition.isEmpty else { return nil }
 
-        return ExplicitSignal(termText: term, statementText: definition)
+        let source = text as NSString
+        return ExplicitSignal(
+            termText: term,
+            statementText: definition,
+            strength: signalStrength(
+                quoted: quoted.isQuoted,
+                prefix: source.substring(to: match.range(at: 1).location) + (hasIntroducer ? "yang dimaksud dengan " : ""),
+                suffix: source.substring(from: NSMaxRange(match.range(at: 1))),
+                headingPath: headingPath
+            )
+        )
+    }
+
+    /// Structural evidence describes definition shape, never semantic equivalence.
+    private func signalStrength(quoted: Bool, prefix: String, suffix: String, headingPath: [String]) -> AIConnectorDefinitionSignalStrength {
+        let introduced = firstMatch(pattern: #"(?is)yang\s+dimaksud\s+dengan\s*$"#, in: prefix) != nil
+        let definedAs = firstMatch(pattern: #"(?is)^\s*[,;:]?\s*(?:didefinisikan|diartikan)\s+sebagai\b"#, in: suffix) != nil
+        let definitionHeading = headingPath.contains {
+            !Set(Self.tokenize($0)).isDisjoint(with: ["definisi", "pengertian"])
+        }
+        return quoted || introduced || definedAs || definitionHeading ? .strong : .ambiguous
+    }
+
+    private func quotedTermRange(around range: NSRange, in text: String) -> NSRange? {
+        let source = text as NSString
+        guard range.location > 0, NSMaxRange(range) < source.length else { return nil }
+        let opening = source.substring(with: NSRange(location: range.location - 1, length: 1))
+        let closing = source.substring(with: NSRange(location: NSMaxRange(range), length: 1))
+        guard Self.quotationPairs[opening] == closing else { return nil }
+        return NSRange(location: range.location - 1, length: range.length + 2)
+    }
+
+    nonisolated private static let quotationPairs = ["\"": "\"", "“": "”", "‘": "’", "'": "'", "«": "»"]
+
+    nonisolated private static func unquotedTerm(_ term: String) -> (text: String, isQuoted: Bool) {
+        guard let first = term.first, let last = term.last, term.count >= 2,
+              quotationPairs[String(first)] == String(last) else { return (term, false) }
+        return (String(term.dropFirst().dropLast()).trimmingCharacters(in: .whitespacesAndNewlines), true)
     }
 
     private func firstMatch(
@@ -310,6 +381,7 @@ struct AIConnectorDefinitionDetector: Sendable {
     private struct ExplicitSignal: Sendable {
         let termText: String
         let statementText: String
+        let strength: AIConnectorDefinitionSignalStrength
     }
 
     private struct WordToken: Sendable {

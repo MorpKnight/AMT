@@ -143,7 +143,8 @@ final class AIConnectorP09OfflineTests: XCTestCase {
             regulationTitle: "Pelindungan Data Pribadi",
             sourceURL: nil,
             authority: .verified,
-            corpusVersion: "verified-test-v1"
+            corpusVersion: "verified-test-v1",
+            applicabilityStatus: .inForce
         )
         let fillerEntries = (0..<100).map { index in
             LegalDictionaryEntry(

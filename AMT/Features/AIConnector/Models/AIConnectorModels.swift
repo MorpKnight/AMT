@@ -428,6 +428,7 @@ struct QwenReviewResult: Sendable {
 enum AIConnectorCandidateConfidence: String, Codable, Hashable, Sendable {
     case deterministicRule
     case tataKataScored
+    case localSpellingRestoration
     case verifiedGlossary
 
     var displayTitle: String {
@@ -436,6 +437,8 @@ enum AIConnectorCandidateConfidence: String, Codable, Hashable, Sendable {
             "rule lokal"
         case .tataKataScored:
             "TataKata scored"
+        case .localSpellingRestoration:
+            "kandidat ejaan lokal"
         case .verifiedGlossary:
             "glossary verified"
         }
@@ -465,6 +468,7 @@ nonisolated struct AIConnectorSpellingCandidate: Hashable, Sendable {
     let sourceLength: Int
     let sourceRank: Int
     let evidence: AIConnectorLanguageScoreEvidence?
+    let restorationEvidence: AIConnectorSpellingRestorationEvidence?
 
     init(
         original: String,
@@ -472,7 +476,8 @@ nonisolated struct AIConnectorSpellingCandidate: Hashable, Sendable {
         sourceLocation: Int,
         sourceLength: Int,
         sourceRank: Int = 0,
-        evidence: AIConnectorLanguageScoreEvidence? = nil
+        evidence: AIConnectorLanguageScoreEvidence? = nil,
+        restorationEvidence: AIConnectorSpellingRestorationEvidence? = nil
     ) {
         self.original = original
         self.replacement = replacement
@@ -480,6 +485,7 @@ nonisolated struct AIConnectorSpellingCandidate: Hashable, Sendable {
         self.sourceLength = sourceLength
         self.sourceRank = sourceRank
         self.evidence = evidence
+        self.restorationEvidence = restorationEvidence
     }
 }
 
@@ -512,6 +518,12 @@ protocol AIConnectorLanguageCandidateScoring: Sendable {
         candidates: [AIConnectorSpellingCandidate],
         progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void
     ) async throws -> [AIConnectorSpellingCandidate]
+    func scoreForReview(
+        segment: AIReviewSegment,
+        candidates: [AIConnectorSpellingCandidate],
+        progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void
+    ) async throws -> [AIConnectorSpellingCandidate]
+
 }
 
 extension AIConnectorLanguageCandidateScoring {
@@ -520,6 +532,12 @@ extension AIConnectorLanguageCandidateScoring {
     ) async throws {
         _ = progress
     }
+    func scoreForReview(segment: AIReviewSegment, candidates: [AIConnectorSpellingCandidate],
+        progress: @MainActor @Sendable @escaping (AIConnectorLanguageScoringProgress) -> Void
+    ) async throws -> [AIConnectorSpellingCandidate] {
+        try await score(segment: segment, candidates: candidates, progress: progress)
+    }
+
 }
 
 /// A proposal created entirely by local rules or verified glossary data.
@@ -536,6 +554,7 @@ struct AIConnectorReviewCandidate: Identifiable, Hashable, Sendable {
     let glossaryMatch: LegalDictionaryMatch?
     let explanation: String
     let confidenceTier: AIConnectorCandidateConfidence
+    let restorationEvidence: AIConnectorSpellingRestorationEvidence?
     let languageScoreEvidence: AIConnectorLanguageScoreEvidence?
     let evidence: AIConnectorCandidateEvidence
 
@@ -551,7 +570,8 @@ struct AIConnectorReviewCandidate: Identifiable, Hashable, Sendable {
         explanation: String,
         confidenceTier: AIConnectorCandidateConfidence,
         languageScoreEvidence: AIConnectorLanguageScoreEvidence?,
-        evidence: AIConnectorCandidateEvidence = .unknown
+        evidence: AIConnectorCandidateEvidence = .unknown,
+        restorationEvidence: AIConnectorSpellingRestorationEvidence? = nil
     ) {
         self.id = id
         self.segmentID = segmentID
@@ -565,6 +585,7 @@ struct AIConnectorReviewCandidate: Identifiable, Hashable, Sendable {
         self.confidenceTier = confidenceTier
         self.languageScoreEvidence = languageScoreEvidence
         self.evidence = evidence
+        self.restorationEvidence = restorationEvidence
     }
 
     func withID(_ id: String) -> AIConnectorReviewCandidate {
@@ -580,7 +601,8 @@ struct AIConnectorReviewCandidate: Identifiable, Hashable, Sendable {
             explanation: explanation,
             confidenceTier: confidenceTier,
             languageScoreEvidence: languageScoreEvidence,
-            evidence: evidence
+            evidence: evidence,
+            restorationEvidence: restorationEvidence
         )
     }
 }
@@ -620,6 +642,7 @@ struct AIConnectorCandidateReviewRequest: Sendable {
 }
 
 struct QwenCandidateDecisionResult: Sendable {
+    let inputCoverage: AIConnectorInputCoverage?
     let candidateID: String
     let decision: AIConnectorCandidateDecision
     let metrics: AIConnectorGenerationMetrics
@@ -629,10 +652,12 @@ struct QwenCandidateDecisionResult: Sendable {
     init(
         candidateID: String,
         decision: AIConnectorCandidateDecision,
+        inputCoverage: AIConnectorInputCoverage? = nil,
         metrics: AIConnectorGenerationMetrics,
         containsReasoningMarkers: Bool,
         repeatedSixGramRatio: Double? = nil
     ) {
+        self.inputCoverage = inputCoverage
         self.candidateID = candidateID
         self.decision = decision
         self.metrics = metrics
@@ -892,7 +917,12 @@ enum AIConnectorQueueState: String, Hashable, Sendable {
     case cancelled
 }
 
+nonisolated enum AIConnectorStageCoverage: String, Codable, Hashable, Sendable {
+    case completed, notApplicable, skippedByPolicy, failed, tooLong, cancelled
+}
+
 struct AIConnectorSegmentResult: Sendable {
+    var stageCoverage: [String: AIConnectorStageCoverage] = [:]
     let segment: AIReviewSegment
     let glossaryMatches: [LegalDictionaryMatch]
     let reviews: [AIValidatedReview]
@@ -902,7 +932,7 @@ struct AIConnectorSegmentResult: Sendable {
     let parsedStatus: AIReviewStatus?
     let parsedCategory: AIReviewCategory?
     let rejections: [AIReviewRejection]
-    let cacheHit: Bool
+    var cacheHit: Bool
     let modelAttempts: Int
     let repairAttempted: Bool
     let usedFallback: Bool
@@ -922,7 +952,7 @@ struct AIConnectorSegmentResult: Sendable {
     let challengeCount: Int
     let definitionAssessment: AIConnectorDefinitionAssessment?
     let definitionModelCallCount: Int
-    let definitionCacheHit: Bool
+    var definitionCacheHit: Bool
 
     init(
         segment: AIReviewSegment,
@@ -1019,6 +1049,7 @@ struct AIConnectorSegmentResult: Sendable {
 
 enum AIConnectorWorkQueueEvent: Sendable {
     case stateChanged(segmentID: Int, state: AIConnectorQueueState)
+    case localResult(AIConnectorSegmentResult)
     case result(AIConnectorSegmentResult)
     case progress(completed: Int, total: Int)
     case circuitBreakerActivated
@@ -1032,6 +1063,10 @@ struct AIConnectorDocumentProtectionContext: Hashable, Sendable {
     let acronyms: Set<String>
     let quotedTerms: Set<String>
     let identifiers: Set<String>
+    var explicitDocumentTerms: [String] = []
+    var revisionText: String? = nil
+    var protectedSourceRanges: [NSRange] = []
+    var explicitTermScopes: [String: [NSRange]] = [:]
 
     static let empty = AIConnectorDocumentProtectionContext(
         definedTerms: [],

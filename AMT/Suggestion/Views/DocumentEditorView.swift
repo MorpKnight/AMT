@@ -303,6 +303,12 @@ struct DocumentEditorView: View {
                     structuredDocument: activeDocument.structuredDocument
                 )
             },
+            validateSuggestion: { suggestion, text in
+                aiConnectorViewModel.canApplySuggestion(suggestion, to: text)
+            },
+            validateDefinitionResolution: { option, text in
+                aiConnectorViewModel.canApplyDefinitionResolution(option, to: text)
+            },
             onSuggestionAccepted: { suggestion, previousText, updatedText in
                 pendingSuggestionAccept = nil
                 if !aiConnectorViewModel.reconcileAfterAccept(

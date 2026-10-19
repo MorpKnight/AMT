@@ -22,11 +22,14 @@ actor AIConnectorObservationCollector {
     }
 
     private struct SegmentAccumulator: Sendable {
+        var stageCoverage: [String: AIConnectorStageCoverage] = [:]
         var utf16Length = 0
         var duration: TimeInterval = 0
         var stageSamples: [StageSample] = []
         var retrievalQueryCount = 0
         var semanticQueryCount = 0
+        var definitionRepairCount = 0
+        var candidateFilterReasons: [String: Int] = [:]
         var spellingCandidateCount = 0
         var scoredSpellingCandidateCount = 0
         var candidateCount = 0
@@ -77,6 +80,24 @@ actor AIConnectorObservationCollector {
     private var definitionResolutionCacheHitCount = 0
     private var definitionResolutionDuration: TimeInterval = 0
     private var incrementalAnalysisMetrics: AIConnectorIncrementalAnalysisMetrics?
+    #if !DEBUG
+    /// Release keeps no prompt/window diagnostics; shared call sites remain available.
+    func recordInputCoverage(_ value: AIConnectorInputCoverage, segmentID: Int, role: String) {}
+    #endif
+
+    #if DEBUG
+    private var inputCoverage: [String: AIConnectorInputCoverage] = [:]
+    func recordInputCoverage(_ value: AIConnectorInputCoverage, segmentID: Int, role: String) {
+        inputCoverage["\(segmentID):\(role)"] = value
+    }
+    private var suggestionLexicalDiagnostics = LegalLexicalRetrievalDiagnostics()
+
+    func recordSuggestionLexicalDiagnostics(_ diagnostics: LegalLexicalRetrievalDiagnostics) {
+        suggestionLexicalDiagnostics.searchCount += diagnostics.searchCount
+        suggestionLexicalDiagnostics.evaluatedCandidateCount += diagnostics.evaluatedCandidateCount
+        suggestionLexicalDiagnostics.reuseCount += diagnostics.reuseCount
+    }
+    #endif
 
     init(
         runID: UUID = UUID(),
@@ -145,6 +166,18 @@ actor AIConnectorObservationCollector {
         segments[segmentID] = segment
     }
 
+    func recordDefinitionRepairs(segmentID: Int, count: Int) {
+        var segment = segments[segmentID] ?? SegmentAccumulator()
+        segment.definitionRepairCount = max(0, count)
+        segments[segmentID] = segment
+    }
+
+    func recordCandidateFilterReasons(segmentID: Int, reasons: [String: Int]) {
+        var segment = segments[segmentID] ?? SegmentAccumulator()
+        for (key, count) in reasons { segment.candidateFilterReasons[key, default: 0] += count }
+        segments[segmentID] = segment
+    }
+
     func recordCandidateCounts(
         segmentID: Int,
         spellingCandidateCount: Int = 0,
@@ -165,6 +198,7 @@ actor AIConnectorObservationCollector {
         duration: TimeInterval
     ) {
         var segment = segments[result.segment.id] ?? SegmentAccumulator()
+        segment.stageCoverage = result.stageCoverage
         segment.utf16Length = result.segment.targetText.utf16.count
         segment.duration = Self.safeDuration(duration)
         segment.suggestionCount = result.reviews.filter {
@@ -316,7 +350,10 @@ actor AIConnectorObservationCollector {
                 repairCount: value.repairCount,
                 challengeCount: value.challengeCount,
                 fallbackCount: value.fallbackCount,
-                modelOriginCount: value.modelOriginCount
+                modelOriginCount: value.modelOriginCount,
+                definitionRepairCount: value.definitionRepairCount,
+                candidateFilterReasons: value.candidateFilterReasons,
+                stageCoverage: value.stageCoverage
             )
         }
 
@@ -348,7 +385,7 @@ actor AIConnectorObservationCollector {
             Self.seconds(startedAt.duration(to: endedAt))
         )
 
-        return AIConnectorObservationReport(
+        var report = AIConnectorObservationReport(
             schemaVersion: AIConnectorObservationReport.schemaVersion,
             runID: runID,
             generatedAt: Date(),
@@ -402,6 +439,11 @@ actor AIConnectorObservationCollector {
             accuracy: accuracy,
             incrementalAnalysis: incrementalAnalysisMetrics
         )
+        #if DEBUG
+        report.suggestionLexicalDiagnostics = suggestionLexicalDiagnostics
+        report.inputCoverage = inputCoverage
+        #endif
+        return report
     }
 
     private static func metrics(from samples: [StageSample]) -> [AIConnectorStageMetric] {

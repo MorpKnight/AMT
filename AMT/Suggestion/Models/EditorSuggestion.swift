@@ -498,9 +498,35 @@ nonisolated struct EditorSuggestionReference: Codable, Hashable, Sendable {
 }
 
 enum EditorSuggestionMapper {
+
+    static func make(reviews: [AIValidatedReview], documentText: String) -> [EditorSuggestion] {
+        make(reviews: reviews, documentText: EditorSuggestionMappingContext(documentText))
+    }
+    static func make(reviews: [AIValidatedReview], definitionAssessments: [AIConnectorDefinitionAssessment], documentText: String) -> [EditorSuggestion] {
+        make(reviews: reviews, definitionAssessments: definitionAssessments, documentText: EditorSuggestionMappingContext(documentText))
+    }
+    static func makeReviewAnnotations(reviews: [AIValidatedReview], definitionAssessments: [AIConnectorDefinitionAssessment], documentText: String) -> [EditorReviewAnnotation] {
+        makeReviewAnnotations(reviews: reviews, definitionAssessments: definitionAssessments, documentText: EditorSuggestionMappingContext(documentText))
+    }
+    static func makeFindingAnnotations(findings: [AIConnectorDocumentFinding], documentText: String) -> [EditorReviewAnnotation] {
+        makeFindingAnnotations(findings: findings, documentText: EditorSuggestionMappingContext(documentText))
+    }
+    static func makeDefinitionMatchAnnotations(assessments: [AIConnectorDefinitionAssessment], documentText: String) -> [EditorReviewAnnotation] {
+        makeDefinitionMatchAnnotations(assessments: assessments, documentText: EditorSuggestionMappingContext(documentText))
+    }
+    static func makeDefinitionSuggestions(assessments: [AIConnectorDefinitionAssessment], documentText: String) -> [EditorSuggestion] {
+        makeDefinitionSuggestions(assessments: assessments, documentText: EditorSuggestionMappingContext(documentText))
+    }
+    static func makeDefinitionDebugSuggestions(assessments: [AIConnectorDefinitionAssessment], documentText: String) -> [EditorSuggestion] {
+        makeDefinitionDebugSuggestions(assessments: assessments, documentText: EditorSuggestionMappingContext(documentText))
+    }
+    static func extractSurroundingContext(range: NSRange, in documentText: String) -> (prefix: String?, suffix: String?) {
+        extractSurroundingContext(range: range, in: EditorSuggestionMappingContext(documentText))
+    }
+
     static func make(
         reviews: [AIValidatedReview],
-        documentText: String
+        documentText: EditorSuggestionMappingContext
     ) -> [EditorSuggestion] {
         make(
             reviews: reviews,
@@ -512,7 +538,7 @@ enum EditorSuggestionMapper {
     static func make(
         reviews: [AIValidatedReview],
         definitionAssessments: [AIConnectorDefinitionAssessment],
-        documentText: String
+        documentText: EditorSuggestionMappingContext
     ) -> [EditorSuggestion] {
         // Definition assessments are deliberately not mapped into actionable
         // editor suggestions. They use the separate read-only diagnostic
@@ -531,7 +557,7 @@ enum EditorSuggestionMapper {
     static func makeReviewAnnotations(
         reviews: [AIValidatedReview],
         definitionAssessments: [AIConnectorDefinitionAssessment],
-        documentText: String
+        documentText: EditorSuggestionMappingContext
     ) -> [EditorReviewAnnotation] {
         let reviewAnnotations = reviews.compactMap {
             makeReviewAnnotation(for: $0, documentText: documentText)
@@ -549,10 +575,10 @@ enum EditorSuggestionMapper {
     /// can navigate to the comparison clause without losing the primary item.
     static func makeFindingAnnotations(
         findings: [AIConnectorDocumentFinding],
-        documentText: String
+        documentText: EditorSuggestionMappingContext
     ) -> [EditorReviewAnnotation] {
         findings.compactMap { finding in
-            guard finding.isAnchored(to: documentText) else { return nil }
+            guard finding.isAnchored(to: documentText.text) else { return nil }
             let (prefixContext, suffixContext) = extractSurroundingContext(
                 range: finding.sourceRange,
                 in: documentText
@@ -582,7 +608,7 @@ enum EditorSuggestionMapper {
 
     static func makeDefinitionMatchAnnotations(
         assessments: [AIConnectorDefinitionAssessment],
-        documentText: String
+        documentText: EditorSuggestionMappingContext
     ) -> [EditorReviewAnnotation] {
         makeDefinitionAnnotations(
             assessments: assessments,
@@ -595,7 +621,7 @@ enum EditorSuggestionMapper {
 
     private static func makeReviewAnnotation(
         for review: AIValidatedReview,
-        documentText: String
+        documentText: EditorSuggestionMappingContext
     ) -> EditorReviewAnnotation? {
         guard review.status == .needsReview,
               let original = review.original,
@@ -630,9 +656,9 @@ enum EditorSuggestionMapper {
     private static func makeDefinitionAnnotations(
         assessments: [AIConnectorDefinitionAssessment],
         includeMatches: Bool,
-        documentText: String
+        documentText: EditorSuggestionMappingContext
     ) -> [EditorReviewAnnotation] {
-        let documentLength = documentText.utf16.count
+        let documentLength = documentText.length
 
         return assessments.compactMap { assessment in
             guard let diagnosticStatus = EditorDefinitionDiagnosticStatus(
@@ -655,7 +681,7 @@ enum EditorSuggestionMapper {
                 return nil
             }
 
-            let original = (documentText as NSString).substring(with: absoluteRange)
+            let original = documentText.nsText.substring(with: absoluteRange)
             guard !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 return nil
             }
@@ -705,7 +731,7 @@ enum EditorSuggestionMapper {
     private static func absoluteRange(
         localRange: NSRange,
         segment: AIReviewSegment,
-        documentText: String
+        documentText: EditorSuggestionMappingContext
     ) -> NSRange? {
         let absoluteRange = NSRange(
             location: segment.sourceLocation + localRange.location,
@@ -713,7 +739,7 @@ enum EditorSuggestionMapper {
         )
         guard absoluteRange.location >= 0,
               absoluteRange.length > 0,
-              NSMaxRange(absoluteRange) <= documentText.utf16.count else {
+              NSMaxRange(absoluteRange) <= documentText.length else {
             return nil
         }
         return absoluteRange
@@ -721,9 +747,9 @@ enum EditorSuggestionMapper {
 
     static func makeDefinitionSuggestions(
         assessments: [AIConnectorDefinitionAssessment],
-        documentText: String
+        documentText: EditorSuggestionMappingContext
     ) -> [EditorSuggestion] {
-        let documentLength = documentText.utf16.count
+        let documentLength = documentText.length
 
         return assessments.compactMap { assessment in
             guard assessment.alignment == .mismatch,
@@ -745,7 +771,7 @@ enum EditorSuggestionMapper {
                 return nil
             }
 
-            let original = (documentText as NSString).substring(with: absoluteRange)
+            let original = documentText.nsText.substring(with: absoluteRange)
             let replacement = definitionReplacement(
                 for: original,
                 sourceDefinition: candidate.sourceDefinition,
@@ -794,9 +820,9 @@ enum EditorSuggestionMapper {
     /// only in debug mode and can never be accepted as an edit.
     static func makeDefinitionDebugSuggestions(
         assessments: [AIConnectorDefinitionAssessment],
-        documentText: String
+        documentText: EditorSuggestionMappingContext
     ) -> [EditorSuggestion] {
-        let documentLength = documentText.utf16.count
+        let documentLength = documentText.length
 
         return assessments.compactMap { assessment in
             guard let diagnosticStatus = EditorDefinitionDiagnosticStatus(
@@ -818,7 +844,7 @@ enum EditorSuggestionMapper {
                 return nil
             }
 
-            let original = (documentText as NSString).substring(with: absoluteRange)
+            let original = documentText.nsText.substring(with: absoluteRange)
             guard !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 return nil
             }
@@ -864,11 +890,11 @@ enum EditorSuggestionMapper {
 
     private static func makeLanguageSuggestions(
         reviews: [AIValidatedReview],
-        documentText: String
+        documentText: EditorSuggestionMappingContext
     ) -> [EditorSuggestion] {
         var mapped: [EditorSuggestion] = []
         var mappedCountBySegment: [Int: Int] = [:]
-        let documentLength = documentText.utf16.count
+        let documentLength = documentText.length
 
         for review in reviews {
             guard review.status == .suggestion,
@@ -1167,9 +1193,9 @@ enum EditorSuggestionMapper {
 
     static func extractSurroundingContext(
         range: NSRange,
-        in documentText: String
+        in documentText: EditorSuggestionMappingContext
     ) -> (prefix: String?, suffix: String?) {
-        let nsText = documentText as NSString
+        let nsText = documentText.nsText
         guard range.location >= 0, NSMaxRange(range) <= nsText.length else {
             return (nil, nil)
         }
