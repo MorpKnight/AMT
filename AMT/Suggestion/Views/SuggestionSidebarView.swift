@@ -21,7 +21,7 @@ struct SuggestionSidebarView: View {
             // Sidebar Header
             HStack(alignment: .center) {
                 Text("Sugestis Perbaikan")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Color.textPrimary)
 
                 Spacer()
@@ -43,9 +43,6 @@ struct SuggestionSidebarView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-
-            Divider()
-                .overlay(Color.borderSubtle)
 
             // Scrollable List of Suggestion Cards
             if items.isEmpty {

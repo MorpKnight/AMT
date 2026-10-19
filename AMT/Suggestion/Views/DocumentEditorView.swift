@@ -30,6 +30,7 @@ struct DocumentEditorView: View {
     @State private var presentationMode: DocumentPresentationMode
     @State private var showDefinitionMatches = false
     @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
+    @State private var isReviewSidebarVisible = true
     @State private var pendingSuggestionAccept: EditorSuggestion?
     @State private var pendingDefinitionResolution: AIConnectorDefinitionResolutionOption?
 
@@ -97,7 +98,7 @@ struct DocumentEditorView: View {
                         .overlay(Color.borderSubtle)
 
                     GeometryReader { proxy in
-                        ZStack {
+                        ZStack(alignment: .top) {
                             Color.white
 
                             if presentationMode == .preview,
@@ -110,12 +111,17 @@ struct DocumentEditorView: View {
                             } else {
                                 editorView(for: proxy)
                             }
+
+                            if presentationMode == .editing {
+                                EditorFloatingControls(viewModel: editorViewModel)
+                                    .padding(.top, 14)
+                            }
                         }
                     }
                 }
                 .frame(minWidth: 460, maxWidth: .infinity, maxHeight: .infinity)
 
-                if presentationMode == .editing {
+                if presentationMode == .editing && isReviewSidebarVisible {
                     Divider()
                         .overlay(Color.borderSubtle)
 
@@ -144,6 +150,7 @@ struct DocumentEditorView: View {
                         }
                     )
                     .frame(minWidth: 280, idealWidth: 320, maxWidth: 360)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
             .frame(minWidth: 600, maxWidth: .infinity, maxHeight: .infinity)
@@ -207,6 +214,12 @@ struct DocumentEditorView: View {
             canPreviewOriginal: originalSourceURL != nil,
             saveState: saveState,
             reviewNeedsRerun: reviewNeedsRerun,
+            isRightSidebarVisible: isReviewSidebarVisible,
+            onToggleRightSidebar: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isReviewSidebarVisible.toggle()
+                }
+            },
             onRetrySave: onRetrySave,
             onExport: onExport,
             aiConnectorViewModel: aiConnectorViewModel,
