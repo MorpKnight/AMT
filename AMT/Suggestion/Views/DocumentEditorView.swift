@@ -29,7 +29,10 @@ struct DocumentEditorView: View {
     @State private var editorViewModel = EditorViewModel()
     @State private var presentationMode: DocumentPresentationMode
     @State private var showDefinitionMatches = false
-    @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
+    @State private var isLeftSidebarVisible = true
+    @State private var isReviewSidebarVisible = true
+    @State private var pendingSuggestionAccept: EditorSuggestion?
+    @State private var pendingDefinitionResolution: AIConnectorDefinitionResolutionOption?
 
     init(
         documents: [DashboardDocument],
@@ -77,24 +80,29 @@ struct DocumentEditorView: View {
     }
     
     var body: some View {
-        NavigationSplitView(columnVisibility: $sidebarVisibility) {
-            EditorSidebar(
-                documents: documents,
-                selectedDocumentID: $selectedDocumentID,
-                onBackToDashboard: onBackToDashboard,
-                onImportDocument: onImportDocument
-            )
-            .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 280)
-            .navigationTitle("")
-            
-        } detail: {
-            VStack(spacing: 0) {
-                editorToolbar
-                Divider()
-                    .overlay(Color.borderSubtle)
+        VStack(spacing: 0) {
+            editorToolbar
+
+            Divider()
+                .overlay(Color.borderSubtle)
+
+            HStack(spacing: 0) {
+                if isLeftSidebarVisible {
+                    EditorSidebar(
+                        documents: documents,
+                        selectedDocumentID: $selectedDocumentID,
+                        onBackToDashboard: onBackToDashboard,
+                        onImportDocument: onImportDocument
+                    )
+                    .frame(width: 240)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+
+                    Divider()
+                        .overlay(Color.borderSubtle)
+                }
 
                 GeometryReader { proxy in
-                    ZStack {
+                    ZStack(alignment: .top) {
                         Color.white
 
                         if presentationMode == .preview,
@@ -107,51 +115,50 @@ struct DocumentEditorView: View {
                         } else {
                             editorView(for: proxy)
                         }
+
+                        if presentationMode == .editing {
+                            EditorFloatingControls(viewModel: editorViewModel)
+                                .padding(.top, 14)
+                        }
                     }
-//                    .overlay(alignment: .topTrailing) {
-//                        if presentationMode == .editing {
-//                            VStack(alignment: .trailing, spacing: 10) {
-//                                if !reviewItems.isEmpty
-//                                    || !aiConnectorViewModel.definitionMatchAnnotations.isEmpty
-//                                    || aiConnectorViewModel.reviewedDocumentFindingCount > 0 {
-//                                    ReviewNavigatorView(
-//                                        items: reviewItems,
-//                                        selectedItemID: aiConnectorViewModel.selectedReviewItemID,
-//                                        hasDefinitionMatches: !aiConnectorViewModel.definitionMatchAnnotations.isEmpty,
-//                                        showDefinitionMatches: $showDefinitionMatches,
-//                                        hasReviewedFindings: aiConnectorViewModel.reviewedDocumentFindingCount > 0,
-//                                        showReviewedFindings: Binding(
-//                                            get: { aiConnectorViewModel.showReviewedFindings },
-//                                            set: { aiConnectorViewModel.setShowReviewedFindings($0) }
-//                                        ),
-//                                        onPrevious: {
-//                                            aiConnectorViewModel.selectPreviousReviewItem(
-//                                                includeDefinitionMatches: showDefinitionMatches
-//                                            )
-//                                        },
-//                                        onNext: {
-//                                            aiConnectorViewModel.selectNextReviewItem(
-//                                                includeDefinitionMatches: showDefinitionMatches
-//                                            )
-//                                        }
-//                                    )
-//                                } else if aiConnectorViewModel.state == .completed {
-//                                    reviewEmptyState
-//                                }
-//                            }
-//                                .padding(.top, 14)
-//                                .padding(.trailing, 14)
-//                        }
-//                    }
+                }
+                .frame(minWidth: 460, maxWidth: .infinity, maxHeight: .infinity)
 
+                if presentationMode == .editing && isReviewSidebarVisible {
+                    Divider()
+                        .overlay(Color.borderSubtle)
 
+                    SuggestionSidebarView(
+                        items: reviewItems,
+                        selectedItemID: aiConnectorViewModel.selectedReviewItemID,
+                        isAnalyzing: aiConnectorViewModel.isRunning,
+                        onSelect: { id in
+                            aiConnectorViewModel.selectReviewItem(id)
+                        },
+                        onAcceptSuggestion: { suggestion in
+                            pendingSuggestionAccept = suggestion
+                        },
+                        onAcceptAnnotation: { annotation in
+                            if let resolution = aiConnectorViewModel.definitionResolutions[annotation.id],
+                               let actionable = resolution.options.first(where: { $0.isActionable }) {
+                                pendingDefinitionResolution = actionable
+                            } else {
+                                aiConnectorViewModel.markReviewItemReviewed(annotation.id)
+                                onReviewStateChanged()
+                            }
+                        },
+                        onDismiss: { id in
+                            aiConnectorViewModel.dismissReviewItem(id)
+                            onReviewStateChanged()
+                        }
+                    )
+                    .frame(minWidth: 280, idealWidth: 320, maxWidth: 360)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
-            .frame(minWidth: 500, maxWidth: .infinity, maxHeight: .infinity)
-            .navigationTitle("")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationSplitViewStyle(.prominentDetail)
-        .navigationTitle("")
+        .frame(minWidth: 700, minHeight: 500)
         .onChange(of: selectedDocumentID) { _, newID in
             isDebugPanelPresented = false
             showDefinitionMatches = false
@@ -208,6 +215,19 @@ struct DocumentEditorView: View {
             canPreviewOriginal: originalSourceURL != nil,
             saveState: saveState,
             reviewNeedsRerun: reviewNeedsRerun,
+            isLeftSidebarVisible: isLeftSidebarVisible,
+            onToggleLeftSidebar: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isLeftSidebarVisible.toggle()
+                }
+            },
+            onBackToDashboard: onBackToDashboard,
+            isRightSidebarVisible: isReviewSidebarVisible,
+            onToggleRightSidebar: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isReviewSidebarVisible.toggle()
+                }
+            },
             onRetrySave: onRetrySave,
             onExport: onExport,
             aiConnectorViewModel: aiConnectorViewModel,
@@ -290,6 +310,7 @@ struct DocumentEditorView: View {
                 aiConnectorViewModel.canApplyDefinitionResolution(option, to: text)
             },
             onSuggestionAccepted: { suggestion, previousText, updatedText in
+                pendingSuggestionAccept = nil
                 if !aiConnectorViewModel.reconcileAfterAccept(
                     suggestion,
                     previousText: previousText,
@@ -315,6 +336,7 @@ struct DocumentEditorView: View {
                 aiConnectorViewModel.requestDefinitionResolution(for: id)
             },
             onDefinitionResolutionApplied: { option, previousText, updatedText in
+                pendingDefinitionResolution = nil
                 if !aiConnectorViewModel.reconcileAfterDefinitionResolution(
                     option,
                     previousText: previousText,
@@ -324,7 +346,9 @@ struct DocumentEditorView: View {
                 }
                 onReviewStateChanged()
             },
-            formattingViewModel: editorViewModel
+            formattingViewModel: editorViewModel,
+            pendingSuggestionAccept: pendingSuggestionAccept,
+            pendingDefinitionResolution: pendingDefinitionResolution
         )
         .frame(
             width: proxy.size.width,
