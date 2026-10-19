@@ -30,6 +30,8 @@ struct DocumentEditorView: View {
     @State private var presentationMode: DocumentPresentationMode
     @State private var showDefinitionMatches = false
     @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
+    @State private var pendingSuggestionAccept: EditorSuggestion?
+    @State private var pendingDefinitionResolution: AIConnectorDefinitionResolutionOption?
 
     init(
         documents: [DashboardDocument],
@@ -88,66 +90,63 @@ struct DocumentEditorView: View {
             .navigationTitle("")
             
         } detail: {
-            VStack(spacing: 0) {
-                editorToolbar
-                Divider()
-                    .overlay(Color.borderSubtle)
+            HStack(spacing: 0) {
+                VStack(spacing: 0) {
+                    editorToolbar
+                    Divider()
+                        .overlay(Color.borderSubtle)
 
-                GeometryReader { proxy in
-                    ZStack {
-                        Color.white
+                    GeometryReader { proxy in
+                        ZStack {
+                            Color.white
 
-                        if presentationMode == .preview,
-                           let originalSourceURL {
-                            WordDocumentPreview(sourceURL: originalSourceURL)
-                                .frame(
-                                    width: proxy.size.width,
-                                    height: proxy.size.height
-                                )
-                        } else {
-                            editorView(for: proxy)
+                            if presentationMode == .preview,
+                               let originalSourceURL {
+                                WordDocumentPreview(sourceURL: originalSourceURL)
+                                    .frame(
+                                        width: proxy.size.width,
+                                        height: proxy.size.height
+                                    )
+                            } else {
+                                editorView(for: proxy)
+                            }
                         }
                     }
-//                    .overlay(alignment: .topTrailing) {
-//                        if presentationMode == .editing {
-//                            VStack(alignment: .trailing, spacing: 10) {
-//                                if !reviewItems.isEmpty
-//                                    || !aiConnectorViewModel.definitionMatchAnnotations.isEmpty
-//                                    || aiConnectorViewModel.reviewedDocumentFindingCount > 0 {
-//                                    ReviewNavigatorView(
-//                                        items: reviewItems,
-//                                        selectedItemID: aiConnectorViewModel.selectedReviewItemID,
-//                                        hasDefinitionMatches: !aiConnectorViewModel.definitionMatchAnnotations.isEmpty,
-//                                        showDefinitionMatches: $showDefinitionMatches,
-//                                        hasReviewedFindings: aiConnectorViewModel.reviewedDocumentFindingCount > 0,
-//                                        showReviewedFindings: Binding(
-//                                            get: { aiConnectorViewModel.showReviewedFindings },
-//                                            set: { aiConnectorViewModel.setShowReviewedFindings($0) }
-//                                        ),
-//                                        onPrevious: {
-//                                            aiConnectorViewModel.selectPreviousReviewItem(
-//                                                includeDefinitionMatches: showDefinitionMatches
-//                                            )
-//                                        },
-//                                        onNext: {
-//                                            aiConnectorViewModel.selectNextReviewItem(
-//                                                includeDefinitionMatches: showDefinitionMatches
-//                                            )
-//                                        }
-//                                    )
-//                                } else if aiConnectorViewModel.state == .completed {
-//                                    reviewEmptyState
-//                                }
-//                            }
-//                                .padding(.top, 14)
-//                                .padding(.trailing, 14)
-//                        }
-//                    }
+                }
+                .frame(minWidth: 460, maxWidth: .infinity, maxHeight: .infinity)
 
+                if presentationMode == .editing {
+                    Divider()
+                        .overlay(Color.borderSubtle)
 
+                    SuggestionSidebarView(
+                        items: reviewItems,
+                        selectedItemID: aiConnectorViewModel.selectedReviewItemID,
+                        isAnalyzing: aiConnectorViewModel.isRunning,
+                        onSelect: { id in
+                            aiConnectorViewModel.selectReviewItem(id)
+                        },
+                        onAcceptSuggestion: { suggestion in
+                            pendingSuggestionAccept = suggestion
+                        },
+                        onAcceptAnnotation: { annotation in
+                            if let resolution = aiConnectorViewModel.definitionResolutions[annotation.id],
+                               let actionable = resolution.options.first(where: { $0.isActionable }) {
+                                pendingDefinitionResolution = actionable
+                            } else {
+                                aiConnectorViewModel.markReviewItemReviewed(annotation.id)
+                                onReviewStateChanged()
+                            }
+                        },
+                        onDismiss: { id in
+                            aiConnectorViewModel.dismissReviewItem(id)
+                            onReviewStateChanged()
+                        }
+                    )
+                    .frame(minWidth: 280, idealWidth: 320, maxWidth: 360)
                 }
             }
-            .frame(minWidth: 500, maxWidth: .infinity, maxHeight: .infinity)
+            .frame(minWidth: 600, maxWidth: .infinity, maxHeight: .infinity)
             .navigationTitle("")
         }
         .navigationSplitViewStyle(.prominentDetail)

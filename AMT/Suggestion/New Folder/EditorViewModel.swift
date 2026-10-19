@@ -30,6 +30,8 @@ struct FormattingState: Equatable {
 @Observable
 final class EditorViewModel {
     var pendingAction: FormattingAction?
+    var pendingSuggestionAccept: EditorSuggestion?
+    var pendingDefinitionResolution: AIConnectorDefinitionResolutionOption?
     var activeState = FormattingState()
     var canUndo = false
     var canRedo = false
