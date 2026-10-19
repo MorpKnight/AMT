@@ -283,6 +283,7 @@ struct DocumentEditorView: View {
                 )
             },
             onSuggestionAccepted: { suggestion, previousText, updatedText in
+                pendingSuggestionAccept = nil
                 if !aiConnectorViewModel.reconcileAfterAccept(
                     suggestion,
                     previousText: previousText,
@@ -308,6 +309,7 @@ struct DocumentEditorView: View {
                 aiConnectorViewModel.requestDefinitionResolution(for: id)
             },
             onDefinitionResolutionApplied: { option, previousText, updatedText in
+                pendingDefinitionResolution = nil
                 if !aiConnectorViewModel.reconcileAfterDefinitionResolution(
                     option,
                     previousText: previousText,
@@ -317,7 +319,9 @@ struct DocumentEditorView: View {
                 }
                 onReviewStateChanged()
             },
-            formattingViewModel: editorViewModel
+            formattingViewModel: editorViewModel,
+            pendingSuggestionAccept: pendingSuggestionAccept,
+            pendingDefinitionResolution: pendingDefinitionResolution
         )
         .frame(
             width: proxy.size.width,
