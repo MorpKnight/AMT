@@ -219,8 +219,8 @@ struct EditorToolbar: View {
             // Fixed vertical separator between navigation icons and title
             Rectangle()
                 .fill(Color.borderSubtle)
-                .frame(width: 1, height: 16)
-                .padding(.horizontal, 2)
+                .frame(width: 1, height: 48)
+                .padding(.horizontal, 6)
 
             documentTitleField
 
@@ -236,8 +236,8 @@ struct EditorToolbar: View {
                 toggleRightSidebarButton
             }
         }
+        .frame(height:48)
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
