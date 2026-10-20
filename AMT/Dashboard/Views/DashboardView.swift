@@ -24,7 +24,7 @@ struct DashboardView: View {
     @State private var pendingDeletionDocument: DashboardDocument?
     @Environment(\.scenePhase) private var scenePhase
 
-    @State private var sidebarVisibility: NavigationSplitViewVisibility = .all
+    @State private var isSidebarVisible: Bool = true
 
     private var filteredDocuments: [DashboardDocument] {
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -95,32 +95,27 @@ struct DashboardView: View {
                     aiConnectorViewModel: aiConnectorViewModel
                 )
             } else {
-                NavigationSplitView(columnVisibility: $sidebarVisibility) {
-                    DashboardSidebar(selectedTab: $selectedTab)
-                        .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 280)
-                        .navigationTitle("")
-                } detail: {
-                    switch selectedTab {
-                    case .document, .none:
-                        if let vm = aiConnectorViewModel,
-                           analyzingDocument != nil,
-                           vm.isRunning {
-                            DocumentAnalysisLoadingView(
-                                progress: vm.progressSnapshot,
-                                onCancel: {
-                                    vm.cancel()
-                                }
-                            )
-                            .transition(.opacity)
-                        } else {
-                            documentDashboardContent
+                VStack(spacing: 0) {
+                    dashboardToolbar
+
+                    Divider()
+                        .overlay(Color.borderSubtle)
+
+                    HStack(spacing: 0) {
+                        if isSidebarVisible {
+                            DashboardSidebar(selectedTab: $selectedTab)
+                                .frame(width: 240)
+                                .transition(.move(edge: .leading).combined(with: .opacity))
+
+                            Divider()
+                                .overlay(Color.borderSubtle)
                         }
-                    case .dictionary:
-                        DictionaryView(dictionaryStore: dictionaryStore)
+
+                        detailContent
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .navigationSplitViewStyle(.prominentDetail)
-                .navigationTitle("")
             }
         }
         .navigationTitle("")
@@ -450,17 +445,36 @@ struct DashboardView: View {
         )
     }
 
-    // MARK: - Document Grid Dashboard View
+    // MARK: - Dashboard Layout Views
 
-    private var documentDashboardContent: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Document")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(.primary)
+    private var dashboardToolbar: some View {
+        HStack(spacing: 8) {
+            HStack{
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isSidebarVisible.toggle()
+                    }
+                } label: {
+                    Image(systemName: "sidebar.left")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(isSidebarVisible ? Color.textPrimary : Color.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .help(isSidebarVisible ? "Sembunyikan Sidebar" : "Tampilkan Sidebar")
+            }
+            
+            Rectangle()
+                .fill(Color.borderSubtle)
+                .frame(width: 1, height: 48)
+                .padding(.horizontal, 8)
 
-                Spacer()
+            Text(selectedTab?.rawValue ?? "Dokumen")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(Color.textPrimary)
 
+            Spacer()
+
+            if selectedTab == .document || selectedTab == nil {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.secondary)
@@ -470,43 +484,71 @@ struct DashboardView: View {
                         .textFieldStyle(.plain)
                         .font(.system(size: 13))
                 }
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 6)
                 .padding(.vertical, 6)
                 .background(Color.primary.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .frame(width: 180)
             }
-            .padding(.horizontal, 32)
-            .padding(.top, 28)
-            .padding(.bottom, 24)
-
-            ScrollView {
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
-                    ImportDocumentCardView {
-                        importDocumentFromFinder()
-                    }
-                    .frame(maxHeight: .infinity, alignment: .top)
-
-                    ForEach(filteredDocuments) { document in
-                        DocumentCardView(
-                            document: document,
-                            onSelect: {
-                                openDocument(document)
-                            },
-                            onExport: {
-                                requestExport(for: document)
-                            },
-                            onDelete: {
-                                pendingDeletionDocument = document
-                            }
-                        )
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 32)
-            }
         }
-        .navigationTitle("")
+        .frame(height:48)
+        .padding(.horizontal, 16)
+        .background(Color(nsColor: .windowBackgroundColor))
+        
+    }
+
+    @ViewBuilder
+    private var detailContent: some View {
+        switch selectedTab {
+        case .document, .none:
+            if let vm = aiConnectorViewModel,
+               analyzingDocument != nil,
+               vm.isRunning {
+                DocumentAnalysisLoadingView(
+                    progress: vm.progressSnapshot,
+                    onCancel: {
+                        vm.cancel()
+                    }
+                )
+                .transition(.opacity)
+            } else {
+                documentDashboardContent
+            }
+        case .dictionary:
+            DictionaryView(dictionaryStore: dictionaryStore)
+        }
+    }
+
+    // MARK: - Document Grid Dashboard View
+
+    private var documentDashboardContent: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
+                ImportDocumentCardView {
+                    importDocumentFromFinder()
+                }
+                .frame(maxHeight: .infinity, alignment: .top)
+
+                ForEach(filteredDocuments) { document in
+                    DocumentCardView(
+                        document: document,
+                        onSelect: {
+                            openDocument(document)
+                        },
+                        onExport: {
+                            requestExport(for: document)
+                        },
+                        onDelete: {
+                            pendingDeletionDocument = document
+                        }
+                    )
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 32)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
     }
 }
