@@ -1,0 +1,1269 @@
+[
+  {
+    "id": "phase8-p0-spelling-01",
+    "text": "Pihak 1 memasukan laporan dan data pendukung kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-02",
+    "text": "Pihak 2 memasukan laporan dan data pendukung kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-03",
+    "text": "Pihak 3 memasukan laporan dan data pendukung kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-04",
+    "text": "Pihak 4 memasukan laporan dan data pendukung kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-05",
+    "text": "Pihak 5 memasukan laporan dan data pendukung kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-06",
+    "text": "Perjanjian 1 telah ditanda tangani oleh Para Pihak pada tanggal 10 Agustus 2026.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-07",
+    "text": "Perjanjian 2 telah ditanda tangani oleh Para Pihak pada tanggal 10 Agustus 2026.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-08",
+    "text": "Perjanjian 3 telah ditanda tangani oleh Para Pihak pada tanggal 10 Agustus 2026.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-09",
+    "text": "Perjanjian 4 telah ditanda tangani oleh Para Pihak pada tanggal 10 Agustus 2026.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-10",
+    "text": "Perjanjian 5 telah ditanda tangani oleh Para Pihak pada tanggal 10 Agustus 2026.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-11",
+    "text": "Dokumen 1 di simpan oleh Pihak Kedua dalam arsip elektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-12",
+    "text": "Dokumen 2 di simpan oleh Pihak Kedua dalam arsip elektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-13",
+    "text": "Dokumen 3 di simpan oleh Pihak Kedua dalam arsip elektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-14",
+    "text": "Dokumen 4 di simpan oleh Pihak Kedua dalam arsip elektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-spelling-15",
+    "text": "Dokumen 5 di simpan oleh Pihak Kedua dalam arsip elektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-01",
+    "text": "Pihak 1 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-02",
+    "text": "Pihak 2 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-03",
+    "text": "Pihak 3 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-04",
+    "text": "Pihak 4 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-05",
+    "text": "Pihak 5 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-06",
+    "text": "Pihak 6 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-07",
+    "text": "Pihak 7 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-08",
+    "text": "Pihak 8 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-09",
+    "text": "Pihak 9 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-10",
+    "text": "Pihak 10 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-11",
+    "text": "Pihak 11 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-12",
+    "text": "Pihak 12 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-13",
+    "text": "Pihak 13 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-14",
+    "text": "Pihak 14 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-grammar-15",
+    "text": "Pihak 15 wajib untuk menyerahkan laporan berkala kepada Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-terminology-01",
+    "text": "Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-terminology-02",
+    "text": "Dalam dokumen 2, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-terminology-03",
+    "text": "Dalam dokumen 3, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-terminology-04",
+    "text": "Dalam dokumen 4, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-terminology-05",
+    "text": "Dalam dokumen 5, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-terminology-06",
+    "text": "Dalam dokumen 6, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-terminology-07",
+    "text": "Dalam dokumen 7, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-terminology-08",
+    "text": "Dalam dokumen 8, Data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-definition-explicit-match-1",
+    "text": "Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-definition-explicit-match-2",
+    "text": "Data Pribadi merupakan data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-definition-explicit-match-3",
+    "text": "Yang dimaksud dengan Data Pribadi adalah data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-definition-explicit-mismatch-1",
+    "text": "Data Pribadi adalah segala sesuatu yang berkaitan dengan kegiatan usaha dan pembayaran.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-definition-explicit-mismatch-2",
+    "text": "Data Pribadi merupakan dokumen komersial yang ditandatangani para pihak.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-definition-mention-not-definition",
+    "text": "Data Pribadi wajib dilindungi oleh Pengendali Data Pribadi.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-definition-mention-not-definition-2",
+    "text": "Para Pihak wajib menjaga keamanan Data Pribadi sesuai kebijakan internal.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-01",
+    "text": "Perjanjian ini berlaku sejak tanggal ditandatangani oleh Para Pihak.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-02",
+    "text": "Pembayaran dilakukan melalui rekening yang disepakati Para Pihak.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-03",
+    "text": "Pemberitahuan disampaikan secara tertulis kepada alamat resmi.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-04",
+    "text": "Setiap perubahan Perjanjian dibuat dalam bentuk tertulis.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-05",
+    "text": "Perusahaan menyimpan catatan transaksi sesuai kebijakan internal.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-06",
+    "text": "Pihak Pertama menerima laporan pada hari kerja berikutnya.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-07",
+    "text": "Para Pihak menyelesaikan perselisihan melalui musyawarah.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-08",
+    "text": "Kerahasiaan informasi tetap berlaku setelah Perjanjian berakhir.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-09",
+    "text": "Dokumen pendukung menjadi bagian yang tidak terpisahkan dari Perjanjian.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-10",
+    "text": "Jangka waktu Perjanjian adalah dua belas bulan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-11",
+    "text": "Kewajiban pembayaran tidak menghapus kewajiban pelaporan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-12",
+    "text": "Perusahaan menunjuk wakil yang berwenang untuk komunikasi.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-13",
+    "text": "Hak dan kewajiban Para Pihak mengikuti ketentuan Perjanjian.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-14",
+    "text": "Pengakhiran Perjanjian tidak menghapus kewajiban yang telah timbul.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-p0-hard-negative-15",
+    "text": "Lampiran ini dibaca bersama dengan dokumen utama.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-defined-term-casing",
+    "text": "Para Pihak menyepakati bahwa Data Pribadi wajib dilindungi. data pribadi dapat diproses sesuai Perjanjian.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-internal-reference-missing",
+    "text": "Pihak Kedua wajib memenuhi Pasal 99 dan Lampiran C yang tidak tersedia pada dokumen ini.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-risk-hard-negative-modal",
+    "text": "Pihak Pertama dapat menyampaikan pemberitahuan kepada Pihak Kedua.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-definition-resolution-source",
+    "text": "\"Data Pribadi\" adalah data mengenai pelanggan korporat.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "phase8-incremental-definition-change",
+    "text": "BAB I\n\"Data\" adalah informasi umum.\nBAB II\nPihak Kedua wajib menjaga Data.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-spelling-1",
+    "text": "Pihak Kedua menandatangani perjanijan secara tertulis.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-spelling-2",
+    "text": "Pembayaran memenuhi kewajban yang disepakati.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-spelling-3",
+    "text": "Bukti pemabyaran disimpan oleh Perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-spelling-4",
+    "text": "Pelaksanaan perjanjain diawasi setiap bulan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-spelling-5",
+    "text": "Penerima menyimpan dokumne pendukung.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-spelling-6",
+    "text": "Pihak Pertama menyerahkan laproan bulanan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-grammar-1",
+    "text": "Pihak Kedua wajib untuk menyampaikan laporan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-grammar-2",
+    "text": "Para Pihak wajib menyimpan arsip.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-grammar-3",
+    "text": "Pembayaran dilakukan sesuai dengan jadwal yang disepakati.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-grammar-4",
+    "text": "Pihak Pertama wajib untuk menjaga kerahasiaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-grammar-5",
+    "text": "Pihak Kedua dapat memilih jadwal pengiriman.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-grammar-6",
+    "text": "Dokumen telah diterima oleh Pihak Pertama.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-paraphrase-1",
+    "text": "\"Data Pribadi\" adalah data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-paraphrase-2",
+    "text": "Pihak Kedua menyimpan informasi mengenai orang yang dapat dikenali.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-paraphrase-3",
+    "text": "\"Korporasi\" adalah kumpulan orang dan/atau kekayaan yang terorganisasi.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-paraphrase-4",
+    "text": "Informasi mengenai pelanggan korporat merupakan Data Pribadi.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-paraphrase-5",
+    "text": "Pihak Pertama mengelola data tentang orang yang identitasnya dapat diketahui.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-paraphrase-6",
+    "text": "Korporasi menyerahkan laporan yang telah disetujui.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-operators-1",
+    "text": "\"Data\" adalah informasi yang tidak dapat dipublikasikan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-operators-2",
+    "text": "\"Data\" adalah informasi yang dapat dipublikasikan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-operators-3",
+    "text": "Pihak Kedua wajib menjaga arsip kecuali terdapat persetujuan tertulis.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-operators-4",
+    "text": "Pihak Pertama tidak wajib menyerahkan salinan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-operators-5",
+    "text": "Pihak Kedua dapat mengungkapkan informasi hanya jika diizinkan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-operators-6",
+    "text": "Pihak Pertama dilarang mengubah data tanpa persetujuan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-quantities-1",
+    "text": "Pembayaran paling banyak Rp10.000.000 dilakukan dalam 10 hari kerja.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-quantities-2",
+    "text": "Pembayaran paling sedikit Rp10.000.000 dilakukan dalam 10 hari kalender.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-quantities-3",
+    "text": "Pembeli membayar Penjual sebesar Rp500.000.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-quantities-4",
+    "text": "Penjual membayar Pembeli sebesar Rp500.000.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-quantities-5",
+    "text": "Nilai kurang dari 10 kilogram wajib dicatat.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-quantities-6",
+    "text": "Nilai lebih dari 10 gram dapat diterima.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-eligibility-1",
+    "text": "Istilah \"Data Pribadi\" disebut dalam laporan tahunan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-eligibility-2",
+    "text": "Korporasi adalah pihak yang berkepentingan menurut kamus lama.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-eligibility-3",
+    "text": "Pihak Pertama mengutip peraturan yang statusnya belum diketahui.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-eligibility-4",
+    "text": "Istilah adat digunakan sebagai referensi bacaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-eligibility-5",
+    "text": "\"Perusahaan\" adalah badan usaha menurut dokumen ini.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-eligibility-6",
+    "text": "Pihak Kedua menggunakan definisi internal Perjanjian.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-long-1",
+    "text": "Pihak Kedua memasukan arsip, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, Pihak Pertama menyimpan dokumen pendukung untuk pemeriksaan, kecuali terdapat persetujuan tertulis.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-long-2",
+    "text": "Pihak Kedua menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan menyimpan dokumen pendukung untuk pemeriksaan dan memasukan tanggal hanya jika disetujui.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-long-3",
+    "text": "\"Data\" adalah informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan informasi mengenai dokumen pendukung dan catatan pemeriksaan, kecuali catatan yang tidak boleh dipublikasikan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-long-4",
+    "text": "Pihak Pertama wajib menjaga arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, arsip pendukung dan laporan pemeriksaan, kecuali diwajibkan oleh hukum.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-long-5",
+    "text": "Nama | Kewajiban\nPihak Kedua | menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui menjaga arsip yang telah disetujui tanpa mengubah tanggal.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-long-6",
+    "text": "😀 Pihak Pertama menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan menyimpan arsip untuk pemeriksaan memasukan catatan yang tidak dapat diubah.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-protected-1",
+    "text": "\"Memasukan\" adalah nama produk yang disepakati Para Pihak.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-protected-2",
+    "text": "Nama perusahaan adalah PT Di Simpan Indonesia.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-protected-3",
+    "text": "Nomor dokumen ABC-123 tidak boleh diubah.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-protected-4",
+    "text": "\"Data\" adalah informasi rahasia.\nPihak Kedua wajib menjaga Data.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-protected-5",
+    "text": "BAB I\n\"Arsip\" adalah dokumen pendukung.\nBAB II\nArsip disimpan oleh Pihak Kedua.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "backend46-protected-6",
+    "text": "Pihak Pertama wajib memenuhi Pasal 2.\nPasal 2\nPihak Kedua menyimpan laporan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g1-1",
+    "text": "Data harus disimpan. Datta harus dikirim.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g1-2",
+    "text": "Pihak pertama mengirim Lapporan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g1-3",
+    "text": "Dokumenn harus diserahkan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g1-4",
+    "text": "Para pihak menyimpan Datta.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g1-5",
+    "text": "Pihak kedua menerima Pembayarran.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g1-6",
+    "text": "Data dan laporan telah lengkap.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g2-1",
+    "text": "Pihak mengirim laproan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g2-2",
+    "text": "Para pihak menandatangani perjanjain.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g2-3",
+    "text": "Para pihak menyimpan dokumne.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g2-4",
+    "text": "Pihak menyerahkan Laproan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g2-5",
+    "text": "Pemabyaran dilakukan hari ini.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g2-6",
+    "text": "Laporan dan dokumen disimpan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g3-1",
+    "text": "Para pihak menjalankan kewajban.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g3-2",
+    "text": "Kewajban pihak kedua tetap berlaku.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g3-3",
+    "text": "Pihak memiliki kewajiban.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g3-4",
+    "text": "Pihak memenuhi kewajban pembayaran.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g3-5",
+    "text": "Kewajban tetap berlaku kecuali dibebaskan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g3-6",
+    "text": "Hak dan kewajiban tetap sama.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g4-1",
+    "text": "PT Datta Nusantara menyerahkan laporan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g4-2",
+    "text": "Produk bernama “Laproan” tetap digunakan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g4-3",
+    "text": "Identifier Datta_ID tidak diubah.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g4-4",
+    "text": "“Datta Pribadi” adalah nama produk.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g4-5",
+    "text": "PT Dokumne Indonesia melaksanakan pekerjaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g4-6",
+    "text": "Akronim DATTA dipakai para pihak.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g5-1",
+    "text": "Yang dimaksud dengan Data Pribadi adalah data tentang individu. Datta Pribadi disimpan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g5-2",
+    "text": "“Memasukan” adalah produk perusahaan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g5-3",
+    "text": "Yang dimaksud dengan Data Pribadi adalah data perseorangan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g5-4",
+    "text": "Definisi\n“Data Pribadi” adalah data tentang individu. Pihak memproses Datta Pribadi.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g5-5",
+    "text": "Yang dimaksud dengan Nama Perusahaan adalah nama badan usaha.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g5-6",
+    "text": "Yang dimaksud dengan Data adalah informasi elektronik.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g6-1",
+    "text": "Yang dimaksud dengan Informasi adalah data yang tidak dapat diumumkan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g6-2",
+    "text": "Yang dimaksud dengan Informasi adalah data yang dapat diumumkan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g6-3",
+    "text": "Pihak pertama wajib membayar 10 hari.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g6-4",
+    "text": "Pihak kedua dapat membayar 20 hari.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g6-5",
+    "text": "Pihak tidak wajib menyerahkan data kecuali diminta.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g6-6",
+    "text": "Pihak wajib menyerahkan data hanya jika disetujui.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g7-1",
+    "text": "Nilai transaksi Rp10.000.000 dibayarkan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g7-2",
+    "text": "Volume 2.500,5 kg dan bunga 2,5 persen.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g7-3",
+    "text": "Lampiran ini merupakan bagian perjanjian.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g7-4",
+    "text": "Lampiran C tidak tersedia.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g7-5",
+    "text": "Pihak membayar Rp2.500.000 dengan bunga 2,5%.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g7-6",
+    "text": "1.2 Ketentuan\nLihat angka 1.2 dan Lampiran tersebut.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g8-1",
+    "text": "😀 Pihak menyerahkan laproan dan dokumne.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g8-2",
+    "text": "Yang dimaksud dengan Data Pribadi adalah data tentang individu. 😀 Datta Pribadi disimpan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g8-3",
+    "text": "Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak menyimpan laporan. Pihak mengirim memasukan data kecuali dilarang.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g8-4",
+    "text": "🇮🇩 Pihak menyerahkan perjanjain.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g8-5",
+    "text": "Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Informasi tidak boleh diubah. Pihak menerima laproan kecuali dilarang.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "accuracy-v2-g8-6",
+    "text": "👩🏽‍💻 “Datta” adalah nama produk. Data Pribadi tetap disimpan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-1",
+    "text": "Yang dimaksud dengan Sarana perkeretaapian adalah kendaraan yang dapat bergerak di jalan rel.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-2",
+    "text": "Yang dimaksud dengan Sarana perkeretaapian adalah kendaraan yang tidak dapat bergerak di jalan rel.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-3",
+    "text": "Para Pihak membicarakan Sarana perkeretaapian.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-4",
+    "text": "Yang dimaksud dengan Sertifikat Deposito adalah simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya dapat dipindahtangankan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-5",
+    "text": "Yang dimaksud dengan Sertifikat Deposito adalah simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya tidak dapat dipindahtangankan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-6",
+    "text": "Para Pihak membicarakan Sertifikat Deposito.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-7",
+    "text": "Yang dimaksud dengan Usia Pensiun adalah usia saat peserta dapat mulai menerima manfaat pensiun.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-8",
+    "text": "Yang dimaksud dengan Usia Pensiun adalah usia saat peserta tidak dapat mulai menerima manfaat pensiun.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-9",
+    "text": "Para Pihak membicarakan Usia Pensiun.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-10",
+    "text": "Yang dimaksud dengan WUPK adalah bagian dari WPN yang dapat diusahakan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-11",
+    "text": "Yang dimaksud dengan WUPK adalah bagian dari WPN yang tidak dapat diusahakan.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-12",
+    "text": "Para Pihak membicarakan WUPK.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-13",
+    "text": "Yang dimaksud dengan Objek Sita adalah barang Penanggung Pajak yang dapat dijadikan jaminan utang pajak.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-14",
+    "text": "Yang dimaksud dengan Objek Sita adalah barang Penanggung Pajak yang tidak dapat dijadikan jaminan utang pajak.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-15",
+    "text": "Para Pihak membicarakan Objek Sita.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-16",
+    "text": "Yang dimaksud dengan Tempat Uji Kompetensi adalah tempat kerja dan/atau lembaga yang dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-17",
+    "text": "Yang dimaksud dengan Tempat Uji Kompetensi adalah tempat kerja dan/atau lembaga yang tidak dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "control-18",
+    "text": "Para Pihak membicarakan Tempat Uji Kompetensi.",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "dummy-original",
+    "text": "PERJANJIAN KERJA SAMA\nPENGELOLAAN LAYANAN DIGITAL DAN DATA\n\nNomor: AMT/PKS/2026/001\n\nPada hari Senin, tanggal 10 Agustus 2026, bertempat di Jakarta, telah dibuat dan ditanda tangani Perjanjian Kerja Sama Pengelolaan Layanan Digital dan Data (selanjutnya disebut “Perjanjian”) oleh dan antara:\n\n1. PT Arunika Data Nusantara, suatu perseroan terbatas yang didirikan berdasarkan hukum Republik Indonesia, berkedudukan di Jakarta, dalam hal ini diwakili oleh Raka Pratama selaku Direktur, selanjutnya disebut “Pihak Pertama”; dan\n\n2. PT Cakrawala Legal Teknologi, suatu perseroan terbatas yang didirikan berdasarkan hukum Republik Indonesia, berkedudukan di Bandung, dalam hal ini diwakili oleh Nadia Kurnia selaku Direktur, selanjutnya disebut “Pihak Kedua”.\n\nPihak Pertama dan Pihak Kedua secara bersama-sama disebut “Para Pihak” dan masing-masing disebut “Pihak”. Para Pihak terlebih dahulu menerangkan hal-hal sebagai berikut:\n\na. Pihak Pertama mengelola platform digital untuk administrasi dokumen dan memerlukan dukungan pengelolaan data;\n\nb. Pihak Kedua mempunyai kemampuan teknis untuk menyediakan layanan tersebut; dan\n\nc. Para Pihak sepakat untuk melaksanakan kerja sama ini berdasarkan syarat dan ketentuan dalam Perjanjian.\n\nPASAL 1\nDEFINISI DAN INTERPRETASI\n\n1. “Layanan” adalah penyediaan, pemeliharaan, dan dukungan teknis atas platform digital sebagaimana dijelaskan dalam Lampiran I.\n\n2. Untuk keperluan pelaksanaan Layanan, data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik selanjutnya disebut “Data Pribadi”.\n\n3. Dalam Perjanjian ini, kumpulan orang dan/atau kekayaan yang terorganisasi, baik merupakan badan hukum maupun bukan badan hukum, yang dapat dimintakan pertanggungjawaban hukum selanjutnya disebut “Korporasi”.\n\n4. Suatu keadaan yang terjadi di luar kehendak para pihak dalam Kontrak dan tidak dapat diperkirakan sebelumnya, sehingga kewajiban yang ditentukan dalam Kontrak menjadi tidak dapat dipenuhi, selanjutnya disebut “Keadaan Kahar”.\n\n5. “Informasi Rahasia” berarti seluruh informasi yang diterima oleh salah satu Pihak dari Pihak lainnya dalam rangka pelaksanaan Perjanjian, baik dalam bentuk tertulis, lisan, elektronik maupun bentuk lainnya.\n\n6. Judul pasal dibuat untuk kemudahan membaca dan tidak mempengaruhi penafsiran ketentuan dalam Perjanjian. Istilah dalam bentuk tunggal mencakup bentuk jamak dan sebaliknya sepanjang konteksnya menghendaki demikian.\n\nPASAL 2\nRUANG LINGKUP LAYANAN\n\n1. Pihak Pertama menunjuk Pihak Kedua untuk menyediakan Layanan pengelolaan dokumen, pencadangan, dan dukungan teknis sesuai dengan ruang lingkup yang disepakati Para Pihak.\n\n2. Pihak Kedua wajib untuk menyediakan Layanan secara profesional, aman, dan sesuai dengan jadwal yang telah disepakati.\n\n3. Pihak Kedua akan melakukan konfigurasi awal, pemantauan sistem, dan pemeliharaan berkala terhadap komponen Layanan.\n\n4. Setiap pekerjaan tambahan di luar ruang lingkup tersebut harus disetujui secara tertulis oleh Para Pihak sebelum pekerjaan dimulai.\n\nPASAL 3\nHAK DAN KEWAJIBAN PARA PIHAK\n\n1. Pihak Kedua bertanggungjawab untuk menjaga ketersediaan Layanan dan wajib memberikan laporan bulanan paling lambat tanggal 5 setiap bulan.\n\n2. Pihak Kedua wajib untuk menyampaikan laporan tersebut kepada Pihak Pertama melalui alamat surat elektronik yang telah ditentukan.\n\n3. Pihak Pertama wajib memberikan akses, informasi, dan persetujuan yang secara wajar diperlukan agar Pihak Kedua dapat melaksanakan kewajibannya.\n\n4. Para Pihak akan melakukan kerjasama dengan itikad baik dan saling memberitahukan setiap kendala yang dapat mempengaruhi pelaksanaan Perjanjian.\n\n5. Pihak yang mengetahui adanya kesalahan atau gangguan pada Layanan wajib segera memberitahukan Pihak lainnya tanpa menunda-nunda.\n\nPASAL 4\nDATA PRIBADI DAN INFORMASI RAHASIA\n\n1. Pihak Kedua hanya boleh memproses Data Pribadi untuk tujuan pelaksanaan Layanan dan berdasarkan instruksi tertulis dari Pihak Pertama.\n\n2. Pada saat pendaftaran pengguna, Pihak Kedua hanya mengumpulkan data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik sejauh diperlukan untuk pelaksanaan Layanan.\n\n3. Pihak Kedua wajib menerapkan langkah teknis dan organisatoris yang patut untuk mencegah akses, penggunaan, pengungkapan, perubahan, atau pemusnahan Data Pribadi tanpa hak.\n\n4. Apabila Layanan digunakan untuk data yang berasal dari kelompok masyarakat yang secara turun-temurun bermukim di wilayah geografis tertentu karena adanya ikatan pada asal usul leluhur, hubungan yang kuat dengan lingkungan hidup, serta sistem nilai yang menentukan pranata ekonomi, politik, sosial, dan hukum, Para Pihak wajib melakukan penilaian tambahan sebelum data tersebut diproses.\n\n5. Para Pihak wajib menjaga kerahasiaan Informasi Rahasia selama jangka waktu Perjanjian dan setelah Perjanjian ini berakhir.\n\n6. Kewajiban kerahasiaan tidak berlaku terhadap informasi yang telah tersedia untuk umum bukan karena pelanggaran Perjanjian atau wajib diungkapkan berdasarkan putusan pengadilan yang berkekuatan hukum tetap.\n\n7. Pihak Kedua harus mengembalikan atau memusnahkan Data Pribadi dan Informasi Rahasia setelah menerima permintaan tertulis dari Pihak Pertama, kecuali penyimpanan diwajibkan oleh peraturan yang berlaku.\n\nPASAL 5\nKEAMANAN DAN PENCATATAN\n\n1. Pihak Kedua wajib melakukan pencadangan Data Pribadi secara berkala dan menyimpan catatan akses selama 12 (dua belas) bulan.\n\n2. Dokumen pendukung harus di simpan oleh Pihak Kedua selama 5 (lima) tahun sejak tanggal penerimaan.\n\n3. Setiap perubahan konfigurasi penting harus dicatat dan dapat ditelusuri oleh Para Pihak.\n\n4. Pihak Kedua harus segera memulihkan Layanan apabila terjadi gangguan, tetapi upaya pemulihan tersebut tidak boleh mengurangi kewajiban keamanan berdasarkan Perjanjian.\n\nPASAL 6\nBIAYA DAN PEMBAYARAN\n\n1. Pihak Pertama wajib membayar biaya Layanan sebesar Rp100.000.000 (seratus juta rupiah) untuk setiap periode sebagaimana disepakati dalam Lampiran II.\n\n2. Pembayaran biaya Layanan dikenakan pajak pertambahan nilai sebesar 11% sesuai dengan ketentuan perpajakan yang berlaku.\n\n3. Pihak Pertama melakukan pembayaran paling lambat 14 (empat belas) hari kalender sejak diterimanya tagihan yang lengkap dan benar.\n\n4. Apabila terdapat perbedaan antara jumlah dalam angka dan jumlah dalam huruf, Para Pihak wajib melakukan klarifikasi tertulis sebelum pembayaran dilakukan.\n\nPASAL 7\nKEPEMILIKAN DAN PENGGUNAAN\n\n1. Seluruh dokumen, data, dan materi yang disediakan oleh Pihak Pertama tetap menjadi milik Pihak Pertama.\n\n2. Dalam pemeriksaan mitra, Pihak Kedua wajib mencatat informasi mengenai kumpulan orang dan/atau kekayaan yang terorganisasi, baik merupakan badan hukum maupun bukan badan hukum, sebelum memberikan akses ke Layanan.\n\n3. Pihak Kedua tidak memperoleh hak untuk menggunakan dokumen atau data tersebut selain untuk menjalankan Layanan berdasarkan Perjanjian.\n\n4. Setiap perangkat lunak yang dikembangkan secara khusus untuk Pihak Pertama harus diserahkan bersama dokumentasi teknis yang memadai.\n\n5. Para Pihak sepakat bahwa penggunaan data untuk tujuan lain memerlukan persetujuan tertulis terlebih dahulu.\n\n6. Pihak Kedua tidak dapat mengalihkan hak dan kewajibannya berdasarkan Perjanjian ini tanpa persetujuan tertulis dari Pihak Pertama.\n\nPASAL 8\nJANGKA WAKTU DAN PERUBAHAN\n\n1. Perjanjian ini berlaku sejak 1 September 2026 sampai dengan 31 Agustus 2027.\n\n2. Perjanjian ini dapat diperpanjang berdasarkan kesepakatan tertulis Para Pihak paling lambat 30 (tiga puluh) hari kalender sebelum berakhirnya jangka waktu.\n\n3. Pihak Kedua dapat meminta perubahan jadwal penyampaian laporan, tetapi perubahan tersebut hanya berlaku setelah disetujui secara tertulis oleh Pihak Pertama.\n\n4. Setiap perubahan atas Perjanjian harus dibuat secara tertulis dan ditanda tangani oleh Para Pihak.\n\nPASAL 9\nKEADAAN KAHAR DAN TANGGUNG JAWAB\n\n1. Perusahaan tidak bertanggung jawab atas keterlambatan yang disebabkan oleh Keadaan Kahar, kecuali apabila keterlambatan tersebut timbul karena kesengajaan atau kelalaian berat.\n\n2. Pihak yang mengalami Keadaan Kahar wajib memberikan pemberitahuan tertulis paling lambat 3 (tiga) hari kerja sejak keadaan tersebut diketahui.\n\n3. Para Pihak wajib melakukan upaya yang wajar untuk mengurangi resiko dan dampak Keadaan Kahar terhadap pelaksanaan Perjanjian.\n\n4. Keadaan Kahar tidak menghapus kewajiban pembayaran yang telah jatuh tempo sebelum terjadinya keadaan tersebut.\n\nPASAL 10\nPENGAKHIRAN\n\n1. Pihak Pertama dapat mengakhiri Perjanjian ini sewaktu-waktu tanpa pemberitahuan kepada Pihak Kedua apabila terdapat pelanggaran material yang tidak diperbaiki dalam waktu 30 (tiga puluh) hari kalender.\n\n2. Masing-masing Pihak dapat mengakhiri Perjanjian dengan memberikan pemberitahuan tertulis sekurang-kurangnya 30 (tiga puluh) hari kalender sebelum tanggal pengakhiran.\n\n3. Pengakhiran Perjanjian tidak membebaskan Para Pihak dari hak dan kewajiban yang telah timbul sebelum tanggal pengakhiran.\n\nPASAL 11\nPEMBERITAHUAN DAN PENYELESAIAN SENGKETA\n\n1. Setiap pemberitahuan berdasarkan Perjanjian harus dibuat secara tertulis dan dikirimkan ke alamat Para Pihak yang tercantum di bawah ini.\n\n2. Borrower wajib memberikan notice tertulis kepada Lender paling lambat 7 (tujuh) hari kerja setelah menerima permintaan pembayaran.\n\n3. Borrower wajib mengirimkan quarterly report kepada Lender paling lambat 3 (tiga) hari kerja setelah akhir setiap kuartal.\n\n4. Apabila terjadi sengketa, Para Pihak terlebih dahulu akan menyelesaikannya melalui musyawarah dalam waktu 30 (tiga puluh) hari kalender.\n\n5. Apabila musyawarah tidak mencapai kesepakatan, sengketa diselesaikan melalui Pengadilan Negeri Jakarta Pusat.\n\nPASAL 12\nKETENTUAN PENUTUP\n\n1. Perjanjian ini diatur dan ditafsirkan berdasarkan hukum Republik Indonesia.\n\n2. Perusahaan wajib mematuhi seluruh peraturan yang berlaku dalam melaksanakan kewajibannya berdasarkan Perjanjian.\n\n3. Apabila salah satu ketentuan dalam Perjanjian dinyatakan tidak berlaku, ketentuan lainnya tetap berlaku sepenuhnya.\n\n4. Perjanjian ini dibuat dalam 2 (dua) rangkap asli, masing-masing mempunyai kekuatan hukum yang sama.\n\n5. Setelah membaca dan memahami seluruh isinya, Para Pihak sepakat untuk menandatangani Perjanjian ini tanpa adanya paksaan dari pihak manapun.\n\nPIHAK PERTAMA                                      PIHAK KEDUA\nPT Arunika Data Nusantara                          PT Cakrawala Legal Teknologi\n\nRaka Pratama                                       Nadia Kurnia\nDirektur                                            Direktur\n",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  },
+  {
+    "id": "dummy-datta",
+    "text": "PERJANJIAN KERJA SAMA\nPENGELOLAAN LAYANAN DIGITAL DAN DATA\n\nNomor: AMT/PKS/2026/001\n\nPada hari Senin, tanggal 10 Agustus 2026, bertempat di Jakarta, telah dibuat dan ditanda tangani Perjanjian Kerja Sama Pengelolaan Layanan Digital dan Data (selanjutnya disebut “Perjanjian”) oleh dan antara:\n\n1. PT Arunika Data Nusantara, suatu perseroan terbatas yang didirikan berdasarkan hukum Republik Indonesia, berkedudukan di Jakarta, dalam hal ini diwakili oleh Raka Pratama selaku Direktur, selanjutnya disebut “Pihak Pertama”; dan\n\n2. PT Cakrawala Legal Teknologi, suatu perseroan terbatas yang didirikan berdasarkan hukum Republik Indonesia, berkedudukan di Bandung, dalam hal ini diwakili oleh Nadia Kurnia selaku Direktur, selanjutnya disebut “Pihak Kedua”.\n\nPihak Pertama dan Pihak Kedua secara bersama-sama disebut “Para Pihak” dan masing-masing disebut “Pihak”. Para Pihak terlebih dahulu menerangkan hal-hal sebagai berikut:\n\na. Pihak Pertama mengelola platform digital untuk administrasi dokumen dan memerlukan dukungan pengelolaan data;\n\nb. Pihak Kedua mempunyai kemampuan teknis untuk menyediakan layanan tersebut; dan\n\nc. Para Pihak sepakat untuk melaksanakan kerja sama ini berdasarkan syarat dan ketentuan dalam Perjanjian.\n\nPASAL 1\nDEFINISI DAN INTERPRETASI\n\n1. “Layanan” adalah penyediaan, pemeliharaan, dan dukungan teknis atas platform digital sebagaimana dijelaskan dalam Lampiran I.\n\n2. Untuk keperluan pelaksanaan Layanan, data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik selanjutnya disebut “Data Pribadi”.\n\n3. Dalam Perjanjian ini, kumpulan orang dan/atau kekayaan yang terorganisasi, baik merupakan badan hukum maupun bukan badan hukum, yang dapat dimintakan pertanggungjawaban hukum selanjutnya disebut “Korporasi”.\n\n4. Suatu keadaan yang terjadi di luar kehendak para pihak dalam Kontrak dan tidak dapat diperkirakan sebelumnya, sehingga kewajiban yang ditentukan dalam Kontrak menjadi tidak dapat dipenuhi, selanjutnya disebut “Keadaan Kahar”.\n\n5. “Informasi Rahasia” berarti seluruh informasi yang diterima oleh salah satu Pihak dari Pihak lainnya dalam rangka pelaksanaan Perjanjian, baik dalam bentuk tertulis, lisan, elektronik maupun bentuk lainnya.\n\n6. Judul pasal dibuat untuk kemudahan membaca dan tidak mempengaruhi penafsiran ketentuan dalam Perjanjian. Istilah dalam bentuk tunggal mencakup bentuk jamak dan sebaliknya sepanjang konteksnya menghendaki demikian.\n\nPASAL 2\nRUANG LINGKUP LAYANAN\n\n1. Pihak Pertama menunjuk Pihak Kedua untuk menyediakan Layanan pengelolaan dokumen, pencadangan, dan dukungan teknis sesuai dengan ruang lingkup yang disepakati Para Pihak.\n\n2. Pihak Kedua wajib untuk menyediakan Layanan secara profesional, aman, dan sesuai dengan jadwal yang telah disepakati.\n\n3. Pihak Kedua akan melakukan konfigurasi awal, pemantauan sistem, dan pemeliharaan berkala terhadap komponen Layanan.\n\n4. Setiap pekerjaan tambahan di luar ruang lingkup tersebut harus disetujui secara tertulis oleh Para Pihak sebelum pekerjaan dimulai.\n\nPASAL 3\nHAK DAN KEWAJIBAN PARA PIHAK\n\n1. Pihak Kedua bertanggungjawab untuk menjaga ketersediaan Layanan dan wajib memberikan laporan bulanan paling lambat tanggal 5 setiap bulan.\n\n2. Pihak Kedua wajib untuk menyampaikan laporan tersebut kepada Pihak Pertama melalui alamat surat elektronik yang telah ditentukan.\n\n3. Pihak Pertama wajib memberikan akses, informasi, dan persetujuan yang secara wajar diperlukan agar Pihak Kedua dapat melaksanakan kewajibannya.\n\n4. Para Pihak akan melakukan kerjasama dengan itikad baik dan saling memberitahukan setiap kendala yang dapat mempengaruhi pelaksanaan Perjanjian.\n\n5. Pihak yang mengetahui adanya kesalahan atau gangguan pada Layanan wajib segera memberitahukan Pihak lainnya tanpa menunda-nunda.\n\nPASAL 4\nDATA PRIBADI DAN INFORMASI RAHASIA\n\n1. Pihak Kedua hanya boleh memproses Datta Pribadi untuk tujuan pelaksanaan Layanan dan berdasarkan instruksi tertulis dari Pihak Pertama.\n\n2. Pada saat pendaftaran pengguna, Pihak Kedua hanya mengumpulkan data tentang orang perseorangan yang teridentifikasi atau dapat diidentifikasi secara tersendiri atau dikombinasi dengan informasi lainnya baik secara langsung maupun tidak langsung melalui sistem elektronik atau nonelektronik sejauh diperlukan untuk pelaksanaan Layanan.\n\n3. Pihak Kedua wajib menerapkan langkah teknis dan organisatoris yang patut untuk mencegah akses, penggunaan, pengungkapan, perubahan, atau pemusnahan Data Pribadi tanpa hak.\n\n4. Apabila Layanan digunakan untuk data yang berasal dari kelompok masyarakat yang secara turun-temurun bermukim di wilayah geografis tertentu karena adanya ikatan pada asal usul leluhur, hubungan yang kuat dengan lingkungan hidup, serta sistem nilai yang menentukan pranata ekonomi, politik, sosial, dan hukum, Para Pihak wajib melakukan penilaian tambahan sebelum data tersebut diproses.\n\n5. Para Pihak wajib menjaga kerahasiaan Informasi Rahasia selama jangka waktu Perjanjian dan setelah Perjanjian ini berakhir.\n\n6. Kewajiban kerahasiaan tidak berlaku terhadap informasi yang telah tersedia untuk umum bukan karena pelanggaran Perjanjian atau wajib diungkapkan berdasarkan putusan pengadilan yang berkekuatan hukum tetap.\n\n7. Pihak Kedua harus mengembalikan atau memusnahkan Data Pribadi dan Informasi Rahasia setelah menerima permintaan tertulis dari Pihak Pertama, kecuali penyimpanan diwajibkan oleh peraturan yang berlaku.\n\nPASAL 5\nKEAMANAN DAN PENCATATAN\n\n1. Pihak Kedua wajib melakukan pencadangan Data Pribadi secara berkala dan menyimpan catatan akses selama 12 (dua belas) bulan.\n\n2. Dokumen pendukung harus di simpan oleh Pihak Kedua selama 5 (lima) tahun sejak tanggal penerimaan.\n\n3. Setiap perubahan konfigurasi penting harus dicatat dan dapat ditelusuri oleh Para Pihak.\n\n4. Pihak Kedua harus segera memulihkan Layanan apabila terjadi gangguan, tetapi upaya pemulihan tersebut tidak boleh mengurangi kewajiban keamanan berdasarkan Perjanjian.\n\nPASAL 6\nBIAYA DAN PEMBAYARAN\n\n1. Pihak Pertama wajib membayar biaya Layanan sebesar Rp100.000.000 (seratus juta rupiah) untuk setiap periode sebagaimana disepakati dalam Lampiran II.\n\n2. Pembayaran biaya Layanan dikenakan pajak pertambahan nilai sebesar 11% sesuai dengan ketentuan perpajakan yang berlaku.\n\n3. Pihak Pertama melakukan pembayaran paling lambat 14 (empat belas) hari kalender sejak diterimanya tagihan yang lengkap dan benar.\n\n4. Apabila terdapat perbedaan antara jumlah dalam angka dan jumlah dalam huruf, Para Pihak wajib melakukan klarifikasi tertulis sebelum pembayaran dilakukan.\n\nPASAL 7\nKEPEMILIKAN DAN PENGGUNAAN\n\n1. Seluruh dokumen, data, dan materi yang disediakan oleh Pihak Pertama tetap menjadi milik Pihak Pertama.\n\n2. Dalam pemeriksaan mitra, Pihak Kedua wajib mencatat informasi mengenai kumpulan orang dan/atau kekayaan yang terorganisasi, baik merupakan badan hukum maupun bukan badan hukum, sebelum memberikan akses ke Layanan.\n\n3. Pihak Kedua tidak memperoleh hak untuk menggunakan dokumen atau data tersebut selain untuk menjalankan Layanan berdasarkan Perjanjian.\n\n4. Setiap perangkat lunak yang dikembangkan secara khusus untuk Pihak Pertama harus diserahkan bersama dokumentasi teknis yang memadai.\n\n5. Para Pihak sepakat bahwa penggunaan data untuk tujuan lain memerlukan persetujuan tertulis terlebih dahulu.\n\n6. Pihak Kedua tidak dapat mengalihkan hak dan kewajibannya berdasarkan Perjanjian ini tanpa persetujuan tertulis dari Pihak Pertama.\n\nPASAL 8\nJANGKA WAKTU DAN PERUBAHAN\n\n1. Perjanjian ini berlaku sejak 1 September 2026 sampai dengan 31 Agustus 2027.\n\n2. Perjanjian ini dapat diperpanjang berdasarkan kesepakatan tertulis Para Pihak paling lambat 30 (tiga puluh) hari kalender sebelum berakhirnya jangka waktu.\n\n3. Pihak Kedua dapat meminta perubahan jadwal penyampaian laporan, tetapi perubahan tersebut hanya berlaku setelah disetujui secara tertulis oleh Pihak Pertama.\n\n4. Setiap perubahan atas Perjanjian harus dibuat secara tertulis dan ditanda tangani oleh Para Pihak.\n\nPASAL 9\nKEADAAN KAHAR DAN TANGGUNG JAWAB\n\n1. Perusahaan tidak bertanggung jawab atas keterlambatan yang disebabkan oleh Keadaan Kahar, kecuali apabila keterlambatan tersebut timbul karena kesengajaan atau kelalaian berat.\n\n2. Pihak yang mengalami Keadaan Kahar wajib memberikan pemberitahuan tertulis paling lambat 3 (tiga) hari kerja sejak keadaan tersebut diketahui.\n\n3. Para Pihak wajib melakukan upaya yang wajar untuk mengurangi resiko dan dampak Keadaan Kahar terhadap pelaksanaan Perjanjian.\n\n4. Keadaan Kahar tidak menghapus kewajiban pembayaran yang telah jatuh tempo sebelum terjadinya keadaan tersebut.\n\nPASAL 10\nPENGAKHIRAN\n\n1. Pihak Pertama dapat mengakhiri Perjanjian ini sewaktu-waktu tanpa pemberitahuan kepada Pihak Kedua apabila terdapat pelanggaran material yang tidak diperbaiki dalam waktu 30 (tiga puluh) hari kalender.\n\n2. Masing-masing Pihak dapat mengakhiri Perjanjian dengan memberikan pemberitahuan tertulis sekurang-kurangnya 30 (tiga puluh) hari kalender sebelum tanggal pengakhiran.\n\n3. Pengakhiran Perjanjian tidak membebaskan Para Pihak dari hak dan kewajiban yang telah timbul sebelum tanggal pengakhiran.\n\nPASAL 11\nPEMBERITAHUAN DAN PENYELESAIAN SENGKETA\n\n1. Setiap pemberitahuan berdasarkan Perjanjian harus dibuat secara tertulis dan dikirimkan ke alamat Para Pihak yang tercantum di bawah ini.\n\n2. Borrower wajib memberikan notice tertulis kepada Lender paling lambat 7 (tujuh) hari kerja setelah menerima permintaan pembayaran.\n\n3. Borrower wajib mengirimkan quarterly report kepada Lender paling lambat 3 (tiga) hari kerja setelah akhir setiap kuartal.\n\n4. Apabila terjadi sengketa, Para Pihak terlebih dahulu akan menyelesaikannya melalui musyawarah dalam waktu 30 (tiga puluh) hari kalender.\n\n5. Apabila musyawarah tidak mencapai kesepakatan, sengketa diselesaikan melalui Pengadilan Negeri Jakarta Pusat.\n\nPASAL 12\nKETENTUAN PENUTUP\n\n1. Perjanjian ini diatur dan ditafsirkan berdasarkan hukum Republik Indonesia.\n\n2. Perusahaan wajib mematuhi seluruh peraturan yang berlaku dalam melaksanakan kewajibannya berdasarkan Perjanjian.\n\n3. Apabila salah satu ketentuan dalam Perjanjian dinyatakan tidak berlaku, ketentuan lainnya tetap berlaku sepenuhnya.\n\n4. Perjanjian ini dibuat dalam 2 (dua) rangkap asli, masing-masing mempunyai kekuatan hukum yang sama.\n\n5. Setelah membaca dan memahami seluruh isinya, Para Pihak sepakat untuk menandatangani Perjanjian ini tanpa adanya paksaan dari pihak manapun.\n\nPIHAK PERTAMA                                      PIHAK KEDUA\nPT Arunika Data Nusantara                          PT Cakrawala Legal Teknologi\n\nRaka Pratama                                       Nadia Kurnia\nDirektur                                            Direktur\n",
+    "group": "historical",
+    "split": "retrospective",
+    "expected": []
+  }
+]

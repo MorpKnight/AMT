@@ -1,0 +1,2672 @@
+{
+  "status": "complete",
+  "labels": "pending; span/operation rubric, not legal accuracy",
+  "arms": {
+    "baseline": {
+      "retrospective/warm": {
+        "records": 144,
+        "time": {
+          "n": 144,
+          "median": 2.6863668335,
+          "minimum": 0.117941542,
+          "maximum": 7.597205542,
+          "p95": 5.05545525,
+          "total": 439.583542665
+        },
+        "baseTime": {
+          "n": 144,
+          "median": 2.686320896,
+          "minimum": 0.117914667,
+          "maximum": 7.597139875,
+          "p95": 5.05538575,
+          "total": 439.576397584
+        },
+        "contextualTime": {
+          "n": 144,
+          "median": 9.583e-06,
+          "minimum": 6.208e-06,
+          "maximum": 0.000125833,
+          "p95": 1.55e-05,
+          "total": 0.001558909
+        },
+        "firstVisible": {
+          "n": 69,
+          "median": 2.712619417,
+          "minimum": 0.011743833,
+          "maximum": 5.180604875,
+          "p95": 5.02195225,
+          "total": 188.407300006
+        },
+        "firstActionable": {
+          "n": 6,
+          "median": 0.0118453755,
+          "minimum": 0.011745,
+          "maximum": 0.027664125,
+          "p95": 0.011881333,
+          "total": 0.08678287600000001
+        },
+        "rss": {
+          "n": 144,
+          "median": 341270528.0,
+          "minimum": 158810112,
+          "maximum": 971915264,
+          "p95": 465731584,
+          "total": 51061161984
+        },
+        "mlxActive": {
+          "n": 144,
+          "median": 4223207502.0,
+          "minimum": 3336331980,
+          "maximum": 4426818462,
+          "p95": 4287435402,
+          "total": 604021554342
+        },
+        "mlxCache": {
+          "n": 144,
+          "median": 72745130.0,
+          "minimum": 67071799,
+          "maximum": 555020280,
+          "p95": 544860736,
+          "total": 32489852565
+        },
+        "contextualCalls": 0,
+        "contextualCacheHits": 0,
+        "contextualCacheEvictions": 0,
+        "baselineReportedModelCalls": 6,
+        "partialRuns": 0,
+        "invalidAnchors": 0,
+        "invalidActionableSources": 0,
+        "contextualStatus": {
+          "notRun": 144
+        },
+        "contextualFailures": {},
+        "toolCalls": {},
+        "contextualInputTokens": 0,
+        "contextualOutputTokens": 0,
+        "counts": {
+          "inputs": 144,
+          "unexpectedActionable": 0,
+          "readOnlyFindings": 93,
+          "actionableFindings": 6,
+          "negativeInputs": 78,
+          "negativeInputsWithFindings": 30,
+          "negativeInputsWithActionable": 0,
+          "spanRubricUseful": 102,
+          "expected": 66,
+          "detected": 27,
+          "actionableExpected": 21,
+          "actionableCorrect": 6
+        },
+        "detectionRecall": 0.4090909090909091,
+        "actionableRecall": 0.2857142857142857,
+        "byGroup": {
+          "definitions": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 33,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9
+          },
+          "meaning": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 0,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9,
+            "expected": 9,
+            "detected": 0
+          },
+          "conflict": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9,
+            "expected": 9,
+            "detected": 0
+          },
+          "language": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 6,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 6,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 15
+          },
+          "references": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 27,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "boundaries": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 15,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 15,
+            "expected": 3,
+            "detected": 0,
+            "actionableExpected": 3,
+            "actionableCorrect": 0
+          },
+          "missing": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 3,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9,
+            "expected": 9,
+            "detected": 0
+          },
+          "grammar": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "actionableExpected": 9,
+            "actionableCorrect": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 3,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          }
+        },
+        "perIteration": {
+          "1": {
+            "time": {
+              "n": 48,
+              "median": 2.7135564580000002,
+              "minimum": 0.12343175,
+              "maximum": 7.584348833,
+              "p95": 5.087386459,
+              "total": 149.304517834
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 31,
+              "actionableFindings": 2,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 34,
+              "expected": 22,
+              "detected": 9,
+              "actionableExpected": 7,
+              "actionableCorrect": 2
+            }
+          },
+          "2": {
+            "time": {
+              "n": 48,
+              "median": 2.6966316455,
+              "minimum": 0.117941542,
+              "maximum": 7.45598325,
+              "p95": 4.5925438750000005,
+              "total": 145.735565372
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 31,
+              "actionableFindings": 2,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 34,
+              "expected": 22,
+              "detected": 9,
+              "actionableExpected": 7,
+              "actionableCorrect": 2
+            }
+          },
+          "3": {
+            "time": {
+              "n": 48,
+              "median": 2.6620549585,
+              "minimum": 0.120509709,
+              "maximum": 7.597205542,
+              "p95": 4.595472583,
+              "total": 144.543459459
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 31,
+              "actionableFindings": 2,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 34,
+              "expected": 22,
+              "detected": 9,
+              "actionableExpected": 7,
+              "actionableCorrect": 2
+            }
+          }
+        },
+        "fixtureMedianSeconds": 2.6897921460000003,
+        "routes": {},
+        "newNegativeInputRuns": 0,
+        "requestCountsByIteration": {
+          "3": 48,
+          "2": 48,
+          "1": 48
+        }
+      },
+      "prospective/warm": {
+        "records": 144,
+        "time": {
+          "n": 144,
+          "median": 2.5624103125,
+          "minimum": 2.351489666,
+          "maximum": 5.81859775,
+          "p95": 3.723437375,
+          "total": 390.345961048
+        },
+        "baseTime": {
+          "n": 144,
+          "median": 2.5623760205000004,
+          "minimum": 2.35145625,
+          "maximum": 5.818570583,
+          "p95": 3.723404458,
+          "total": 390.340820674
+        },
+        "contextualTime": {
+          "n": 144,
+          "median": 8.9375e-06,
+          "minimum": 5.834e-06,
+          "maximum": 3.2084e-05,
+          "p95": 1.5209e-05,
+          "total": 0.001412755
+        },
+        "firstVisible": {
+          "n": 48,
+          "median": 2.6423815625,
+          "minimum": 2.374328959,
+          "maximum": 4.429972125,
+          "p95": 4.05680525,
+          "total": 137.420067334
+        },
+        "firstActionable": null,
+        "rss": {
+          "n": 144,
+          "median": 163266560.0,
+          "minimum": 143474688,
+          "maximum": 173342720,
+          "p95": 167821312,
+          "total": 23188766720
+        },
+        "mlxActive": {
+          "n": 144,
+          "median": 4231909524.0,
+          "minimum": 4211122090,
+          "maximum": 4232242480,
+          "p95": 4231975664,
+          "total": 608875898918
+        },
+        "mlxCache": {
+          "n": 144,
+          "median": 72679594.0,
+          "minimum": 70320292,
+          "maximum": 544038702,
+          "p95": 75394282,
+          "total": 12061033769
+        },
+        "contextualCalls": 0,
+        "contextualCacheHits": 0,
+        "contextualCacheEvictions": 0,
+        "baselineReportedModelCalls": 0,
+        "partialRuns": 0,
+        "invalidAnchors": 0,
+        "invalidActionableSources": 0,
+        "contextualStatus": {
+          "notRun": 144
+        },
+        "contextualFailures": {},
+        "toolCalls": {},
+        "contextualInputTokens": 0,
+        "contextualOutputTokens": 0,
+        "counts": {
+          "inputs": 144,
+          "unexpectedActionable": 0,
+          "readOnlyFindings": 75,
+          "actionableFindings": 0,
+          "negativeInputs": 72,
+          "negativeInputsWithFindings": 27,
+          "negativeInputsWithActionable": 0,
+          "spanRubricUseful": 72,
+          "expected": 72,
+          "detected": 0,
+          "actionableExpected": 27,
+          "actionableCorrect": 0
+        },
+        "detectionRecall": 0.0,
+        "actionableRecall": 0.0,
+        "byGroup": {
+          "values": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 6,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9,
+            "expected": 9,
+            "detected": 0
+          },
+          "protected": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 0,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9,
+            "expected": 9,
+            "detected": 0,
+            "actionableExpected": 9,
+            "actionableCorrect": 0
+          },
+          "operators": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 0,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9,
+            "expected": 9,
+            "detected": 0
+          },
+          "definitions": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 33,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "scope": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 12,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9,
+            "expected": 9,
+            "detected": 0
+          },
+          "boundaries": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "actionableExpected": 9,
+            "actionableCorrect": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "parameters": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "duplicate": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 6,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9,
+            "expected": 9,
+            "detected": 0,
+            "actionableExpected": 9,
+            "actionableCorrect": 0
+          }
+        },
+        "perIteration": {
+          "1": {
+            "time": {
+              "n": 48,
+              "median": 2.5718256035,
+              "minimum": 2.352928125,
+              "maximum": 5.81859775,
+              "p95": 3.760638792,
+              "total": 132.375050249
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 25,
+              "actionableFindings": 0,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 24,
+              "expected": 24,
+              "detected": 0,
+              "actionableExpected": 9,
+              "actionableCorrect": 0
+            }
+          },
+          "2": {
+            "time": {
+              "n": 48,
+              "median": 2.5568022499999996,
+              "minimum": 2.36714425,
+              "maximum": 4.603483959,
+              "p95": 3.236182084,
+              "total": 129.252158715
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "expected": 24,
+              "detected": 0,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 25,
+              "actionableFindings": 0,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 24,
+              "actionableExpected": 9,
+              "actionableCorrect": 0
+            }
+          },
+          "3": {
+            "time": {
+              "n": 48,
+              "median": 2.5645129795,
+              "minimum": 2.351489666,
+              "maximum": 4.214793542,
+              "p95": 3.255540542,
+              "total": 128.718752084
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 25,
+              "actionableFindings": 0,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 24,
+              "expected": 24,
+              "detected": 0,
+              "actionableExpected": 9,
+              "actionableCorrect": 0
+            }
+          }
+        },
+        "fixtureMedianSeconds": 2.5561719165,
+        "routes": {},
+        "newNegativeInputRuns": 0,
+        "requestCountsByIteration": {
+          "3": 48,
+          "1": 48,
+          "2": 48
+        }
+      },
+      "retrospective/cached": {
+        "records": 144,
+        "time": {
+          "n": 144,
+          "median": 0.0122598545,
+          "minimum": 0.011221708,
+          "maximum": 0.016237,
+          "p95": 0.0132095,
+          "total": 1.789063374
+        },
+        "baseTime": {
+          "n": 144,
+          "median": 0.012226604,
+          "minimum": 0.011152,
+          "maximum": 0.016209,
+          "p95": 0.013055084,
+          "total": 1.781769175
+        },
+        "contextualTime": {
+          "n": 144,
+          "median": 8.5415e-06,
+          "minimum": 4e-06,
+          "maximum": 0.000122542,
+          "p95": 1.6125e-05,
+          "total": 0.001469548
+        },
+        "firstVisible": {
+          "n": 69,
+          "median": 0.012121333,
+          "minimum": 0.00102675,
+          "maximum": 0.016237,
+          "p95": 0.012927375,
+          "total": 0.595614209
+        },
+        "firstActionable": {
+          "n": 6,
+          "median": 0.011968291499999999,
+          "minimum": 0.011890917,
+          "maximum": 0.013501584,
+          "p95": 0.012052542,
+          "total": 0.073326876
+        },
+        "rss": {
+          "n": 144,
+          "median": 326705152.0,
+          "minimum": 294207488,
+          "maximum": 890732544,
+          "p95": 889208832,
+          "total": 59787149312
+        },
+        "mlxActive": {
+          "n": 144,
+          "median": 3336337612.0,
+          "minimum": 2838148032,
+          "maximum": 3336337612,
+          "p95": 3336337612,
+          "total": 477443478648
+        },
+        "mlxCache": {
+          "n": 144,
+          "median": 68152842.0,
+          "minimum": 66300845,
+          "maximum": 69194860,
+          "p95": 69189576,
+          "total": 9792629424
+        },
+        "contextualCalls": 0,
+        "contextualCacheHits": 0,
+        "contextualCacheEvictions": 0,
+        "baselineReportedModelCalls": 0,
+        "partialRuns": 0,
+        "invalidAnchors": 0,
+        "invalidActionableSources": 0,
+        "contextualStatus": {
+          "notRun": 144
+        },
+        "contextualFailures": {},
+        "toolCalls": {},
+        "contextualInputTokens": 0,
+        "contextualOutputTokens": 0,
+        "counts": {
+          "inputs": 144,
+          "expected": 66,
+          "detected": 27,
+          "actionableExpected": 21,
+          "actionableCorrect": 6,
+          "unexpectedActionable": 0,
+          "readOnlyFindings": 93,
+          "actionableFindings": 6,
+          "negativeInputs": 78,
+          "negativeInputsWithFindings": 30,
+          "negativeInputsWithActionable": 0,
+          "spanRubricUseful": 102
+        },
+        "detectionRecall": 0.4090909090909091,
+        "actionableRecall": 0.2857142857142857,
+        "byGroup": {
+          "grammar": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "actionableExpected": 9,
+            "actionableCorrect": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 3,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "missing": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 3,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "meaning": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 0,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "conflict": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "language": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 6,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 15,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 6
+          },
+          "boundaries": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 15,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 15,
+            "expected": 3,
+            "detected": 0,
+            "actionableExpected": 3,
+            "actionableCorrect": 0
+          },
+          "references": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 27,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "definitions": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 33,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          }
+        },
+        "perIteration": {
+          "1": {
+            "time": {
+              "n": 48,
+              "median": 0.0123157295,
+              "minimum": 0.011221708,
+              "maximum": 0.016237,
+              "p95": 0.013501584,
+              "total": 0.598149127
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "expected": 22,
+              "detected": 9,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 31,
+              "actionableFindings": 2,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 34,
+              "actionableExpected": 7,
+              "actionableCorrect": 2
+            }
+          },
+          "2": {
+            "time": {
+              "n": 48,
+              "median": 0.012254771000000001,
+              "minimum": 0.011801375,
+              "maximum": 0.016084917,
+              "p95": 0.012643,
+              "total": 0.595304331
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "expected": 22,
+              "detected": 9,
+              "actionableExpected": 7,
+              "actionableCorrect": 2,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 31,
+              "actionableFindings": 2,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 34
+            }
+          },
+          "3": {
+            "time": {
+              "n": 48,
+              "median": 0.012215,
+              "minimum": 0.011584583,
+              "maximum": 0.016169458,
+              "p95": 0.013098959,
+              "total": 0.595609916
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "expected": 22,
+              "detected": 9,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 31,
+              "actionableFindings": 2,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 34,
+              "actionableExpected": 7,
+              "actionableCorrect": 2
+            }
+          }
+        },
+        "fixtureMedianSeconds": 0.0122699165,
+        "routes": {},
+        "newNegativeInputRuns": 0,
+        "requestCountsByIteration": {
+          "2": 48,
+          "3": 48,
+          "1": 48
+        }
+      },
+      "prospective/cached": {
+        "records": 144,
+        "time": {
+          "n": 144,
+          "median": 0.0121706255,
+          "minimum": 0.0112235,
+          "maximum": 0.01279525,
+          "p95": 0.012454292,
+          "total": 1.751382874
+        },
+        "baseTime": {
+          "n": 144,
+          "median": 0.0121463755,
+          "minimum": 0.011182708,
+          "maximum": 0.012760584,
+          "p95": 0.012429167,
+          "total": 1.746764458
+        },
+        "contextualTime": {
+          "n": 144,
+          "median": 7.9795e-06,
+          "minimum": 3.833e-06,
+          "maximum": 2.65e-05,
+          "p95": 1.25e-05,
+          "total": 0.00118021
+        },
+        "firstVisible": {
+          "n": 48,
+          "median": 0.0015449995,
+          "minimum": 0.000713833,
+          "maximum": 0.012655667,
+          "p95": 0.012368875,
+          "total": 0.289114416
+        },
+        "firstActionable": null,
+        "rss": {
+          "n": 144,
+          "median": 302776320.0,
+          "minimum": 287703040,
+          "maximum": 307986432,
+          "p95": 307085312,
+          "total": 43288379392
+        },
+        "mlxActive": {
+          "n": 144,
+          "median": 3336337612.0,
+          "minimum": 3336337612,
+          "maximum": 3336337612,
+          "p95": 3336337612,
+          "total": 480432616128
+        },
+        "mlxCache": {
+          "n": 144,
+          "median": 67521442.0,
+          "minimum": 56741572,
+          "maximum": 69203828,
+          "p95": 69160776,
+          "total": 9748286343
+        },
+        "contextualCalls": 0,
+        "contextualCacheHits": 0,
+        "contextualCacheEvictions": 0,
+        "baselineReportedModelCalls": 0,
+        "partialRuns": 0,
+        "invalidAnchors": 0,
+        "invalidActionableSources": 0,
+        "contextualStatus": {
+          "notRun": 144
+        },
+        "contextualFailures": {},
+        "toolCalls": {},
+        "contextualInputTokens": 0,
+        "contextualOutputTokens": 0,
+        "counts": {
+          "inputs": 144,
+          "expected": 72,
+          "detected": 0,
+          "unexpectedActionable": 0,
+          "readOnlyFindings": 75,
+          "actionableFindings": 0,
+          "negativeInputs": 72,
+          "negativeInputsWithFindings": 27,
+          "negativeInputsWithActionable": 0,
+          "spanRubricUseful": 72,
+          "actionableExpected": 27,
+          "actionableCorrect": 0
+        },
+        "detectionRecall": 0.0,
+        "actionableRecall": 0.0,
+        "byGroup": {
+          "scope": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 12,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "operators": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 0,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9,
+            "expected": 9,
+            "detected": 0
+          },
+          "definitions": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 33,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "duplicate": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "actionableExpected": 9,
+            "actionableCorrect": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 6,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "parameters": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "protected": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 0,
+            "actionableExpected": 9,
+            "actionableCorrect": 0,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 0,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9
+          },
+          "values": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 6,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9,
+            "expected": 9,
+            "detected": 0
+          },
+          "boundaries": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 9,
+            "expected": 9,
+            "detected": 0,
+            "actionableExpected": 9,
+            "actionableCorrect": 0
+          }
+        },
+        "perIteration": {
+          "1": {
+            "time": {
+              "n": 48,
+              "median": 0.0121735205,
+              "minimum": 0.011325458,
+              "maximum": 0.012739958,
+              "p95": 0.012418125,
+              "total": 0.583895706
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 25,
+              "actionableFindings": 0,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 24,
+              "expected": 24,
+              "detected": 0,
+              "actionableExpected": 9,
+              "actionableCorrect": 0
+            }
+          },
+          "2": {
+            "time": {
+              "n": 48,
+              "median": 0.012246146,
+              "minimum": 0.0112235,
+              "maximum": 0.01279525,
+              "p95": 0.012503458,
+              "total": 0.584373294
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "expected": 24,
+              "detected": 0,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 25,
+              "actionableFindings": 0,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 24,
+              "actionableExpected": 9,
+              "actionableCorrect": 0
+            }
+          },
+          "3": {
+            "time": {
+              "n": 48,
+              "median": 0.0121516665,
+              "minimum": 0.0118285,
+              "maximum": 0.01271075,
+              "p95": 0.012391208,
+              "total": 0.583113874
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 25,
+              "actionableFindings": 0,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 24,
+              "expected": 24,
+              "detected": 0,
+              "actionableExpected": 9,
+              "actionableCorrect": 0
+            }
+          }
+        },
+        "fixtureMedianSeconds": 0.0122199375,
+        "routes": {},
+        "newNegativeInputRuns": 0,
+        "requestCountsByIteration": {
+          "2": 48,
+          "1": 48,
+          "3": 48
+        }
+      },
+      "historical": {
+        "records": 181,
+        "time": {
+          "n": 181,
+          "median": 2.296957375,
+          "minimum": 0.048429833,
+          "maximum": 46.826306792,
+          "p95": 4.45405775,
+          "total": 533.681918666
+        },
+        "baseTime": {
+          "n": 181,
+          "median": 2.296895708,
+          "minimum": 0.048395875,
+          "maximum": 46.824918292,
+          "p95": 4.453993792,
+          "total": 533.668968703
+        },
+        "contextualTime": {
+          "n": 181,
+          "median": 7e-06,
+          "minimum": 3.792e-06,
+          "maximum": 0.000153042,
+          "p95": 2.0083e-05,
+          "total": 0.001755336
+        },
+        "firstVisible": {
+          "n": 106,
+          "median": 2.2242847295,
+          "minimum": 0.011634541,
+          "maximum": 13.793848459,
+          "p95": 4.430476,
+          "total": 180.588734754
+        },
+        "firstActionable": {
+          "n": 51,
+          "median": 0.012646125,
+          "minimum": 0.011634958,
+          "maximum": 13.793848459,
+          "p95": 4.013160542,
+          "total": 61.434424169
+        },
+        "rss": {
+          "n": 181,
+          "median": 715751424,
+          "minimum": 690290688,
+          "maximum": 1253425152,
+          "p95": 873644032,
+          "total": 136779464704
+        },
+        "mlxActive": {
+          "n": 181,
+          "median": 4222728836,
+          "minimum": 2838148044,
+          "maximum": 4474003182,
+          "p95": 4287548298,
+          "total": 720471576077
+        },
+        "mlxCache": {
+          "n": 181,
+          "median": 540604952,
+          "minimum": 531387638,
+          "maximum": 674074930,
+          "p95": 545678280,
+          "total": 98069367867
+        },
+        "contextualCalls": 0,
+        "contextualCacheHits": 0,
+        "contextualCacheEvictions": 0,
+        "baselineReportedModelCalls": 37,
+        "partialRuns": 6,
+        "invalidAnchors": 0,
+        "invalidActionableSources": 0,
+        "contextualStatus": {
+          "notRun": 181
+        },
+        "contextualFailures": {},
+        "toolCalls": {},
+        "contextualInputTokens": 0,
+        "contextualOutputTokens": 0,
+        "counts": {
+          "expectedSpelling": 43,
+          "detectedSpelling": 39,
+          "correctedSpelling": 32,
+          "localActionableTP": 49
+        },
+        "spellingDetectionRecall": 0.9069767441860465,
+        "spellingActionableRecall": 0.7441860465116279,
+        "localActionablePrecision": 1.0,
+        "semanticParity": "Not assessed by spelling subset; native full metadata comparison is separate. ViewModel routing and additional analysis are changed."
+      }
+    },
+    "integrated": {
+      "retrospective/warm": {
+        "records": 144,
+        "time": {
+          "n": 144,
+          "median": 2.7735222295,
+          "minimum": 0.084833083,
+          "maximum": 11.437527667,
+          "p95": 6.367761167,
+          "total": 344.976162207
+        },
+        "baseTime": {
+          "n": 144,
+          "median": 0.21071216650000024,
+          "minimum": 0.08155675,
+          "maximum": 8.584733792,
+          "p95": 5.1812805829999995,
+          "total": 218.936280707
+        },
+        "contextualTime": {
+          "n": 144,
+          "median": 0.002488625,
+          "minimum": 0.001710125,
+          "maximum": 4.8462953330000005,
+          "p95": 2.834326125,
+          "total": 126.0398815
+        },
+        "firstVisible": {
+          "n": 96,
+          "median": 2.602918375,
+          "minimum": 0.011534125,
+          "maximum": 5.816252,
+          "p95": 4.725343459,
+          "total": 187.804763915
+        },
+        "firstActionable": {
+          "n": 18,
+          "median": 0.054435021,
+          "minimum": 0.011534708,
+          "maximum": 0.125954,
+          "p95": 0.089167292,
+          "total": 1.043631958
+        },
+        "rss": {
+          "n": 144,
+          "median": 313376768.0,
+          "minimum": 282787840,
+          "maximum": 1390739456,
+          "p95": 998309888,
+          "total": 60974481408
+        },
+        "mlxActive": {
+          "n": 144,
+          "median": 4222579828.0,
+          "minimum": 2838148032,
+          "maximum": 4447119956,
+          "p95": 4339493770,
+          "total": 554612207682
+        },
+        "mlxCache": {
+          "n": 144,
+          "median": 538607835.0,
+          "minimum": 1284,
+          "maximum": 769163348,
+          "p95": 546292500,
+          "total": 73337925567
+        },
+        "contextualCalls": 48,
+        "contextualCacheHits": 0,
+        "contextualCacheEvictions": 0,
+        "baselineReportedModelCalls": 6,
+        "partialRuns": 6,
+        "invalidAnchors": 0,
+        "invalidActionableSources": 0,
+        "contextualStatus": {
+          "policySkipped": 93,
+          "completePairs": 45,
+          "partial": 6
+        },
+        "contextualFailures": {
+          "unitLimit": 6,
+          "contextPolicySkipped": 6
+        },
+        "toolCalls": {
+          "submit_review": 45,
+          "read_clauses": 3
+        },
+        "contextualInputTokens": 43446,
+        "contextualOutputTokens": 3117,
+        "counts": {
+          "inputs": 144,
+          "unexpectedActionable": 0,
+          "readOnlyFindings": 129,
+          "actionableFindings": 18,
+          "negativeInputs": 78,
+          "negativeInputsWithFindings": 30,
+          "negativeInputsWithActionable": 0,
+          "spanRubricUseful": 141,
+          "expected": 66,
+          "detected": 66,
+          "actionableExpected": 21,
+          "actionableCorrect": 18
+        },
+        "detectionRecall": 1.0,
+        "actionableRecall": 0.8571428571428571,
+        "byGroup": {
+          "definitions": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 42,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9
+          },
+          "meaning": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9
+          },
+          "conflict": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 18,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9
+          },
+          "language": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 6,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 6,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 15
+          },
+          "references": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 27,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "boundaries": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 3,
+            "negativeInputs": 15,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 3,
+            "detected": 3,
+            "actionableExpected": 3,
+            "actionableCorrect": 3
+          },
+          "missing": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 12,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9
+          },
+          "grammar": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 3,
+            "actionableFindings": 9,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          }
+        },
+        "perIteration": {
+          "1": {
+            "time": {
+              "n": 48,
+              "median": 2.7871006045,
+              "minimum": 0.086938208,
+              "maximum": 11.17793625,
+              "p95": 6.293043084,
+              "total": 115.254908665
+            },
+            "partialRuns": 2,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 43,
+              "actionableFindings": 6,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 47,
+              "expected": 22,
+              "detected": 22,
+              "actionableExpected": 7,
+              "actionableCorrect": 6
+            }
+          },
+          "2": {
+            "time": {
+              "n": 48,
+              "median": 2.7187063125,
+              "minimum": 0.085448208,
+              "maximum": 11.437527667,
+              "p95": 6.276920333,
+              "total": 116.094921541
+            },
+            "partialRuns": 2,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 43,
+              "actionableFindings": 6,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 47,
+              "expected": 22,
+              "detected": 22,
+              "actionableExpected": 7,
+              "actionableCorrect": 6
+            }
+          },
+          "3": {
+            "time": {
+              "n": 48,
+              "median": 2.7213416875,
+              "minimum": 0.084833083,
+              "maximum": 9.194869209,
+              "p95": 6.164227833,
+              "total": 113.626332001
+            },
+            "partialRuns": 2,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 43,
+              "actionableFindings": 6,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 47,
+              "expected": 22,
+              "detected": 22,
+              "actionableExpected": 7,
+              "actionableCorrect": 6
+            }
+          }
+        },
+        "fixtureMedianSeconds": 2.720457792,
+        "routes": {
+          "baseRoute:hybrid": 54,
+          "baseRoute:deterministic": 90
+        },
+        "newNegativeInputRuns": 0,
+        "requestCountsByIteration": {
+          "3": 48,
+          "2": 48,
+          "1": 48
+        }
+      },
+      "prospective/warm": {
+        "records": 144,
+        "time": {
+          "n": 144,
+          "median": 2.5130343745,
+          "minimum": 0.089797541,
+          "maximum": 7.627798375,
+          "p95": 5.438368292,
+          "total": 284.245217746
+        },
+        "baseTime": {
+          "n": 144,
+          "median": 0.1816876864999999,
+          "minimum": 0.08808854099999999,
+          "maximum": 4.592719958,
+          "p95": 3.3280866259999997,
+          "total": 151.791606741
+        },
+        "contextualTime": {
+          "n": 144,
+          "median": 0.0035220835000000002,
+          "minimum": 0.001648208,
+          "maximum": 3.035078417,
+          "p95": 2.688207834,
+          "total": 132.453611005
+        },
+        "firstVisible": {
+          "n": 99,
+          "median": 0.101189542,
+          "minimum": 0.010681375,
+          "maximum": 4.546197625,
+          "p95": 3.797891083,
+          "total": 137.020113209
+        },
+        "firstActionable": {
+          "n": 27,
+          "median": 0.049611542,
+          "minimum": 0.045423125,
+          "maximum": 0.082420166,
+          "p95": 0.078656625,
+          "total": 1.466342041
+        },
+        "rss": {
+          "n": 144,
+          "median": 310738944.0,
+          "minimum": 295534592,
+          "maximum": 320847872,
+          "p95": 319193088,
+          "total": 44744802304
+        },
+        "mlxActive": {
+          "n": 144,
+          "median": 4222556580.0,
+          "minimum": 3336148940,
+          "maximum": 4341703150,
+          "p95": 4334478250,
+          "total": 551522058068
+        },
+        "mlxCache": {
+          "n": 144,
+          "median": 70320296.0,
+          "minimum": 66696060,
+          "maximum": 544943116,
+          "p95": 74440625,
+          "total": 11077619129
+        },
+        "contextualCalls": 51,
+        "contextualCacheHits": 0,
+        "contextualCacheEvictions": 0,
+        "baselineReportedModelCalls": 0,
+        "partialRuns": 0,
+        "invalidAnchors": 0,
+        "invalidActionableSources": 0,
+        "contextualStatus": {
+          "policySkipped": 93,
+          "completePairs": 51
+        },
+        "contextualFailures": {},
+        "toolCalls": {
+          "submit_review": 51
+        },
+        "contextualInputTokens": 45669,
+        "contextualOutputTokens": 3387,
+        "counts": {
+          "inputs": 144,
+          "unexpectedActionable": 0,
+          "readOnlyFindings": 120,
+          "actionableFindings": 27,
+          "negativeInputs": 72,
+          "negativeInputsWithFindings": 27,
+          "negativeInputsWithActionable": 0,
+          "spanRubricUseful": 144,
+          "expected": 72,
+          "detected": 72,
+          "actionableExpected": 27,
+          "actionableCorrect": 27
+        },
+        "detectionRecall": 1.0,
+        "actionableRecall": 1.0,
+        "byGroup": {
+          "values": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 15,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9
+          },
+          "protected": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 0,
+            "actionableFindings": 9,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 9
+          },
+          "operators": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9
+          },
+          "definitions": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 42,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "scope": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 21,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9
+          },
+          "boundaries": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 9,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "parameters": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 18,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "duplicate": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 6,
+            "actionableFindings": 9,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 9
+          }
+        },
+        "perIteration": {
+          "1": {
+            "time": {
+              "n": 48,
+              "median": 2.6032909374999997,
+              "minimum": 0.089797541,
+              "maximum": 7.627798375,
+              "p95": 5.6035,
+              "total": 96.300150332
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 40,
+              "actionableFindings": 9,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 48,
+              "expected": 24,
+              "detected": 24,
+              "actionableExpected": 9,
+              "actionableCorrect": 9
+            }
+          },
+          "2": {
+            "time": {
+              "n": 48,
+              "median": 2.525563333,
+              "minimum": 0.090383667,
+              "maximum": 7.318635916,
+              "p95": 5.278399459,
+              "total": 94.020644292
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "expected": 24,
+              "detected": 24,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 40,
+              "actionableFindings": 9,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 48,
+              "actionableExpected": 9,
+              "actionableCorrect": 9
+            }
+          },
+          "3": {
+            "time": {
+              "n": 48,
+              "median": 2.4693284999999996,
+              "minimum": 0.091998583,
+              "maximum": 6.385682333,
+              "p95": 5.40863825,
+              "total": 93.924423122
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 40,
+              "actionableFindings": 9,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 48,
+              "expected": 24,
+              "detected": 24,
+              "actionableExpected": 9,
+              "actionableCorrect": 9
+            }
+          }
+        },
+        "fixtureMedianSeconds": 2.5300497914999998,
+        "routes": {
+          "baseRoute:deterministic": 99,
+          "baseRoute:hybrid": 45
+        },
+        "newNegativeInputRuns": 0,
+        "requestCountsByIteration": {
+          "3": 48,
+          "1": 48,
+          "2": 48
+        }
+      },
+      "retrospective/cached": {
+        "records": 144,
+        "time": {
+          "n": 144,
+          "median": 0.011965458,
+          "minimum": 0.011129,
+          "maximum": 0.056445916,
+          "p95": 0.012620167,
+          "total": 1.91233458
+        },
+        "baseTime": {
+          "n": 144,
+          "median": 0.0099561465,
+          "minimum": 0.0080175,
+          "maximum": 0.045328998999999995,
+          "p95": 0.010442209000000001,
+          "total": 1.556687038
+        },
+        "contextualTime": {
+          "n": 144,
+          "median": 0.0019325204999999998,
+          "minimum": 0.001637709,
+          "maximum": 0.011116917,
+          "p95": 0.003695875,
+          "total": 0.355647542
+        },
+        "firstVisible": {
+          "n": 96,
+          "median": 0.0116462705,
+          "minimum": 0.000763708,
+          "maximum": 0.045363583,
+          "p95": 0.012164,
+          "total": 0.848386332
+        },
+        "firstActionable": {
+          "n": 18,
+          "median": 0.011657792,
+          "minimum": 0.000764167,
+          "maximum": 0.011972834,
+          "p95": 0.0118175,
+          "total": 0.14633675
+        },
+        "rss": {
+          "n": 144,
+          "median": 249610240.0,
+          "minimum": 236371968,
+          "maximum": 766017536,
+          "p95": 433127424,
+          "total": 40787787776
+        },
+        "mlxActive": {
+          "n": 144,
+          "median": 3336148940.0,
+          "minimum": 2838148032,
+          "maximum": 3336148940,
+          "p95": 3336148940,
+          "total": 477417441912
+        },
+        "mlxCache": {
+          "n": 144,
+          "median": 68451412.0,
+          "minimum": 0,
+          "maximum": 536809232,
+          "p95": 69187864,
+          "total": 12195716529
+        },
+        "contextualCalls": 0,
+        "contextualCacheHits": 138,
+        "contextualCacheEvictions": 0,
+        "baselineReportedModelCalls": 0,
+        "partialRuns": 6,
+        "invalidAnchors": 0,
+        "invalidActionableSources": 0,
+        "contextualStatus": {
+          "policySkipped": 93,
+          "completePairs": 45,
+          "partial": 6
+        },
+        "contextualFailures": {
+          "unitLimit": 6,
+          "contextPolicySkipped": 6
+        },
+        "toolCalls": {},
+        "contextualInputTokens": 0,
+        "contextualOutputTokens": 0,
+        "counts": {
+          "inputs": 144,
+          "expected": 66,
+          "detected": 66,
+          "actionableExpected": 21,
+          "actionableCorrect": 18,
+          "unexpectedActionable": 0,
+          "readOnlyFindings": 129,
+          "actionableFindings": 18,
+          "negativeInputs": 78,
+          "negativeInputsWithFindings": 30,
+          "negativeInputsWithActionable": 0,
+          "spanRubricUseful": 141
+        },
+        "detectionRecall": 1.0,
+        "actionableRecall": 0.8571428571428571,
+        "byGroup": {
+          "grammar": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 3,
+            "actionableFindings": 9,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "missing": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 12,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "meaning": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "conflict": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 18,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "language": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 6,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 15,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 6
+          },
+          "boundaries": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 3,
+            "negativeInputs": 15,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 3,
+            "detected": 3,
+            "actionableExpected": 3,
+            "actionableCorrect": 3
+          },
+          "references": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 27,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "definitions": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 42,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          }
+        },
+        "perIteration": {
+          "1": {
+            "time": {
+              "n": 48,
+              "median": 0.012000604,
+              "minimum": 0.01129175,
+              "maximum": 0.056445916,
+              "p95": 0.012279167,
+              "total": 0.638089332
+            },
+            "partialRuns": 2,
+            "counts": {
+              "inputs": 48,
+              "expected": 22,
+              "detected": 22,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 43,
+              "actionableFindings": 6,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 47,
+              "actionableExpected": 7,
+              "actionableCorrect": 6
+            }
+          },
+          "2": {
+            "time": {
+              "n": 48,
+              "median": 0.01193175,
+              "minimum": 0.011129,
+              "maximum": 0.056004917,
+              "p95": 0.012296833,
+              "total": 0.636657083
+            },
+            "partialRuns": 2,
+            "counts": {
+              "inputs": 48,
+              "expected": 22,
+              "detected": 22,
+              "actionableExpected": 7,
+              "actionableCorrect": 6,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 43,
+              "actionableFindings": 6,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 47
+            }
+          },
+          "3": {
+            "time": {
+              "n": 48,
+              "median": 0.011934707999999999,
+              "minimum": 0.011239708,
+              "maximum": 0.056071625,
+              "p95": 0.012620167,
+              "total": 0.637588165
+            },
+            "partialRuns": 2,
+            "counts": {
+              "inputs": 48,
+              "expected": 22,
+              "detected": 22,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 43,
+              "actionableFindings": 6,
+              "negativeInputs": 26,
+              "negativeInputsWithFindings": 10,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 47,
+              "actionableExpected": 7,
+              "actionableCorrect": 6
+            }
+          }
+        },
+        "fixtureMedianSeconds": 0.011958812499999999,
+        "routes": {
+          "baseRoute:deterministic": 90,
+          "baseRoute:hybrid": 54
+        },
+        "newNegativeInputRuns": 0,
+        "requestCountsByIteration": {
+          "2": 48,
+          "3": 48,
+          "1": 48
+        }
+      },
+      "prospective/cached": {
+        "records": 144,
+        "time": {
+          "n": 144,
+          "median": 0.011856770499999999,
+          "minimum": 0.011149833,
+          "maximum": 2.7251385,
+          "p95": 0.012156583,
+          "total": 4.41843683
+        },
+        "baseTime": {
+          "n": 144,
+          "median": 0.0099409995,
+          "minimum": 0.008018376,
+          "maximum": 0.0885005419999998,
+          "p95": 0.010271291,
+          "total": 1.4567205799999998
+        },
+        "contextualTime": {
+          "n": 144,
+          "median": 0.0019779165000000003,
+          "minimum": 0.001490792,
+          "maximum": 2.636637958,
+          "p95": 0.003512625,
+          "total": 2.9617162500000003
+        },
+        "firstVisible": {
+          "n": 99,
+          "median": 0.011681959,
+          "minimum": 0.000612292,
+          "maximum": 0.012100166,
+          "p95": 0.012039167,
+          "total": 0.842986209
+        },
+        "firstActionable": {
+          "n": 27,
+          "median": 0.011685709,
+          "minimum": 0.011609292,
+          "maximum": 0.011970584,
+          "p95": 0.011909833,
+          "total": 0.316038712
+        },
+        "rss": {
+          "n": 144,
+          "median": 250101760.0,
+          "minimum": 245334016,
+          "maximum": 256098304,
+          "p95": 256098304,
+          "total": 35949215744
+        },
+        "mlxActive": {
+          "n": 144,
+          "median": 3336148940.0,
+          "minimum": 3336148940,
+          "maximum": 4336803794,
+          "p95": 3336148940,
+          "total": 481406102214
+        },
+        "mlxCache": {
+          "n": 144,
+          "median": 536862040.0,
+          "minimum": 67166920,
+          "maximum": 538927736,
+          "p95": 538927736,
+          "total": 71573873304
+        },
+        "contextualCalls": 1,
+        "contextualCacheHits": 143,
+        "contextualCacheEvictions": 0,
+        "baselineReportedModelCalls": 0,
+        "partialRuns": 0,
+        "invalidAnchors": 0,
+        "invalidActionableSources": 0,
+        "contextualStatus": {
+          "policySkipped": 93,
+          "completePairs": 51
+        },
+        "contextualFailures": {},
+        "toolCalls": {
+          "submit_review": 1
+        },
+        "contextualInputTokens": 899,
+        "contextualOutputTokens": 66,
+        "counts": {
+          "inputs": 144,
+          "expected": 72,
+          "detected": 72,
+          "unexpectedActionable": 0,
+          "readOnlyFindings": 120,
+          "actionableFindings": 27,
+          "negativeInputs": 72,
+          "negativeInputsWithFindings": 27,
+          "negativeInputsWithActionable": 0,
+          "spanRubricUseful": 144,
+          "actionableExpected": 27,
+          "actionableCorrect": 27
+        },
+        "detectionRecall": 1.0,
+        "actionableRecall": 1.0,
+        "byGroup": {
+          "scope": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 21,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "operators": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9
+          },
+          "definitions": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 42,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 9,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "duplicate": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 6,
+            "actionableFindings": 9,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 3,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "parameters": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 18,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "protected": {
+            "inputs": 18,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 9,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 0,
+            "actionableFindings": 9,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18
+          },
+          "values": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 15,
+            "actionableFindings": 0,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 0,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9
+          },
+          "boundaries": {
+            "inputs": 18,
+            "unexpectedActionable": 0,
+            "readOnlyFindings": 9,
+            "actionableFindings": 9,
+            "negativeInputs": 9,
+            "negativeInputsWithFindings": 6,
+            "negativeInputsWithActionable": 0,
+            "spanRubricUseful": 18,
+            "expected": 9,
+            "detected": 9,
+            "actionableExpected": 9,
+            "actionableCorrect": 9
+          }
+        },
+        "perIteration": {
+          "1": {
+            "time": {
+              "n": 48,
+              "median": 0.0118551875,
+              "minimum": 0.011149833,
+              "maximum": 2.7251385,
+              "p95": 0.01221075,
+              "total": 3.282410917
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 40,
+              "actionableFindings": 9,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 48,
+              "expected": 24,
+              "detected": 24,
+              "actionableExpected": 9,
+              "actionableCorrect": 9
+            }
+          },
+          "2": {
+            "time": {
+              "n": 48,
+              "median": 0.011855417,
+              "minimum": 0.011605584,
+              "maximum": 0.012264708,
+              "p95": 0.01209875,
+              "total": 0.56880904
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "expected": 24,
+              "detected": 24,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 40,
+              "actionableFindings": 9,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 48,
+              "actionableExpected": 9,
+              "actionableCorrect": 9
+            }
+          },
+          "3": {
+            "time": {
+              "n": 48,
+              "median": 0.011856770499999999,
+              "minimum": 0.011403708,
+              "maximum": 0.012240625,
+              "p95": 0.012044541,
+              "total": 0.567216873
+            },
+            "partialRuns": 0,
+            "counts": {
+              "inputs": 48,
+              "unexpectedActionable": 0,
+              "readOnlyFindings": 40,
+              "actionableFindings": 9,
+              "negativeInputs": 24,
+              "negativeInputsWithFindings": 9,
+              "negativeInputsWithActionable": 0,
+              "spanRubricUseful": 48,
+              "expected": 24,
+              "detected": 24,
+              "actionableExpected": 9,
+              "actionableCorrect": 9
+            }
+          }
+        },
+        "fixtureMedianSeconds": 0.011868375,
+        "routes": {
+          "baseRoute:hybrid": 45,
+          "baseRoute:deterministic": 99
+        },
+        "newNegativeInputRuns": 0,
+        "requestCountsByIteration": {
+          "2": 48,
+          "1": 48,
+          "3": 48
+        }
+      },
+      "historical": {
+        "records": 181,
+        "time": {
+          "n": 181,
+          "median": 0.13006775,
+          "minimum": 0.0478035,
+          "maximum": 48.962367292,
+          "p95": 5.015656959,
+          "total": 346.209765748
+        },
+        "baseTime": {
+          "n": 181,
+          "median": 0.128098334,
+          "minimum": 0.046101708,
+          "maximum": 48.901283458,
+          "p95": 4.724739374,
+          "total": 337.737611451
+        },
+        "contextualTime": {
+          "n": 181,
+          "median": 0.001824333,
+          "minimum": 0,
+          "maximum": 4.740336375,
+          "p95": 0.010048792,
+          "total": 8.472154297
+        },
+        "firstVisible": {
+          "n": 100,
+          "median": 0.193432771,
+          "minimum": 0.04375875,
+          "maximum": 14.171229167,
+          "p95": 4.5924066660000005,
+          "total": 181.898487001
+        },
+        "firstActionable": {
+          "n": 51,
+          "median": 0.109079625,
+          "minimum": 0.090647375,
+          "maximum": 14.171229709,
+          "p95": 4.5924066660000005,
+          "total": 77.192050462
+        },
+        "rss": {
+          "n": 181,
+          "median": 525615104,
+          "minimum": 219873280,
+          "maximum": 1036369920,
+          "p95": 1035354112,
+          "total": 114678005760
+        },
+        "mlxActive": {
+          "n": 181,
+          "median": 3336298444,
+          "minimum": 2838148032,
+          "maximum": 4473218670,
+          "p95": 4253344812,
+          "total": 626530896254
+        },
+        "mlxCache": {
+          "n": 181,
+          "median": 535041200,
+          "minimum": 1284,
+          "maximum": 549918489,
+          "p95": 545108681,
+          "total": 68962683620
+        },
+        "contextualCalls": 2,
+        "contextualCacheHits": 0,
+        "contextualCacheEvictions": 0,
+        "baselineReportedModelCalls": 37,
+        "partialRuns": 8,
+        "invalidAnchors": 0,
+        "invalidActionableSources": 0,
+        "contextualStatus": {
+          "policySkipped": 176,
+          "completePairs": 1,
+          "partial": 4
+        },
+        "contextualFailures": {
+          "unitLimit": 4,
+          "contextPolicySkipped": 4,
+          "pairLimit": 2
+        },
+        "toolCalls": {
+          "read_clauses": 1,
+          "submit_review": 1,
+          "localPrepared": 4
+        },
+        "contextualInputTokens": 1889,
+        "contextualOutputTokens": 106,
+        "counts": {
+          "expectedSpelling": 43,
+          "detectedSpelling": 39,
+          "correctedSpelling": 32,
+          "localActionableTP": 49
+        },
+        "spellingDetectionRecall": 0.9069767441860465,
+        "spellingActionableRecall": 0.7441860465116279,
+        "localActionablePrecision": 1.0,
+        "semanticParity": "Not assessed by spelling subset; native full metadata comparison is separate. ViewModel routing and additional analysis are changed."
+      }
+    }
+  },
+  "incremental": {
+    "pairs": 9,
+    "equivalent": 9,
+    "rows": [
+      {
+        "equivalent": true,
+        "fresh": [
+          "{44, 17}|menerima menerima|menerima|Pengulangan kata identik yang berdampingan; hapus satu occurrence."
+        ],
+        "freshPartial": false,
+        "freshSeconds": 0.182590375,
+        "incremental": [
+          "{44, 17}|menerima menerima|menerima|Pengulangan kata identik yang berdampingan; hapus satu occurrence."
+        ],
+        "incrementalPartial": false,
+        "incrementalSeconds": 0.202914625,
+        "iteration": 3,
+        "workload": "local"
+      },
+      {
+        "equivalent": true,
+        "fresh": [
+          "{44, 17}|menerima menerima|menerima|Pengulangan kata identik yang berdampingan; hapus satu occurrence."
+        ],
+        "freshPartial": false,
+        "freshSeconds": 0.185132458,
+        "incremental": [
+          "{44, 17}|menerima menerima|menerima|Pengulangan kata identik yang berdampingan; hapus satu occurrence."
+        ],
+        "incrementalPartial": false,
+        "incrementalSeconds": 0.179965208,
+        "iteration": 2,
+        "workload": "local"
+      },
+      {
+        "equivalent": true,
+        "fresh": [
+          "{64, 24}|Hari berarti hari kerja.|Potensi konflik pada definition antara dua klausul terlampir. Tinjau kedua bukti dan scope; sistem tidak memilih keputusan bisnis.|[\"{8, 47}:Yang dimaksud dengan Hari adalah hari kalender.\", \"{64, 24}:Hari berarti hari kerja.\"]",
+          "{64, 24}|Hari berarti hari kerja.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]",
+          "{8, 47}|Yang dimaksud dengan Hari adalah hari kalender.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]"
+        ],
+        "freshPartial": false,
+        "freshSeconds": 9.459301209,
+        "incremental": [
+          "{64, 24}|Hari berarti hari kerja.|Potensi konflik pada definition antara dua klausul terlampir. Tinjau kedua bukti dan scope; sistem tidak memilih keputusan bisnis.|[\"{8, 47}:Yang dimaksud dengan Hari adalah hari kalender.\", \"{64, 24}:Hari berarti hari kerja.\"]",
+          "{64, 24}|Hari berarti hari kerja.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]",
+          "{8, 47}|Yang dimaksud dengan Hari adalah hari kalender.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]"
+        ],
+        "incrementalPartial": false,
+        "incrementalSeconds": 9.657082417,
+        "iteration": 1,
+        "workload": "definitions"
+      },
+      {
+        "equivalent": true,
+        "fresh": [],
+        "freshPartial": true,
+        "freshSeconds": 1.505093875,
+        "incremental": [],
+        "incrementalPartial": true,
+        "incrementalSeconds": 0.150725834,
+        "iteration": 1,
+        "workload": "long"
+      },
+      {
+        "equivalent": true,
+        "fresh": [],
+        "freshPartial": true,
+        "freshSeconds": 1.4919176250000001,
+        "incremental": [],
+        "incrementalPartial": true,
+        "incrementalSeconds": 0.148704833,
+        "iteration": 2,
+        "workload": "long"
+      },
+      {
+        "equivalent": true,
+        "fresh": [
+          "{64, 24}|Hari berarti hari kerja.|Potensi konflik pada definition antara dua klausul terlampir. Tinjau kedua bukti dan scope; sistem tidak memilih keputusan bisnis.|[\"{8, 47}:Yang dimaksud dengan Hari adalah hari kalender.\", \"{64, 24}:Hari berarti hari kerja.\"]",
+          "{64, 24}|Hari berarti hari kerja.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]",
+          "{8, 47}|Yang dimaksud dengan Hari adalah hari kalender.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]"
+        ],
+        "freshPartial": false,
+        "freshSeconds": 9.772601625,
+        "incremental": [
+          "{64, 24}|Hari berarti hari kerja.|Potensi konflik pada definition antara dua klausul terlampir. Tinjau kedua bukti dan scope; sistem tidak memilih keputusan bisnis.|[\"{8, 47}:Yang dimaksud dengan Hari adalah hari kalender.\", \"{64, 24}:Hari berarti hari kerja.\"]",
+          "{64, 24}|Hari berarti hari kerja.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]",
+          "{8, 47}|Yang dimaksud dengan Hari adalah hari kalender.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]"
+        ],
+        "incrementalPartial": false,
+        "incrementalSeconds": 8.842000209,
+        "iteration": 3,
+        "workload": "definitions"
+      },
+      {
+        "equivalent": true,
+        "fresh": [
+          "{64, 24}|Hari berarti hari kerja.|Potensi konflik pada definition antara dua klausul terlampir. Tinjau kedua bukti dan scope; sistem tidak memilih keputusan bisnis.|[\"{8, 47}:Yang dimaksud dengan Hari adalah hari kalender.\", \"{64, 24}:Hari berarti hari kerja.\"]",
+          "{64, 24}|Hari berarti hari kerja.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]",
+          "{8, 47}|Yang dimaksud dengan Hari adalah hari kalender.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]"
+        ],
+        "freshPartial": false,
+        "freshSeconds": 9.215093625,
+        "incremental": [
+          "{64, 24}|Hari berarti hari kerja.|Potensi konflik pada definition antara dua klausul terlampir. Tinjau kedua bukti dan scope; sistem tidak memilih keputusan bisnis.|[\"{8, 47}:Yang dimaksud dengan Hari adalah hari kalender.\", \"{64, 24}:Hari berarti hari kerja.\"]",
+          "{64, 24}|Hari berarti hari kerja.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]",
+          "{8, 47}|Yang dimaksud dengan Hari adalah hari kalender.|Sumber tidak tersedia/eligible: pola definisi ditemukan, tetapi tidak ada pengertian terverifikasi yang cocok di corpus.|[]"
+        ],
+        "incrementalPartial": false,
+        "incrementalSeconds": 8.984032708,
+        "iteration": 2,
+        "workload": "definitions"
+      },
+      {
+        "equivalent": true,
+        "fresh": [],
+        "freshPartial": true,
+        "freshSeconds": 1.475229667,
+        "incremental": [],
+        "incrementalPartial": true,
+        "incrementalSeconds": 0.153226125,
+        "iteration": 3,
+        "workload": "long"
+      },
+      {
+        "equivalent": true,
+        "fresh": [
+          "{44, 17}|menerima menerima|menerima|Pengulangan kata identik yang berdampingan; hapus satu occurrence."
+        ],
+        "freshPartial": false,
+        "freshSeconds": 0.17491975,
+        "incremental": [
+          "{44, 17}|menerima menerima|menerima|Pengulangan kata identik yang berdampingan; hapus satu occurrence."
+        ],
+        "incrementalPartial": false,
+        "incrementalSeconds": 0.178970458,
+        "iteration": 1,
+        "workload": "local"
+      }
+    ]
+  },
+  "validation": {
+    "passed": 424,
+    "skipped": 18,
+    "failed": 0,
+    "debug": true,
+    "release": true,
+    "finalModelSmoke": 24
+  },
+  "sourceScope": {
+    "primaryManifest": "/private/tmp/amt-review-integration-20261020/source-manifest.json",
+    "finalManifest": "/private/tmp/amt-review-integration-20261020/final-source-manifest.json",
+    "postPrimaryAmendment": {
+      "reason": "Keep dismissed supplemental IDs only on unchanged incremental rerun; fresh/revision/configuration still invalidates",
+      "changedProductionFile": "AMT/Features/AIConnector/ViewModels/AIConnectorViewModel.swift",
+      "beforeSHA256": "ca6fb8aa73adb6fef6e228ffa3ee39a22ddf9a0f79104716adbba44d838dce5d",
+      "afterSHA256": "93d1ce520521330b9a097897526ac41fcf40220883f4b7ec6c7c5e913738b49b",
+      "primaryBenchmarkHasNoDismissedOrReviewedIDs": true,
+      "scope": "Post-primary lifecycle fix; final source gets offline and matched-model smoke validation; primary source and results preserved"
+    }
+  },
+  "nativeMetadataParity": {
+    "exact": 288
+  },
+  "humanQualityGate": "insufficientEvidence"
+}

@@ -287,6 +287,23 @@ extension AIConnectorViewModel {
             )
         }
 
+        // Supplemental findings are now published by this ViewModel and must
+        // participate in the same evaluator as native queue findings.
+        for item in legalReviewResult?.findings ?? [] {
+            let id = LegalReviewEditorBridge.identity(for: item.id)
+            let suggestion = editorSuggestions.first { $0.id == id }
+            let annotation = reviewAnnotations.first { $0.id == id }
+            guard suggestion != nil || annotation != nil else { continue }
+            findings.append(AIConnectorQualityObservedFinding(
+                occurrence: occurrence(of: item.original, in: documentText, at: item.range.location),
+                category: item.actionable ? .grammar : .legalRisk,
+                status: item.actionable ? AIReviewStatus.suggestion.rawValue : AIReviewStatus.needsReview.rawValue,
+                original: item.original, replacement: suggestion?.replacement, classification: nil,
+                sourceID: nil, sourceEvidenceID: item.evidenceIDs.first,
+                sourceVerified: false, sourceActionable: false, readOnly: suggestion == nil,
+                anchorValid: suggestion?.isAnchored(to: documentText) ?? annotation?.isAnchored(to: documentText) ?? false))
+        }
+
         return findings.sorted {
             if $0.occurrence == $1.occurrence {
                 return $0.category.rawValue < $1.category.rawValue

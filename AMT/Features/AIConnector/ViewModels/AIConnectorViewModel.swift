@@ -7,7 +7,9 @@ final class AIConnectorViewModel {
     private static let previewCharacters = 2_000
     static let maximumDocumentCharacters = 4_000
     private static let analysisPipelineVersion = [
-        "document-analysis-progressive-v3-bounded-input",
+        "document-analysis-progressive-v4-selective-review",
+        LegalReviewAgent.policy,
+        LegalReviewFastRouter.policy,
         AIConnectorDefinitionAnalyzer.policyVersion,
         "phase7-incremental-analysis-v1",
         "review-pipeline-phase4-context-profile-v1",
@@ -227,11 +229,30 @@ final class AIConnectorViewModel {
         definitionResolutionCache.removeAll()
         analysisBaseline = nil
         pendingAnalysisPlan = nil
+        legalReviewAgent.clearCache()
+        legalReviewRouter.clearCache()
     }
 #endif
 
     private let cacheOwnerID = UUID()
     private let service: QwenSuggestionService
+    @ObservationIgnored private var legalReviewAgent: LegalReviewAgent
+    @ObservationIgnored private let legalReviewRouter: LegalReviewFastRouter
+    @ObservationIgnored private let legalReviewBridge = LegalReviewEditorBridge()
+    @ObservationIgnored private let legalReviewRoute: LegalReviewRoutingHandler?
+    @ObservationIgnored private let legalReviewGenerator: LegalReviewAgent.Generator?
+    private var legalReviewVariant: AIConnectorModelVariant = .qwen35Base4B
+    private(set) var legalReviewResult: LegalReviewAgent.Result?
+    private(set) var legalReviewRouting: LegalReviewFastRouter.Decision?
+    private var legalReviewSuggestions: [EditorSuggestion] = []
+    private var legalReviewAnnotations: [EditorReviewAnnotation] = []
+    private var legalReviewSuggestionIDs = Set<UUID>()
+    private var legalReviewMappingIncomplete = false
+    private let draftingReviewService: DraftingReviewService
+    private(set) var draftingReviewResult: DraftingReview.Result?
+    @ObservationIgnored private var draftingTask: Task<DraftingReview.Result, Never>?
+    private var draftingOperationID: UUID?
+    private var draftingDocumentRevision: String?
     private let dictionaryStore: LegalDictionaryStore
     private let segmenter = LegalTextSegmenter()
     private let documentContextCoordinator: AIConnectorDocumentContextCoordinator
@@ -277,6 +298,8 @@ final class AIConnectorViewModel {
     private var definitionResolutionCache = AIConnectorAnalysisLRUCache<AIConnectorDefinitionResolutionResult>()
     private var definitionResolutionOperationIDs: [UUID: UUID] = [:]
     private var analysisBaseline: AIConnectorAnalysisBaseline?
+    private var baselineNativeMode: AIConnectorReviewMode?
+    private var activeNativeMode: AIConnectorReviewMode?
     private var activeAnalysisPlan: AIConnectorAnalysisPlan?
     private var activeAnalysisRunStartedAt: Date?
     private var firstIncrementalResultAt: Date?
@@ -287,14 +310,25 @@ final class AIConnectorViewModel {
         service: QwenSuggestionService,
         dictionaryStore: LegalDictionaryStore,
         now: @escaping () -> Date = { Date() },
-        contextClassifier: AIConnectorDocumentContextClassificationHandler? = nil
+        contextClassifier: AIConnectorDocumentContextClassificationHandler? = nil,
+        draftingGenerator: DraftingReviewService.Generator? = nil,
+        legalReviewGenerator: LegalReviewAgent.Generator? = nil,
+        legalReviewSpellingProvider: (any AIConnectorSpellingCandidateProviding)? = nil,
+        legalReviewRoute: LegalReviewRoutingHandler? = nil
     ) {
         let initialDate = now()
         self.now = now
         self.analysisStartedAt = initialDate
         self.lastProgressActivityAt = initialDate
         self.service = service
+        self.draftingReviewService = draftingGenerator.map { DraftingReviewService(generator: $0) }
+            ?? DraftingReviewService(service: service)
         self.dictionaryStore = dictionaryStore
+        self.legalReviewRoute = legalReviewRoute
+        self.legalReviewGenerator = legalReviewGenerator
+        self.legalReviewAgent = legalReviewGenerator.map { LegalReviewAgent(dictionaryStore: dictionaryStore, generator: $0) }
+            ?? LegalReviewAgent(service: service, dictionaryStore: dictionaryStore)
+        self.legalReviewRouter = LegalReviewFastRouter(dictionaryStore: dictionaryStore, provider: legalReviewSpellingProvider)
         self.definitionResolutionService = AIConnectorDefinitionResolutionService(
             dictionaryStore: dictionaryStore
         )
@@ -348,6 +382,65 @@ final class AIConnectorViewModel {
     private func trimResourceCaches() async {
         await segmentProcessor.trimDerivedCaches()
         contextPreparationCache.removeAll(); documentReviewCache.removeAll(); definitionResolutionCache.removeAll()
+        draftingReviewService.clearCache()
+        legalReviewAgent.clearCache()
+        legalReviewRouter.clearCache()
+    }
+
+    /// Backend entry point for explicit drafting requests. No editor mutation or
+    /// spelling suggestion is created; the caller supplies the current document.
+    func reviewDrafting(_ request: DraftingReview.Request, documentText: String,
+                        fullFresh: Bool = true) async -> DraftingReview.Result {
+        cancelDraftingReview()
+        guard request.documentText == documentText,
+              request.documentRevision == DocumentFingerprinting.contentSHA256(documentText) else {
+            return .init(status: .incomplete, route: .preflight, response: nil, failures: ["staleDocumentRevision"],
+                         anchors: [], documentRevision: request.documentRevision, modelCallCount: 0, cacheHit: false, generationMetrics: nil)
+        }
+        let operation = UUID()
+        draftingOperationID = operation
+        draftingDocumentRevision = request.documentRevision
+        let variant = modelVariant
+        let mode = reviewMode
+        let worker = Task { [draftingReviewService] in
+            await AIConnectorInferenceContext.$priority.withValue(.interactive) {
+                await draftingReviewService.review(request, modelVariant: variant, fullFresh: fullFresh,
+                                                  allowsInference: mode != .deterministic)
+            }
+        }
+        draftingTask = worker
+        let result = await withTaskCancellationHandler {
+            await worker.value
+        } onCancel: {
+            worker.cancel()
+        }
+        guard draftingOperationID == operation else {
+            return .init(status: .cancelled, route: result.route, response: nil, failures: ["supersededOrEdited"],
+                         anchors: [], documentRevision: request.documentRevision, modelCallCount: result.modelCallCount,
+                         cacheHit: false, generationMetrics: result.generationMetrics)
+        }
+        draftingTask = nil
+        draftingOperationID = nil
+        guard modelVariant == variant, reviewMode == mode else {
+            return .init(status: .incomplete, route: result.route, response: nil, failures: ["configurationChanged"],
+                         anchors: [], documentRevision: request.documentRevision, modelCallCount: result.modelCallCount,
+                         cacheHit: false, generationMetrics: result.generationMetrics)
+        }
+        draftingReviewResult = result
+        return result
+    }
+
+    func cancelDraftingReview() {
+        draftingTask?.cancel()
+        draftingTask = nil
+        draftingOperationID = nil
+        draftingDocumentRevision = nil
+        draftingReviewResult = nil
+    }
+
+    private func invalidateDraftingIfDocumentChanged(_ documentText: String) {
+        if let revision = draftingDocumentRevision,
+           revision != DocumentFingerprinting.contentSHA256(documentText) { cancelDraftingReview() }
     }
 
     var isRunning: Bool {
@@ -405,11 +498,11 @@ final class AIConnectorViewModel {
     }
 
     var acceptedSuggestionCount: Int {
-        validatedReviews.filter { $0.status == .suggestion }.count
+        validatedReviews.filter { $0.status == .suggestion }.count + legalReviewSuggestions.count
     }
 
     var needsReviewCount: Int {
-        validatedReviews.filter { $0.status == .needsReview }.count
+        validatedReviews.filter { $0.status == .needsReview }.count + legalReviewAnnotations.count
     }
 
     var definitionMatchCount: Int {
@@ -655,6 +748,9 @@ final class AIConnectorViewModel {
         structuredDocument: StructuredDocument? = nil
     ) {
         guard inputSource == .currentDocument else { return }
+
+        invalidateDraftingIfDocumentChanged(documentText)
+        invalidateLegalReview()
 
         if isRunning {
             cancel()
@@ -1126,9 +1222,10 @@ final class AIConnectorViewModel {
         clearBenchmarkCallbacks()
 
         let sourceText = sourceText(documentText: documentText)
+        invalidateDraftingIfDocumentChanged(sourceText)
         let sourceStructuredDocument = inputSource == .currentDocument ? structuredDocument : nil
         let sampleForRun = inputSource == .dummy ? selectedSample : nil
-        let runMode = reviewMode
+        let requestedRunMode = reviewMode
         let runModelVariant = modelVariant
         let runThinkingEnabled = thinkingEnabled
         let runGenerationProfilePreset = generationProfilePreset
@@ -1145,7 +1242,16 @@ final class AIConnectorViewModel {
             structure: structureSeed,
             profile: profileSeed
         )
+        // Preserve dismissal only for the exact same document, structure and
+        // configuration. A new revision must re-evaluate contextual findings.
+        let retainedLegalReviewIDs: Set<UUID> = scope != .fullFresh
+            && (!ignoredReviewItemIDs.isEmpty || !reviewedReviewItemIDs.isEmpty)
+            && editorSourceText == sourceText
+            && editorAnalysisProfile == currentAnalysisProfile
+            && documentStructure?.fingerprint == structureSeed.fingerprint
+            ? Set(legalReviewSuggestions.map(\.id) + legalReviewAnnotations.map(\.id)) : []
         let runBaseline = analysisBaseline
+        let runBaselineNativeMode = baselineNativeMode
         let runAnalysisProfile = currentAnalysisProfile
         let proposedPlan: AIConnectorAnalysisPlan?
         if scope == .fullFresh {
@@ -1182,12 +1288,12 @@ final class AIConnectorViewModel {
             ignoredReviewItemIDs = ignoredReviewItemIDs.intersection(
                 Set(validatedReviews.map(\.id)
                     + definitionAssessments.map { EditorSuggestionMapper.definitionAnnotationID(for: $0) }
-                    + documentFindings.map(\.id))
+                    + documentFindings.map(\.id)).union(retainedLegalReviewIDs)
             )
             reviewedReviewItemIDs = reviewedReviewItemIDs.intersection(
                 Set(validatedReviews.map(\.id)
                     + definitionAssessments.map { EditorSuggestionMapper.definitionAnnotationID(for: $0) }
-                    + documentFindings.map(\.id))
+                    + documentFindings.map(\.id)).union(retainedLegalReviewIDs)
             )
             rebuildEditorMappings()
             resetTransientAnalysisState(keepDocumentContext: true)
@@ -1218,12 +1324,6 @@ final class AIConnectorViewModel {
         hasPendingAnalysisChanges = false
         activeAnalysisRunStartedAt = now()
         firstIncrementalResultAt = nil
-        let contextCacheKey = Self.contextPreparationCacheKey(
-            documentText: sourceText,
-            structure: structureSeed,
-            modelVariant: runModelVariant,
-            mode: runMode
-        )
         let operationID = UUID()
         activeOperationID = operationID
         state = .segmenting
@@ -1232,7 +1332,7 @@ final class AIConnectorViewModel {
 #if DEBUG
         let runObservationCollector = AIConnectorObservationCollector(
             runID: operationID,
-            mode: runMode,
+            mode: requestedRunMode,
             modelVariant: runModelVariant,
             generationProfile: runGenerationProfilePreset.rawValue,
             thinkingEnabled: runThinkingEnabled,
@@ -1245,18 +1345,6 @@ final class AIConnectorViewModel {
         mappingBenchmarkMetrics = AIConnectorMappingBenchmarkMetrics()
 #endif
 
-        let riskReviewer: AIConnectorDocumentReviewDetector.RiskReviewer?
-        if runMode.usesModel {
-            riskReviewer = { [service] request in
-                try await service.reviewDocumentFinding(
-                    request: request,
-                    downloadProgress: { _ in },
-                    generationProgress: { _ in }
-                )
-            }
-        } else {
-            riskReviewer = nil
-        }
 
         task = Task { [weak self] in
             guard let self else { return }
@@ -1273,6 +1361,48 @@ final class AIConnectorViewModel {
                     contextPreparationCache.removeAll()
                     documentReviewCache.removeAll()
                     definitionResolutionCache.removeAll()
+                }
+                if legalReviewVariant != runModelVariant {
+                    legalReviewAgent.clearCache()
+                    legalReviewAgent = legalReviewGenerator.map {
+                        LegalReviewAgent(dictionaryStore: dictionaryStore, modelVariant: runModelVariant, generator: $0)
+                    } ?? LegalReviewAgent(service: service, dictionaryStore: dictionaryStore, modelVariant: runModelVariant)
+                    legalReviewVariant = runModelVariant
+                }
+                if !reuseResultCaches { legalReviewAgent.clearCache(); legalReviewRouter.clearCache() }
+                try Task.checkCancellation()
+                guard activeOperationID == operationID else { return }
+                let localReview = legalReviewAgent.prepareLocal(documentText: sourceText, structure: structureSeed)
+                applyLegalReview(localReview, documentText: sourceText)
+                let routingStarted = ContinuousClock.now
+                let runMode: AIConnectorReviewMode
+                if requestedRunMode == .hybrid {
+                    let route: LegalReviewFastRouter.Decision
+                    if let legalReviewRoute { route = try await legalReviewRoute(sourceText, !reuseResultCaches, structureSeed) }
+                    else { route = try await legalReviewRouter.route(sourceText, fullFresh: !reuseResultCaches, structure: structureSeed) }
+                    guard activeOperationID == operationID else { return }
+                    legalReviewRouting = route
+                    runMode = route.mode
+                } else { runMode = requestedRunMode }
+                activeNativeMode = runMode
+                try Task.checkCancellation()
+#if DEBUG
+                await runObservationCollector.recordStage(.documentRouting,
+                    duration: AIConnectorObservationTiming.seconds(routingStarted.duration(to: .now)))
+#endif
+                let contextCacheKey = Self.contextPreparationCacheKey(documentText: sourceText,
+                    structure: structureSeed, modelVariant: runModelVariant, mode: runMode)
+                let riskReviewer: AIConnectorDocumentReviewDetector.RiskReviewer?
+                if runMode.usesModel {
+                    riskReviewer = { [service] request in
+                        try await service.reviewDocumentFinding(
+                            request: request,
+                            downloadProgress: { _ in },
+                            generationProgress: { _ in }
+                        )
+                    }
+                } else {
+                    riskReviewer = nil
                 }
                 let observationClock = ContinuousClock()
                 let preparation: AIConnectorDocumentContextPreparation
@@ -1348,7 +1478,7 @@ final class AIConnectorViewModel {
                 }
 
                 let runPlan: AIConnectorAnalysisPlan
-                if scope != .fullFresh, let baseline = runBaseline {
+                if scope != .fullFresh, let baseline = runBaseline, runBaselineNativeMode == runMode {
                     runPlan = incrementalPlanner.makePlan(
                         previous: baseline, documentText: sourceText,
                         structure: preparation.structure, segmentation: segmentation,
@@ -1667,6 +1797,23 @@ final class AIConnectorViewModel {
                         errorMessage = "Model dialihkan ke pemulihan deterministik untuk sisa dokumen."
 
                     case let .finished(summary):
+                        // Segment progress stays owned by the queue. The additional
+                        // document stage never increments completed segments.
+                        if !summary.wasPartial {
+                            setProgressStage(.definitionReview)
+                            state = .reviewing(current: total, total: total)
+                            let reviewStarted = ContinuousClock.now
+                            let reviewed = await legalReviewAgent.review(documentText: sourceText,
+                                fullFresh: !reuseResultCaches, modelEnabled: requestedRunMode.usesModel,
+                                structure: structureSeed)
+                            try Task.checkCancellation()
+                            guard activeOperationID == operationID else { return }
+                            applyLegalReview(reviewed, documentText: sourceText)
+#if DEBUG
+                            await runObservationCollector.recordStage(.documentConsistencyReview,
+                                duration: AIConnectorObservationTiming.seconds(reviewStarted.duration(to: .now)))
+#endif
+                        }
                         let wasCancelled = summary.wasPartial && summary.processedSegmentCount < summary.totalSegmentCount
                         recordProgressActivity()
                         runSummary = currentSummary(wasPartial: summary.wasPartial)
@@ -1701,7 +1848,7 @@ final class AIConnectorViewModel {
                         }
                         setProgressStage(wasCancelled ? .cancelled : .completed)
                         state = wasCancelled ? .cancelled : .completed
-                        analysisSnapshotEligible = !summary.wasPartial && skippedSegmentCount == 0 && fallbackCount == 0 && documentContextProfile?.classificationStatus != .fallback && documentFindingMetrics.riskFallbackCount == 0 && !segmentCoverage.values.contains(where: { $0.values.contains(.failed) || $0.values.contains(.tooLong) })
+                        analysisSnapshotEligible = legalReviewIsComplete && !summary.wasPartial && skippedSegmentCount == 0 && fallbackCount == 0 && documentContextProfile?.classificationStatus != .fallback && documentFindingMetrics.riskFallbackCount == 0 && !segmentCoverage.values.contains(where: { $0.values.contains(.failed) || $0.values.contains(.tooLong) })
                         if summary.wasPartial {
                             let incomplete = Set(segmentCoverage.filter { $0.value.values.contains { [.failed, .tooLong, .cancelled].contains($0) } }.map(\.key))
                             let completed = completedRunSegmentIDs.subtracting(incomplete)
@@ -1766,7 +1913,7 @@ final class AIConnectorViewModel {
                                 totalDuration: activeAnalysisRunStartedAt.map {
                                     self.now().timeIntervalSince($0)
                                 },
-                                wasPartial: false
+                                wasPartial: !legalReviewIsComplete
                             )
                         }
 #if DEBUG
@@ -1778,6 +1925,12 @@ final class AIConnectorViewModel {
                                 status: summary.wasPartial ? .cancelled : .completed
                             )
                             observationReport?.mappingMetrics = mappingBenchmarkMetrics
+                            if let result = legalReviewResult {
+                                observationReport?.legalReview = AIConnectorLegalReviewDiagnostics(
+                                    policy: LegalReviewAgent.policy, status: result.status, failures: result.failures,
+                                    modelAttempts: result.modelCalls, resultCacheHit: result.cacheHit,
+                                    route: legalReviewRouting?.reason, baseUsedModel: runMode.usesModel)
+                            }
                         }
 #endif
 
@@ -1896,6 +2049,9 @@ final class AIConnectorViewModel {
             internalReferenceFindingCount: documentFindings.filter { $0.kind == .internalReference }.count
         )
         definitionDebugSuggestions = []
+        let restoredLocal = legalReviewAgent.prepareLocal(documentText: documentText)
+        let restoredMapping = legalReviewBridge.map(restoredLocal, text: documentText, corpusVersion: dictionaryStore.activeCorpusVersion)
+        legalReviewSuggestionIDs = Set(restoredMapping.suggestions.map(\.id))
         runSummary = snapshot.runSummary
         progressStage = .completed
         analysisProgress = 1
@@ -1904,6 +2060,8 @@ final class AIConnectorViewModel {
     }
 
     func resetInputMetadata() {
+        cancelDraftingReview()
+        draftingReviewService.clearCache()
 #if DEBUG
         cancelPhaseTwoComparison()
 #endif
@@ -1938,6 +2096,11 @@ final class AIConnectorViewModel {
         if let cancelledRunID { Task { await workQueue.cancel(runID: cancelledRunID) } }
         clearBenchmarkCallbacks()
         preservePartialAnalysisForResume()
+        if let result = legalReviewResult {
+            legalReviewResult = .init(revision: result.revision, findings: result.findings, status: "cancelled",
+                failures: result.failures + ["cancelled"], toolTrace: result.toolTrace,
+                modelCalls: result.modelCalls, cacheHit: false, cacheEvictions: result.cacheEvictions)
+        }
 #if DEBUG
         if let collector = observationCollector {
             let metrics = incrementalRunMetrics
@@ -1996,7 +2159,7 @@ final class AIConnectorViewModel {
             return false
         }
 
-        let canPersistReviewState = analysisSnapshotEligible && !isRunning
+        let canPersistReviewState = analysisSnapshotEligible && !isRunning && (legalReviewResult?.findings.isEmpty ?? true)
         stopAnalysisForAcceptedEdit()
         let acceptedRange = isAnchored
             ? suggestion.sourceRange
@@ -2067,6 +2230,8 @@ final class AIConnectorViewModel {
     /// resolution, term/body anchors, and document fingerprint still match
     /// the text in the editor.
     private func stopAnalysisForAcceptedEdit() {
+        cancelDraftingReview()
+        invalidateLegalReview()
         guard let runID = activeOperationID else { return }
         activeOperationID = nil
         cancelRunningTask()
@@ -2080,6 +2245,9 @@ final class AIConnectorViewModel {
               documentText == editorSourceText,
               editorSuggestions.contains(suggestion),
               suggestion.isAnchored(to: documentText) else { return false }
+        if legalReviewSuggestionIDs.contains(suggestion.id) {
+            return legalReviewBridge.validate(suggestion, text: documentText, corpusVersion: dictionaryStore.activeCorpusVersion)
+        }
         return true
     }
 
@@ -2231,6 +2399,7 @@ final class AIConnectorViewModel {
     }
 
     func clearEditorSuggestions() {
+        invalidateLegalReview()
         editorMappingState.invalidate()
         editorSuggestions = []
         reviewAnnotations = []
@@ -2391,7 +2560,7 @@ final class AIConnectorViewModel {
                 max(completedSegmentCount, 0),
                 totalSegmentCount
             )
-            candidate = Double(completed) / Double(totalSegmentCount)
+            candidate = min(Double(completed) / Double(totalSegmentCount), legalReviewIsComplete ? 1 : 0.99)
         }
 
         let previousValue = progressTracker.value
@@ -2671,8 +2840,17 @@ final class AIConnectorViewModel {
     }
 
     private func publishEditorMappings() {
-        editorSuggestions = editorMappingState.suggestions
-        reviewAnnotations = editorMappingState.annotations
+        let baseSuggestions = editorMappingState.suggestions
+        let additions = legalReviewSuggestions.filter { item in
+            !ignoredReviewItemIDs.contains(item.id) && !baseSuggestions.contains {
+                NSIntersectionRange($0.sourceRange, item.sourceRange).length > 0
+            }
+        }
+        editorSuggestions = (baseSuggestions + additions).sorted {
+            $0.sourceRange.location == $1.sourceRange.location
+                ? $0.id.uuidString < $1.id.uuidString : $0.sourceRange.location < $1.sourceRange.location
+        }
+        reviewAnnotations = editorMappingState.annotations + legalReviewAnnotations.filter { !ignoredReviewItemIDs.contains($0.id) }
         definitionMatchAnnotations = editorMappingState.definitionMatches
     }
 
@@ -2834,6 +3012,35 @@ final class AIConnectorViewModel {
         definitionResolutionTasks.removeAll()
     }
 
+    /// Replaces only supplemental findings; native queue mappings remain authoritative.
+    private func applyLegalReview(_ result: LegalReviewAgent.Result, documentText: String) {
+        legalReviewResult = result
+        let mapped = legalReviewBridge.map(result, text: documentText, corpusVersion: dictionaryStore.activeCorpusVersion)
+        legalReviewMappingIncomplete = mapped.incomplete
+        legalReviewSuggestions = mapped.suggestions
+        legalReviewAnnotations = mapped.annotations
+        legalReviewSuggestionIDs = Set(mapped.suggestions.map(\.id))
+        if mapped.incomplete { analysisSnapshotEligible = false }
+        if exposesEditorSuggestions { publishEditorMappings() }
+        recordProgressActivity()
+    }
+
+    private var legalReviewIsComplete: Bool {
+        guard let result = legalReviewResult else { return false }
+        return !legalReviewMappingIncomplete && result.failures.isEmpty && ["policySkipped", "completePairs"].contains(result.status)
+    }
+
+    private func invalidateLegalReview() {
+        let ids = Set(legalReviewSuggestions.map(\.id) + legalReviewAnnotations.map(\.id))
+        editorSuggestions.removeAll { ids.contains($0.id) }
+        reviewAnnotations.removeAll { ids.contains($0.id) }
+        legalReviewSuggestions = []; legalReviewAnnotations = []
+        legalReviewSuggestionIDs = []
+        legalReviewResult = nil; legalReviewRouting = nil
+        legalReviewMappingIncomplete = false
+        legalReviewBridge.reset()
+    }
+
     private func currentPartialSummary() -> AIConnectorRunSummary {
         currentSummary(wasPartial: true)
     }
@@ -2857,7 +3064,7 @@ final class AIConnectorViewModel {
             repairAttemptCount: repairAttemptCount,
             fallbackCount: fallbackCount,
             circuitBreakerActivated: circuitBreakerActivated,
-            wasPartial: wasPartial || documentContextProfile?.classificationStatus == .fallback
+            wasPartial: wasPartial || !legalReviewIsComplete || documentContextProfile?.classificationStatus == .fallback
                 || documentFindingMetrics.riskFallbackCount > 0
                 || segmentCoverage.values.contains { $0.values.contains { [.failed, .tooLong, .cancelled].contains($0) } },
             candidateCount: candidateCount,
@@ -2870,6 +3077,7 @@ final class AIConnectorViewModel {
     private func makeAnalysisBaseline() -> AIConnectorAnalysisBaseline? {
         guard let structure = documentStructure,
               let segmentation = segmentationResult else { return nil }
+        baselineNativeMode = activeNativeMode
         var baseline = AIConnectorAnalysisBaseline(
             documentText: editorSourceText,
             structure: structure,
@@ -2893,6 +3101,7 @@ final class AIConnectorViewModel {
     }
 
     private func resetTransientAnalysisState(keepDocumentContext: Bool) {
+        invalidateLegalReview()
         activeOperationID = nil
         progressStage = .idle
         progressTracker.reset()
@@ -3032,6 +3241,7 @@ final class AIConnectorViewModel {
         pendingAnalysisPlan = nil
         activeAnalysisPlan = nil
         analysisBaseline = nil
+        baselineNativeMode = nil; activeNativeMode = nil
         incrementalRunMetrics = AIConnectorIncrementalAnalysisMetrics()
         reusedSegmentCount = 0
         reprocessedSegmentCount = 0

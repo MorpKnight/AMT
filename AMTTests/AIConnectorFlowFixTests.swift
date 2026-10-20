@@ -83,8 +83,13 @@ final class AIConnectorFlowFixTests: XCTestCase {
             try await Task.sleep(for: .milliseconds(500))
             throw FlowTestError.deliberatelyUnavailable
         }
-        let first = AIConnectorViewModel(service: service, dictionaryStore: store, contextClassifier: classifier)
-        let second = AIConnectorViewModel(service: service, dictionaryStore: store, contextClassifier: classifier)
+        // This test exercises the delayed classifier path explicitly; ordinary
+        // rule-only text is now admitted to the local base by the router.
+        let route: LegalReviewRoutingHandler = { _, _, _ in
+            .init(needsHybrid: true, reason: "delayed classifier test", lexicalQueries: 0, cacheHit: false)
+        }
+        let first = AIConnectorViewModel(service: service, dictionaryStore: store, contextClassifier: classifier, legalReviewRoute: route)
+        let second = AIConnectorViewModel(service: service, dictionaryStore: store, contextClassifier: classifier, legalReviewRoute: route)
         let text = "memasukan ditanda tangani di simpan."
         first.reviewMode = .hybrid
         second.reviewMode = .hybrid

@@ -29,6 +29,8 @@ nonisolated enum AIConnectorObservationStage: String, Codable, CaseIterable, Has
     case documentFindingDetection
     case riskReview
     case definitionResolution
+    case documentRouting
+    case documentConsistencyReview
 }
 
 nonisolated enum AIConnectorObservationTerminalStatus: String, Codable, Hashable, Sendable {
@@ -315,6 +317,7 @@ nonisolated struct AIConnectorObservationReport: Codable, Hashable, Sendable {
     var suggestionLexicalDiagnostics: LegalLexicalRetrievalDiagnostics? = nil
     var mappingMetrics: AIConnectorMappingBenchmarkMetrics? = nil
     var inputCoverage: [String: AIConnectorInputCoverage]? = nil
+    var legalReview: AIConnectorLegalReviewDiagnostics? = nil
     #endif
     static let schemaVersion = "phase0-observability-v1"
 
