@@ -1828,13 +1828,19 @@ final class AIConnectorViewModel {
         documentText: String,
         completedAt: Date? = nil
     ) -> DocumentAnalysisSnapshot? {
+        let isTextMatching = documentText == editorSourceText
+            || documentText.trimmingCharacters(in: .whitespacesAndNewlines) == editorSourceText.trimmingCharacters(in: .whitespacesAndNewlines)
+
         guard inputSource == .currentDocument,
               exposesEditorSuggestions,
               analysisSnapshotEligible,
               editorAnalysisProfile == currentAnalysisProfile,
-              documentText == editorSourceText,
+              isTextMatching,
               state == .completed else {
             return nil
+        }
+        if documentText != editorSourceText {
+            editorSourceText = documentText
         }
 
         return DocumentAnalysisSnapshot(
@@ -2048,6 +2054,22 @@ final class AIConnectorViewModel {
         definitionResolutionLoadingIDs = []
         contextPreparationCache.removeAll()
         documentReviewCache.removeAll()
+        if let baseline = analysisBaseline {
+            let filteredReviews = baseline.validatedReviews.filter { $0.id != suggestion.id }
+            analysisBaseline = AIConnectorAnalysisBaseline(
+                documentText: updatedText,
+                structure: baseline.structure,
+                profile: baseline.profile,
+                segmentation: baseline.segmentation,
+                analysisProfile: baseline.analysisProfile,
+                validatedReviews: filteredReviews,
+                definitionAssessments: baseline.definitionAssessments,
+                documentFindings: documentFindings,
+                ignoredReviewItemIDs: ignoredReviewItemIDs,
+                reviewedReviewItemIDs: reviewedReviewItemIDs,
+                completedSegmentIDs: baseline.completedSegmentIDs
+            )
+        }
         documentStructure = nil
         documentContextProfile = nil
         contextStructureDuration = 0
@@ -2160,6 +2182,24 @@ final class AIConnectorViewModel {
         definitionResolutionLoadingIDs = []
         contextPreparationCache.removeAll()
         documentReviewCache.removeAll()
+        if let baseline = analysisBaseline {
+            let filteredReviews = baseline.validatedReviews.filter { review in
+                !resolutionEntry.value.options.contains(where: { $0.id == option.id })
+            }
+            analysisBaseline = AIConnectorAnalysisBaseline(
+                documentText: updatedText,
+                structure: baseline.structure,
+                profile: baseline.profile,
+                segmentation: baseline.segmentation,
+                analysisProfile: baseline.analysisProfile,
+                validatedReviews: filteredReviews,
+                definitionAssessments: baseline.definitionAssessments,
+                documentFindings: documentFindings,
+                ignoredReviewItemIDs: ignoredReviewItemIDs,
+                reviewedReviewItemIDs: reviewedReviewItemIDs,
+                completedSegmentIDs: baseline.completedSegmentIDs
+            )
+        }
         documentStructure = nil
         documentContextProfile = nil
         contextStructureDuration = 0

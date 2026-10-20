@@ -514,8 +514,17 @@ final class DocumentStorageManager: ObservableObject {
         _ snapshot: DocumentAnalysisSnapshot,
         for document: DashboardDocument
     ) async -> Result<DashboardDocument, DocumentStorageError> {
-        guard !AIConnectorDummyDocument.isBuiltIn(document),
-              let index = documents.firstIndex(where: { $0.id == document.id }) else {
+        if AIConnectorDummyDocument.isBuiltIn(document) {
+            guard let index = documents.firstIndex(where: { $0.id == document.id }) else {
+                return .failure(.documentNotFound)
+            }
+            var updatedDocument = documents[index]
+            updatedDocument.analysisSnapshot = snapshot
+            documents[index] = updatedDocument
+            return .success(updatedDocument)
+        }
+
+        guard let index = documents.firstIndex(where: { $0.id == document.id }) else {
             return .failure(.documentNotFound)
         }
 
