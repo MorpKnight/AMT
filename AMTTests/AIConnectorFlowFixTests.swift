@@ -83,8 +83,13 @@ final class AIConnectorFlowFixTests: XCTestCase {
             try await Task.sleep(for: .milliseconds(500))
             throw FlowTestError.deliberatelyUnavailable
         }
-        let first = AIConnectorViewModel(service: service, dictionaryStore: store, contextClassifier: classifier)
-        let second = AIConnectorViewModel(service: service, dictionaryStore: store, contextClassifier: classifier)
+        // This test exercises the delayed classifier path explicitly; ordinary
+        // rule-only text is now admitted to the local base by the router.
+        let route: LegalReviewRoutingHandler = { _, _, _ in
+            .init(needsHybrid: true, reason: "delayed classifier test", lexicalQueries: 0, cacheHit: false)
+        }
+        let first = AIConnectorViewModel(service: service, dictionaryStore: store, contextClassifier: classifier, legalReviewRoute: route)
+        let second = AIConnectorViewModel(service: service, dictionaryStore: store, contextClassifier: classifier, legalReviewRoute: route)
         let text = "memasukan ditanda tangani di simpan."
         first.reviewMode = .hybrid
         second.reviewMode = .hybrid
@@ -228,6 +233,8 @@ final class AIConnectorFlowFixTests: XCTestCase {
             onSuggestionAccepted: { _, _, _ in state.accepted += 1 }, onDismiss: { _ in }, onMarkReviewed: { _ in }, onReopenReviewed: { _ in }
         )
         let coordinator = parent.makeCoordinator()
+        let sidebarViewModel = EditorViewModel()
+        coordinator.attach(viewModel: sidebarViewModel)
         let storage = NSTextStorage(string: text)
         let layout = SuggestionLayoutManager()
         let container = NSTextContainer(size: NSSize(width: 600, height: 1000))
@@ -242,13 +249,21 @@ final class AIConnectorFlowFixTests: XCTestCase {
         window.makeFirstResponder(view)
         coordinator.connect(scrollView: scroll, textView: view, layoutManager: layout, textContainer: container, documentID: parent.documentID, text: text, richTextData: nil, structuredDocument: nil, zoomPercent: 100)
         let invalid = AIConnectorDefinitionResolutionOption(id: "forged", action: .replaceTerm, title: "Ganti", targetRange: suggestion.sourceRange, original: suggestion.original, replacement: suggestion.replacement, status: .actionable)
-        coordinator.applyDefinitionResolution(invalid)
+        sidebarViewModel.applyDefinitionResolution(invalid)
         XCTAssertEqual(view.string, text)
         XCTAssertNil(state.richText)
+        let forgedSuggestion = EditorSuggestion(
+            id: suggestion.id, sourceRange: suggestion.sourceRange,
+            original: suggestion.original, replacement: "menghapus",
+            category: .spelling, reason: "Forged", origin: .deterministic
+        )
+        sidebarViewModel.acceptSuggestion(forgedSuggestion)
+        XCTAssertEqual(view.string, text)
+        XCTAssertEqual(state.accepted, 0)
         let undo = try XCTUnwrap(view.undoManager)
         undo.groupsByEvent = false
         undo.beginUndoGrouping()
-        coordinator.accept(suggestion)
+        sidebarViewModel.acceptSuggestion(suggestion)
         undo.endUndoGrouping()
         XCTAssertEqual(view.string, "Dokumen memasukkan arsip.")
         XCTAssertEqual(state.text, view.string)

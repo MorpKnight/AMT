@@ -1020,6 +1020,36 @@ final class QwenSuggestionService {
         }
     }
 
+    /// Drafting is an explicit read-only task, separate from candidate-first
+    /// spelling. It shares admission, resident resources and complete-input limits.
+    func reviewDrafting(prepared: DraftingReview.PreparedRequest,
+                        modelVariant: AIConnectorModelVariant) async throws -> QwenReviewResult {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+        let prompt = try DraftingReviewPrompt.prompt(prepared)
+        let container = try await loadModel(modelVariant: modelVariant, downloadProgress: { _ in })
+        _ = try await validatePromptBudget(container: container, instructions: DraftingReviewPrompt.instructions,
+                                          prompt: prompt, tools: nil, thinkingEnabled: false)
+        let profile = AIConnectorGenerationProfile(maxTokens: 768, temperature: 0, topP: 1, topK: 0, presencePenalty: nil, seed: 42)
+        let session = ChatSession(container, instructions: DraftingReviewPrompt.instructions,
+                                  generateParameters: generationParameters(profile: profile), additionalContext: ["enable_thinking": false])
+        var raw = ""
+        var info: GenerateCompletionInfo?
+        for try await generation in session.streamDetails(to: prompt) {
+            try Task.checkCancellation()
+            switch generation {
+            case .chunk(let chunk): raw += chunk
+            case .info(let completion): info = completion
+            case .toolCall: throw QwenSuggestionError.unsupportedToolCall
+            }
+        }
+        try Task.checkCancellation()
+        guard info != nil else { throw QwenSuggestionError.emptyResponse }
+        return .init(output: raw, metrics: Self.metrics(from: info),
+                     containsReasoningMarkers: AIConnectorGenerationDiagnostics.containsReasoningMarkers(in: raw))
+    }
+
     private func validatePromptBudget(container: ModelContainer, instructions: String, prompt: String,
                                       tools: [ToolSpec]?, thinkingEnabled: Bool) async throws -> Int {
         let input = try await container.prepare(input: UserInput(chat: [.system(instructions), .user(prompt)],
@@ -1352,5 +1382,30 @@ final class QwenSuggestionService {
         let previousContext: String?
         let nextContext: String?
         let documentContext: String?
+    }
+}
+
+
+// Experimental-only adapter appended to the archived candidate service.
+extension QwenSuggestionService {
+    func reviewLegalClausePairs(messages: [Chat.Message], tools: [ToolSpec], modelVariant: AIConnectorModelVariant) async throws -> LegalReviewAgent.Turn {
+        let lease = try await inferenceScheduler.acquire()
+        defer { Task { await inferenceScheduler.release(lease) } }
+        try Task.checkCancellation()
+        let container = try await loadModel(modelVariant: modelVariant, downloadProgress: { _ in })
+        let input = try await container.prepare(input: UserInput(chat: messages, tools: tools, additionalContext: ["enable_thinking":false]))
+        let count = input.text.tokens.size
+        guard count <= 4096 else { throw LegalReviewAgent.Failure.inputBudget }
+        let profile = AIConnectorGenerationProfile(maxTokens:768,temperature:0,topP:1,topK:0,presencePenalty:nil,seed:42)
+        let session = ChatSession(container, history: [], generateParameters:generationParameters(profile:profile),
+                                  additionalContext:["enable_thinking":false], tools:tools)
+        var text = ""; var calls: [ToolCall] = []; var info: GenerateCompletionInfo?
+        for try await event in session.streamDetails(to:messages) {
+            try Task.checkCancellation()
+            switch event { case .chunk(let value): text += value; case .toolCall(let call): calls.append(call); case .info(let value): info = value }
+        }
+        guard let info else { throw LegalReviewAgent.Failure.incompleteGeneration }
+        let metrics = Self.metrics(from: info)
+        return .init(text:text,calls:calls,stopReason:metrics.stopReason.rawValue,promptTokens:count,outputTokens:metrics.generationTokenCount)
     }
 }

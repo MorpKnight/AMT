@@ -1,0 +1,19 @@
+{
+  "purpose": "Synthetic manual testing; not a reviewed quality gate",
+  "builtInSource": "AMT/Features/AIConnector/Models/AIConnectorDummyDocument.swift",
+  "builtInSourceSHA256": "56e21a28610dc27b5ef487066282c81b58498e0755f5f434b2ef2ff0e6d10935",
+  "dummyVariant": {
+    "old": "Pihak Kedua hanya boleh memproses Data Pribadi",
+    "new": "Pihak Kedua hanya boleh memproses Datta Pribadi",
+    "replacements": 1
+  },
+  "draftingTargetsUnique": true,
+  "uiManualExecution": "not performed",
+  "files": {
+    "01-koreksi-bahasa.txt": "431082dae39a9827f7923c73f44c8115e6e0783c5e0c43ea7d4db0940571fef9",
+    "02-dummy-asli.txt": "d90b92fb1bdf6d8e6ebedc7d68051f220f685987e52783f07f42d1e399eb3eb6",
+    "03-dummy-datta.txt": "1b8b9050f2fe01636ea6b9e4b75c50c554abfd50cccd19132b87845fad26963d",
+    "04-klausul-drafting.txt": "6c9dc71efae95646ffc52507475ab50ec79adc5ac18dd9265d249ed0f14b8575",
+    "PANDUAN.md": "e399c444e762847838b6c21955edd348bbae5b7d3cb5ec33e625169c3b36f76d"
+  }
+}

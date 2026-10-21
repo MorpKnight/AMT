@@ -39,6 +39,25 @@ final class EditorViewModel {
     /// Font size in points for the body text. Defaults to EditorTypography body size.
     var fontSizePoints: CGFloat = EditorTypography.bodyPointSize
 
+    @ObservationIgnored
+    var onAcceptSuggestion: ((EditorSuggestion) -> Void)?
+    @ObservationIgnored
+    var onApplyDefinitionResolution: ((AIConnectorDefinitionResolutionOption) -> Void)?
+    @ObservationIgnored
+    var onApplyFormatting: ((FormattingAction) -> Void)?
+
+    func acceptSuggestion(_ suggestion: EditorSuggestion) {
+        onAcceptSuggestion?(suggestion)
+    }
+
+    func applyDefinitionResolution(_ option: AIConnectorDefinitionResolutionOption) {
+        onApplyDefinitionResolution?(option)
+    }
+
+    func applyFormatting(_ action: FormattingAction) {
+        onApplyFormatting?(action)
+    }
+
     // MARK: - Zoom
     func zoomIn() {
         zoomPercent = EditorZoom.clamp(zoomPercent + EditorZoom.stepPercent)

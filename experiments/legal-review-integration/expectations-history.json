@@ -1,0 +1,2401 @@
+{
+  "phase8-p0-spelling-01": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "memasukan",
+        "replacement": "memasukkan",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-02": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "memasukan",
+        "replacement": "memasukkan",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-03": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "memasukan",
+        "replacement": "memasukkan",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-04": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "memasukan",
+        "replacement": "memasukkan",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-05": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "memasukan",
+        "replacement": "memasukkan",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-06": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "ditanda tangani",
+        "replacement": "ditandatangani",
+        "occurrence": 0,
+        "locationUTF16": 19,
+        "lengthUTF16": 15,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-07": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "ditanda tangani",
+        "replacement": "ditandatangani",
+        "occurrence": 0,
+        "locationUTF16": 19,
+        "lengthUTF16": 15,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-08": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "ditanda tangani",
+        "replacement": "ditandatangani",
+        "occurrence": 0,
+        "locationUTF16": 19,
+        "lengthUTF16": 15,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-09": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "ditanda tangani",
+        "replacement": "ditandatangani",
+        "occurrence": 0,
+        "locationUTF16": 19,
+        "lengthUTF16": 15,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-10": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "ditanda tangani",
+        "replacement": "ditandatangani",
+        "occurrence": 0,
+        "locationUTF16": 19,
+        "lengthUTF16": 15,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-11": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "di simpan",
+        "replacement": "disimpan",
+        "occurrence": 0,
+        "locationUTF16": 10,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-12": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "di simpan",
+        "replacement": "disimpan",
+        "occurrence": 0,
+        "locationUTF16": 10,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-13": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "di simpan",
+        "replacement": "disimpan",
+        "occurrence": 0,
+        "locationUTF16": 10,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-14": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "di simpan",
+        "replacement": "disimpan",
+        "occurrence": 0,
+        "locationUTF16": 10,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-spelling-15": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "di simpan",
+        "replacement": "disimpan",
+        "occurrence": 0,
+        "locationUTF16": 10,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-01": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-02": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-03": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-04": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-05": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-06": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-07": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-08": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-09": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 8,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-10": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 9,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-11": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 9,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-12": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 9,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-13": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 9,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-14": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 9,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-grammar-15": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 9,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-terminology-01": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-terminology-02": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-terminology-03": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-terminology-04": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-terminology-05": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-terminology-06": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-terminology-07": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-terminology-08": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-definition-explicit-match-1": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-definition-explicit-match-2": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-definition-explicit-match-3": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-definition-explicit-mismatch-1": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-definition-explicit-mismatch-2": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-definition-mention-not-definition": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-definition-mention-not-definition-2": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-01": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-02": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-03": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-04": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-05": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-06": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-07": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-08": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-09": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-10": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-11": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-12": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-13": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-14": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-p0-hard-negative-15": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-defined-term-casing": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-internal-reference-missing": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "missingReference",
+        "original": "Pasal 99",
+        "replacement": null,
+        "occurrence": 0,
+        "locationUTF16": 27,
+        "lengthUTF16": 8,
+        "intent": "reference"
+      },
+      {
+        "kind": "missingReference",
+        "original": "Lampiran C",
+        "replacement": null,
+        "occurrence": 0,
+        "locationUTF16": 40,
+        "lengthUTF16": 10,
+        "intent": "reference"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-risk-hard-negative-modal": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-definition-resolution-source": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "phase8-incremental-definition-change": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-spelling-1": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "perjanijan",
+        "replacement": "perjanjian",
+        "occurrence": 0,
+        "locationUTF16": 27,
+        "lengthUTF16": 10,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-spelling-2": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "kewajban",
+        "replacement": "kewajiban",
+        "occurrence": 0,
+        "locationUTF16": 20,
+        "lengthUTF16": 8,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-spelling-3": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "pemabyaran",
+        "replacement": "pembayaran",
+        "occurrence": 0,
+        "locationUTF16": 6,
+        "lengthUTF16": 10,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-spelling-4": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "perjanjain",
+        "replacement": "perjanjian",
+        "occurrence": 0,
+        "locationUTF16": 12,
+        "lengthUTF16": 10,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-spelling-5": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "dokumne",
+        "replacement": "dokumen",
+        "occurrence": 0,
+        "locationUTF16": 19,
+        "lengthUTF16": 7,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-spelling-6": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "laproan",
+        "replacement": "laporan",
+        "occurrence": 0,
+        "locationUTF16": 26,
+        "lengthUTF16": 7,
+        "intent": "requiredSpelling"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-grammar-1": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 12,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-grammar-2": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-grammar-3": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-grammar-4": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "optionalConcision",
+        "original": "wajib untuk",
+        "replacement": "wajib",
+        "occurrence": 0,
+        "locationUTF16": 14,
+        "lengthUTF16": 11,
+        "intent": "optionalStyle"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-grammar-5": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-grammar-6": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-paraphrase-1": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-paraphrase-2": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-paraphrase-3": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-paraphrase-4": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-paraphrase-5": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-paraphrase-6": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-operators-1": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-operators-2": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-operators-3": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-operators-4": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-operators-5": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-operators-6": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-quantities-1": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-quantities-2": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-quantities-3": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-quantities-4": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-quantities-5": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-quantities-6": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-eligibility-1": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-eligibility-2": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-eligibility-3": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-eligibility-4": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-eligibility-5": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-eligibility-6": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-long-1": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "memasukan",
+        "replacement": "memasukkan",
+        "occurrence": 0,
+        "locationUTF16": 12,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      },
+      {
+        "kind": "readabilityReview",
+        "reason": "Repetisi sintetis ekstrem; jangan menganggap no-change sebagai teks alami bebas masalah.",
+        "replacement": null,
+        "intent": "readabilityReview"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-long-2": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "memasukan",
+        "replacement": "memasukkan",
+        "occurrence": 0,
+        "locationUTF16": 5536,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      },
+      {
+        "kind": "readabilityReview",
+        "reason": "Repetisi sintetis ekstrem; jangan menganggap no-change sebagai teks alami bebas masalah.",
+        "replacement": null,
+        "intent": "readabilityReview"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-long-3": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "readabilityReview",
+        "reason": "Repetisi sintetis ekstrem; jangan menganggap no-change sebagai teks alami bebas masalah.",
+        "replacement": null,
+        "intent": "readabilityReview"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-long-4": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "readabilityReview",
+        "reason": "Repetisi sintetis ekstrem; jangan menganggap no-change sebagai teks alami bebas masalah.",
+        "replacement": null,
+        "intent": "readabilityReview"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-long-5": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "readabilityReview",
+        "reason": "Repetisi sintetis ekstrem; jangan menganggap no-change sebagai teks alami bebas masalah.",
+        "replacement": null,
+        "intent": "readabilityReview"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-long-6": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "kind": "requiredSpelling",
+        "original": "memasukan",
+        "replacement": "memasukkan",
+        "occurrence": 0,
+        "locationUTF16": 5117,
+        "lengthUTF16": 9,
+        "intent": "requiredSpelling"
+      },
+      {
+        "kind": "readabilityReview",
+        "reason": "Repetisi sintetis ekstrem; jangan menganggap no-change sebagai teks alami bebas masalah.",
+        "replacement": null,
+        "intent": "readabilityReview"
+      }
+    ],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-protected-1": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-protected-2": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-protected-3": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-protected-4": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-protected-5": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "backend46-protected-6": {
+    "reviewStatus": "pending",
+    "provenance": "retrospective",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g1-1": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "Datta",
+        "replacement": "Data"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g1-2": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "Lapporan",
+        "replacement": "Laporan"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g1-3": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "Dokumenn",
+        "replacement": "Dokumen"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g1-4": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "Datta",
+        "replacement": "Data"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g1-5": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "Pembayarran",
+        "replacement": "Pembayaran"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g1-6": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g2-1": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "laproan",
+        "replacement": "laporan"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g2-2": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "perjanjain",
+        "replacement": "perjanjian"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g2-3": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "dokumne",
+        "replacement": "dokumen"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g2-4": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "Laproan",
+        "replacement": "Laporan"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g2-5": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "Pemabyaran",
+        "replacement": "Pembayaran"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g2-6": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g3-1": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "legalMarkerReview",
+        "original": "kewajban",
+        "replacement": null
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g3-2": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "legalMarkerReview",
+        "original": "Kewajban",
+        "replacement": null
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g3-3": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g3-4": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "legalMarkerReview",
+        "original": "kewajban",
+        "replacement": null
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g3-5": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "legalMarkerReview",
+        "original": "Kewajban",
+        "replacement": null
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g3-6": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g4-1": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g4-2": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g4-3": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g4-4": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g4-5": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g4-6": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g5-1": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "Datta",
+        "replacement": "Data"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g5-2": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g5-3": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g5-4": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "Datta",
+        "replacement": "Data"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g5-5": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g5-6": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g6-1": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g6-2": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g6-3": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g6-4": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g6-5": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g6-6": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g7-1": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g7-2": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g7-3": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g7-4": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "reference",
+        "original": "Lampiran C",
+        "replacement": null
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g7-5": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g7-6": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g8-1": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "laproan",
+        "replacement": "laporan"
+      },
+      {
+        "intent": "requiredSpelling",
+        "original": "dokumne",
+        "replacement": "dokumen",
+        "occurrence": 0
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g8-2": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "Datta",
+        "replacement": "Data"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g8-3": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "memasukan",
+        "replacement": "memasukkan"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g8-4": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "perjanjain",
+        "replacement": "perjanjian"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g8-5": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "laproan",
+        "replacement": "laporan"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "accuracy-v2-g8-6": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": true,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-1": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MATCH",
+      "sourceID": "term:13f0bf74ffc42ebac01b",
+      "sourceBody": "kendaraan yang dapat bergerak di jalan rel.",
+      "documentTerm": "Sarana perkeretaapian"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-2": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MISMATCH",
+      "sourceID": "term:13f0bf74ffc42ebac01b",
+      "sourceBody": "kendaraan yang dapat bergerak di jalan rel.",
+      "documentTerm": "Sarana perkeretaapian"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-3": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "NOT_A_DEFINITION",
+      "alignment": "NOT_APPLICABLE",
+      "sourceID": "term:13f0bf74ffc42ebac01b",
+      "sourceBody": "kendaraan yang dapat bergerak di jalan rel.",
+      "documentTerm": "Sarana perkeretaapian"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-4": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MATCH",
+      "sourceID": "term:33fb68bb40ddbb4ea94a",
+      "sourceBody": "simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya dapat dipindahtangankan.",
+      "documentTerm": "Sertifikat Deposito"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-5": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MISMATCH",
+      "sourceID": "term:33fb68bb40ddbb4ea94a",
+      "sourceBody": "simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya dapat dipindahtangankan.",
+      "documentTerm": "Sertifikat Deposito"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-6": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "NOT_A_DEFINITION",
+      "alignment": "NOT_APPLICABLE",
+      "sourceID": "term:33fb68bb40ddbb4ea94a",
+      "sourceBody": "simpanan dalam bentuk deposito yang sertifikat bukti penyimpanannya dapat dipindahtangankan.",
+      "documentTerm": "Sertifikat Deposito"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-7": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MATCH",
+      "sourceID": "term:5145b2ca67b3dc4a0635",
+      "sourceBody": "usia saat peserta dapat mulai menerima manfaat pensiun.",
+      "documentTerm": "Usia Pensiun"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-8": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MISMATCH",
+      "sourceID": "term:5145b2ca67b3dc4a0635",
+      "sourceBody": "usia saat peserta dapat mulai menerima manfaat pensiun.",
+      "documentTerm": "Usia Pensiun"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-9": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "NOT_A_DEFINITION",
+      "alignment": "NOT_APPLICABLE",
+      "sourceID": "term:5145b2ca67b3dc4a0635",
+      "sourceBody": "usia saat peserta dapat mulai menerima manfaat pensiun.",
+      "documentTerm": "Usia Pensiun"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-10": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MATCH",
+      "sourceID": "term:cfaa7a62e8f74b35ef62",
+      "sourceBody": "bagian dari WPN yang dapat diusahakan.",
+      "documentTerm": "WUPK"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-11": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MISMATCH",
+      "sourceID": "term:cfaa7a62e8f74b35ef62",
+      "sourceBody": "bagian dari WPN yang dapat diusahakan.",
+      "documentTerm": "WUPK"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-12": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "NOT_A_DEFINITION",
+      "alignment": "NOT_APPLICABLE",
+      "sourceID": "term:cfaa7a62e8f74b35ef62",
+      "sourceBody": "bagian dari WPN yang dapat diusahakan.",
+      "documentTerm": "WUPK"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-13": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MATCH",
+      "sourceID": "term:b823097297b85876ab6c",
+      "sourceBody": "barang Penanggung Pajak yang dapat dijadikan jaminan utang pajak.",
+      "documentTerm": "Objek Sita"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-14": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MISMATCH",
+      "sourceID": "term:b823097297b85876ab6c",
+      "sourceBody": "barang Penanggung Pajak yang dapat dijadikan jaminan utang pajak.",
+      "documentTerm": "Objek Sita"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-15": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "NOT_A_DEFINITION",
+      "alignment": "NOT_APPLICABLE",
+      "sourceID": "term:b823097297b85876ab6c",
+      "sourceBody": "barang Penanggung Pajak yang dapat dijadikan jaminan utang pajak.",
+      "documentTerm": "Objek Sita"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-16": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MATCH",
+      "sourceID": "term:db1e82f68218dd5d0186",
+      "sourceBody": "tempat kerja dan/atau lembaga yang dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP.",
+      "documentTerm": "Tempat Uji Kompetensi"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-17": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "EXPLICIT_DEFINITION",
+      "alignment": "MISMATCH",
+      "sourceID": "term:db1e82f68218dd5d0186",
+      "sourceBody": "tempat kerja dan/atau lembaga yang dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP.",
+      "documentTerm": "Tempat Uji Kompetensi"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "control-18": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": true,
+    "expected": [],
+    "semantic": {
+      "classification": "NOT_A_DEFINITION",
+      "alignment": "NOT_APPLICABLE",
+      "sourceID": "term:db1e82f68218dd5d0186",
+      "sourceBody": "tempat kerja dan/atau lembaga yang dapat memberikan fasilitas pelaksanaan uji kompetensi, yang diverifikasi oleh LSP.",
+      "documentTerm": "Tempat Uji Kompetensi"
+    },
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "dummy-original": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [],
+    "semantic": null,
+    "localGoldComplete": false,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  },
+  "dummy-datta": {
+    "reviewStatus": "pending",
+    "provenance": "synthetic",
+    "semanticGoldComplete": false,
+    "expected": [
+      {
+        "intent": "requiredSpelling",
+        "original": "Datta",
+        "replacement": "Data"
+      }
+    ],
+    "semantic": null,
+    "localGoldComplete": false,
+    "expectationVersion": "accuracy-experiment-v2",
+    "humanApproval": false
+  }
+}

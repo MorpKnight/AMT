@@ -31,8 +31,6 @@ struct DocumentEditorView: View {
     @State private var showDefinitionMatches = false
     @State private var isLeftSidebarVisible = true
     @State private var isReviewSidebarVisible = true
-    @State private var pendingSuggestionAccept: EditorSuggestion?
-    @State private var pendingDefinitionResolution: AIConnectorDefinitionResolutionOption?
 
     init(
         documents: [DashboardDocument],
@@ -136,12 +134,12 @@ struct DocumentEditorView: View {
                             aiConnectorViewModel.selectReviewItem(id)
                         },
                         onAcceptSuggestion: { suggestion in
-                            pendingSuggestionAccept = suggestion
+                            editorViewModel.acceptSuggestion(suggestion)
                         },
                         onAcceptAnnotation: { annotation in
                             if let resolution = aiConnectorViewModel.definitionResolutions[annotation.id],
                                let actionable = resolution.options.first(where: { $0.isActionable }) {
-                                pendingDefinitionResolution = actionable
+                                editorViewModel.applyDefinitionResolution(actionable)
                             } else {
                                 aiConnectorViewModel.markReviewItemReviewed(annotation.id)
                                 onReviewStateChanged()
@@ -310,7 +308,6 @@ struct DocumentEditorView: View {
                 aiConnectorViewModel.canApplyDefinitionResolution(option, to: text)
             },
             onSuggestionAccepted: { suggestion, previousText, updatedText in
-                pendingSuggestionAccept = nil
                 if !aiConnectorViewModel.reconcileAfterAccept(
                     suggestion,
                     previousText: previousText,
@@ -336,7 +333,6 @@ struct DocumentEditorView: View {
                 aiConnectorViewModel.requestDefinitionResolution(for: id)
             },
             onDefinitionResolutionApplied: { option, previousText, updatedText in
-                pendingDefinitionResolution = nil
                 if !aiConnectorViewModel.reconcileAfterDefinitionResolution(
                     option,
                     previousText: previousText,
@@ -346,9 +342,7 @@ struct DocumentEditorView: View {
                 }
                 onReviewStateChanged()
             },
-            formattingViewModel: editorViewModel,
-            pendingSuggestionAccept: pendingSuggestionAccept,
-            pendingDefinitionResolution: pendingDefinitionResolution
+            formattingViewModel: editorViewModel
         )
         .frame(
             width: proxy.size.width,
