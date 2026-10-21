@@ -30,12 +30,33 @@ struct FormattingState: Equatable {
 @Observable
 final class EditorViewModel {
     var pendingAction: FormattingAction?
+    var pendingSuggestionAccept: EditorSuggestion?
+    var pendingDefinitionResolution: AIConnectorDefinitionResolutionOption?
     var activeState = FormattingState()
     var canUndo = false
     var canRedo = false
     var zoomPercent = EditorZoom.defaultPercent
     /// Font size in points for the body text. Defaults to EditorTypography body size.
     var fontSizePoints: CGFloat = EditorTypography.bodyPointSize
+
+    @ObservationIgnored
+    var onAcceptSuggestion: ((EditorSuggestion) -> Void)?
+    @ObservationIgnored
+    var onApplyDefinitionResolution: ((AIConnectorDefinitionResolutionOption) -> Void)?
+    @ObservationIgnored
+    var onApplyFormatting: ((FormattingAction) -> Void)?
+
+    func acceptSuggestion(_ suggestion: EditorSuggestion) {
+        onAcceptSuggestion?(suggestion)
+    }
+
+    func applyDefinitionResolution(_ option: AIConnectorDefinitionResolutionOption) {
+        onApplyDefinitionResolution?(option)
+    }
+
+    func applyFormatting(_ action: FormattingAction) {
+        onApplyFormatting?(action)
+    }
 
     // MARK: - Zoom
     func zoomIn() {

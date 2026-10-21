@@ -233,6 +233,8 @@ final class AIConnectorFlowFixTests: XCTestCase {
             onSuggestionAccepted: { _, _, _ in state.accepted += 1 }, onDismiss: { _ in }, onMarkReviewed: { _ in }, onReopenReviewed: { _ in }
         )
         let coordinator = parent.makeCoordinator()
+        let sidebarViewModel = EditorViewModel()
+        coordinator.attach(viewModel: sidebarViewModel)
         let storage = NSTextStorage(string: text)
         let layout = SuggestionLayoutManager()
         let container = NSTextContainer(size: NSSize(width: 600, height: 1000))
@@ -247,13 +249,21 @@ final class AIConnectorFlowFixTests: XCTestCase {
         window.makeFirstResponder(view)
         coordinator.connect(scrollView: scroll, textView: view, layoutManager: layout, textContainer: container, documentID: parent.documentID, text: text, richTextData: nil, structuredDocument: nil, zoomPercent: 100)
         let invalid = AIConnectorDefinitionResolutionOption(id: "forged", action: .replaceTerm, title: "Ganti", targetRange: suggestion.sourceRange, original: suggestion.original, replacement: suggestion.replacement, status: .actionable)
-        coordinator.applyDefinitionResolution(invalid)
+        sidebarViewModel.applyDefinitionResolution(invalid)
         XCTAssertEqual(view.string, text)
         XCTAssertNil(state.richText)
+        let forgedSuggestion = EditorSuggestion(
+            id: suggestion.id, sourceRange: suggestion.sourceRange,
+            original: suggestion.original, replacement: "menghapus",
+            category: .spelling, reason: "Forged", origin: .deterministic
+        )
+        sidebarViewModel.acceptSuggestion(forgedSuggestion)
+        XCTAssertEqual(view.string, text)
+        XCTAssertEqual(state.accepted, 0)
         let undo = try XCTUnwrap(view.undoManager)
         undo.groupsByEvent = false
         undo.beginUndoGrouping()
-        coordinator.accept(suggestion)
+        sidebarViewModel.acceptSuggestion(suggestion)
         undo.endUndoGrouping()
         XCTAssertEqual(view.string, "Dokumen memasukkan arsip.")
         XCTAssertEqual(state.text, view.string)

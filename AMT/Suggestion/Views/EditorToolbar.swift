@@ -35,6 +35,109 @@ enum DocumentPresentationMode: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - Floating Controls (Font Size & Zoom Pills)
+
+struct EditorFloatingControls: View {
+    let viewModel: EditorViewModel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Font Size Pill: [ A  18pt  A ]
+            HStack(spacing: 8) {
+                Button {
+                    viewModel.decreaseFontSize()
+                } label: {
+                    Text("A")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(viewModel.fontSizePoints > EditorViewModel.minimumFontSize ? Color.textPrimary : Color.textSecondary.opacity(0.35))
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.fontSizePoints <= EditorViewModel.minimumFontSize)
+                .help("Perkecil ukuran font")
+
+                Text("\(Int(viewModel.fontSizePoints))pt")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.textPrimary)
+                    .frame(minWidth: 32)
+
+                Button {
+                    viewModel.increaseFontSize()
+                } label: {
+                    Text("A")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(viewModel.fontSizePoints < EditorViewModel.maximumFontSize ? Color.textPrimary : Color.textSecondary.opacity(0.35))
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.fontSizePoints >= EditorViewModel.maximumFontSize)
+                .help("Perbesar ukuran font")
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(Color(nsColor: .windowBackgroundColor))
+                    .shadow(color: Color.black.opacity(0.10), radius: 8, x: 0, y: 3)
+            )
+            .overlay(
+                Capsule()
+                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+            )
+
+            // Zoom Pill: [ (-)  10%  (+) ]
+            HStack(spacing: 8) {
+                Button {
+                    viewModel.zoomOut()
+                } label: {
+                    Image(systemName: "minus.magnifyingglass")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(viewModel.zoomPercent > EditorZoom.minimumPercent ? Color.textPrimary : Color.textSecondary.opacity(0.35))
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.zoomPercent <= EditorZoom.minimumPercent)
+                .help("Zoom out (⌘−)")
+                .keyboardShortcut("-", modifiers: .command)
+
+                Button {
+                    viewModel.resetZoom()
+                } label: {
+                    Text("\(viewModel.zoomPercent)%")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.textPrimary)
+                        .frame(minWidth: 36)
+                }
+                .buttonStyle(.plain)
+                .help("Reset zoom (⌘0)")
+                .keyboardShortcut("0", modifiers: .command)
+
+                Button {
+                    viewModel.zoomIn()
+                } label: {
+                    Image(systemName: "plus.magnifyingglass")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(viewModel.zoomPercent < EditorZoom.maximumPercent ? Color.textPrimary : Color.textSecondary.opacity(0.35))
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.zoomPercent >= EditorZoom.maximumPercent)
+                .help("Zoom in (⌘+)")
+                .keyboardShortcut("=", modifiers: [.command, .shift])
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(Color(nsColor: .windowBackgroundColor))
+                    .shadow(color: Color.black.opacity(0.10), radius: 8, x: 0, y: 3)
+            )
+            .overlay(
+                Capsule()
+                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+            )
+        }
+    }
+}
+
+// MARK: - Editor Toolbar
+
 struct EditorToolbar: View {
     @Binding var documentTitle: String
     @Binding var presentationMode: DocumentPresentationMode
@@ -43,6 +146,11 @@ struct EditorToolbar: View {
     let saveState: DocumentSaveState
     let reviewNeedsRerun: Bool
     let aiConnectorViewModel: AIConnectorViewModel?
+    var isLeftSidebarVisible: Bool = true
+    var onToggleLeftSidebar: () -> Void = {}
+    var onBackToDashboard: () -> Void = {}
+    var isRightSidebarVisible: Bool = true
+    var onToggleRightSidebar: () -> Void = {}
     var onRetrySave: () -> Void = {}
     var onExport: (() -> Void)?
     var onRerun: () -> Void = {}
@@ -56,6 +164,11 @@ struct EditorToolbar: View {
         canPreviewOriginal: Bool,
         saveState: DocumentSaveState,
         reviewNeedsRerun: Bool,
+        isLeftSidebarVisible: Bool = true,
+        onToggleLeftSidebar: @escaping () -> Void = {},
+        onBackToDashboard: @escaping () -> Void = {},
+        isRightSidebarVisible: Bool = true,
+        onToggleRightSidebar: @escaping () -> Void = {},
         onRetrySave: @escaping () -> Void = {},
         onExport: (() -> Void)? = nil,
         aiConnectorViewModel: AIConnectorViewModel? = nil,
@@ -69,9 +182,14 @@ struct EditorToolbar: View {
         self.canPreviewOriginal = canPreviewOriginal
         self.saveState = saveState
         self.reviewNeedsRerun = reviewNeedsRerun
-        self.aiConnectorViewModel = aiConnectorViewModel
+        self.isLeftSidebarVisible = isLeftSidebarVisible
+        self.onToggleLeftSidebar = onToggleLeftSidebar
+        self.onBackToDashboard = onBackToDashboard
+        self.isRightSidebarVisible = isRightSidebarVisible
+        self.onToggleRightSidebar = onToggleRightSidebar
         self.onRetrySave = onRetrySave
         self.onExport = onExport
+        self.aiConnectorViewModel = aiConnectorViewModel
         self.onRerun = onRerun
         self.onRerunSection = onRerunSection
         self.onRerunFull = onRerunFull
@@ -79,22 +197,44 @@ struct EditorToolbar: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // Left Navigation Group: [folder] [sidebar.left]
+            HStack(spacing: 8) {
+                Button(action: onBackToDashboard) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.textPrimary)
+                }
+                .buttonStyle(.plain)
+                .help("Kembali ke Dashboard")
+
+                Button(action: onToggleLeftSidebar) {
+                    Image(systemName: "sidebar.left")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(isLeftSidebarVisible ? Color.textPrimary : Color.textSecondary)
+                }
+                .buttonStyle(.plain)
+                .help(isLeftSidebarVisible ? "Sembunyikan Sidebar" : "Tampilkan Sidebar")
+            }
+
+            // Fixed vertical separator between navigation icons and title
+            Rectangle()
+                .fill(Color.borderSubtle)
+                .frame(width: 1, height: 16)
+                .padding(.horizontal, 2)
+
             documentTitleField
+
             Spacer()
-            fontSizeGroup
-            zoomGroup
-            Spacer()
-            if presentationMode == .editing, reviewNeedsRerun {
-                Label("Review perlu diulang", systemImage: "arrow.clockwise.circle")
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.orange)
-                    .help("Dokumen berubah setelah analisis terakhir.")
-                    .accessibilityLabel("Review perlu diulang")
-            }
+
             if presentationMode == .editing, let aiConnectorViewModel {
-                incrementalAnalysisControls(for: aiConnectorViewModel)
+                analysisButton(for: aiConnectorViewModel)
             }
+
             exportButton
+
+            if presentationMode == .editing {
+                toggleRightSidebarButton
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -104,298 +244,71 @@ struct EditorToolbar: View {
     private var documentTitleField: some View {
         TextField("Untitled", text: $documentTitle)
             .textFieldStyle(.plain)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(.primary)
-            .frame(minWidth: 100, maxWidth: 360, alignment: .leading)
-    }
-
-    private var formattingControls: some View {
-        HStack(spacing: 8) {
-            historyGroup
-            // Formatting controls are temporarily disabled while the editor
-            // uses the document's native typography and attributes.
-            // textStyleGroup
-            // inlineStyleGroup
-            // listStyleGroup
-            zoomGroup
-        }
-    }
-
-    private var historyGroup: some View {
-        HStack(spacing: 2) {
-            toolbarIconButton(
-                systemName: "arrow.uturn.backward",
-                help: "Undo (⌘Z)",
-                isEnabled: viewModel.canUndo
-            ) {
-                viewModel.pendingAction = .undo
-            }
-            .keyboardShortcut("z", modifiers: .command)
-            toolbarIconButton(
-                systemName: "arrow.uturn.forward",
-                help: "Redo (⇧⌘Z)",
-                isEnabled: viewModel.canRedo
-            ) {
-                viewModel.pendingAction = .redo
-            }
-            .keyboardShortcut("z", modifiers: [.command, .shift])
-        }
-        .toolbarGroupStyle()
-    }
-
-    private var textStyleGroup: some View {
-        HStack(spacing: 2) {
-            ForEach(TextStyle.allCases) { style in
-                let isActive = viewModel.activeState.textStyle == style
-                GlassPillButton(isActive: isActive, width: style == .body ? 76 : 26) {
-                    viewModel.pendingAction = .textStyle(style)
-                } label: {
-                    Text(style.rawValue)
-                        .font(.system(size: style == .body ? 11 : 12, weight: isActive ? .bold : .medium))
-                        .foregroundStyle(isActive ? .primary : .secondary)
-                }
-            }
-        }
-        .toolbarGroupStyle()
-    }
-
-    private var zoomGroup: some View {
-        HStack(spacing: 2) {
-            toolbarIconButton(
-                systemName: "minus.magnifyingglass",
-                help: "Zoom out (⌘−)",
-                isEnabled: viewModel.zoomPercent > EditorZoom.minimumPercent
-            ) {
-                viewModel.zoomOut()
-            }
-            .keyboardShortcut("-", modifiers: .command)
-
-            Button {
-                viewModel.resetZoom()
-            } label: {
-                Text("\(viewModel.zoomPercent)%")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 42, height: 24)
-            }
-            .buttonStyle(.plain)
-            .help("Reset zoom (⌘0)")
-            .keyboardShortcut("0", modifiers: .command)
-
-            toolbarIconButton(
-                systemName: "plus.magnifyingglass",
-                help: "Zoom in (⌘+)",
-                isEnabled: viewModel.zoomPercent < EditorZoom.maximumPercent
-            ) {
-                viewModel.zoomIn()
-            }
-            .keyboardShortcut("=", modifiers: [.command, .shift])
-        }
-        .toolbarGroupStyle()
-    }
-
-    private var fontSizeGroup: some View {
-        HStack(spacing: 2) {
-            toolbarIconButton(
-                systemName: "textformat.size.smaller",
-                help: "Perkecil ukuran font",
-                isEnabled: viewModel.fontSizePoints > EditorViewModel.minimumFontSize
-            ) {
-                viewModel.decreaseFontSize()
-            }
-
-            Button {
-                viewModel.resetFontSize()
-            } label: {
-                Text("\(Int(viewModel.fontSizePoints))pt")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 36, height: 24)
-            }
-            .buttonStyle(.plain)
-            .help("Reset ukuran font")
-
-            toolbarIconButton(
-                systemName: "textformat.size.larger",
-                help: "Perbesar ukuran font",
-                isEnabled: viewModel.fontSizePoints < EditorViewModel.maximumFontSize
-            ) {
-                viewModel.increaseFontSize()
-            }
-        }
-        .toolbarGroupStyle()
-    }
-
-    private func toolbarIconButton(
-        systemName: String,
-        help: String,
-        isEnabled: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        GlassPillButton(isActive: false, isEnabled: isEnabled, help: help, action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(isEnabled ? .secondary : .tertiary)
-        }
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(Color.textPrimary)
+            .frame(minWidth: 160, maxWidth: 460, alignment: .leading)
     }
 
     @ViewBuilder
-    private var saveStatus: some View {
-        if case let .failed(message) = saveState {
-            Button(action: onRetrySave) {
-                Label(saveState.title, systemImage: saveState.systemImage)
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.orange)
+    private func analysisButton(for viewModel: AIConnectorViewModel) -> some View {
+        Menu {
+            Button("Periksa ulang") { onRerun() }
+                .disabled(!viewModel.canRerunAnalysis)
+            Button("Periksa bagian ini") { onRerunSection() }
+                .disabled(!viewModel.canRerunSelectedSection)
+            Divider()
+            Button("Periksa seluruh dokumen dari awal") { onRerunFull() }
+        } label: {
+            HStack(spacing: 5) {
+                if viewModel.isRunning {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Image(systemName: "arrow.clockwise.circle")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                Text("Analisis")
+                    .font(.system(size: 12, weight: .medium))
             }
-            .buttonStyle(.plain)
-            .help("\(message) Klik untuk mencoba lagi.")
-            .accessibilityLabel("\(saveState.title). Coba lagi")
-        } else {
-            Label(saveState.title, systemImage: saveState.systemImage)
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(saveStatusColor)
-                .accessibilityLabel(saveState.title)
+            .foregroundStyle(Color.textPrimary)
+        } primaryAction: {
+            if viewModel.isRunning {
+                viewModel.cancel()
+            } else {
+                onRerun()
+            }
         }
-    }
-
-    private var saveStatusColor: Color {
-        switch saveState {
-        case .dirty:
-            .secondary
-        case .saving:
-            .secondary
-        case .saved:
-            .secondary
-        case .failed:
-            .orange
-        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("Analisis Dokumen")
     }
 
     private var exportButton: some View {
         Button {
             onExport?()
         } label: {
-            Image(systemName: "square.and.arrow.up")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.primary.opacity(0.85))
-                .frame(width: 32, height: 32)
+            HStack(spacing: 5) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 13, weight: .medium))
+                Text("Export")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundStyle(Color.textPrimary)
         }
         .buttonStyle(.plain)
-        .toolbarGroupStyle(cornerRadius: 10)
         .help("Ekspor Dokumen (.docx)")
     }
 
-    @ViewBuilder
-    private func incrementalAnalysisControls(
-        for aiConnectorViewModel: AIConnectorViewModel
-    ) -> some View {
-        if aiConnectorViewModel.isRunning {
-            HStack(spacing: 6) {
-                ProgressView()
-                    .controlSize(.small)
-                Text(analysisProgressTitle(aiConnectorViewModel))
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                Button("Batal") {
-                    aiConnectorViewModel.cancel()
-                }
-                .buttonStyle(.plain)
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(.orange)
-                .help("Batalkan pemeriksaan; hasil yang sudah valid tetap dipertahankan.")
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(analysisProgressTitle(aiConnectorViewModel))
-        } else {
-            Menu {
-                Button("Periksa ulang") { onRerun() }
-                    .disabled(!aiConnectorViewModel.canRerunAnalysis)
-                Button("Periksa bagian ini") { onRerunSection() }
-                    .disabled(!aiConnectorViewModel.canRerunSelectedSection)
-                Divider()
-                Button("Periksa seluruh dokumen dari awal") { onRerunFull() }
-            } label: {
-                Label(
-                    aiConnectorViewModel.hasPendingAnalysisChanges
-                        ? "Periksa ulang"
-                        : "Periksa",
-                    systemImage: "arrow.clockwise"
-                )
-                .font(.caption2.weight(.medium))
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .help("Pilih bagian dokumen yang ingin diperiksa ulang.")
-            .accessibilityLabel("Pilihan pemeriksaan ulang")
-        }
-    }
-
-    private func analysisProgressTitle(_ viewModel: AIConnectorViewModel) -> String {
-        let progress = viewModel.progressSnapshot
-        let reused = progress.reusedSegmentCount
-        let reprocessed = progress.reprocessedSegmentCount
-        let completed = progress.completedSegmentCount
-        let total = progress.totalSegmentCount
-        if reused > 0 {
-            return "Memeriksa \(completed) dari \(total) · \(reused) dipakai ulang · \(reprocessed) dihitung ulang"
-        }
-        return "Memeriksa \(completed) dari \(total)"
-    }
-}
-
-private struct GlassPillButton<Label: View>: View {
-    let isActive: Bool
-    var isEnabled = true
-    var width: CGFloat = 26
-    var help: String?
-    let action: () -> Void
-    @ViewBuilder let label: () -> Label
-
-    @State private var isHovered = false
-
-    var body: some View {
-        Button(action: action) {
-            label()
-                .frame(width: width, height: 24)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(
-                            isActive
-                                ? Color.primary.opacity(0.12)
-                                : (isHovered ? Color.primary.opacity(0.06) : Color.clear)
-                        )
-                )
+    private var toggleRightSidebarButton: some View {
+        Button {
+            onToggleRightSidebar()
+        } label: {
+            Image(systemName: "sidebar.right")
+                .font(.system(size: 14))
+                .foregroundStyle(isRightSidebarVisible ? Color.textPrimary : Color.textSecondary)
         }
         .buttonStyle(.plain)
-        .disabled(!isEnabled)
-        .help(help ?? "")
-        .onHover { isHovered = $0 }
-    }
-}
-
-private struct FlatToolbarGroupModifier: ViewModifier {
-    var cornerRadius: CGFloat = 16
-    @Environment(\.colorScheme) private var colorScheme
-
-    func body(content: Content) -> some View {
-        content
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.04))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-            )
-    }
-}
-
-private extension View {
-    func toolbarGroupStyle(cornerRadius: CGFloat = 16) -> some View {
-        padding(.horizontal, 4)
-            .padding(.vertical, 3)
-            .modifier(FlatToolbarGroupModifier(cornerRadius: cornerRadius))
+        .help(isRightSidebarVisible ? "Sembunyikan Panel Saran" : "Tampilkan Panel Saran")
     }
 }
 
@@ -404,14 +317,18 @@ private extension View {
         Color(nsColor: .windowBackgroundColor)
             .ignoresSafeArea()
 
-        EditorToolbar(
-            documentTitle: .constant("Untitled"),
-            presentationMode: .constant(.editing),
-            viewModel: EditorViewModel(),
-            canPreviewOriginal: true,
-            saveState: .saved(Date()),
-            reviewNeedsRerun: false
-        )
+        VStack(spacing: 20) {
+            EditorToolbar(
+                documentTitle: .constant("PERJANJIAN KERAHASIAAN BERSAMA"),
+                presentationMode: .constant(.editing),
+                viewModel: EditorViewModel(),
+                canPreviewOriginal: true,
+                saveState: .saved(Date()),
+                reviewNeedsRerun: false
+            )
+
+            EditorFloatingControls(viewModel: EditorViewModel())
+        }
     }
-    .frame(width: 850, height: 100)
+    .frame(width: 850, height: 160)
 }

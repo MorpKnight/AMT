@@ -153,6 +153,8 @@ final class LegalReviewIntegrationTests: XCTestCase {
                 XCTAssertTrue(vm.reconcileAfterAccept(item, previousText: before, updatedText: after))
             }, onDismiss: { _ in }, onMarkReviewed: { _ in }, onReopenReviewed: { _ in })
         let coordinator = editor.makeCoordinator()
+        let sidebarViewModel = EditorViewModel()
+        coordinator.attach(viewModel: sidebarViewModel)
         let storage = NSTextStorage(string: text), layout = SuggestionLayoutManager()
         let container = NSTextContainer(size: NSSize(width: 600, height: 1000))
         storage.addLayoutManager(layout); layout.addTextContainer(container)
@@ -165,7 +167,7 @@ final class LegalReviewIntegrationTests: XCTestCase {
         coordinator.connect(scrollView: scroll, textView: view, layoutManager: layout, textContainer: container,
             documentID: editor.documentID, text: text, richTextData: nil, structuredDocument: nil, zoomPercent: 100)
         let undo = try XCTUnwrap(view.undoManager); undo.groupsByEvent = false; undo.beginUndoGrouping()
-        coordinator.accept(suggestion); undo.endUndoGrouping()
+        sidebarViewModel.acceptSuggestion(suggestion); undo.endUndoGrouping()
         XCTAssertEqual(state.text, "Penyedia menjaga bukti.")
         XCTAssertFalse(vm.canApplySuggestion(suggestion, to: text))
         undo.undo(); XCTAssertEqual(state.text, text)
