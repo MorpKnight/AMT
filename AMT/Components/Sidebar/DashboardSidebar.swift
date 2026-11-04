@@ -15,7 +15,7 @@ enum DashboardTab: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .document: return "doc.text"
+        case .document: return "doc"
         case .dictionary: return "book"
         }
     }
@@ -33,26 +33,23 @@ struct DashboardSidebar: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 0) {
             // Header Branding
             HStack(spacing: 8) {
                 Image(logoImageName)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 30, height: 30)
+                    .frame(width: 22, height: 22)
 
                 Text("Lawtionary")
-                    .appFont(.titleMedium, weight: .semibold)
+                    .appFont(.callout, weight: .semibold)
                     .foregroundStyle(Color.textPrimary)
 
                 Spacer()
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
-            .padding(.bottom, 2)
-
-            // Separate
-            Divider().padding(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 10))
+            .padding(.bottom, 8)
 
             // Sidebar Navigation List
             VStack(spacing: 4) {
@@ -67,24 +64,19 @@ struct DashboardSidebar: View {
                 }
             }
             .padding(.horizontal, 10)
+            .padding(.top, 2)
 
             Spacer()
 
             // Footer Links
             VStack(alignment: .leading, spacing: 10) {
-                Button(action: { showingTermsSheet = true }) {
-                    Text("Term and Condition")
-                        .appFont(.caption, weight: .regular)
-                        .foregroundStyle(Color.textSecondary)
+                SidebarFooterLink(title: "Term and Condition") {
+                    showingTermsSheet = true
                 }
-                .buttonStyle(.plain)
 
-                Button(action: { showingAboutSheet = true }) {
-                    Text("About Lawtionary")
-                        .appFont(.caption, weight: .regular)
-                        .foregroundStyle(Color.textSecondary)
+                SidebarFooterLink(title: "About Lawtionary") {
+                    showingAboutSheet = true
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
@@ -152,24 +144,42 @@ private struct SidebarTabItem: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Image(systemName: tab.icon)
-                    .font(.system(size: 15))
-                    .frame(width: 20)
+                    .font(.system(size: 14))
+                    .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
 
                 Text(tab.rawValue)
-                    .appFont(.subheadline, weight: isSelected ? .semibold : .medium)
+                    .appFont(.callout, weight: isSelected ? .semibold : .regular)
+                    .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
 
                 Spacer()
             }
-            .foregroundStyle(isSelected ? Color.textPrimary : Color.textSecondary)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(isSelected ? Color.bgSelected : (isHovered ? Color.primary.opacity(0.04) : Color.clear))
             )
             .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovered = hovering
+        }
+    }
+}
+
+private struct SidebarFooterLink: View {
+    let title: String
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .appFont(.caption, weight: .regular)
+                .foregroundStyle(isHovered ? Color.textPrimary : Color.textSecondary)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
