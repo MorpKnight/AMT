@@ -285,7 +285,6 @@ struct DashboardView: View {
                 if case let .failure(error) = result, error != .cancelled {
                     presentStorageError(error, retryDocumentID: currentDocument.id)
                 }
-                documentViewModels.removeValue(forKey: currentDocument.id)
                 openDocumentImmediately(document)
             }
         } else {
@@ -297,17 +296,14 @@ struct DashboardView: View {
         let document = storageManager.documents.first {
             $0.id == requestedDocument.id
         } ?? requestedDocument
-        let viewModel = documentViewModels[document.id]
-            ?? AIConnectorViewModel(
-                service: suggestionService,
-                dictionaryStore: dictionaryStore
-            )
+        let cachedViewModel = documentViewModels[document.id]
+        let viewModel = cachedViewModel ?? AIConnectorViewModel(
+            service: suggestionService,
+            dictionaryStore: dictionaryStore
+        )
 
-        if let snapshot = document.analysisSnapshot,
-           !viewModel.restoreAnalysisSnapshot(snapshot, documentText: document.content) {
-            viewModel.resetInputMetadata()
-        } else if document.analysisSnapshot == nil {
-            viewModel.resetInputMetadata()
+        if cachedViewModel == nil, let snapshot = document.analysisSnapshot {
+            _ = viewModel.restoreAnalysisSnapshot(snapshot, documentText: document.content)
         }
 
         documentViewModels[document.id] = viewModel
@@ -338,7 +334,6 @@ struct DashboardView: View {
             if case let .failure(error) = result, error != .cancelled {
                 presentStorageError(error, retryDocumentID: currentDocument.id)
             }
-            documentViewModels.removeValue(forKey: currentDocument.id)
             withAnimation(.easeInOut(duration: 0.22)) {
                 activeDocument = nil
                 analyzingDocument = nil
